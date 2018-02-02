@@ -1,0 +1,69 @@
+# distrobuilder
+Custom image generator
+
+## Example yaml file
+
+```yaml
+image:
+  distribution: ubuntu # required
+  release: artful # required
+  variant: default # optional
+  description: Ubuntu Artful # optional
+  expiry: 30d # optional: defaults to 30d
+  arch: x86_64 # optional: defaults to local architecture
+
+source:
+  downloader: ubuntu-http
+  url: http://cdimage.ubuntu.com/ubuntu-base
+
+targets:
+  lxc:
+    create-message: |
+        You just created an Ubuntu container (release=artful, arch=amd64, variant=default)
+
+        To enable sshd, run: apt-get install openssh-server
+
+        For security reason, container images ship without user accounts
+        and without a root password.
+
+        Use lxc-attach or chroot directly into the rootfs to set a root password
+        or create user accounts.
+    config: |
+        lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
+        lxc.arch = x86_64
+    config-user: |
+        lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
+        lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.userns.conf
+        lxc.arch = x86_64
+
+files:
+ # lxc: Puts the LXC_NAME placeholder in place
+ # lxd: Adds a template to generate the file on create and copy
+ - name: hostname
+   path: /etc/hostname
+   generator: hostname
+
+ # lxc: Puts the LXC_NAME placeholder in place
+ # lxd: Adds a template to generate the file on create
+ - name: hosts
+   path: /etc/hosts
+   generator: hosts
+
+ # all: Add the upstart job to deal with ttys
+ - name: /etc/init/lxc-tty.conf
+   generator: upstart-tty
+   releases:
+    - precise
+    - trusty
+
+packages:
+    manager: apt
+
+    update: false
+    install:
+        - systemd
+        - nginx
+        - vim
+    remove:
+        - vim
+```
