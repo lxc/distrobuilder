@@ -195,5 +195,7 @@ func getDefinition(fname string) (shared.Definition, error) {
 		return def, err
 	}
 
+	shared.SetDefinitionDefaults(&def)
+
 	return def, err
 }

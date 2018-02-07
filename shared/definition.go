@@ -1,5 +1,7 @@
 package shared
 
+import "runtime"
+
 // A DefinitionPackages list packages which are to be either installed or
 // removed.
 type DefinitionPackages struct {
@@ -52,4 +54,17 @@ type Definition struct {
 	Targets  DefinitionTarget   `yaml:"targets,omitempty"`
 	Files    []DefinitionFile   `yaml:"files,omitempty"`
 	Packages DefinitionPackages `yaml:"packages,omitempty"`
+}
+
+// SetDefinitionDefaults sets some default values for the given Definition.
+func SetDefinitionDefaults(def *Definition) {
+	// default to local arch
+	if def.Image.Arch == "" {
+		def.Image.Arch = runtime.GOARCH
+	}
+
+	// set default expiry of 30 days
+	if def.Image.Expiry == "" {
+		def.Image.Expiry = "30d"
+	}
 }
