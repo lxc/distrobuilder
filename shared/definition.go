@@ -19,6 +19,7 @@ type DefinitionImage struct {
 	Arch         string `yaml:"arch,omitempty"`
 	Expiry       string `yaml:"expiry,omitempty"`
 	Variant      string `yaml:"variant,omitempty"`
+	Name         string `yaml:"name,omitempty"`
 }
 
 // A DefinitionSource specifies the download type and location
@@ -41,10 +42,18 @@ type DefinitionTarget struct {
 
 // A DefinitionFile represents a file which is to be created inside to chroot.
 type DefinitionFile struct {
-	Name      string   `yaml:"name"`
 	Generator string   `yaml:"generator"`
 	Path      string   `yaml:"path,omitempty"`
 	Releases  []string `yaml:"releases,omitempty"`
+}
+
+// DefinitionActions specifies custom actions (scripts) which are to be run after
+// certain actions.
+type DefinitionActions struct {
+	PostUnpack   string `yaml:"post-unpack,omitempty"`
+	PostUpdate   string `yaml:"post-update,omitempty"`
+	PostPackages string `yaml:"post-packages,omitempty"`
+	PostFiles    string `yaml:"post-files,omitempty"`
 }
 
 // A Definition a definition.
@@ -54,6 +63,7 @@ type Definition struct {
 	Targets  DefinitionTarget   `yaml:"targets,omitempty"`
 	Files    []DefinitionFile   `yaml:"files,omitempty"`
 	Packages DefinitionPackages `yaml:"packages,omitempty"`
+	Actions  DefinitionActions  `yaml:"actions,omitempty"`
 }
 
 // SetDefinitionDefaults sets some default values for the given Definition.
