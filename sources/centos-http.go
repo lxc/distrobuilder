@@ -29,11 +29,6 @@ func NewCentOSHTTP() *CentOSHTTP {
 func (s *CentOSHTTP) Run(URL, release, variant, arch, cacheDir string) error {
 	s.cacheDir = cacheDir
 
-	realArch := arch
-	if realArch == "amd64" {
-		realArch = "x86_64"
-	}
-
 	s.fname = getRelease(URL, release, variant, arch)
 	if s.fname == "" {
 		return fmt.Errorf("Couldn't get name of iso")

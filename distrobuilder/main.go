@@ -142,7 +142,7 @@ func run(c *cli.Context) error {
 	}
 
 	err = downloader.Run(def.Source.URL, def.Image.Release, def.Image.Variant,
-		def.Image.Arch, c.GlobalString("cache-dir"))
+		shared.GetArch(def.Image.Distribution, def.Image.Arch), c.GlobalString("cache-dir"))
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
