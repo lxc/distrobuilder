@@ -39,18 +39,16 @@ targets:
 files:
  # lxc: Puts the LXC_NAME placeholder in place
  # lxd: Adds a template to generate the file on create and copy
- - name: hostname
-   path: /etc/hostname
+ - path: /etc/hostname
    generator: hostname
 
  # lxc: Puts the LXC_NAME placeholder in place
  # lxd: Adds a template to generate the file on create
- - name: hosts
-   path: /etc/hosts
+ - path: /etc/hosts
    generator: hosts
 
  # all: Add the upstart job to deal with ttys
- - name: /etc/init/lxc-tty.conf
+ - path: /etc/init/lxc-tty.conf
    generator: upstart-tty
    releases:
     - precise
@@ -66,4 +64,21 @@ packages:
         - vim
     remove:
         - vim
+
+actions:
+    post-unpack: |-
+      #!/bin/sh
+      echo "This is run after unpacking the downloaded content"
+
+    post-update: |-
+      #!/bin/sh
+      echo "This is run after updating all packages"
+
+    post-packages: |-
+      #!/bin/sh
+      echo "This is run after installing/removing packages"
+
+    post-files: |-
+      #!/bin/sh
+      echo "This is run after running the file templates"
 ```
