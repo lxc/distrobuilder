@@ -64,4 +64,21 @@ packages:
         - vim
     remove:
         - vim
+
+actions:
+    post-unpack: |-
+      #!/bin/sh
+      echo "This is run after unpacking the downloaded content"
+
+    post-update: |-
+      #!/bin/sh
+      echo "This is run after updating all packages"
+
+    post-packages: |-
+      #!/bin/sh
+      echo "This is run after installing/removing packages"
+
+    post-files: |-
+      #!/bin/sh
+      echo "This is run after running the file templates"
 ```
