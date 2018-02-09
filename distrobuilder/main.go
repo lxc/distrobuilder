@@ -196,6 +196,7 @@ func getDefinition(fname string) (shared.Definition, error) {
 	}
 
 	shared.SetDefinitionDefaults(&def)
+	err = shared.ValidateDefinition(def)
 
 	return def, err
 }

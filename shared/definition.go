@@ -1,6 +1,13 @@
 package shared
 
-import "runtime"
+import (
+	"errors"
+	"fmt"
+	"runtime"
+	"strings"
+
+	"github.com/lxc/lxd/shared"
+)
 
 // A DefinitionPackages list packages which are to be either installed or
 // removed.
@@ -77,4 +84,42 @@ func SetDefinitionDefaults(def *Definition) {
 	if def.Image.Expiry == "" {
 		def.Image.Expiry = "30d"
 	}
+}
+
+// ValidateDefinition validates the given Definition.
+func ValidateDefinition(def Definition) error {
+	if strings.TrimSpace(def.Image.Distribution) == "" {
+		return errors.New("image.distribution may not be empty")
+	}
+
+	if strings.TrimSpace(def.Image.Release) == "" {
+		return errors.New("image.release may not be empty")
+	}
+
+	validDownloaders := []string{
+		"alpinelinux-http",
+		"archlinux-http",
+		"centos-http",
+		"debootstrap",
+		"ubuntu-http",
+	}
+	if !shared.StringInSlice(strings.TrimSpace(def.Source.Downloader), validDownloaders) {
+		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
+	}
+
+	if strings.TrimSpace(def.Source.URL) == "" {
+		return errors.New("source.url may not be empty")
+	}
+
+	validManagers := []string{
+		"apk",
+		"apt",
+		"yum",
+		"pacman",
+	}
+	if !shared.StringInSlice(strings.TrimSpace(def.Packages.Manager), validManagers) {
+		return fmt.Errorf("packages.manager must be one of %v", validManagers)
+	}
+
+	return nil
 }
