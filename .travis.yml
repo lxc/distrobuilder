@@ -1,0 +1,17 @@
+language: go
+
+os:
+  - linux
+
+go:
+  - 1.9
+
+install:
+  - "mkdir -p $GOPATH/github.com/lxc"
+  - "rsync -az ${TRAVIS_BUILD_DIR}/ $HOME/gopath/src/github.com/lxc/distrobuilder/"
+
+script:
+  - "make check"
+
+notifications:
+  webhooks: https://linuxcontainers.org/webhook-lxcbot/
