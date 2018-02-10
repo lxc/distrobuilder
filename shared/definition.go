@@ -63,6 +63,12 @@ type DefinitionActions struct {
 	PostFiles    string `yaml:"post-files,omitempty"`
 }
 
+// DefinitionMappings defines custom mappings.
+type DefinitionMappings struct {
+	Architectures   map[string]string `yaml:"architectures,omitempty"`
+	ArchitectureMap string            `yaml:"architecture_map,omitempty"`
+}
+
 // A Definition a definition.
 type Definition struct {
 	Image    DefinitionImage    `yaml:"image"`
@@ -71,6 +77,7 @@ type Definition struct {
 	Files    []DefinitionFile   `yaml:"files,omitempty"`
 	Packages DefinitionPackages `yaml:"packages,omitempty"`
 	Actions  DefinitionActions  `yaml:"actions,omitempty"`
+	Mappings DefinitionMappings `yaml:"mappings,omitempty"`
 }
 
 // SetDefinitionDefaults sets some default values for the given Definition.
