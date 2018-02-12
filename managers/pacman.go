@@ -10,14 +10,14 @@ import (
 
 // NewPacman creates a new Manager instance.
 func NewPacman() *Manager {
-	err := setMirrorlist()
+	err := pacmanSetMirrorlist()
 	if err != nil {
 		return nil
 	}
 
 	// shared.RunCommand("pacman", "-Syy")
 
-	err = setupTrustedKeys()
+	err = pacmanSetupTrustedKeys()
 	if err != nil {
 		return nil
 	}
@@ -52,7 +52,7 @@ func NewPacman() *Manager {
 	}
 }
 
-func setupTrustedKeys() error {
+func pacmanSetupTrustedKeys() error {
 	var err error
 
 	_, err = os.Stat("/etc/pacman.d/gnupg")
@@ -73,7 +73,7 @@ func setupTrustedKeys() error {
 	return nil
 }
 
-func setMirrorlist() error {
+func pacmanSetMirrorlist() error {
 	f, err := os.Create(filepath.Join("etc", "pacman.d", "mirrorlist"))
 	if err != nil {
 		return err
