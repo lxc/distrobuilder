@@ -150,8 +150,6 @@ func run(c *cli.Context) error {
 		if !ok {
 			err = fmt.Errorf("Missing mapping for '%s'", def.Image.Distribution)
 		}
-	} else {
-		arch, err = shared.GetArch(def.Image.Distribution, def.Image.Arch)
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to determine arch name: %s", err)

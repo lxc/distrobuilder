@@ -13,27 +13,7 @@ func TestGetArch(t *testing.T) {
 	}{
 		{
 			"alpinelinux",
-			"amd64",
 			"x86_64",
-		},
-		{
-			"alpinelinux",
-			"x86_64",
-			"x86_64",
-		},
-		{
-			"archlinux",
-			"amd64",
-			"x86_64",
-		},
-		{
-			"archlinux",
-			"x86_64",
-			"x86_64",
-		},
-		{
-			"centos",
-			"amd64",
 			"x86_64",
 		},
 		{
@@ -50,6 +30,11 @@ func TestGetArch(t *testing.T) {
 			"debian",
 			"x86_64",
 			"amd64",
+		},
+		{
+			"debian",
+			"s390x",
+			"s390x",
 		},
 		{
 			"ubuntu",
@@ -81,12 +66,6 @@ func TestGetArch(t *testing.T) {
 
 	_, err = GetArch("debian", "arch")
 	if err == nil || err.Error() != "Architecture isn't supported: arch" {
-		t.Fatalf("Expected unsupported architecture, got '%s'", err)
-	}
-
-	// supported in LXD's code, but not in our mappings
-	_, err = GetArch("debian", "s390x")
-	if err == nil || err.Error() != "Architecture isn't supported: s390x" {
 		t.Fatalf("Expected unsupported architecture, got '%s'", err)
 	}
 }

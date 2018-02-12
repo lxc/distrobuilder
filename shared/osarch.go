@@ -7,20 +7,12 @@ import (
 )
 
 var alpineLinuxArchitectureNames = map[int]string{
-	osarch.ARCH_32BIT_INTEL_X86:             "x86",
-	osarch.ARCH_64BIT_INTEL_X86:             "x86_64",
-	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN:   "armhf",
-	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN:   "aarch64",
-	osarch.ARCH_64BIT_POWERPC_LITTLE_ENDIAN: "ppc64le",
-}
-
-var archLinuxArchitectureNames = map[int]string{
-	osarch.ARCH_64BIT_INTEL_X86: "x86_64",
+	osarch.ARCH_32BIT_INTEL_X86:           "x86",
+	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN: "armhf",
 }
 
 var centosArchitectureNames = map[int]string{
 	osarch.ARCH_32BIT_INTEL_X86: "i386",
-	osarch.ARCH_64BIT_INTEL_X86: "x86_64",
 }
 
 var debianArchitectureNames = map[int]string{
@@ -30,12 +22,11 @@ var debianArchitectureNames = map[int]string{
 	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN:   "arm64",
 	osarch.ARCH_32BIT_POWERPC_BIG_ENDIAN:    "powerpc",
 	osarch.ARCH_64BIT_POWERPC_BIG_ENDIAN:    "powerpc64",
-	osarch.ARCH_64BIT_POWERPC_LITTLE_ENDIAN: "ppc64le",
+	osarch.ARCH_64BIT_POWERPC_LITTLE_ENDIAN: "ppc64el",
 }
 
 var distroArchitecture = map[string]map[int]string{
 	"alpinelinux": alpineLinuxArchitectureNames,
-	"archlinux":   archLinuxArchitectureNames,
 	"centos":      centosArchitectureNames,
 	"debian":      debianArchitectureNames,
 	"ubuntu":      debianArchitectureNames,
@@ -59,5 +50,5 @@ func GetArch(distro, arch string) (string, error) {
 		return archName, nil
 	}
 
-	return "unknown", fmt.Errorf("Architecture isn't supported: %s", arch)
+	return arch, nil
 }
