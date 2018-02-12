@@ -84,3 +84,8 @@ func VerifyFile(signedFile, signatureFile string, keys []string, keyserver strin
 
 	return true, nil
 }
+
+// Pack creates an xz-compressed tarball.
+func Pack(filename, path string, args ...string) error {
+	return RunCommand("tar", append([]string{"-cJf", filename, "-C", path}, args...)...)
+}
