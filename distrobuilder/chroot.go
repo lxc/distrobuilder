@@ -93,9 +93,9 @@ func setupChroot(rootfs string) (func() error, error) {
 
 	mounts := []chrootMount{
 		{rootfs, "", "tmpfs", syscall.MS_BIND, "", false, false, true},
-		{"proc", "proc", "proc", 0, "", false, false, true},
-		{"sys", "sys", "sysfs", 0, "", false, false, true},
-		{"udev", "dev", "devtmpfs", 0, "", false, false, true},
+		{"proc", "/proc", "proc", 0, "", false, false, true},
+		{"sys", "/sys", "sysfs", 0, "", false, false, true},
+		{"udev", "/dev", "devtmpfs", 0, "", false, false, true},
 		{"shm", "/dev/shm", "tmpfs", 0, "", true, false, true},
 		{"/dev/pts", "/dev/pts", "tmpfs", syscall.MS_BIND, "", true, false, true},
 		{"run", "/run", "tmpfs", 0, "", false, false, true},
