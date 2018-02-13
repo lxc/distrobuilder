@@ -26,16 +26,11 @@ func NewUbuntuHTTP() *UbuntuHTTP {
 
 // Run downloads the tarball and unpacks it.
 func (s *UbuntuHTTP) Run(URL, release, variant, arch, cacheDir string) error {
-	realArch := arch
-	if realArch == "x86_64" {
-		realArch = "amd64"
-	}
-
 	if strings.ContainsAny(release, "0123456789") {
-		s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz", release, realArch)
+		s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz", release, arch)
 	} else {
 		// if release is non-numerical, find the latest release
-		s.fname = getLatestRelease(URL, release, realArch)
+		s.fname = getLatestRelease(URL, release, arch)
 		if s.fname == "" {
 			return fmt.Errorf("Couldn't find latest release")
 		}

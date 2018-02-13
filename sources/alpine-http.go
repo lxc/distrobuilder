@@ -21,12 +21,6 @@ func NewAlpineLinuxHTTP() *AlpineLinuxHTTP {
 
 // Run runs debootstrap.
 func (s *AlpineLinuxHTTP) Run(URL, release, variant, arch, cacheDir string) error {
-	realArch := arch
-
-	if arch == "amd64" {
-		realArch = "x86_64"
-	}
-
 	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", release, arch)
 
 	// Download
@@ -34,7 +28,7 @@ func (s *AlpineLinuxHTTP) Run(URL, release, variant, arch, cacheDir string) erro
 	strings.Join(parts[0:2], ".")
 	err := shared.Download(URL+path.Join("/",
 		fmt.Sprintf("v%s", strings.Join(strings.Split(release, ".")[0:2], ".")),
-		"releases", realArch, fname), "")
+		"releases", arch, fname), "")
 	if err != nil {
 		return err
 	}

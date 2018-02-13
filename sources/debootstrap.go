@@ -25,7 +25,7 @@ func (s *Debootstrap) Run(URL, release, variant, arch, cacheDir string) error {
 		args = append(args, "--variant", variant)
 	}
 
-	if arch != arch {
+	if arch != "" {
 		args = append(args, "--arch", arch)
 	}
 

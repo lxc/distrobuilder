@@ -126,6 +126,7 @@ func run(c *cli.Context) error {
 		def shared.Definition
 		//	distro     distributions.Distribution
 		downloader sources.Downloader
+		arch       string
 	)
 
 	os.RemoveAll(c.GlobalString("cache-dir"))
@@ -141,8 +142,21 @@ func run(c *cli.Context) error {
 		return fmt.Errorf("Unsupported source downloader: %s", def.Source.Downloader)
 	}
 
+	if def.Mappings.ArchitectureMap != "" {
+		arch, err = shared.GetArch(def.Mappings.ArchitectureMap, def.Image.Arch)
+	} else if len(def.Mappings.Architectures) > 0 {
+		var ok bool
+		arch, ok = def.Mappings.Architectures[def.Image.Arch]
+		if !ok {
+			err = fmt.Errorf("Missing mapping for '%s'", def.Image.Distribution)
+		}
+	}
+	if err != nil {
+		return fmt.Errorf("Failed to determine arch name: %s", err)
+	}
+
 	err = downloader.Run(def.Source.URL, def.Image.Release, def.Image.Variant,
-		def.Image.Arch, c.GlobalString("cache-dir"))
+		arch, c.GlobalString("cache-dir"))
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
