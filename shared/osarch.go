@@ -29,7 +29,6 @@ var distroArchitecture = map[string]map[int]string{
 	"alpinelinux": alpineLinuxArchitectureNames,
 	"centos":      centosArchitectureNames,
 	"debian":      debianArchitectureNames,
-	"ubuntu":      debianArchitectureNames,
 }
 
 // GetArch returns the correct architecture name used by the specified

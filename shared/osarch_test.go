@@ -36,16 +36,6 @@ func TestGetArch(t *testing.T) {
 			"s390x",
 			"s390x",
 		},
-		{
-			"ubuntu",
-			"amd64",
-			"amd64",
-		},
-		{
-			"ubuntu",
-			"x86_64",
-			"amd64",
-		},
 	}
 
 	for i, tt := range tests {
