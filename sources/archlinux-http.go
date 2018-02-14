@@ -1,16 +1,16 @@
 package sources
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
 )
 
-// ArchLinuxHTTP represents the debootstrap downloader.
+// ArchLinuxHTTP represents the Arch Linux downloader.
 type ArchLinuxHTTP struct{}
 
 // NewArchLinuxHTTP creates a new ArchLinuxHTTP instance.
@@ -18,14 +18,27 @@ func NewArchLinuxHTTP() *ArchLinuxHTTP {
 	return &ArchLinuxHTTP{}
 }
 
-// Run runs debootstrap.
+// Run downloads an Arch Linux tarball.
 func (s *ArchLinuxHTTP) Run(URL, release, variant, arch, cacheDir string) error {
 	fname := fmt.Sprintf("archlinux-bootstrap-%s-x86_64.tar.gz", release)
+	tarball := fmt.Sprintf("%s/%s/%s", URL, release, fname)
 
-	// Download
-	err := shared.Download(URL+path.Join("/", release, fname), "")
+	err := shared.Download(tarball, "")
 	if err != nil {
 		return err
+	}
+
+	shared.Download(tarball+".sig", "")
+
+	valid, err := shared.VerifyFile(
+		filepath.Join(os.TempDir(), fname),
+		filepath.Join(os.TempDir(), fname+".sig"),
+		[]string{"4AA4767BBC9C4B1D18AE28B77F2D434B9741E8AC"})
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return errors.New("Failed to verify tarball")
 	}
 
 	err = os.MkdirAll(cacheDir, 0755)
