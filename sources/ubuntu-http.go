@@ -26,6 +26,8 @@ func NewUbuntuHTTP() *UbuntuHTTP {
 
 // Run downloads the tarball and unpacks it.
 func (s *UbuntuHTTP) Run(URL, release, variant, arch, cacheDir string) error {
+	baseURL := fmt.Sprintf("%s/releases/%s/release/", URL, release)
+
 	if strings.ContainsAny(release, "0123456789") {
 		s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz", release, arch)
 	} else {
@@ -36,9 +38,23 @@ func (s *UbuntuHTTP) Run(URL, release, variant, arch, cacheDir string) error {
 		}
 	}
 
-	err := shared.Download(
-		URL+path.Join("/", "releases", release, "release", s.fname),
-		URL+path.Join("/", "releases", release, "release", "SHA256SUMS"))
+	shared.Download(baseURL+"SHA256SUMS.gpg", "")
+	shared.Download(baseURL+"SHA256SUMS", "")
+
+	valid, err := shared.VerifyFile(
+		filepath.Join(os.TempDir(), "SHA256SUMS"),
+		filepath.Join(os.TempDir(), "SHA256SUMS.gpg"),
+		[]string{"0x46181433FBB75451", "0xD94AA3F0EFE21092"})
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return fmt.Errorf("Failed to validate tarball")
+	}
+
+	err = shared.Download(
+		baseURL+s.fname,
+		baseURL+"SHA256SUMS")
 	if err != nil {
 		return fmt.Errorf("Error downloading Ubuntu image: %s", err)
 	}
