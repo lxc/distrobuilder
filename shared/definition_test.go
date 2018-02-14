@@ -53,16 +53,6 @@ func TestValidateDefinition(t *testing.T) {
 			true,
 		},
 		{
-			"empty image.release",
-			Definition{
-				Image: DefinitionImage{
-					Distribution: "ubuntu",
-				},
-			},
-			"image.release may not be empty",
-			true,
-		},
-		{
 			"invalid source.downloader",
 			Definition{
 				Image: DefinitionImage{

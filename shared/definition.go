@@ -22,7 +22,7 @@ type DefinitionPackages struct {
 type DefinitionImage struct {
 	Description  string `yaml:"description"`
 	Distribution string `yaml:"distribution"`
-	Release      string `yaml:"release"`
+	Release      string `yaml:"release,omitempty"`
 	Arch         string `yaml:"arch,omitempty"`
 	Expiry       string `yaml:"expiry,omitempty"`
 	Variant      string `yaml:"variant,omitempty"`
@@ -97,10 +97,6 @@ func SetDefinitionDefaults(def *Definition) {
 func ValidateDefinition(def Definition) error {
 	if strings.TrimSpace(def.Image.Distribution) == "" {
 		return errors.New("image.distribution may not be empty")
-	}
-
-	if strings.TrimSpace(def.Image.Release) == "" {
-		return errors.New("image.release may not be empty")
 	}
 
 	validDownloaders := []string{
