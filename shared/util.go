@@ -1,9 +1,13 @@
 package shared
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+
+	lxd "github.com/lxc/lxd/shared"
 )
 
 // Copy copies a file.
@@ -41,4 +45,36 @@ func RunCommand(name string, arg ...string) error {
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
+}
+
+// VerifyFile verifies a file using gpg.
+func VerifyFile(signedFile, signatureFile string, keys []string) (bool, error) {
+	var out string
+
+	gpgDir := filepath.Join(os.TempDir(), "distrobuilder.gpg")
+
+	err := os.MkdirAll(gpgDir, 0700)
+	if err != nil {
+		return false, err
+	}
+	defer os.RemoveAll(gpgDir)
+
+	out, err = lxd.RunCommand("gpg", append([]string{"--homedir", gpgDir, "--recv-keys"}, keys...)...)
+	if err != nil {
+		return false, fmt.Errorf("Failed to receive keys: %s", out)
+	}
+
+	if signatureFile != "" {
+		out, err = lxd.RunCommand("gpg", "--homedir", gpgDir, "--verify", signatureFile, signedFile)
+		if err != nil {
+			return false, fmt.Errorf("Failed to verify: %s", out)
+		}
+	} else {
+		out, err = lxd.RunCommand("gpg", "--homedir", gpgDir, "--verify", signedFile)
+		if err != nil {
+			return false, fmt.Errorf("Failed to verify: %s", out)
+		}
+	}
+
+	return true, nil
 }
