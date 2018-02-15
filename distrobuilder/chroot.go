@@ -74,9 +74,7 @@ func setupChroot(rootfs string) (func() error, error) {
 		{rootfs, "", "tmpfs", syscall.MS_BIND, "", true},
 		{"proc", "/proc", "proc", 0, "", true},
 		{"sys", "/sys", "sysfs", 0, "", true},
-		{"udev", "/dev", "devtmpfs", 0, "", true},
-		{"shm", "/dev/shm", "tmpfs", 0, "", true},
-		{"/dev/pts", "/dev/pts", "tmpfs", syscall.MS_BIND, "", true},
+		{"/dev", "/dev", "devtmpfs", syscall.MS_BIND, "", true},
 		{"run", "/run", "tmpfs", 0, "", true},
 		{"tmp", "/tmp", "tmpfs", 0, "", true},
 		{"/etc/resolv.conf", "/etc/resolv.conf", "", syscall.MS_BIND, "", false},
@@ -91,8 +89,6 @@ func setupChroot(rootfs string) (func() error, error) {
 	if !ok {
 		return nil, fmt.Errorf("Failed to mount filesystems")
 	}
-
-	syscall.Mknod(filepath.Join(rootfs, "dev", "null"), 1, 3)
 
 	root, err := os.Open("/")
 	if err != nil {
