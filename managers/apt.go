@@ -12,7 +12,7 @@ func NewApt() *Manager {
 				"-y",
 			},
 			install: []string{
-				"install", "--no-install-recommends",
+				"install",
 			},
 			remove: []string{
 				"remove", "--auto-remove",
@@ -21,7 +21,7 @@ func NewApt() *Manager {
 				"update",
 			},
 			update: []string{
-				"upgrade",
+				"dist-upgrade",
 			},
 		},
 	}
