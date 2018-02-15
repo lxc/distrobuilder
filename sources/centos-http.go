@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -28,15 +29,24 @@ func NewCentOSHTTP() *CentOSHTTP {
 // Run downloads the tarball and unpacks it.
 func (s *CentOSHTTP) Run(URL, release, variant, arch, cacheDir string) error {
 	s.cacheDir = cacheDir
+	baseURL := fmt.Sprintf("%s/%s/isos/%s/", URL, strings.Split(release, ".")[0], arch)
 
 	s.fname = getRelease(URL, release, variant, arch)
 	if s.fname == "" {
 		return fmt.Errorf("Couldn't get name of iso")
 	}
 
-	err := shared.Download(
-		URL+path.Join("/", strings.Split(release, ".")[0], "isos", arch, s.fname),
-		URL+path.Join("/", strings.Split(release, ".")[0], "isos", arch, "sha256sum.txt"))
+	shared.Download(baseURL+"sha256sum.txt.asc", "")
+	valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), "sha256sum.txt.asc"), "",
+		[]string{"24C6A8A7F4A80EB5"})
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return errors.New("Failed to verify tarball")
+	}
+
+	err = shared.Download(baseURL+s.fname, "sha256sum.txt.asc")
 	if err != nil {
 		return fmt.Errorf("Error downloading CentOS image: %s", err)
 	}
