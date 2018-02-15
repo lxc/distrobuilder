@@ -52,6 +52,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/lxc/distrobuilder/shared"
 	"github.com/lxc/distrobuilder/sources"
@@ -167,16 +168,19 @@ func run(c *cli.Context) error {
 		defer os.RemoveAll(c.GlobalString("cache-dir"))
 	}
 
-	exitFunc, err := setupChroot(c.GlobalString("cache-dir"))
+	// enter chroot
+	exitChroot, err := setupChroot(filepath.Join(c.GlobalString("cache-dir"), "rootfs"))
 	if err != nil {
-		return fmt.Errorf("Failed to chroot: %s", err)
+		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}
-	defer exitFunc()
 
-	err = manageChroot(def.Packages)
+	err = managePackages(def.Packages)
 	if err != nil {
-		return fmt.Errorf("Failed to run setup: %s", err)
+		exitChroot()
+		return fmt.Errorf("Failed to manage packages: %s", err)
 	}
+
+	exitChroot()
 
 	return nil
 }

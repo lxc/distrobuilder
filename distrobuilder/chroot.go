@@ -4,80 +4,98 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"syscall"
 
 	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func prepareChroot(cacheDir string) ([]string, error) {
-	type Mount struct {
-		source string
-		target string
-		fstype string
-		flags  uintptr
-		data   string
-	}
-
-	var (
-		err      error
-		unmounts []string
-	)
-
-	mounts := []Mount{
-		{filepath.Join(cacheDir, "rootfs"), "", "tmpfs", syscall.MS_BIND, ""},
-		{"proc", "proc", "proc", 0, ""},
-		{"sys", "sys", "sysfs", 0, ""},
-		{"udev", "dev", "devtmpfs", 0, ""},
-		{"shm", "/dev/shm", "tmpfs", 0, ""},
-		{"/dev/pts", "/dev/pts", "tmpfs", syscall.MS_BIND, ""},
-		{"run", "/run", "tmpfs", 0, ""},
-		{"tmp", "/tmp", "tmpfs", 0, ""},
-	}
-
-	os.MkdirAll(filepath.Join(cacheDir, "rootfs", "dev", "pts"), 0755)
-
-	for _, mount := range mounts {
-		err = syscall.Mount(mount.source, filepath.Join(cacheDir, "rootfs", mount.target),
-			mount.fstype, mount.flags, mount.data)
-		if err != nil {
-			return unmounts, err
-		}
-		unmounts = append(unmounts, filepath.Join(cacheDir, "rootfs", mount.target))
-	}
-
-	return unmounts, nil
+type chrootMount struct {
+	source string
+	target string
+	fstype string
+	flags  uintptr
+	data   string
+	isDir  bool
 }
 
-func setupChroot(cacheDir string) (func() error, error) {
+func mountFilesystems(rootfs string, mounts []chrootMount) bool {
+	ok := true
+
+	for _, mount := range mounts {
+		if mount.isDir {
+			os.MkdirAll(filepath.Join(rootfs, mount.target), 0755)
+		} else {
+			os.Create(filepath.Join(rootfs, mount.target))
+		}
+		err := syscall.Mount(mount.source, filepath.Join(rootfs, mount.target),
+			mount.fstype, mount.flags, mount.data)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to mount '%s': %s\n", mount.source, err)
+			ok = false
+			break
+		}
+	}
+
+	return ok
+}
+
+func killChrootProcesses(rootfs string) error {
+	proc, err := os.Open(filepath.Join(rootfs, "proc"))
+	if err != nil {
+		return err
+	}
+
+	dirs, err := proc.Readdirnames(0)
+	if err != nil {
+		return err
+	}
+
+	for _, dir := range dirs {
+		match, _ := regexp.MatchString(`\d+`, dir)
+		if match {
+			link, _ := os.Readlink(filepath.Join(rootfs, "proc", dir, "root"))
+			if link == rootfs {
+				pid, _ := strconv.Atoi(dir)
+				syscall.Kill(pid, syscall.SIGKILL)
+			}
+		}
+	}
+
+	return nil
+}
+
+func setupChroot(rootfs string) (func() error, error) {
 	var err error
+
+	mounts := []chrootMount{
+		{rootfs, "", "tmpfs", syscall.MS_BIND, "", true},
+		{"proc", "/proc", "proc", 0, "", true},
+		{"sys", "/sys", "sysfs", 0, "", true},
+		{"/dev", "/dev", "devtmpfs", syscall.MS_BIND, "", true},
+		{"run", "/run", "tmpfs", 0, "", true},
+		{"tmp", "/tmp", "tmpfs", 0, "", true},
+		{"/etc/resolv.conf", "/etc/resolv.conf", "", syscall.MS_BIND, "", false},
+	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 
-	err = shared.Copy("/etc/resolv.conf", filepath.Join(cacheDir, "rootfs", "etc", "resolv.conf"))
-	if err != nil {
-		return nil, err
+	ok := mountFilesystems(rootfs, mounts)
+	if !ok {
+		return nil, fmt.Errorf("Failed to mount filesystems")
 	}
-
-	unmounts, err := prepareChroot(cacheDir)
-	if err != nil {
-		for i := len(unmounts) - 1; i >= 0; i-- {
-			syscall.Unmount(unmounts[i], 0)
-		}
-		return nil, err
-	}
-
-	syscall.Mknod(filepath.Join(cacheDir, "rootfs", "dev", "null"), 1, 3)
 
 	root, err := os.Open("/")
 	if err != nil {
 		return nil, err
 	}
 
-	err = syscall.Chroot(filepath.Join(cacheDir, "rootfs"))
+	err = syscall.Chroot(rootfs)
 	if err != nil {
 		root.Close()
 		return nil, err
@@ -89,11 +107,6 @@ func setupChroot(cacheDir string) (func() error, error) {
 	}
 
 	return func() error {
-		// unmount targets in reversed order
-		for i := len(unmounts) - 1; i >= 0; i-- {
-			syscall.Unmount(unmounts[i], 0)
-		}
-
 		defer root.Close()
 
 		err = root.Chdir()
@@ -111,11 +124,16 @@ func setupChroot(cacheDir string) (func() error, error) {
 			return err
 		}
 
+		// This will kill all processes in the chroot and allow to cleanly
+		// unmount everything.
+		killChrootProcesses(rootfs)
+		syscall.Unmount(rootfs, syscall.MNT_DETACH)
+
 		return nil
 	}, nil
 }
 
-func manageChroot(def shared.DefinitionPackages) error {
+func managePackages(def shared.DefinitionPackages) error {
 	var err error
 
 	manager := managers.Get(def.Manager)
