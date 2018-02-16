@@ -1,9 +1,9 @@
 package sources
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -11,7 +11,7 @@ import (
 	lxd "github.com/lxc/lxd/shared"
 )
 
-// AlpineLinuxHTTP represents the debootstrap downloader.
+// AlpineLinuxHTTP represents the Alpine Linux downloader.
 type AlpineLinuxHTTP struct{}
 
 // NewAlpineLinuxHTTP creates a new AlpineLinuxHTTP instance.
@@ -19,18 +19,28 @@ func NewAlpineLinuxHTTP() *AlpineLinuxHTTP {
 	return &AlpineLinuxHTTP{}
 }
 
-// Run runs debootstrap.
-func (s *AlpineLinuxHTTP) Run(URL, release, variant, arch, cacheDir string) error {
+// Run downloads an Alpine Linux mini root filesystem.
+func (s *AlpineLinuxHTTP) Run(source shared.DefinitionSource, release, variant, arch, cacheDir string) error {
 	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", release, arch)
+	tarball := fmt.Sprintf("%s/v%s/releases/%s/%s", source.URL,
+		strings.Join(strings.Split(release, ".")[0:2], "."), arch, fname)
 
-	// Download
-	parts := strings.Split("3.7.0", ".")
-	strings.Join(parts[0:2], ".")
-	err := shared.Download(URL+path.Join("/",
-		fmt.Sprintf("v%s", strings.Join(strings.Split(release, ".")[0:2], ".")),
-		"releases", arch, fname), "")
+	err := shared.Download(tarball, tarball+".sha256")
 	if err != nil {
 		return err
+	}
+
+	shared.Download(tarball+".asc", "")
+	valid, err := shared.VerifyFile(
+		filepath.Join(os.TempDir(), fname),
+		filepath.Join(os.TempDir(), fname+".asc"),
+		source.Keys,
+		source.Keyserver)
+	if err != nil {
+		return err
+	}
+	if !valid {
+		return errors.New("Failed to verify tarball")
 	}
 
 	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)

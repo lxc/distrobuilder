@@ -82,19 +82,35 @@ func Download(file, checksum string) error {
 	return nil
 }
 
+// downloadChecksum downloads or opens URL, and matches fname against the
+// sha256sums inside of the downloaded or opened file.
 func downloadChecksum(URL string, fname string) (string, error) {
-	var client http.Client
+	var (
+		client   http.Client
+		tempFile *os.File
+		err      error
+	)
 
-	tempFile, err := ioutil.TempFile(os.TempDir(), "sha256.")
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(tempFile.Name())
+	// do not re-download checksum file if it's already present
+	fi, err := os.Stat(filepath.Join(os.TempDir(), URL))
+	if err == nil && !fi.IsDir() {
+		tempFile, err = os.Open(filepath.Join(os.TempDir(), URL))
+		if err != nil {
+			return "", err
+		}
+		defer os.Remove(tempFile.Name())
+	} else {
+		tempFile, err = ioutil.TempFile(os.TempDir(), "sha256.")
+		if err != nil {
+			return "", err
+		}
+		defer os.Remove(tempFile.Name())
 
-	_, err = lxd.DownloadFileSha256(&client, "", nil, nil, "", URL, "", tempFile)
-	// ignore hash mismatch
-	if err != nil && !strings.HasPrefix(err.Error(), "Hash mismatch") {
-		return "", err
+		_, err = lxd.DownloadFileSha256(&client, "", nil, nil, "", URL, "", tempFile)
+		// ignore hash mismatch
+		if err != nil && !strings.HasPrefix(err.Error(), "Hash mismatch") {
+			return "", err
+		}
 	}
 
 	tempFile.Seek(0, 0)
@@ -102,7 +118,6 @@ func downloadChecksum(URL string, fname string) (string, error) {
 	scanner := bufio.NewScanner(tempFile)
 	for scanner.Scan() {
 		s := strings.Split(scanner.Text(), " ")
-		//if len(s) == 2 && s[1] == fmt.Sprintf("*%s", filepath.Base(fname)) {
 		matched, _ := regexp.MatchString(fmt.Sprintf(".*%s", filepath.Base(fname)), s[len(s)-1])
 		if matched {
 			return s[0], nil

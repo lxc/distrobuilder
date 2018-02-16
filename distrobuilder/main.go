@@ -158,7 +158,7 @@ func run(c *cli.Context) error {
 		return fmt.Errorf("Failed to determine arch name: %s", err)
 	}
 
-	err = downloader.Run(def.Source.URL, def.Image.Release, def.Image.Variant,
+	err = downloader.Run(def.Source, def.Image.Release, def.Image.Variant,
 		arch, c.GlobalString("cache-dir"))
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
