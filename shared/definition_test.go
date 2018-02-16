@@ -38,6 +38,7 @@ func TestValidateDefinition(t *testing.T) {
 				Source: DefinitionSource{
 					Downloader: "debootstrap",
 					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
 				},
 				Packages: DefinitionPackages{
 					Manager: "apt",
@@ -81,6 +82,21 @@ func TestValidateDefinition(t *testing.T) {
 			true,
 		},
 		{
+			"empty source.keys",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+				},
+			},
+			"source.keys may not be empty",
+			true,
+		},
+		{
 			"invalid package.manager",
 			Definition{
 				Image: DefinitionImage{
@@ -90,6 +106,7 @@ func TestValidateDefinition(t *testing.T) {
 				Source: DefinitionSource{
 					Downloader: "debootstrap",
 					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
 				},
 				Packages: DefinitionPackages{
 					Manager: "foo",

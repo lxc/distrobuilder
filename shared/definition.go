@@ -31,8 +31,10 @@ type DefinitionImage struct {
 
 // A DefinitionSource specifies the download type and location
 type DefinitionSource struct {
-	Downloader string `yaml:"downloader"`
-	URL        string `yaml:"url"`
+	Downloader string   `yaml:"downloader"`
+	URL        string   `yaml:"url"`
+	Keys       []string `yaml:"keys"`
+	Keyserver  string   `yaml:"keyserver,omitempty"`
 }
 
 // A DefinitionTargetLXC represents LXC specific files as part of the metadata.
@@ -91,6 +93,10 @@ func SetDefinitionDefaults(def *Definition) {
 	if def.Image.Expiry == "" {
 		def.Image.Expiry = "30d"
 	}
+
+	if def.Source.Keyserver == "" {
+		def.Source.Keyserver = "hkps.pool.sks-keyservers.net"
+	}
 }
 
 // ValidateDefinition validates the given Definition.
@@ -112,6 +118,10 @@ func ValidateDefinition(def Definition) error {
 
 	if strings.TrimSpace(def.Source.URL) == "" {
 		return errors.New("source.url may not be empty")
+	}
+
+	if len(def.Source.Keys) == 0 {
+		return errors.New("source.keys may not be empty")
 	}
 
 	validManagers := []string{

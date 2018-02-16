@@ -16,7 +16,7 @@ func NewDebootstrap() *Debootstrap {
 }
 
 // Run runs debootstrap.
-func (s *Debootstrap) Run(URL, release, variant, arch, cacheDir string) error {
+func (s *Debootstrap) Run(source shared.DefinitionSource, release, variant, arch, cacheDir string) error {
 	var args []string
 
 	os.RemoveAll(filepath.Join(cacheDir, "rootfs"))
@@ -31,8 +31,8 @@ func (s *Debootstrap) Run(URL, release, variant, arch, cacheDir string) error {
 
 	args = append(args, release, filepath.Join(cacheDir, "rootfs"))
 
-	if URL != "" {
-		args = append(args, URL)
+	if source.URL != "" {
+		args = append(args, source.URL)
 	}
 
 	return shared.RunCommand("debootstrap", args...)

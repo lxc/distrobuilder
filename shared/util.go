@@ -48,7 +48,7 @@ func RunCommand(name string, arg ...string) error {
 }
 
 // VerifyFile verifies a file using gpg.
-func VerifyFile(signedFile, signatureFile string, keys []string) (bool, error) {
+func VerifyFile(signedFile, signatureFile string, keys []string, keyserver string) (bool, error) {
 	var out string
 
 	gpgDir := filepath.Join(os.TempDir(), "distrobuilder.gpg")
@@ -59,7 +59,8 @@ func VerifyFile(signedFile, signatureFile string, keys []string) (bool, error) {
 	}
 	defer os.RemoveAll(gpgDir)
 
-	out, err = lxd.RunCommand("gpg", append([]string{"--homedir", gpgDir, "--recv-keys"}, keys...)...)
+	out, err = lxd.RunCommand("gpg", append([]string{
+		"--homedir", gpgDir, "--keyserver", keyserver, "--recv-keys"}, keys...)...)
 	if err != nil {
 		return false, fmt.Errorf("Failed to receive keys: %s", out)
 	}

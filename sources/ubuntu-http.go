@@ -25,14 +25,14 @@ func NewUbuntuHTTP() *UbuntuHTTP {
 }
 
 // Run downloads the tarball and unpacks it.
-func (s *UbuntuHTTP) Run(URL, release, variant, arch, cacheDir string) error {
-	baseURL := fmt.Sprintf("%s/releases/%s/release/", URL, release)
+func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, variant, arch, cacheDir string) error {
+	baseURL := fmt.Sprintf("%s/releases/%s/release/", source.URL, release)
 
 	if strings.ContainsAny(release, "0123456789") {
 		s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz", release, arch)
 	} else {
 		// if release is non-numerical, find the latest release
-		s.fname = getLatestRelease(URL, release, arch)
+		s.fname = getLatestRelease(source.URL, release, arch)
 		if s.fname == "" {
 			return fmt.Errorf("Couldn't find latest release")
 		}
@@ -44,7 +44,8 @@ func (s *UbuntuHTTP) Run(URL, release, variant, arch, cacheDir string) error {
 	valid, err := shared.VerifyFile(
 		filepath.Join(os.TempDir(), "SHA256SUMS"),
 		filepath.Join(os.TempDir(), "SHA256SUMS.gpg"),
-		[]string{"0x46181433FBB75451", "0xD94AA3F0EFE21092"})
+		source.Keys,
+		source.Keyserver)
 	if err != nil {
 		return err
 	}

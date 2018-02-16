@@ -16,12 +16,14 @@ func TestVerifyFile(t *testing.T) {
 	testdataDir := filepath.Join(wd, "..", "testdata")
 
 	keys := []string{"0x5DE8949A899C8D99"}
+	keyserver := "keys.gnupg.net"
 
 	tests := []struct {
 		name          string
 		signedFile    string
 		signatureFile string
 		keys          []string
+		keyserver     string
 		shouldFail    bool
 	}{
 		{
@@ -29,6 +31,7 @@ func TestVerifyFile(t *testing.T) {
 			filepath.Join(testdataDir, "testfile"),
 			filepath.Join(testdataDir, "testfile.sig"),
 			keys,
+			keyserver,
 			false,
 		},
 		{
@@ -36,6 +39,7 @@ func TestVerifyFile(t *testing.T) {
 			filepath.Join(testdataDir, "testfile.asc"),
 			"",
 			keys,
+			keyserver,
 			false,
 		},
 		{
@@ -43,6 +47,7 @@ func TestVerifyFile(t *testing.T) {
 			filepath.Join(testdataDir, "testfile-invalid.asc"),
 			"",
 			keys,
+			keyserver,
 			true,
 		},
 		{
@@ -50,6 +55,7 @@ func TestVerifyFile(t *testing.T) {
 			filepath.Join(testdataDir, "testfile.gpg"),
 			"",
 			keys,
+			keyserver,
 			false,
 		},
 		{
@@ -57,6 +63,7 @@ func TestVerifyFile(t *testing.T) {
 			filepath.Join(testdataDir, "testfile"),
 			filepath.Join(testdataDir, "testfile.sig"),
 			[]string{},
+			keyserver,
 			true,
 		},
 		{
@@ -64,13 +71,15 @@ func TestVerifyFile(t *testing.T) {
 			filepath.Join(testdataDir, "testfile.asc"),
 			"",
 			[]string{"0x46181433FBB75451"},
+			keyserver,
 			true,
 		},
 	}
 
 	for i, tt := range tests {
 		log.Printf("Running test #%d: %s", i, tt.name)
-		valid, err := VerifyFile(tt.signedFile, tt.signatureFile, tt.keys)
+		valid, err := VerifyFile(tt.signedFile, tt.signatureFile, tt.keys,
+			tt.keyserver)
 		if !tt.shouldFail && !valid {
 			t.Fatalf("Failed to verify: %s\n%s", tt.name, err)
 		}
