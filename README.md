@@ -1,12 +1,12 @@
 # distrobuilder
-Custom image generator
+System container image builder for LXC and LXD
 
 ## Example yaml file
 
 ```yaml
 image:
   distribution: ubuntu # required
-  release: artful # required
+  release: artful # optional
   variant: default # optional
   description: Ubuntu Artful # optional
   expiry: 30d # optional: defaults to 30d
@@ -15,6 +15,9 @@ image:
 source:
   downloader: ubuntu-http
   url: http://cdimage.ubuntu.com/ubuntu-base
+  keys:
+    - 0xCODE
+  keyserver: hkps.pool.sks-keyservers.net # optional
 
 targets:
   lxc:
