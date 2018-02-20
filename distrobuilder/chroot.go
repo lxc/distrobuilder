@@ -71,12 +71,12 @@ func setupChroot(rootfs string) (func() error, error) {
 	var err error
 
 	mounts := []chrootMount{
-		{rootfs, "", "tmpfs", syscall.MS_BIND, "", true},
-		{"proc", "/proc", "proc", 0, "", true},
-		{"sys", "/sys", "sysfs", 0, "", true},
-		{"/dev", "/dev", "devtmpfs", syscall.MS_BIND, "", true},
-		{"run", "/run", "tmpfs", 0, "", true},
-		{"tmp", "/tmp", "tmpfs", 0, "", true},
+		{rootfs, "/", "", syscall.MS_BIND, "", true},
+		{"none", "/proc", "proc", 0, "", true},
+		{"none", "/sys", "sysfs", 0, "", true},
+		{"/dev", "/dev", "", syscall.MS_BIND, "", true},
+		{"none", "/run", "tmpfs", 0, "", true},
+		{"none", "/tmp", "tmpfs", 0, "", true},
 		{"/etc/resolv.conf", "/etc/resolv.conf", "", syscall.MS_BIND, "", false},
 	}
 
