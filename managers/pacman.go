@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/monstermunchkin/distrobuilder/shared"
+	"github.com/lxc/distrobuilder/shared"
 )
 
 // NewPacman creates a new Manager instance.
