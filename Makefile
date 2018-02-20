@@ -7,8 +7,9 @@ default:
 	@echo "distrobuilder built successfully"
 
 check: default
-	go get -v -x github.com/rogpeppe/godeps
 	go get -v -x github.com/remyoudompheng/go-misc/deadcode
 	go get -v -x github.com/golang/lint/golint
 	go test -v ./...
 	golint -set_exit_status ./...
+	deadcode ./
+	go vet ./...
