@@ -1,7 +1,6 @@
 package shared
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,7 +10,7 @@ import (
 func TestVerifyFile(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {
-		fmt.Errorf("Failed to retrieve working directory: %s", err)
+		t.Fatalf("Failed to retrieve working directory: %v", err)
 	}
 	testdataDir := filepath.Join(wd, "..", "testdata")
 
