@@ -21,25 +21,63 @@ type chrootMount struct {
 	isDir  bool
 }
 
-func mountFilesystems(rootfs string, mounts []chrootMount) bool {
-	ok := true
+func setupMounts(rootfs string, mounts []chrootMount) error {
+	err := os.MkdirAll(filepath.Join(rootfs, ".distrobuilder"), 0700)
+	if err != nil {
+		return err
+	}
 
-	for _, mount := range mounts {
+	for i, mount := range mounts {
+		tmpTarget := filepath.Join(rootfs, ".distrobuilder", fmt.Sprintf("%d", i))
 		if mount.isDir {
-			os.MkdirAll(filepath.Join(rootfs, mount.target), 0755)
+			err := os.MkdirAll(tmpTarget, 0755)
+			if err != nil {
+				return err
+			}
 		} else {
-			os.Create(filepath.Join(rootfs, mount.target))
+			_, err = os.Create(tmpTarget)
+			if err != nil {
+				return err
+			}
 		}
-		err := syscall.Mount(mount.source, filepath.Join(rootfs, mount.target),
-			mount.fstype, mount.flags, mount.data)
+
+		err := syscall.Mount(mount.source, tmpTarget, mount.fstype, mount.flags, mount.data)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to mount '%s': %s\n", mount.source, err)
-			ok = false
-			break
+			return fmt.Errorf("Failed to mount '%s': %s", mount.source, err)
 		}
 	}
 
-	return ok
+	return nil
+}
+
+func moveMounts(mounts []chrootMount) error {
+	for i, mount := range mounts {
+		tmpSource := filepath.Join("/", ".distrobuilder", fmt.Sprintf("%d", i))
+		if mount.isDir {
+			err := os.MkdirAll(mount.target, 0755)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err := os.Create(mount.target)
+			if err != nil {
+				return err
+			}
+		}
+
+		err := syscall.Mount(tmpSource, mount.target, "", syscall.MS_MOVE, "")
+		if err != nil {
+			return fmt.Errorf("Failed to mount '%s': %s", mount.source, err)
+		}
+	}
+
+	err := os.RemoveAll(filepath.Join("/", ".distrobuilder"))
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 func killChrootProcesses(rootfs string) error {
@@ -71,12 +109,12 @@ func setupChroot(rootfs string) (func() error, error) {
 	var err error
 
 	mounts := []chrootMount{
-		{rootfs, "", "tmpfs", syscall.MS_BIND, "", true},
-		{"proc", "/proc", "proc", 0, "", true},
-		{"sys", "/sys", "sysfs", 0, "", true},
-		{"/dev", "/dev", "devtmpfs", syscall.MS_BIND, "", true},
-		{"run", "/run", "tmpfs", 0, "", true},
-		{"tmp", "/tmp", "tmpfs", 0, "", true},
+		{rootfs, "/", "", syscall.MS_BIND, "", true},
+		{"none", "/proc", "proc", 0, "", true},
+		{"none", "/sys", "sysfs", 0, "", true},
+		{"/dev", "/dev", "", syscall.MS_BIND, "", true},
+		{"none", "/run", "tmpfs", 0, "", true},
+		{"none", "/tmp", "tmpfs", 0, "", true},
 		{"/etc/resolv.conf", "/etc/resolv.conf", "", syscall.MS_BIND, "", false},
 	}
 
@@ -85,9 +123,9 @@ func setupChroot(rootfs string) (func() error, error) {
 		return nil, err
 	}
 
-	ok := mountFilesystems(rootfs, mounts)
-	if !ok {
-		return nil, fmt.Errorf("Failed to mount filesystems")
+	err = setupMounts(rootfs, mounts)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to mount filesystems: %v", err)
 	}
 
 	root, err := os.Open("/")
@@ -102,6 +140,11 @@ func setupChroot(rootfs string) (func() error, error) {
 	}
 
 	err = syscall.Chdir("/")
+	if err != nil {
+		return nil, err
+	}
+
+	err = moveMounts(mounts)
 	if err != nil {
 		return nil, err
 	}
