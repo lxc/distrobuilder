@@ -16,8 +16,7 @@ __attribute__((constructor)) void init(void) {
 	int ret;
 
 	if (geteuid() != 0) {
-		fprintf(stderr, "Need to run as root\n");
-		_exit(1);
+		return;
 	}
 
 	// Unshare a new mntns so our mounts don't leak
@@ -129,6 +128,11 @@ func run(c *cli.Context) error {
 		downloader sources.Downloader
 		arch       string
 	)
+
+	// Sanity checks
+	if os.Geteuid() != 0 {
+		return fmt.Errorf("You must be root to run this tool")
+	}
 
 	os.RemoveAll(c.GlobalString("cache-dir"))
 	os.MkdirAll(c.GlobalString("cache-dir"), 0755)
