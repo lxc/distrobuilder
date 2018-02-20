@@ -64,7 +64,6 @@ func init() {
 	os.Setenv("PATH", "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin")
 	os.Setenv("SHELL", "/bin/sh")
 	os.Setenv("TERM", "xterm")
-
 }
 
 func main() {
@@ -122,46 +121,49 @@ func main() {
 }
 
 func run(c *cli.Context) error {
-	var (
-		def shared.Definition
-		//	distro     distributions.Distribution
-		downloader sources.Downloader
-		arch       string
-	)
-
 	// Sanity checks
 	if os.Geteuid() != 0 {
 		return fmt.Errorf("You must be root to run this tool")
 	}
 
+	// Create our working directory
 	os.RemoveAll(c.GlobalString("cache-dir"))
 	os.MkdirAll(c.GlobalString("cache-dir"), 0755)
 
+	// Get the image definition
 	def, err := getDefinition(c.Args().Get(0))
 	if err != nil {
 		return fmt.Errorf("Error getting definition: %s", err)
 	}
 
-	downloader = sources.Get(def.Source.Downloader)
+	// Get the downloader to use for this image
+	downloader := sources.Get(def.Source.Downloader)
 	if downloader == nil {
 		return fmt.Errorf("Unsupported source downloader: %s", def.Source.Downloader)
 	}
 
+	// Translate the requested architecture name
+	var arch string
 	if def.Mappings.ArchitectureMap != "" {
+		// Translate the architecture using the requested map
 		arch, err = shared.GetArch(def.Mappings.ArchitectureMap, def.Image.Arch)
+		if err != nil {
+			return fmt.Errorf("Failed to translate the architecture name: %s", err)
+		}
 	} else if len(def.Mappings.Architectures) > 0 {
+		// Translate the architecture using a user specified mapping
 		var ok bool
 		arch, ok = def.Mappings.Architectures[def.Image.Arch]
 		if !ok {
-			err = fmt.Errorf("Missing mapping for '%s'", def.Image.Distribution)
+			// If no mapping exists, it means it doesn't need translating
+			arch = def.Image.Arch
 		}
 	} else {
+		// No map or mappings provided, just go with it as it is
 		arch = def.Image.Arch
 	}
-	if err != nil {
-		return fmt.Errorf("Failed to determine arch name: %s", err)
-	}
 
+	// Download the root filesystem
 	err = downloader.Run(def.Source, def.Image.Release, def.Image.Variant,
 		arch, c.GlobalString("cache-dir"))
 	if err != nil {
@@ -172,30 +174,28 @@ func run(c *cli.Context) error {
 		defer os.RemoveAll(c.GlobalString("cache-dir"))
 	}
 
-	// enter chroot
+	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := setupChroot(filepath.Join(c.GlobalString("cache-dir"), "rootfs"))
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}
 
+	// Install/remove/update packages
 	err = managePackages(def.Packages)
 	if err != nil {
 		exitChroot()
 		return fmt.Errorf("Failed to manage packages: %s", err)
 	}
 
+	// Unmount everything and exit the chroot
 	exitChroot()
 
 	return nil
 }
 
-func getDefinition(fname string) (shared.Definition, error) {
-	var (
-		err error
-		buf bytes.Buffer
-		def shared.Definition
-	)
-
+func getDefinition(fname string) (*shared.Definition, error) {
+	// Read the provided file, or if none was given, read from stdin
+	var buf bytes.Buffer
 	if fname == "" || fname == "-" {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
@@ -204,23 +204,31 @@ func getDefinition(fname string) (shared.Definition, error) {
 	} else {
 		f, err := os.Open(fname)
 		if err != nil {
-			return def, err
+			return nil, err
 		}
 		defer f.Close()
 
 		_, err = io.Copy(&buf, f)
 		if err != nil {
-			return def, err
+			return nil, err
 		}
 	}
 
-	err = yaml.Unmarshal(buf.Bytes(), &def)
+	// Parse the yaml input
+	var def shared.Definition
+	err := yaml.Unmarshal(buf.Bytes(), &def)
 	if err != nil {
-		return def, err
+		return nil, err
 	}
 
+	// Apply some defaults on top of the provided configuration
 	shared.SetDefinitionDefaults(&def)
-	err = shared.ValidateDefinition(def)
 
-	return def, err
+	// Validate the result
+	err = shared.ValidateDefinition(def)
+	if err != nil {
+		return nil, err
+	}
+
+	return &def, nil
 }
