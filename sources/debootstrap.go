@@ -36,5 +36,4 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, variant, arch
 	}
 
 	return shared.RunCommand("debootstrap", args...)
-
 }
