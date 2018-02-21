@@ -40,6 +40,11 @@ func Copy(src, dest string) error {
 func RunCommand(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
 
+	cmd.Env = []string{
+		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
+		"SHELL=/bin/sh",
+		"TERM=xterm"}
+
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

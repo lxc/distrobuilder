@@ -60,12 +60,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func init() {
-	os.Setenv("PATH", "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin")
-	os.Setenv("SHELL", "/bin/sh")
-	os.Setenv("TERM", "xterm")
-}
-
 func main() {
 	app := cli.NewApp()
 	app.Usage = "image generator"
