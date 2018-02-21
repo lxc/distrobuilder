@@ -53,9 +53,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/lxc/distrobuilder/generators"
+	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
 	"github.com/lxc/distrobuilder/sources"
 
+	lxd "github.com/lxc/lxd/shared"
 	cli "gopkg.in/urfave/cli.v1"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -183,6 +186,54 @@ func run(c *cli.Context) error {
 
 	// Unmount everything and exit the chroot
 	exitChroot()
+
+	if c.GlobalBool("lxc") {
+		img := image.NewLXCImage(c.GlobalString("cache-dir"), def.Image, def.Targets.LXC)
+
+		for _, file := range def.Files {
+			generator := generators.Get(file.Generator)
+			if generator == nil {
+				continue
+			}
+
+			if len(file.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, file.Releases) {
+				continue
+			}
+
+			err := generator.CreateLXCData(c.GlobalString("cache-dir"), file.Path, img)
+			if err != nil {
+				continue
+			}
+		}
+
+		img.Build()
+
+		// Clean up the chroot by restoring the orginal files.
+		generators.RestoreFiles(c.GlobalString("cache-dir"))
+	}
+
+	if c.GlobalBool("lxd") {
+		img := image.NewLXDImage(c.GlobalString("cache-dir"), def.Image)
+
+		for _, file := range def.Files {
+			if len(file.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, file.Releases) {
+				continue
+			}
+
+			generator := generators.Get(file.Generator)
+			if generator == nil {
+				continue
+			}
+
+			generator.CreateLXDData(c.GlobalString("cache-dir"), file.Path, img)
+		}
+
+		img.Build(c.GlobalBool("unified"))
+	}
+
+	if c.GlobalBool("plain") {
+		shared.Pack("plain.tar.xz", filepath.Join(c.GlobalString("cache-dir"), "rootfs"), ".")
+	}
 
 	return nil
 }
