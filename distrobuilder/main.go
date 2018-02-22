@@ -53,9 +53,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/lxc/distrobuilder/generators"
+	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
 	"github.com/lxc/distrobuilder/sources"
 
+	lxd "github.com/lxc/lxd/shared"
 	cli "gopkg.in/urfave/cli.v1"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -183,6 +186,69 @@ func run(c *cli.Context) error {
 
 	// Unmount everything and exit the chroot
 	exitChroot()
+
+	if c.GlobalBool("lxc") {
+		img := image.NewLXCImage(c.GlobalString("cache-dir"), def.Image, def.Targets.LXC)
+
+		for _, file := range def.Files {
+			generator := generators.Get(file.Generator)
+			if generator == nil {
+				return fmt.Errorf("Unknown generator '%s'", file.Generator)
+			}
+
+			if len(file.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, file.Releases) {
+				continue
+			}
+
+			err := generator.CreateLXCData(c.GlobalString("cache-dir"), file.Path, img)
+			if err != nil {
+				continue
+			}
+		}
+
+		err := img.Build()
+		if err != nil {
+			return fmt.Errorf("Failed to create LXC image: %s", err)
+		}
+
+		// Clean up the chroot by restoring the orginal files.
+		err = generators.RestoreFiles(c.GlobalString("cache-dir"))
+		if err != nil {
+			return fmt.Errorf("Failed to restore cached files: %s", err)
+		}
+	}
+
+	if c.GlobalBool("lxd") {
+		img := image.NewLXDImage(c.GlobalString("cache-dir"), def.Image)
+
+		for _, file := range def.Files {
+			if len(file.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, file.Releases) {
+				continue
+			}
+
+			generator := generators.Get(file.Generator)
+			if generator == nil {
+				return fmt.Errorf("Unknown generator '%s'", file.Generator)
+			}
+
+			err := generator.CreateLXDData(c.GlobalString("cache-dir"), file.Path, img)
+			if err != nil {
+				return fmt.Errorf("Failed to create LXD data: %s", err)
+			}
+		}
+
+		err := img.Build(c.GlobalBool("unified"))
+		if err != nil {
+			return fmt.Errorf("Failed to create LXD image: %s", err)
+		}
+	}
+
+	if c.GlobalBool("plain") {
+		err := shared.Pack("plain.tar.xz", filepath.Join(c.GlobalString("cache-dir"), "rootfs"), ".")
+		if err != nil {
+			return fmt.Errorf("Failed to create plain rootfs: %s", err)
+		}
+	}
 
 	return nil
 }
