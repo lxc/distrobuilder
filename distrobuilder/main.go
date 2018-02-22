@@ -193,7 +193,7 @@ func run(c *cli.Context) error {
 		for _, file := range def.Files {
 			generator := generators.Get(file.Generator)
 			if generator == nil {
-				continue
+				return fmt.Errorf("Unknown generator '%s'", file.Generator)
 			}
 
 			if len(file.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, file.Releases) {
@@ -206,10 +206,16 @@ func run(c *cli.Context) error {
 			}
 		}
 
-		img.Build()
+		err := img.Build()
+		if err != nil {
+			return fmt.Errorf("Failed to create LXC image: %s", err)
+		}
 
 		// Clean up the chroot by restoring the orginal files.
-		generators.RestoreFiles(c.GlobalString("cache-dir"))
+		err = generators.RestoreFiles(c.GlobalString("cache-dir"))
+		if err != nil {
+			return fmt.Errorf("Failed to restore cached files: %s", err)
+		}
 	}
 
 	if c.GlobalBool("lxd") {
@@ -222,17 +228,26 @@ func run(c *cli.Context) error {
 
 			generator := generators.Get(file.Generator)
 			if generator == nil {
-				continue
+				return fmt.Errorf("Unknown generator '%s'", file.Generator)
 			}
 
-			generator.CreateLXDData(c.GlobalString("cache-dir"), file.Path, img)
+			err := generator.CreateLXDData(c.GlobalString("cache-dir"), file.Path, img)
+			if err != nil {
+				return fmt.Errorf("Failed to create LXD data: %s", err)
+			}
 		}
 
-		img.Build(c.GlobalBool("unified"))
+		err := img.Build(c.GlobalBool("unified"))
+		if err != nil {
+			return fmt.Errorf("Failed to create LXD image: %s", err)
+		}
 	}
 
 	if c.GlobalBool("plain") {
-		shared.Pack("plain.tar.xz", filepath.Join(c.GlobalString("cache-dir"), "rootfs"), ".")
+		err := shared.Pack("plain.tar.xz", filepath.Join(c.GlobalString("cache-dir"), "rootfs"), ".")
+		if err != nil {
+			return fmt.Errorf("Failed to create plain rootfs: %s", err)
+		}
 	}
 
 	return nil

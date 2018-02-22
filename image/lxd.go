@@ -65,9 +65,7 @@ func NewLXDImage(cacheDir string, imageDef shared.DefinitionImage) *LXDImage {
 
 // Build creates a LXD image.
 func (l *LXDImage) Build(unified bool) error {
-	var err error
-
-	err = l.createMetadata()
+	err := l.createMetadata()
 	if err != nil {
 		return nil
 	}
@@ -83,7 +81,10 @@ func (l *LXDImage) Build(unified bool) error {
 		return err
 	}
 
-	file.Write(data)
+	_, err = file.Write(data)
+	if err != nil {
+		return fmt.Errorf("Failed to write metadata: %s", err)
+	}
 
 	if unified {
 		var fname string
@@ -118,11 +119,13 @@ func (l *LXDImage) Build(unified bool) error {
 func (l *LXDImage) createMetadata() error {
 	var err error
 
+	// Get the arch ID of the provided architecture.
 	ID, err := osarch.ArchitectureId(l.definition.Arch)
 	if err != nil {
 		return err
 	}
 
+	// Get the "proper" name of the architecture.
 	arch, err := osarch.ArchitectureName(ID)
 	if err != nil {
 		return err

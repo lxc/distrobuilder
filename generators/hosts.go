@@ -15,7 +15,7 @@ type HostsGenerator struct{}
 func (g HostsGenerator) CreateLXCData(cacheDir, path string, img *image.LXCImage) error {
 	rootfs := filepath.Join(cacheDir, "rootfs")
 
-	// store original file
+	// Store original file
 	err := StoreFile(cacheDir, path)
 	if err != nil {
 		return err
@@ -28,8 +28,10 @@ func (g HostsGenerator) CreateLXCData(cacheDir, path string, img *image.LXCImage
 	}
 	defer file.Close()
 
+	// Append hosts entry
 	file.WriteString("127.0.0.1\tLXC_NAME\n")
 
+	// Add hostname path to LXC's templates file
 	return img.AddTemplate(path)
 }
 
@@ -37,11 +39,13 @@ func (g HostsGenerator) CreateLXCData(cacheDir, path string, img *image.LXCImage
 func (g HostsGenerator) CreateLXDData(cacheDir, path string, img *image.LXDImage) error {
 	templateDir := filepath.Join(cacheDir, "templates")
 
+	// Create templates path
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
 		return err
 	}
 
+	// Create hosts template
 	file, err := os.Create(filepath.Join(templateDir, "hosts.tpl"))
 	if err != nil {
 		return err
@@ -54,6 +58,7 @@ func (g HostsGenerator) CreateLXDData(cacheDir, path string, img *image.LXDImage
 	}
 	defer hostsFile.Close()
 
+	// Copy old content, and append LXD specific entry
 	io.Copy(file, hostsFile)
 	file.WriteString("127.0.0.1\t{{ container.name }}\n")
 

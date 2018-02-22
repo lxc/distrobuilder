@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -14,20 +15,26 @@ type HostnameGenerator struct{}
 func (g HostnameGenerator) CreateLXCData(cacheDir, path string, img *image.LXCImage) error {
 	rootfs := filepath.Join(cacheDir, "rootfs")
 
-	// store original file
+	// Store original file
 	err := StoreFile(cacheDir, path)
 	if err != nil {
 		return err
 	}
 
+	// Create new hostname file
 	file, err := os.Create(filepath.Join(rootfs, path))
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	file.WriteString("LXC_NAME\n")
+	// Write LXC specific string to the hostname file
+	_, err = file.WriteString("LXC_NAME\n")
+	if err != nil {
+		return fmt.Errorf("Failed to write to hostname file: %s", err)
+	}
 
+	// Add hostname path to LXC's templates file
 	return img.AddTemplate(path)
 }
 
@@ -46,7 +53,10 @@ func (g HostnameGenerator) CreateLXDData(cacheDir, path string, img *image.LXDIm
 	}
 	defer file.Close()
 
-	file.WriteString("{{ container.name }}\n")
+	_, err = file.WriteString("{{ container.name }}\n")
+	if err != nil {
+		return fmt.Errorf("Failed to write to hostname file: %s", err)
+	}
 
 	img.Metadata.Templates[path] = image.LXDMetadataTemplate{
 		Template: "hostname.tpl",
