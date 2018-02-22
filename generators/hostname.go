@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/lxc/distrobuilder/image"
+	"github.com/lxc/lxd/shared/api"
 )
 
 // HostnameGenerator represents the Hostname generator.
@@ -58,7 +59,8 @@ func (g HostnameGenerator) CreateLXDData(cacheDir, path string, img *image.LXDIm
 		return fmt.Errorf("Failed to write to hostname file: %s", err)
 	}
 
-	img.Metadata.Templates[path] = image.LXDMetadataTemplate{
+	// Add to LXD templates
+	img.Metadata.Templates[path] = &api.ImageMetadataTemplate{
 		Template: "hostname.tpl",
 		When: []string{
 			"create",

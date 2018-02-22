@@ -7,47 +7,17 @@ import (
 	"time"
 
 	"github.com/lxc/distrobuilder/shared"
+	"github.com/lxc/lxd/shared/api"
 	"github.com/lxc/lxd/shared/osarch"
 	pongo2 "gopkg.in/flosch/pongo2.v3"
 	yaml "gopkg.in/yaml.v2"
 )
 
-// A LXDMetadataTemplate represents template information.
-type LXDMetadataTemplate struct {
-	Template   string                       `yaml:"template"`
-	When       []string                     `yaml:"when"`
-	Trigger    string                       `yaml:"trigger,omitempty"`
-	Path       string                       `yaml:"path,omitempty"`
-	Container  map[string]string            `yaml:"container,omitempty"`
-	Config     map[string]string            `yaml:"config,omitempty"`
-	Devices    map[string]map[string]string `yaml:"devices,omitempty"`
-	Properties map[string]string            `yaml:"properties,omitempty"`
-	CreateOnly bool                         `yaml:"create_only,omitempty"`
-}
-
-// A LXDMetadataProperties represents properties of the LXD image.
-type LXDMetadataProperties struct {
-	Architecture string `yaml:"architecture"`
-	Description  string `yaml:"description"`
-	OS           string `yaml:"os"`
-	Release      string `yaml:"release"`
-	Variant      string `yaml:"variant,omitempty"`
-	Name         string `yaml:"name,omitempty"`
-}
-
-// A LXDMetadata represents meta information about the LXD image.
-type LXDMetadata struct {
-	Architecture string                         `yaml:"architecture"`
-	CreationDate int64                          `yaml:"creation_date"`
-	Properties   LXDMetadataProperties          `yaml:"properties,omitempty"`
-	Templates    map[string]LXDMetadataTemplate `yaml:"templates,omitempty"`
-}
-
 // A LXDImage represents a LXD image.
 type LXDImage struct {
 	cacheDir     string
 	creationDate time.Time
-	Metadata     LXDMetadata
+	Metadata     api.ImageMetadata
 	definition   shared.DefinitionImage
 }
 
@@ -56,8 +26,9 @@ func NewLXDImage(cacheDir string, imageDef shared.DefinitionImage) *LXDImage {
 	return &LXDImage{
 		cacheDir,
 		time.Now(),
-		LXDMetadata{
-			Templates: make(map[string]LXDMetadataTemplate),
+		api.ImageMetadata{
+			Properties: make(map[string]string),
+			Templates:  make(map[string]*api.ImageMetadataTemplate),
 		},
 		imageDef,
 	}
@@ -133,18 +104,16 @@ func (l *LXDImage) createMetadata() error {
 
 	l.Metadata.Architecture = arch
 	l.Metadata.CreationDate = l.creationDate.Unix()
-	l.Metadata.Properties = LXDMetadataProperties{
-		Architecture: arch,
-		OS:           l.definition.Distribution,
-		Release:      l.definition.Release,
-	}
+	l.Metadata.Properties["architecture"] = arch
+	l.Metadata.Properties["os"] = l.definition.Distribution
+	l.Metadata.Properties["release"] = l.definition.Release
 
-	l.Metadata.Properties.Description, err = l.renderTemplate(l.definition.Description)
+	l.Metadata.Properties["description"], err = l.renderTemplate(l.definition.Description)
 	if err != err {
 		return nil
 	}
 
-	l.Metadata.Properties.Name, err = l.renderTemplate(l.definition.Name)
+	l.Metadata.Properties["name"], err = l.renderTemplate(l.definition.Name)
 	if err != nil {
 		return err
 	}

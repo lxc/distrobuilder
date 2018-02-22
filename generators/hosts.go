@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/lxc/distrobuilder/image"
+	"github.com/lxc/lxd/shared/api"
 )
 
 // HostsGenerator represents the hosts generator.
@@ -62,8 +63,8 @@ func (g HostsGenerator) CreateLXDData(cacheDir, path string, img *image.LXDImage
 	io.Copy(file, hostsFile)
 	file.WriteString("127.0.0.1\t{{ container.name }}\n")
 
-	img.Metadata.Templates[path] = image.LXDMetadataTemplate{
-		Template: "hostname.tpl",
+	img.Metadata.Templates[path] = &api.ImageMetadataTemplate{
+		Template: "hosts.tpl",
 		When: []string{
 			"create",
 			"copy",
