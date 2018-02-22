@@ -8,6 +8,7 @@ import (
 	p "path"
 
 	"github.com/lxc/distrobuilder/image"
+	"github.com/lxc/lxd/shared"
 )
 
 // Generator interface.
@@ -36,7 +37,7 @@ func StoreFile(cacheDir, path string) error {
 		return err
 	}
 
-	return os.Rename(filepath.Join(cacheDir, "rootfs", path),
+	return shared.FileCopy(filepath.Join(cacheDir, "rootfs", path),
 		filepath.Join(cacheDir, "tmp", path))
 }
 
