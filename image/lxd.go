@@ -118,6 +118,8 @@ func (l *LXDImage) createMetadata() error {
 		return err
 	}
 
+	l.Metadata.ExpiryDate = shared.GetExpiryDate(l.creationDate, l.definition.Expiry).Unix()
+
 	return err
 }
 

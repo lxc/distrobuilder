@@ -92,10 +92,12 @@ func (l *LXCImage) createMetadata() error {
 		return fmt.Errorf("Error writing 'create-message': %s", err)
 	}
 
-	err = l.writeMetadata(filepath.Join(metaDir, "expiry"), string(time.Now().Unix()))
+	err = l.writeMetadata(filepath.Join(metaDir, "expiry"),
+		string(shared.GetExpiryDate(time.Now(), l.definition.Expiry).Unix()))
 	if err != nil {
 		return fmt.Errorf("Error writing 'expiry': %s", err)
 	}
+
 	var excludesUser string
 
 	filepath.Walk(filepath.Join(l.cacheDir, "rootfs", "dev"),
