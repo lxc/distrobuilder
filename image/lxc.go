@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	pongo2 "gopkg.in/flosch/pongo2.v3"
+
 	"github.com/lxc/distrobuilder/shared"
 )
 
@@ -134,7 +136,16 @@ func (l *LXCImage) writeMetadata(filename, content string) error {
 	}
 	defer file.Close()
 
-	_, err = file.WriteString(content)
+	ctx := pongo2.Context{
+		"image": l.definition,
+	}
+
+	out, err := renderTemplate(content, ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = file.WriteString(out)
 	if err != nil {
 		return err
 	}
