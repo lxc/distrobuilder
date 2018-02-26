@@ -61,8 +61,13 @@ func (l *LXDImage) Build(unified bool) error {
 		var fname string
 		paths := []string{"rootfs", "templates", "metadata.yaml"}
 
+		ctx := pongo2.Context{
+			"image":         l.definition,
+			"creation_date": l.creationDate.Format("20060201_1504"),
+		}
+
 		if l.definition.Name != "" {
-			fname, _ = l.renderTemplate(l.definition.Name)
+			fname, _ = renderTemplate(l.definition.Name, ctx)
 		} else {
 			fname = "lxd"
 		}
@@ -108,12 +113,17 @@ func (l *LXDImage) createMetadata() error {
 	l.Metadata.Properties["os"] = l.definition.Distribution
 	l.Metadata.Properties["release"] = l.definition.Release
 
-	l.Metadata.Properties["description"], err = l.renderTemplate(l.definition.Description)
+	ctx := pongo2.Context{
+		"image":         l.definition,
+		"creation_date": l.creationDate.Format("20060201_1504"),
+	}
+
+	l.Metadata.Properties["description"], err = renderTemplate(l.definition.Description, ctx)
 	if err != err {
 		return nil
 	}
 
-	l.Metadata.Properties["name"], err = l.renderTemplate(l.definition.Name)
+	l.Metadata.Properties["name"], err = renderTemplate(l.definition.Name, ctx)
 	if err != nil {
 		return err
 	}
@@ -121,31 +131,4 @@ func (l *LXDImage) createMetadata() error {
 	l.Metadata.ExpiryDate = shared.GetExpiryDate(l.creationDate, l.definition.Expiry).Unix()
 
 	return err
-}
-
-func (l *LXDImage) renderTemplate(template string) (string, error) {
-	var (
-		err error
-		ret string
-	)
-
-	ctx := pongo2.Context{
-		"arch":          l.definition.Arch,
-		"os":            l.definition.Distribution,
-		"release":       l.definition.Release,
-		"variant":       l.definition.Variant,
-		"creation_date": l.creationDate.Format("20060201_1504"),
-	}
-
-	tpl, err := pongo2.FromString(template)
-	if err != nil {
-		return ret, err
-	}
-
-	ret, err = tpl.Execute(ctx)
-	if err != nil {
-		return ret, err
-	}
-
-	return ret, err
 }
