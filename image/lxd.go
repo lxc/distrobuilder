@@ -63,7 +63,7 @@ func (l *LXDImage) Build(unified bool) error {
 
 		ctx := pongo2.Context{
 			"image":         l.definition,
-			"creation_date": l.creationDate,
+			"creation_date": l.creationDate.Format("20060201_1504"),
 		}
 
 		if l.definition.Name != "" {
@@ -115,7 +115,7 @@ func (l *LXDImage) createMetadata() error {
 
 	ctx := pongo2.Context{
 		"image":         l.definition,
-		"creation_date": l.creationDate,
+		"creation_date": l.creationDate.Format("20060201_1504"),
 	}
 
 	l.Metadata.Properties["description"], err = renderTemplate(l.definition.Description, ctx)
