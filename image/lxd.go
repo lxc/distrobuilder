@@ -57,33 +57,44 @@ func (l *LXDImage) Build(unified bool) error {
 		return fmt.Errorf("Failed to write metadata: %s", err)
 	}
 
-	if unified {
-		var fname string
-		paths := []string{"rootfs", "templates", "metadata.yaml"}
+	paths := []string{"metadata.yaml"}
 
+	// Only include templates directory in the tarball if it's present.
+	info, err := os.Stat(filepath.Join(l.cacheDir, "templates"))
+	if err == nil && info.IsDir() {
+		paths = append(paths, "templates")
+	}
+
+	if unified {
 		ctx := pongo2.Context{
 			"image":         l.definition,
 			"creation_date": l.creationDate.Format("20060201_1504"),
 		}
 
+		var fname string
 		if l.definition.Name != "" {
+			// Use a custom name for the unified tarball.
 			fname, _ = renderTemplate(l.definition.Name, ctx)
 		} else {
+			// Default name for the unified tarball.
 			fname = "lxd"
 		}
 
+		paths = append(paths, "rootfs")
 		err = shared.Pack(fmt.Sprintf("%s.tar.xz", fname), l.cacheDir, paths...)
 		if err != nil {
 			return err
 		}
 	} else {
+		// Create rootfs as squashfs.
 		err = shared.RunCommand("mksquashfs", filepath.Join(l.cacheDir, "rootfs"),
 			"rootfs.squashfs", "-noappend")
 		if err != nil {
 			return err
 		}
 
-		err = shared.Pack("lxd.tar.xz", l.cacheDir, "templates", "metadata.yaml")
+		// Create metadata tarball.
+		err = shared.Pack("lxd.tar.xz", l.cacheDir, paths...)
 		if err != nil {
 			return err
 		}
@@ -107,9 +118,12 @@ func (l *LXDImage) createMetadata() error {
 		return err
 	}
 
-	l.Metadata.Architecture = arch
+	// Use proper architecture name from now on.
+	l.definition.Arch = arch
+
+	l.Metadata.Architecture = l.definition.Arch
 	l.Metadata.CreationDate = l.creationDate.Unix()
-	l.Metadata.Properties["architecture"] = arch
+	l.Metadata.Properties["architecture"] = l.definition.Arch
 	l.Metadata.Properties["os"] = l.definition.Distribution
 	l.Metadata.Properties["release"] = l.definition.Release
 
