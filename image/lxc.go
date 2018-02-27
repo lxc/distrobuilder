@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	lxd "github.com/lxc/lxd/shared"
 	pongo2 "gopkg.in/flosch/pongo2.v3"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -102,15 +103,24 @@ func (l *LXCImage) createMetadata() error {
 
 	var excludesUser string
 
-	filepath.Walk(filepath.Join(l.cacheDir, "rootfs", "dev"),
-		func(path string, info os.FileInfo, err error) error {
-			if info.Mode()&os.ModeDevice != 0 {
-				excludesUser += fmt.Sprintf("%s\n",
-					strings.TrimPrefix(path, filepath.Join(l.cacheDir, "rootfs")))
-			}
+	if lxd.PathExists(filepath.Join(l.cacheDir, "rootfs", "dev")) {
+		err := filepath.Walk(filepath.Join(l.cacheDir, "rootfs", "dev"),
+			func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
 
-			return nil
-		})
+				if info.Mode()&os.ModeDevice != 0 {
+					excludesUser += fmt.Sprintf("%s\n",
+						strings.TrimPrefix(path, filepath.Join(l.cacheDir, "rootfs")))
+				}
+
+				return nil
+			})
+		if err != nil {
+			return fmt.Errorf("Error while walking /dev: %s", err)
+		}
+	}
 
 	err = l.writeMetadata(filepath.Join(metaDir, "excludes-user"), excludesUser)
 	if err != nil {
@@ -121,8 +131,14 @@ func (l *LXCImage) createMetadata() error {
 }
 
 func (l *LXCImage) packMetadata() error {
-	err := shared.Pack("meta.tar.xz", filepath.Join(l.cacheDir, "metadata"), "config",
-		"config-user", "create-message", "expiry", "templates", "excludes-user")
+	files := []string{"config", "config-user", "create-message", "expiry",
+		"excludes-user"}
+
+	if lxd.PathExists(filepath.Join(l.cacheDir, "metadata", "templates")) {
+		files = append(files, "templates")
+	}
+
+	err := shared.Pack("meta.tar.xz", filepath.Join(l.cacheDir, "metadata"), files...)
 	if err != nil {
 		return fmt.Errorf("Failed to create metadata: %s", err)
 	}
