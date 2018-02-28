@@ -87,8 +87,15 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 		return "", err
 	}
 
-	out, err := lxd.RunCommand("gpg", append([]string{
-		"--homedir", gpgDir, "--keyserver", keyserver, "--recv-keys"}, keys...)...)
+	args := []string{"--homedir", gpgDir}
+
+	if keyserver != "" {
+		args = append(args, "--keyserver", keyserver)
+	}
+
+	args = append(args, append([]string{"--recv-keys"}, keys...)...)
+
+	out, err := lxd.RunCommand("gpg", args...)
 	if err != nil {
 		os.RemoveAll(gpgDir)
 		return "", fmt.Errorf("Failed to create keyring: %s", out)

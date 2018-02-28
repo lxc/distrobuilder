@@ -81,7 +81,7 @@ func TestVerifyFile(t *testing.T) {
 			"",
 			keys,
 			"",
-			true,
+			false,
 		},
 	}
 
@@ -109,15 +109,14 @@ func TestCreateGPGKeyring(t *testing.T) {
 	}
 	os.RemoveAll(gpgDir)
 
-	// This should fail running the gpg command.
+	// This shouldn't fail either.
 	gpgDir, err = CreateGPGKeyring("", []string{})
-	if err == nil {
-		t.Fatal("Expected to fail")
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	// The gpgDir directory should've have been cleaned up. Check this.
-	if lxd.PathExists(gpgDir) {
-		os.RemoveAll(gpgDir)
-		t.Fatal("Failed to clean up gpg directory")
+	if !lxd.PathExists(gpgDir) {
+		t.Fatalf("Failed to create gpg directory: %s", gpgDir)
 	}
+	os.RemoveAll(gpgDir)
 }
