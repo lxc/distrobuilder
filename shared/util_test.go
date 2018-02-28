@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	lxd "github.com/lxc/lxd/shared"
 )
 
 func TestVerifyFile(t *testing.T) {
@@ -73,6 +75,14 @@ func TestVerifyFile(t *testing.T) {
 			keyserver,
 			true,
 		},
+		{
+			"missing keyserver",
+			filepath.Join(testdataDir, "testfile.asc"),
+			"",
+			keys,
+			"",
+			true,
+		},
 	}
 
 	for i, tt := range tests {
@@ -85,5 +95,29 @@ func TestVerifyFile(t *testing.T) {
 		if tt.shouldFail && valid {
 			t.Fatalf("Expected to fail: %s", tt.name)
 		}
+	}
+}
+
+func TestCreateGPGKeyring(t *testing.T) {
+	gpgDir, err := CreateGPGKeyring("pgp.mit.edu", []string{"0x5DE8949A899C8D99"})
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	if !lxd.PathExists(gpgDir) {
+		t.Fatalf("Failed to create gpg directory: %s", gpgDir)
+	}
+	os.RemoveAll(gpgDir)
+
+	// This should fail running the gpg command.
+	gpgDir, err = CreateGPGKeyring("", []string{})
+	if err == nil {
+		t.Fatal("Expected to fail")
+	}
+
+	// The gpgDir directory should've have been cleaned up. Check this.
+	if lxd.PathExists(gpgDir) {
+		os.RemoveAll(gpgDir)
+		t.Fatal("Failed to clean up gpg directory")
 	}
 }
