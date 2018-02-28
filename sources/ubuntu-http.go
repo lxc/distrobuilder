@@ -25,7 +25,7 @@ func NewUbuntuHTTP() *UbuntuHTTP {
 }
 
 // Run downloads the tarball and unpacks it.
-func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, variant, arch, cacheDir string) error {
+func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, cacheDir string) error {
 	baseURL := fmt.Sprintf("%s/releases/%s/release/", source.URL, release)
 
 	if strings.ContainsAny(release, "0123456789") {

@@ -16,13 +16,13 @@ func NewDebootstrap() *Debootstrap {
 }
 
 // Run runs debootstrap.
-func (s *Debootstrap) Run(source shared.DefinitionSource, release, variant, arch, cacheDir string) error {
+func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, cacheDir string) error {
 	var args []string
 
 	os.RemoveAll(filepath.Join(cacheDir, "rootfs"))
 
-	if variant != "" {
-		args = append(args, "--variant", variant)
+	if source.Variant != "" {
+		args = append(args, "--variant", source.Variant)
 	}
 
 	if arch != "" {
