@@ -29,6 +29,16 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, variant, arch
 		args = append(args, "--arch", arch)
 	}
 
+	if len(source.Keys) > 0 {
+		gpgDir, err := shared.CreateGPGKeyring(source.Keyserver, source.Keys)
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(gpgDir)
+
+		args = append(args, "--keyring", filepath.Join(gpgDir, "pubring.kbx"))
+	}
+
 	args = append(args, release, filepath.Join(cacheDir, "rootfs"))
 
 	if source.URL != "" {
