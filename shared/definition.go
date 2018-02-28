@@ -33,7 +33,7 @@ type DefinitionImage struct {
 type DefinitionSource struct {
 	Downloader string   `yaml:"downloader"`
 	URL        string   `yaml:"url"`
-	Keys       []string `yaml:"keys"`
+	Keys       []string `yaml:"keys,omitempty"`
 	Keyserver  string   `yaml:"keyserver,omitempty"`
 }
 
@@ -118,10 +118,6 @@ func ValidateDefinition(def Definition) error {
 
 	if strings.TrimSpace(def.Source.URL) == "" {
 		return errors.New("source.url may not be empty")
-	}
-
-	if len(def.Source.Keys) == 0 {
-		return errors.New("source.keys may not be empty")
 	}
 
 	validManagers := []string{
