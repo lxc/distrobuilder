@@ -6,6 +6,10 @@ os:
 go:
   - 1.9
 
+before_install:
+  - "sudo apt-get -qq update"
+  - "sudo apt-get install -y squashfs-tools"
+
 install:
   - "mkdir -p $GOPATH/github.com/lxc"
   - "rsync -az ${TRAVIS_BUILD_DIR}/ $HOME/gopath/src/github.com/lxc/distrobuilder/"
