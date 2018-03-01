@@ -45,5 +45,16 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, cacheDi
 		args = append(args, source.URL)
 	}
 
+	// If source.Suite is set, create a symlink in /usr/share/debootstrap/scripts
+	// pointing release to source.Suite.
+	if source.Suite != "" {
+		link := filepath.Join("/usr/share/debootstrap/scripts", release)
+		err := os.Symlink(source.Suite, link)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(link)
+	}
+
 	return shared.RunCommand("debootstrap", args...)
 }

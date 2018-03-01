@@ -36,6 +36,7 @@ type DefinitionSource struct {
 	Keys       []string `yaml:"keys,omitempty"`
 	Keyserver  string   `yaml:"keyserver,omitempty"`
 	Variant    string   `yaml:"variant,omitempty"`
+	Suite      string   `yaml:"suite,omitempty"`
 }
 
 // A DefinitionTargetLXC represents LXC specific files as part of the metadata.
