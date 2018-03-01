@@ -133,8 +133,8 @@ func TestLXDCreateMetadata(t *testing.T) {
 		},
 		{
 			"CreationDate",
-			string(image.Metadata.CreationDate),
-			string(image.creationDate.Unix()),
+			fmt.Sprint(image.Metadata.CreationDate),
+			fmt.Sprint(image.creationDate.Unix()),
 		},
 		{
 			"Properties[architecture]",
