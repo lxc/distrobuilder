@@ -66,6 +66,23 @@ func TestValidateDefinition(t *testing.T) {
 			false,
 		},
 		{
+			"valid Defintion without source.url",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+				},
+				Packages: DefinitionPackages{
+					Manager: "apt",
+				},
+			},
+			"",
+			false,
+		},
+		{
 			"empty image.distribution",
 			Definition{},
 			"image.distribution may not be empty",
@@ -83,20 +100,6 @@ func TestValidateDefinition(t *testing.T) {
 				},
 			},
 			"source.downloader must be one of .+",
-			true,
-		},
-		{
-			"empty source.url",
-			Definition{
-				Image: DefinitionImage{
-					Distribution: "ubuntu",
-					Release:      "artful",
-				},
-				Source: DefinitionSource{
-					Downloader: "debootstrap",
-				},
-			},
-			"source.url may not be empty",
 			true,
 		},
 		{

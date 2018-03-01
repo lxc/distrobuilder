@@ -32,7 +32,7 @@ type DefinitionImage struct {
 // A DefinitionSource specifies the download type and location
 type DefinitionSource struct {
 	Downloader string   `yaml:"downloader"`
-	URL        string   `yaml:"url"`
+	URL        string   `yaml:"url,omitempty"`
 	Keys       []string `yaml:"keys,omitempty"`
 	Keyserver  string   `yaml:"keyserver,omitempty"`
 	Variant    string   `yaml:"variant,omitempty"`
@@ -120,10 +120,6 @@ func ValidateDefinition(def Definition) error {
 	}
 	if !shared.StringInSlice(strings.TrimSpace(def.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
-	}
-
-	if strings.TrimSpace(def.Source.URL) == "" {
-		return errors.New("source.url may not be empty")
 	}
 
 	validManagers := []string{
