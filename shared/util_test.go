@@ -75,14 +75,6 @@ func TestVerifyFile(t *testing.T) {
 			keyserver,
 			true,
 		},
-		{
-			"missing keyserver",
-			filepath.Join(testdataDir, "testfile.asc"),
-			"",
-			keys,
-			"",
-			false,
-		},
 	}
 
 	for i, tt := range tests {
