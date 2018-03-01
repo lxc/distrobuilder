@@ -96,7 +96,7 @@ func (l *LXCImage) createMetadata() error {
 	}
 
 	err = l.writeMetadata(filepath.Join(metaDir, "expiry"),
-		string(shared.GetExpiryDate(time.Now(), l.definition.Expiry).Unix()))
+		fmt.Sprint(shared.GetExpiryDate(time.Now(), l.definition.Expiry).Unix()))
 	if err != nil {
 		return fmt.Errorf("Error writing 'expiry': %s", err)
 	}
