@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	lxd "github.com/lxc/lxd/shared"
 )
 
 func TestVerifyFile(t *testing.T) {
@@ -86,4 +88,27 @@ func TestVerifyFile(t *testing.T) {
 			t.Fatalf("Expected to fail: %s", tt.name)
 		}
 	}
+}
+
+func TestCreateGPGKeyring(t *testing.T) {
+	gpgDir, err := CreateGPGKeyring("pgp.mit.edu", []string{"0x5DE8949A899C8D99"})
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	if !lxd.PathExists(gpgDir) {
+		t.Fatalf("Failed to create gpg directory: %s", gpgDir)
+	}
+	os.RemoveAll(gpgDir)
+
+	// This shouldn't fail either.
+	gpgDir, err = CreateGPGKeyring("", []string{})
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	if !lxd.PathExists(gpgDir) {
+		t.Fatalf("Failed to create gpg directory: %s", gpgDir)
+	}
+	os.RemoveAll(gpgDir)
 }

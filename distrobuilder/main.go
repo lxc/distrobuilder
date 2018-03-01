@@ -161,8 +161,8 @@ func run(c *cli.Context) error {
 	}
 
 	// Download the root filesystem
-	err = downloader.Run(def.Source, def.Image.Release, def.Image.Variant,
-		arch, c.GlobalString("cache-dir"))
+	err = downloader.Run(def.Source, def.Image.Release, arch,
+		c.GlobalString("cache-dir"))
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}

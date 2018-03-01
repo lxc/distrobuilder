@@ -19,7 +19,7 @@ func NewArchLinuxHTTP() *ArchLinuxHTTP {
 }
 
 // Run downloads an Arch Linux tarball.
-func (s *ArchLinuxHTTP) Run(source shared.DefinitionSource, release, variant, arch, cacheDir string) error {
+func (s *ArchLinuxHTTP) Run(source shared.DefinitionSource, release, arch, cacheDir string) error {
 	fname := fmt.Sprintf("archlinux-bootstrap-%s-x86_64.tar.gz", release)
 	tarball := fmt.Sprintf("%s/%s/%s", source.URL, release, fname)
 

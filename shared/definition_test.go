@@ -48,6 +48,41 @@ func TestValidateDefinition(t *testing.T) {
 			false,
 		},
 		{
+			"valid Definition without source.keys",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+				},
+				Packages: DefinitionPackages{
+					Manager: "apt",
+				},
+			},
+			"",
+			false,
+		},
+		{
+			"valid Defintion without source.url",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+				},
+				Packages: DefinitionPackages{
+					Manager: "apt",
+				},
+			},
+			"",
+			false,
+		},
+		{
 			"empty image.distribution",
 			Definition{},
 			"image.distribution may not be empty",
@@ -65,35 +100,6 @@ func TestValidateDefinition(t *testing.T) {
 				},
 			},
 			"source.downloader must be one of .+",
-			true,
-		},
-		{
-			"empty source.url",
-			Definition{
-				Image: DefinitionImage{
-					Distribution: "ubuntu",
-					Release:      "artful",
-				},
-				Source: DefinitionSource{
-					Downloader: "debootstrap",
-				},
-			},
-			"source.url may not be empty",
-			true,
-		},
-		{
-			"empty source.keys",
-			Definition{
-				Image: DefinitionImage{
-					Distribution: "ubuntu",
-					Release:      "artful",
-				},
-				Source: DefinitionSource{
-					Downloader: "debootstrap",
-					URL:        "https://ubuntu.com",
-				},
-			},
-			"source.keys may not be empty",
 			true,
 		},
 		{
@@ -123,6 +129,9 @@ func TestValidateDefinition(t *testing.T) {
 		if !tt.shouldFail && err != nil {
 			t.Fatalf("Validation failed: %s", err)
 		} else if tt.shouldFail {
+			if err == nil {
+				t.Fatal("Expected failure")
+			}
 			match, _ := regexp.MatchString(tt.expected, err.Error())
 			if !match {
 				t.Fatalf("Validation failed: Expected '%s', got '%s'", tt.expected, err.Error())
