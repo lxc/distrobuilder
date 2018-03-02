@@ -38,7 +38,7 @@ func lxcCacheDir() string {
 }
 
 func setupLXC() *LXCImage {
-	return NewLXCImage(lxcCacheDir(), lxcImageDef, lxcTarget)
+	return NewLXCImage(lxcCacheDir(), "", lxcCacheDir(), lxcImageDef, lxcTarget)
 }
 
 func teardownLXC() {
@@ -46,7 +46,7 @@ func teardownLXC() {
 }
 
 func TestNewLXCImage(t *testing.T) {
-	image := NewLXCImage(lxcCacheDir(), lxcImageDef, lxcTarget)
+	image := NewLXCImage(lxcCacheDir(), "", lxcCacheDir(), lxcImageDef, lxcTarget)
 	defer teardownLXC()
 
 	if image.cacheDir != lxcCacheDir() {

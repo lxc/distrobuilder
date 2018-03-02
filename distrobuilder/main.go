@@ -53,132 +53,129 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/lxc/distrobuilder/generators"
-	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
 	"github.com/lxc/distrobuilder/sources"
+	"github.com/spf13/cobra"
 
-	lxd "github.com/lxc/lxd/shared"
-	cli "gopkg.in/urfave/cli.v1"
 	yaml "gopkg.in/yaml.v2"
 )
 
+type cmdGlobal struct {
+	flagCleanup  bool
+	flagCacheDir string
+
+	definition *shared.Definition
+	sourceDir  string
+	targetDir  string
+}
+
 func main() {
-	app := cli.NewApp()
-	app.Usage = "image generator"
-	// INPUT can either be a file or '-' which reads from stdin
-	app.ArgsUsage = "[file|-]"
-	app.HideHelp = true
-	app.Action = run
-	app.Flags = []cli.Flag{
-		cli.BoolFlag{
-			Name:  "lxc",
-			Usage: "generate LXC image files",
-		},
-		cli.BoolFlag{
-			Name:  "lxd",
-			Usage: "generate LXD image files",
-		},
-		cli.BoolFlag{
-			Name:  "plain",
-			Usage: "generate plain chroot",
-		},
-		cli.BoolTFlag{
-			Name:  "unified",
-			Usage: "output unified tarball for LXD images",
-		},
-		cli.BoolTFlag{
-			Name:  "cleanup",
-			Usage: "clean up build directory",
-		},
-		cli.StringFlag{
-			Name:  "template-dir",
-			Usage: "template directory",
-		},
-		cli.StringFlag{
-			Name:  "cache-dir",
-			Usage: "cache directory",
-			Value: "/var/cache/distrobuilder",
-		},
-		cli.StringFlag{
-			Name:  "compression",
-			Usage: "compression algorithm",
-		},
-		cli.BoolFlag{
-			Name:  "help, h",
-			Usage: "show help",
-		},
+	// Sanity checks
+	if os.Geteuid() != 0 {
+		fmt.Fprintln(os.Stderr, "You must be root to run this tool")
+		os.Exit(1)
 	}
 
-	err := app.Run(os.Args)
+	// Global flags
+	globalCmd := cmdGlobal{}
+
+	app := &cobra.Command{
+		Use:                "distrobuilder",
+		Short:              "System container image builder for LXC and LXD",
+		PersistentPostRunE: globalCmd.postRun,
+	}
+
+	app.PersistentFlags().BoolVar(&globalCmd.flagCleanup, "cleanup", true,
+		"Clean up cache directory")
+	app.PersistentFlags().StringVar(&globalCmd.flagCacheDir, "cache-dir",
+		"/var/cache/distrobuilder", "Cache directory")
+
+	// LXC sub-commands
+	LXCCmd := cmdLXC{global: &globalCmd}
+	app.AddCommand(LXCCmd.commandBuild())
+	app.AddCommand(LXCCmd.commandPack())
+
+	// LXD sub-commands
+	LXDCmd := cmdLXD{global: &globalCmd}
+	app.AddCommand(LXDCmd.commandBuild())
+	app.AddCommand(LXDCmd.commandPack())
+
+	// build-dir sub-command
+	buildDirCmd := cmdBuildDir{global: &globalCmd}
+	app.AddCommand(buildDirCmd.command())
+
+	// Run the main command and handle errors
+	err := app.Execute()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(c *cli.Context) error {
-	// Sanity checks
-	if os.Geteuid() != 0 {
-		return fmt.Errorf("You must be root to run this tool")
+func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
+	c.sourceDir = c.flagCacheDir
+
+	if len(args) > 1 {
+		// Create and set target directory if provided
+		err := os.MkdirAll(args[1], 0755)
+		if err != nil {
+			return err
+		}
+		c.targetDir = args[1]
+	} else {
+		// Use current working directory as target
+		var err error
+		c.targetDir, err = os.Getwd()
+		if err != nil {
+			return err
+		}
 	}
 
-	// Create our working directory
-	os.RemoveAll(c.GlobalString("cache-dir"))
-	os.MkdirAll(c.GlobalString("cache-dir"), 0755)
+	// Special case: Make cache directory the target directory. This will
+	// prevent us from having to move ${cacheDir}/rootfs to ${target}/rootfs.
+	if cmd.CalledAs() == "build-dir" {
+		c.flagCacheDir = c.targetDir
+	}
+
+	var err error
 
 	// Get the image definition
-	def, err := getDefinition(c.Args().Get(0))
+	c.definition, err = getDefinition(args[0])
 	if err != nil {
-		return fmt.Errorf("Error getting definition: %s", err)
+		return err
+	}
+
+	// Get the mapped architecture
+	arch, err := getMappedArchitecture(c.definition)
+	if err != nil {
+		return err
+	}
+
+	// Create cache directory
+	err = os.MkdirAll(c.flagCacheDir, 0755)
+	if err != nil {
+		return err
 	}
 
 	// Get the downloader to use for this image
-	downloader := sources.Get(def.Source.Downloader)
+	downloader := sources.Get(c.definition.Source.Downloader)
 	if downloader == nil {
-		return fmt.Errorf("Unsupported source downloader: %s", def.Source.Downloader)
-	}
-
-	// Translate the requested architecture name
-	var arch string
-	if def.Mappings.ArchitectureMap != "" {
-		// Translate the architecture using the requested map
-		arch, err = shared.GetArch(def.Mappings.ArchitectureMap, def.Image.Arch)
-		if err != nil {
-			return fmt.Errorf("Failed to translate the architecture name: %s", err)
-		}
-	} else if len(def.Mappings.Architectures) > 0 {
-		// Translate the architecture using a user specified mapping
-		var ok bool
-		arch, ok = def.Mappings.Architectures[def.Image.Arch]
-		if !ok {
-			// If no mapping exists, it means it doesn't need translating
-			arch = def.Image.Arch
-		}
-	} else {
-		// No map or mappings provided, just go with it as it is
-		arch = def.Image.Arch
+		return fmt.Errorf("Unsupported source downloader: %s", c.definition.Source.Downloader)
 	}
 
 	// Download the root filesystem
-	err = downloader.Run(def.Source, def.Image.Release, arch,
-		c.GlobalString("cache-dir"))
+	err = downloader.Run(c.definition.Source, c.definition.Image.Release, arch, c.flagCacheDir)
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
 
-	if c.GlobalBoolT("cleanup") {
-		defer os.RemoveAll(c.GlobalString("cache-dir"))
-	}
-
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := setupChroot(filepath.Join(c.GlobalString("cache-dir"), "rootfs"))
+	exitChroot, err := setupChroot(filepath.Join(c.flagCacheDir, "rootfs"))
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}
 
 	// Install/remove/update packages
-	err = managePackages(def.Packages)
+	err = managePackages(c.definition.Packages)
 	if err != nil {
 		exitChroot()
 		return fmt.Errorf("Failed to manage packages: %s", err)
@@ -187,67 +184,39 @@ func run(c *cli.Context) error {
 	// Unmount everything and exit the chroot
 	exitChroot()
 
-	if c.GlobalBool("lxc") {
-		img := image.NewLXCImage(c.GlobalString("cache-dir"), def.Image, def.Targets.LXC)
+	return nil
+}
 
-		for _, file := range def.Files {
-			generator := generators.Get(file.Generator)
-			if generator == nil {
-				return fmt.Errorf("Unknown generator '%s'", file.Generator)
-			}
+func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
+	var err error
 
-			if len(file.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, file.Releases) {
-				continue
-			}
+	c.sourceDir = args[1]
 
-			err := generator.CreateLXCData(c.GlobalString("cache-dir"), file.Path, img)
-			if err != nil {
-				continue
-			}
-		}
-
-		err := img.Build()
-		if err != nil {
-			return fmt.Errorf("Failed to create LXC image: %s", err)
-		}
-
-		// Clean up the chroot by restoring the orginal files.
-		err = generators.RestoreFiles(c.GlobalString("cache-dir"))
-		if err != nil {
-			return fmt.Errorf("Failed to restore cached files: %s", err)
-		}
+	c.targetDir = "."
+	if len(args) == 3 {
+		c.targetDir = args[2]
 	}
 
-	if c.GlobalBool("lxd") {
-		img := image.NewLXDImage(c.GlobalString("cache-dir"), def.Image)
-
-		for _, file := range def.Files {
-			if len(file.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, file.Releases) {
-				continue
-			}
-
-			generator := generators.Get(file.Generator)
-			if generator == nil {
-				return fmt.Errorf("Unknown generator '%s'", file.Generator)
-			}
-
-			err := generator.CreateLXDData(c.GlobalString("cache-dir"), file.Path, img)
-			if err != nil {
-				return fmt.Errorf("Failed to create LXD data: %s", err)
-			}
-		}
-
-		err := img.Build(c.GlobalBool("unified"))
-		if err != nil {
-			return fmt.Errorf("Failed to create LXD image: %s", err)
-		}
+	// Get the image definition
+	c.definition, err = getDefinition(args[0])
+	if err != nil {
+		return err
 	}
 
-	if c.GlobalBool("plain") {
-		err := shared.Pack("plain.tar.xz", filepath.Join(c.GlobalString("cache-dir"), "rootfs"), ".")
-		if err != nil {
-			return fmt.Errorf("Failed to create plain rootfs: %s", err)
-		}
+	// Create cache directory
+	err = os.MkdirAll(c.flagCacheDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
+	// Clean up cache directory if needed. Do not clean up if the build-dir
+	// sub-command is run since the directory is needed for further actions.
+	if c.flagCleanup && cmd.CalledAs() != "build-dir" {
+		return os.RemoveAll(c.flagCacheDir)
 	}
 
 	return nil
@@ -291,4 +260,30 @@ func getDefinition(fname string) (*shared.Definition, error) {
 	}
 
 	return &def, nil
+}
+
+func getMappedArchitecture(def *shared.Definition) (string, error) {
+	var arch string
+
+	if def.Mappings.ArchitectureMap != "" {
+		// Translate the architecture using the requested map
+		var err error
+		arch, err = shared.GetArch(def.Mappings.ArchitectureMap, def.Image.Arch)
+		if err != nil {
+			return "", fmt.Errorf("Failed to translate the architecture name: %s", err)
+		}
+	} else if len(def.Mappings.Architectures) > 0 {
+		// Translate the architecture using a user specified mapping
+		var ok bool
+		arch, ok = def.Mappings.Architectures[def.Image.Arch]
+		if !ok {
+			// If no mapping exists, it means it doesn't need translating
+			arch = def.Image.Arch
+		}
+	} else {
+		// No map or mappings provided, just go with it as it is
+		arch = def.Image.Arch
+	}
+
+	return arch, nil
 }

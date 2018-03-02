@@ -15,6 +15,8 @@ import (
 
 // A LXDImage represents a LXD image.
 type LXDImage struct {
+	sourceDir    string
+	targetDir    string
 	cacheDir     string
 	creationDate time.Time
 	Metadata     api.ImageMetadata
@@ -22,8 +24,11 @@ type LXDImage struct {
 }
 
 // NewLXDImage returns a LXDImage.
-func NewLXDImage(cacheDir string, imageDef shared.DefinitionImage) *LXDImage {
+func NewLXDImage(sourceDir, targetDir, cacheDir string,
+	imageDef shared.DefinitionImage) *LXDImage {
 	return &LXDImage{
+		sourceDir,
+		targetDir,
 		cacheDir,
 		time.Now(),
 		api.ImageMetadata{
@@ -41,7 +46,7 @@ func (l *LXDImage) Build(unified bool) error {
 		return nil
 	}
 
-	file, err := os.Create(filepath.Join(l.cacheDir, "metadata.yaml"))
+	file, err := os.Create(filepath.Join(l.sourceDir, "metadata.yaml"))
 	if err != nil {
 		return err
 	}
@@ -60,7 +65,7 @@ func (l *LXDImage) Build(unified bool) error {
 	paths := []string{"metadata.yaml"}
 
 	// Only include templates directory in the tarball if it's present.
-	info, err := os.Stat(filepath.Join(l.cacheDir, "templates"))
+	info, err := os.Stat(filepath.Join(l.sourceDir, "templates"))
 	if err == nil && info.IsDir() {
 		paths = append(paths, "templates")
 	}
@@ -81,20 +86,21 @@ func (l *LXDImage) Build(unified bool) error {
 		}
 
 		paths = append(paths, "rootfs")
-		err = shared.Pack(fmt.Sprintf("%s.tar.xz", fname), l.cacheDir, paths...)
+		err = shared.Pack(filepath.Join(l.targetDir, fmt.Sprintf("%s.tar.xz", fname)),
+			l.sourceDir, paths...)
 		if err != nil {
 			return err
 		}
 	} else {
 		// Create rootfs as squashfs.
-		err = shared.RunCommand("mksquashfs", filepath.Join(l.cacheDir, "rootfs"),
-			"rootfs.squashfs", "-noappend")
+		err = shared.RunCommand("mksquashfs", filepath.Join(l.sourceDir, "rootfs"),
+			filepath.Join(l.targetDir, "rootfs.squashfs"), "-noappend")
 		if err != nil {
 			return err
 		}
 
 		// Create metadata tarball.
-		err = shared.Pack("lxd.tar.xz", l.cacheDir, paths...)
+		err = shared.Pack(filepath.Join(l.targetDir, "lxd.tar.xz"), l.sourceDir, paths...)
 		if err != nil {
 			return err
 		}

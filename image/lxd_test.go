@@ -36,7 +36,7 @@ func setupLXD(t *testing.T) *LXDImage {
 		t.Fatalf("Failed to create templates directory: %s", err)
 	}
 
-	image := NewLXDImage(cacheDir, lxdImageDef)
+	image := NewLXDImage(cacheDir, "", cacheDir, lxdImageDef)
 
 	// Override creation date
 	image.creationDate = time.Date(2006, 1, 2, 3, 4, 5, 0, time.UTC)
