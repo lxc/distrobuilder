@@ -50,8 +50,8 @@ func RestoreFiles(cacheDir string) error {
 			return nil
 		}
 
-		return os.Rename(path,
-			filepath.Join(cacheDir, "rootfs", strings.TrimPrefix(path, cacheDir)))
+		return os.Rename(path, filepath.Join(cacheDir, "rootfs",
+			strings.TrimPrefix(path, filepath.Join(cacheDir, "tmp"))))
 	}
 
 	return filepath.Walk(filepath.Join(cacheDir, "tmp"), f)
