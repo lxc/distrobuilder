@@ -34,8 +34,8 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 		RunE: c.run,
 	}
 
-	c.cmdBuild.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create")
-	c.cmdBuild.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use")
+	c.cmdBuild.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create"+"``")
+	c.cmdBuild.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use"+"``")
 
 	return c.cmdBuild
 }

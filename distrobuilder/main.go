@@ -53,11 +53,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
+
 	"github.com/lxc/distrobuilder/shared"
 	"github.com/lxc/distrobuilder/sources"
-	"github.com/spf13/cobra"
-
-	yaml "gopkg.in/yaml.v2"
 )
 
 type cmdGlobal struct {
@@ -70,25 +70,26 @@ type cmdGlobal struct {
 }
 
 func main() {
-	// Sanity checks
-	if os.Geteuid() != 0 {
-		fmt.Fprintln(os.Stderr, "You must be root to run this tool")
-		os.Exit(1)
-	}
-
 	// Global flags
 	globalCmd := cmdGlobal{}
 
 	app := &cobra.Command{
-		Use:                "distrobuilder",
-		Short:              "System container image builder for LXC and LXD",
+		Use:   "distrobuilder",
+		Short: "System container image builder for LXC and LXD",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			// Sanity checks
+			if os.Geteuid() != 0 {
+				fmt.Fprintln(os.Stderr, "You must be root to run this tool")
+				os.Exit(1)
+			}
+		},
 		PersistentPostRunE: globalCmd.postRun,
 	}
 
 	app.PersistentFlags().BoolVar(&globalCmd.flagCleanup, "cleanup", true,
 		"Clean up cache directory")
 	app.PersistentFlags().StringVar(&globalCmd.flagCacheDir, "cache-dir",
-		"/var/cache/distrobuilder", "Cache directory")
+		"/var/cache/distrobuilder", "Cache directory"+"``")
 
 	// LXC sub-commands
 	LXCCmd := cmdLXC{global: &globalCmd}
