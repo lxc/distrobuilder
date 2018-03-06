@@ -25,7 +25,7 @@ func TestHostsGeneratorCreateLXCData(t *testing.T) {
 		Release:      "artful",
 	}
 
-	image := image.NewLXCImage(cacheDir, definition, shared.DefinitionTargetLXC{})
+	image := image.NewLXCImage(cacheDir, "", cacheDir, definition, shared.DefinitionTargetLXC{})
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "etc"), 0755)
 	if err != nil {
@@ -70,7 +70,7 @@ func TestHostsGeneratorCreateLXDData(t *testing.T) {
 		Release:      "artful",
 	}
 
-	image := image.NewLXDImage(cacheDir, definition)
+	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "etc"), 0755)
 	if err != nil {

@@ -15,15 +15,19 @@ import (
 
 // LXCImage represents a LXC image.
 type LXCImage struct {
+	sourceDir  string
+	targetDir  string
 	cacheDir   string
 	definition shared.DefinitionImage
 	target     shared.DefinitionTargetLXC
 }
 
 // NewLXCImage returns a LXCImage.
-func NewLXCImage(cacheDir string, definition shared.DefinitionImage,
+func NewLXCImage(sourceDir, targetDir, cacheDir string, definition shared.DefinitionImage,
 	target shared.DefinitionTargetLXC) *LXCImage {
 	img := LXCImage{
+		sourceDir,
+		targetDir,
 		cacheDir,
 		definition,
 		target,
@@ -69,7 +73,7 @@ func (l *LXCImage) Build() error {
 		return err
 	}
 
-	err = shared.Pack("rootfs.tar.xz", l.cacheDir, "rootfs")
+	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar.xz"), l.sourceDir, "rootfs")
 	if err != nil {
 		return err
 	}
@@ -103,8 +107,8 @@ func (l *LXCImage) createMetadata() error {
 
 	var excludesUser string
 
-	if lxd.PathExists(filepath.Join(l.cacheDir, "rootfs", "dev")) {
-		err := filepath.Walk(filepath.Join(l.cacheDir, "rootfs", "dev"),
+	if lxd.PathExists(filepath.Join(l.sourceDir, "rootfs", "dev")) {
+		err := filepath.Walk(filepath.Join(l.sourceDir, "rootfs", "dev"),
 			func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					return err
@@ -112,7 +116,7 @@ func (l *LXCImage) createMetadata() error {
 
 				if info.Mode()&os.ModeDevice != 0 {
 					excludesUser += fmt.Sprintf("%s\n",
-						strings.TrimPrefix(path, filepath.Join(l.cacheDir, "rootfs")))
+						strings.TrimPrefix(path, filepath.Join(l.sourceDir, "rootfs")))
 				}
 
 				return nil
@@ -138,7 +142,8 @@ func (l *LXCImage) packMetadata() error {
 		files = append(files, "templates")
 	}
 
-	err := shared.Pack("meta.tar.xz", filepath.Join(l.cacheDir, "metadata"), files...)
+	err := shared.Pack(filepath.Join(l.targetDir, "meta.tar.xz"),
+		filepath.Join(l.cacheDir, "metadata"), files...)
 	if err != nil {
 		return fmt.Errorf("Failed to create metadata: %s", err)
 	}
