@@ -186,6 +186,7 @@ func (d *Definition) Validate() error {
 		"archlinux-http",
 		"centos-http",
 		"debootstrap",
+		"fedora-http",
 		"ubuntu-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {

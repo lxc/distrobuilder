@@ -10,16 +10,18 @@ type Downloader interface {
 // Get returns a Downloader.
 func Get(name string) Downloader {
 	switch name {
-	case "ubuntu-http":
-		return NewUbuntuHTTP()
-	case "debootstrap":
-		return NewDebootstrap()
+	case "alpinelinux-http":
+		return NewAlpineLinuxHTTP()
 	case "archlinux-http":
 		return NewArchLinuxHTTP()
 	case "centos-http":
 		return NewCentOSHTTP()
-	case "alpinelinux-http":
-		return NewAlpineLinuxHTTP()
+	case "debootstrap":
+		return NewDebootstrap()
+	case "fedora-http":
+		return NewFedoraHTTP()
+	case "ubuntu-http":
+		return NewUbuntuHTTP()
 	}
 
 	return nil
