@@ -36,7 +36,7 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, cacheDi
 		}
 		defer os.RemoveAll(gpgDir)
 
-		args = append(args, "--keyring", filepath.Join(gpgDir, "pubring.kbx"))
+		args = append(args, "--keyring", filepath.Join(gpgDir, "pubring.gpg"))
 	}
 
 	args = append(args, release, filepath.Join(cacheDir, "rootfs"))
