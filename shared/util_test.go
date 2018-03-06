@@ -3,6 +3,7 @@ package shared
 import (
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -91,24 +92,25 @@ func TestVerifyFile(t *testing.T) {
 }
 
 func TestCreateGPGKeyring(t *testing.T) {
-	gpgDir, err := CreateGPGKeyring("pgp.mit.edu", []string{"0x5DE8949A899C8D99"})
+	keyring, err := CreateGPGKeyring("pgp.mit.edu", []string{"0x5DE8949A899C8D99"})
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	if !lxd.PathExists(gpgDir) {
-		t.Fatalf("Failed to create gpg directory: %s", gpgDir)
+	if !lxd.PathExists(keyring) {
+		t.Fatalf("Failed to create GPG keyring '%s'", keyring)
 	}
-	os.RemoveAll(gpgDir)
+	os.RemoveAll(path.Dir(keyring))
 
-	// This shouldn't fail either.
-	gpgDir, err = CreateGPGKeyring("", []string{})
+	// This shouldn't fail, but the keyring file should not be created since
+	// there are no keys to be exported.
+	keyring, err = CreateGPGKeyring("", []string{})
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	if !lxd.PathExists(gpgDir) {
-		t.Fatalf("Failed to create gpg directory: %s", gpgDir)
+	if lxd.PathExists(keyring) {
+		t.Fatalf("GPG keyring '%s' should not exist", keyring)
 	}
-	os.RemoveAll(gpgDir)
+	os.RemoveAll(path.Dir(keyring))
 }
