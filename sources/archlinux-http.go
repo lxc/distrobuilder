@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 // ArchLinuxHTTP represents the Arch Linux downloader.

@@ -2,13 +2,13 @@ package generators
 
 import (
 	"os"
+	p "path"
 	"path/filepath"
 	"strings"
 
-	p "path"
+	"github.com/lxc/lxd/shared"
 
 	"github.com/lxc/distrobuilder/image"
-	"github.com/lxc/lxd/shared"
 )
 
 // Generator interface.

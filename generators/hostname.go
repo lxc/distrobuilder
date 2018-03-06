@@ -5,8 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/lxd/shared/api"
+
+	"github.com/lxc/distrobuilder/image"
 )
 
 // HostnameGenerator represents the Hostname generator.

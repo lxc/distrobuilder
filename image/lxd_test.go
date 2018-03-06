@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 var lxdImageDef = shared.DefinitionImage{

@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 // AlpineLinuxHTTP represents the Alpine Linux downloader.
