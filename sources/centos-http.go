@@ -17,8 +17,7 @@ import (
 
 // CentOSHTTP represents the CentOS HTTP downloader.
 type CentOSHTTP struct {
-	fname    string
-	cacheDir string
+	fname string
 }
 
 // NewCentOSHTTP creates a new CentOSHTTP instance.
@@ -27,8 +26,7 @@ func NewCentOSHTTP() *CentOSHTTP {
 }
 
 // Run downloads the tarball and unpacks it.
-func (s *CentOSHTTP) Run(source shared.DefinitionSource, release, arch, cacheDir string) error {
-	s.cacheDir = cacheDir
+func (s *CentOSHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
 	baseURL := fmt.Sprintf("%s/%s/isos/%s/", source.URL, strings.Split(release, ".")[0], arch)
 
 	s.fname = getRelease(source.URL, release, source.Variant, arch)
@@ -51,15 +49,13 @@ func (s *CentOSHTTP) Run(source shared.DefinitionSource, release, arch, cacheDir
 		return fmt.Errorf("Error downloading CentOS image: %s", err)
 	}
 
-	return s.unpack(filepath.Join(os.TempDir(), s.fname), cacheDir)
+	return s.unpack(filepath.Join(os.TempDir(), s.fname), rootfsDir)
 }
 
-func (s CentOSHTTP) unpack(filePath, cacheDir string) error {
+func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
 	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
 	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
 	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
-
-	os.RemoveAll(filepath.Join(cacheDir, "rootfs"))
 
 	os.MkdirAll(isoDir, 0755)
 	os.MkdirAll(tempRootDir, 0755)
@@ -84,7 +80,14 @@ func (s CentOSHTTP) unpack(filePath, cacheDir string) error {
 	}
 	defer syscall.Unmount(tempRootDir, 0)
 
-	err = shared.RunCommand("rsync", "-qa", tempRootDir, cacheDir)
+	// Remove rootfsDir otherwise rsync will copy the content into the directory
+	// itself
+	err = os.RemoveAll(rootfsDir)
+	if err != nil {
+		return err
+	}
+
+	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/", rootfsDir)
 	if err != nil {
 		return err
 	}

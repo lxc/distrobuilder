@@ -26,7 +26,7 @@ func NewUbuntuHTTP() *UbuntuHTTP {
 }
 
 // Run downloads the tarball and unpacks it.
-func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, cacheDir string) error {
+func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
 	baseURL := fmt.Sprintf("%s/releases/%s/release/", source.URL, release)
 
 	if strings.ContainsAny(release, "0123456789") {
@@ -61,7 +61,7 @@ func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, cacheDir
 		return fmt.Errorf("Error downloading Ubuntu image: %s", err)
 	}
 
-	return s.unpack(filepath.Join(os.TempDir(), s.fname), filepath.Join(cacheDir, "rootfs"))
+	return s.unpack(filepath.Join(os.TempDir(), s.fname), rootfsDir)
 }
 
 func (s UbuntuHTTP) unpack(filePath, rootDir string) error {

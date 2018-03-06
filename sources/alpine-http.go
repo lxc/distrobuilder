@@ -21,7 +21,7 @@ func NewAlpineLinuxHTTP() *AlpineLinuxHTTP {
 }
 
 // Run downloads an Alpine Linux mini root filesystem.
-func (s *AlpineLinuxHTTP) Run(source shared.DefinitionSource, release, arch, cacheDir string) error {
+func (s *AlpineLinuxHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
 	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", release, arch)
 	tarball := fmt.Sprintf("%s/v%s/releases/%s/%s", source.URL,
 		strings.Join(strings.Split(release, ".")[0:2], "."), arch, fname)
@@ -44,13 +44,8 @@ func (s *AlpineLinuxHTTP) Run(source shared.DefinitionSource, release, arch, cac
 		return errors.New("Failed to verify tarball")
 	}
 
-	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
-	if err != nil {
-		return err
-	}
-
 	// Unpack
-	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), filepath.Join(cacheDir, "rootfs"), false, false)
+	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false)
 	if err != nil {
 		return err
 	}
