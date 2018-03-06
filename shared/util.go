@@ -101,6 +101,14 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 		return "", fmt.Errorf("Failed to create keyring: %s", out)
 	}
 
+	// Export keys to support gpg1 and gpg2
+	out, err = lxd.RunCommand("gpg", "--homedir", gpgDir, "--export", "--output",
+		filepath.Join(gpgDir, "pubring.gpg"))
+	if err != nil {
+		os.RemoveAll(gpgDir)
+		return "", fmt.Errorf("Failed to export keyring: %s", out)
+	}
+
 	return gpgDir, nil
 }
 
