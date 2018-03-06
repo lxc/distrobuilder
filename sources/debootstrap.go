@@ -2,6 +2,7 @@ package sources
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -30,13 +31,13 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, cacheDi
 	}
 
 	if len(source.Keys) > 0 {
-		gpgDir, err := shared.CreateGPGKeyring(source.Keyserver, source.Keys)
+		keyring, err := shared.CreateGPGKeyring(source.Keyserver, source.Keys)
 		if err != nil {
 			return err
 		}
-		defer os.RemoveAll(gpgDir)
+		defer os.RemoveAll(path.Base(keyring))
 
-		args = append(args, "--keyring", filepath.Join(gpgDir, "pubring.gpg"))
+		args = append(args, "--keyring", keyring)
 	}
 
 	args = append(args, release, filepath.Join(cacheDir, "rootfs"))

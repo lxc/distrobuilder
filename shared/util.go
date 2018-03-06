@@ -3,8 +3,10 @@ package shared
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -57,19 +59,22 @@ func RunCommand(name string, arg ...string) error {
 
 // VerifyFile verifies a file using gpg.
 func VerifyFile(signedFile, signatureFile string, keys []string, keyserver string) (bool, error) {
-	gpgDir, err := CreateGPGKeyring(keyserver, keys)
+	keyring, err := CreateGPGKeyring(keyserver, keys)
 	if err != nil {
 		return false, err
 	}
+	gpgDir := path.Dir(keyring)
 	defer os.RemoveAll(gpgDir)
 
 	if signatureFile != "" {
-		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--verify", signatureFile, signedFile)
+		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
+			"--verify", signatureFile, signedFile)
 		if err != nil {
 			return false, fmt.Errorf("Failed to verify: %s", out)
 		}
 	} else {
-		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--verify", signedFile)
+		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
+			"--verify", signedFile)
 		if err != nil {
 			return false, fmt.Errorf("Failed to verify: %s", out)
 		}
@@ -80,9 +85,12 @@ func VerifyFile(signedFile, signatureFile string, keys []string, keyserver strin
 
 // CreateGPGKeyring creates a new GPG keyring.
 func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
-	gpgDir := filepath.Join(os.TempDir(), "distrobuilder.gpg")
+	gpgDir, err := ioutil.TempDir(os.TempDir(), "distrobuilder.")
+	if err != nil {
+		return "", fmt.Errorf("Failed to create gpg directory: %s", err)
+	}
 
-	err := os.MkdirAll(gpgDir, 0700)
+	err = os.MkdirAll(gpgDir, 0700)
 	if err != nil {
 		return "", err
 	}
@@ -103,13 +111,13 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 
 	// Export keys to support gpg1 and gpg2
 	out, err = lxd.RunCommand("gpg", "--homedir", gpgDir, "--export", "--output",
-		filepath.Join(gpgDir, "pubring.gpg"))
+		filepath.Join(gpgDir, "distrobuilder.gpg"))
 	if err != nil {
 		os.RemoveAll(gpgDir)
 		return "", fmt.Errorf("Failed to export keyring: %s", out)
 	}
 
-	return gpgDir, nil
+	return filepath.Join(gpgDir, "distrobuilder.gpg"), nil
 }
 
 // Pack creates an xz-compressed tarball.
