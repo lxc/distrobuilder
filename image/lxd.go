@@ -6,11 +6,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/lxc/distrobuilder/shared"
 	"github.com/lxc/lxd/shared/api"
 	"github.com/lxc/lxd/shared/osarch"
-	pongo2 "gopkg.in/flosch/pongo2.v3"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/flosch/pongo2.v3"
+	"gopkg.in/yaml.v2"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 // A LXDImage represents a LXD image.

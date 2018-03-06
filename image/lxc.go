@@ -8,7 +8,7 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
-	pongo2 "gopkg.in/flosch/pongo2.v3"
+	"gopkg.in/flosch/pongo2.v3"
 
 	"github.com/lxc/distrobuilder/shared"
 )

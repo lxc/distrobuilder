@@ -1,6 +1,6 @@
 package image
 
-import pongo2 "gopkg.in/flosch/pongo2.v3"
+import "gopkg.in/flosch/pongo2.v3"
 
 func renderTemplate(template string, ctx pongo2.Context) (string, error) {
 	var (

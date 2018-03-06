@@ -10,8 +10,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 // UbuntuHTTP represents the Ubuntu HTTP downloader.
