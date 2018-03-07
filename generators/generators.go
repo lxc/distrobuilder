@@ -27,6 +27,8 @@ func Get(generator string) Generator {
 		return HostsGenerator{}
 	case "remove":
 		return RemoveGenerator{}
+	case "dump":
+		return DumpGenerator{}
 	}
 
 	return nil
