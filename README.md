@@ -84,4 +84,7 @@ actions:
     post-files: |-
       #!/bin/sh
       echo "This is run after running the file templates"
+
+mappings:
+    architecture_map: debian
 ```
