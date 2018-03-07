@@ -174,7 +174,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post unpack hook
 	if c.definition.Actions.PostUnpack != "" {
-		err := shared.RunCommand("sh", c.definition.Actions.PostUnpack)
+		err := shared.RunScript(c.definition.Actions.PostUnpack)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %s", err)
 		}
@@ -198,7 +198,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post packages hook
 	if c.definition.Actions.PostPackages != "" {
-		err := shared.RunCommand("sh", c.definition.Actions.PostPackages)
+		err := shared.RunScript(c.definition.Actions.PostPackages)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %s", err)
 		}

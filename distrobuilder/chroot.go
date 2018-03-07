@@ -249,7 +249,7 @@ func managePackages(def shared.DefinitionPackages, postUpdate string) error {
 
 		// Run post update hook
 		if postUpdate != "" {
-			err = shared.RunCommand("sh", postUpdate)
+			err = shared.RunScript(postUpdate)
 			if err != nil {
 				return fmt.Errorf("Failed to run post-update: %s", err)
 			}

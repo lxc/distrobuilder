@@ -70,7 +70,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 
 	// Run post packages hook
 	if c.global.definition.Actions.PostPackages != "" {
-		err := shared.RunCommand("sh", c.global.definition.Actions.PostPackages)
+		err := shared.RunScript(c.global.definition.Actions.PostPackages)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %s", err)
 		}
