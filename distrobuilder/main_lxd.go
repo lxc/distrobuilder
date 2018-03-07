@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/lxc/distrobuilder/generators"
-	"github.com/lxc/distrobuilder/image"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/spf13/cobra"
+
+	"github.com/lxc/distrobuilder/generators"
+	"github.com/lxc/distrobuilder/image"
+	"github.com/lxc/distrobuilder/shared"
 )
 
 type cmdLXD struct {
@@ -80,6 +82,14 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 			file.Path, img)
 		if err != nil {
 			return fmt.Errorf("Failed to create LXD data: %s", err)
+		}
+	}
+
+	// Run post packages hook
+	if c.global.definition.Actions.PostPackages != "" {
+		err := shared.RunCommand("sh", c.global.definition.Actions.PostPackages)
+		if err != nil {
+			return fmt.Errorf("Failed to run post-packages: %s", err)
 		}
 	}
 

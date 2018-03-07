@@ -172,6 +172,14 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
 
+	// Run post unpack hook
+	if c.definition.Actions.PostUnpack != "" {
+		err := shared.RunCommand("sh", c.definition.Actions.PostUnpack)
+		if err != nil {
+			return fmt.Errorf("Failed to run post-unpack: %s", err)
+		}
+	}
+
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := setupChroot(c.rootfsDir)
 	if err != nil {
@@ -179,7 +187,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Install/remove/update packages
-	err = managePackages(c.definition.Packages)
+	err = managePackages(c.definition.Packages, c.definition.Actions.PostUpdate)
 	if err != nil {
 		exitChroot()
 		return fmt.Errorf("Failed to manage packages: %s", err)
@@ -187,6 +195,14 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Unmount everything and exit the chroot
 	exitChroot()
+
+	// Run post packages hook
+	if c.definition.Actions.PostPackages != "" {
+		err := shared.RunCommand("sh", c.definition.Actions.PostPackages)
+		if err != nil {
+			return fmt.Errorf("Failed to run post-packages: %s", err)
+		}
+	}
 
 	return nil
 }
