@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -54,6 +55,25 @@ func RunCommand(name string, arg ...string) error {
 	}
 
 	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// RunScript runs a script hereby setting the SHELL and PATH env variables,
+// and redirecting the process's stdout and stderr to the real stdout and stderr
+// respectively.
+func RunScript(content string) error {
+	cmd := exec.Command("sh")
+
+	cmd.Env = []string{
+		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
+		"SHELL=/bin/sh",
+		"TERM=xterm"}
+
+	buffer := bytes.NewBufferString(content)
+	cmd.Stdin = buffer
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
