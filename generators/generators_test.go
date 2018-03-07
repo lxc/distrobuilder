@@ -40,6 +40,7 @@ func TestGet(t *testing.T) {
 
 func TestRestoreFiles(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
+	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
@@ -60,7 +61,7 @@ func TestRestoreFiles(t *testing.T) {
 		t.Fatalf("Failed to chmod cache directory: %s", err)
 	}
 
-	err = StoreFile(cacheDir, filepath.Join("/testdir1", "testfile1"))
+	err = StoreFile(cacheDir, cacheDir, filepath.Join("/testdir1", "testfile1"))
 	if err == nil {
 		t.Fatal("Expected failure")
 	}
@@ -71,7 +72,7 @@ func TestRestoreFiles(t *testing.T) {
 		t.Fatalf("Failed to chmod cache directory: %s", err)
 	}
 
-	err = StoreFile(cacheDir, filepath.Join("/testdir1", "testfile1"))
+	err = StoreFile(cacheDir, rootfsDir, filepath.Join("/testdir1", "testfile1"))
 	if err != nil {
 		t.Fatalf("Failed to store file: %s", err)
 	}
@@ -83,7 +84,7 @@ func TestRestoreFiles(t *testing.T) {
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "testdir1", "testfile1"),
 		"modified file")
 
-	err = RestoreFiles(cacheDir)
+	err = RestoreFiles(cacheDir, rootfsDir)
 	if err != nil {
 		t.Fatalf("Failed to restore file: %s", err)
 	}

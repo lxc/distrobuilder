@@ -11,6 +11,7 @@ import (
 
 func TestHostsGeneratorCreateLXCData(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
+	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
@@ -35,7 +36,7 @@ func TestHostsGeneratorCreateLXCData(t *testing.T) {
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n")
 
-	err = generator.CreateLXCData(cacheDir, "/etc/hosts", image)
+	err = generator.CreateLXCData(cacheDir, rootfsDir, "/etc/hosts", image)
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -45,7 +46,7 @@ func TestHostsGeneratorCreateLXCData(t *testing.T) {
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tLXC_NAME\n")
 
-	err = RestoreFiles(cacheDir)
+	err = RestoreFiles(cacheDir, rootfsDir)
 	if err != nil {
 		t.Fatalf("Failed to restore files: %s", err)
 	}
@@ -56,6 +57,7 @@ func TestHostsGeneratorCreateLXCData(t *testing.T) {
 
 func TestHostsGeneratorCreateLXDData(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
+	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
@@ -80,7 +82,7 @@ func TestHostsGeneratorCreateLXDData(t *testing.T) {
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n")
 
-	err = generator.CreateLXDData(cacheDir, "/etc/hosts", image)
+	err = generator.CreateLXDData(cacheDir, rootfsDir, "/etc/hosts", image)
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}

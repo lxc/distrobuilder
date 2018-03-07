@@ -70,7 +70,7 @@ func TestLXDBuild(t *testing.T) {
 
 func testLXDBuildSplitImage(t *testing.T, image *LXDImage) {
 	// Create split tarball and squashfs.
-	err := image.Build(false)
+	err := image.Build(false, "xz")
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -90,7 +90,7 @@ func testLXDBuildSplitImage(t *testing.T, image *LXDImage) {
 
 func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 	// Create unified tarball with custom name.
-	err := image.Build(true)
+	err := image.Build(true, "xz")
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -102,7 +102,7 @@ func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 
 	// Create unified tarball with default name.
 	image.definition.Name = ""
-	err = image.Build(true)
+	err = image.Build(true, "xz")
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
