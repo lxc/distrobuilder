@@ -49,7 +49,9 @@ func RunCommand(name string, arg ...string) error {
 	cmd.Env = []string{
 		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
 		"SHELL=/bin/sh",
-		"TERM=xterm"}
+		"TERM=xterm",
+		"DEBIAN_FRONTEND=noninteractive",
+	}
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
