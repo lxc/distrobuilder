@@ -9,7 +9,7 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func TestHostnameGeneratorCreateLXCData(t *testing.T) {
+func TestHostnameGeneratorRunLXC(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
@@ -35,7 +35,8 @@ func TestHostnameGeneratorCreateLXCData(t *testing.T) {
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "hostname")
 
-	err = generator.CreateLXCData(cacheDir, rootfsDir, "/etc/hostname", image)
+	err = generator.RunLXC(cacheDir, rootfsDir, image,
+		shared.DefinitionFile{Path: "/etc/hostname"})
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -51,7 +52,7 @@ func TestHostnameGeneratorCreateLXCData(t *testing.T) {
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "hostname")
 }
 
-func TestHostnameGeneratorCreateLXDData(t *testing.T) {
+func TestHostnameGeneratorRunLXD(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
@@ -75,7 +76,8 @@ func TestHostnameGeneratorCreateLXDData(t *testing.T) {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	err = generator.CreateLXDData(cacheDir, rootfsDir, "/etc/hostname", image)
+	err = generator.RunLXD(cacheDir, rootfsDir, image,
+		shared.DefinitionFile{Path: "/etc/hostname"})
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}

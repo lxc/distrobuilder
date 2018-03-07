@@ -58,8 +58,8 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		err := generator.CreateLXCData(c.global.flagCacheDir, c.global.sourceDir,
-			file.Path, img)
+		err := generator.RunLXC(c.global.flagCacheDir, c.global.sourceDir, img,
+			file)
 		if err != nil {
 			continue
 		}

@@ -6,15 +6,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/lxc/lxd/shared"
+	lxd "github.com/lxc/lxd/shared"
 
 	"github.com/lxc/distrobuilder/image"
+	"github.com/lxc/distrobuilder/shared"
 )
 
 // Generator interface.
 type Generator interface {
-	CreateLXCData(string, string, string, *image.LXCImage) error
-	CreateLXDData(string, string, string, *image.LXDImage) error
+	RunLXC(string, string, *image.LXCImage, shared.DefinitionFile) error
+	RunLXD(string, string, *image.LXDImage, shared.DefinitionFile) error
 }
 
 // Get returns a Generator.
@@ -24,6 +25,10 @@ func Get(generator string) Generator {
 		return HostnameGenerator{}
 	case "hosts":
 		return HostsGenerator{}
+	case "remove":
+		return RemoveGenerator{}
+	case "dump":
+		return DumpGenerator{}
 	}
 
 	return nil
@@ -37,7 +42,7 @@ func StoreFile(cacheDir, sourceDir, path string) error {
 		return err
 	}
 
-	return shared.FileCopy(filepath.Join(sourceDir, path),
+	return lxd.FileCopy(filepath.Join(sourceDir, path),
 		filepath.Join(cacheDir, "tmp", path))
 }
 
@@ -50,7 +55,7 @@ func RestoreFiles(cacheDir, sourceDir string) error {
 			return nil
 		}
 
-		return shared.FileCopy(path, filepath.Join(sourceDir,
+		return lxd.FileCopy(path, filepath.Join(sourceDir,
 			strings.TrimPrefix(path, filepath.Join(cacheDir, "tmp"))))
 	}
 

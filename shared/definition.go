@@ -63,6 +63,7 @@ type DefinitionTarget struct {
 type DefinitionFile struct {
 	Generator string   `yaml:"generator"`
 	Path      string   `yaml:"path,omitempty"`
+	Content   string   `yaml:"content,omitempty"`
 	Releases  []string `yaml:"releases,omitempty"`
 }
 
