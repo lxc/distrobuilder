@@ -120,9 +120,39 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 	return filepath.Join(gpgDir, "distrobuilder.gpg"), nil
 }
 
-// Pack creates an xz-compressed tarball.
-func Pack(filename, path string, args ...string) error {
-	return RunCommand("tar", append([]string{"-cJf", filename, "-C", path}, args...)...)
+// Pack creates an uncompressed tarball.
+func Pack(filename, compression, path string, args ...string) error {
+	err := RunCommand("tar", append([]string{"-cf", filename, "-C", path}, args...)...)
+	if err != nil {
+		return err
+	}
+
+	return compressTarball(filename, compression)
+}
+
+// PackUpdate updates an existing tarball.
+func PackUpdate(filename, compression, path string, args ...string) error {
+	err := RunCommand("tar", append([]string{"-uf", filename, "-C", path}, args...)...)
+	if err != nil {
+		return err
+	}
+
+	return compressTarball(filename, compression)
+}
+
+// compressTarball compresses a tarball, or not.
+func compressTarball(filename, compression string) error {
+	switch compression {
+	case "lzop":
+		// lzo does not remove the uncompressed file per default
+		defer os.Remove(filename)
+		fallthrough
+	case "bzip2", "xz", "lzip", "lzma", "gzip":
+		return RunCommand(compression, "-f", filename)
+	}
+
+	// Do not compress
+	return nil
 }
 
 //GetExpiryDate returns an expiry date based on the creationDate and format.

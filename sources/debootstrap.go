@@ -17,10 +17,10 @@ func NewDebootstrap() *Debootstrap {
 }
 
 // Run runs debootstrap.
-func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, cacheDir string) error {
+func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
 	var args []string
 
-	os.RemoveAll(filepath.Join(cacheDir, "rootfs"))
+	os.RemoveAll(rootfsDir)
 
 	if source.Variant != "" {
 		args = append(args, "--variant", source.Variant)
@@ -40,7 +40,7 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, cacheDi
 		args = append(args, "--keyring", keyring)
 	}
 
-	args = append(args, release, filepath.Join(cacheDir, "rootfs"))
+	args = append(args, release, rootfsDir)
 
 	if source.URL != "" {
 		args = append(args, source.URL)

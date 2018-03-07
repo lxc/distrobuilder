@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	lxd "github.com/lxc/lxd/shared"
@@ -20,7 +21,7 @@ func NewArchLinuxHTTP() *ArchLinuxHTTP {
 }
 
 // Run downloads an Arch Linux tarball.
-func (s *ArchLinuxHTTP) Run(source shared.DefinitionSource, release, arch, cacheDir string) error {
+func (s *ArchLinuxHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
 	fname := fmt.Sprintf("archlinux-bootstrap-%s-x86_64.tar.gz", release)
 	tarball := fmt.Sprintf("%s/%s/%s", source.URL, release, fname)
 
@@ -43,23 +44,25 @@ func (s *ArchLinuxHTTP) Run(source shared.DefinitionSource, release, arch, cache
 		return errors.New("Failed to verify tarball")
 	}
 
-	err = os.MkdirAll(cacheDir, 0755)
-	if err != nil {
-		return err
-	}
-
 	// Unpack
-	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), cacheDir, false, false)
+	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false)
 	if err != nil {
 		return err
 	}
 
-	os.RemoveAll(filepath.Join(cacheDir, "rootfs"))
-
-	err = os.Rename(filepath.Join(cacheDir, "root.x86_64"), filepath.Join(cacheDir, "rootfs"))
+	// Move everything inside 'root.x86_64' (which was is the tarball) to its
+	// parent directory
+	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(rootfsDir, "root.x86_64")))
 	if err != nil {
 		return err
 	}
 
-	return nil
+	for _, file := range files {
+		err = os.Rename(file, filepath.Join(rootfsDir, path.Base(file)))
+		if err != nil {
+			return err
+		}
+	}
+
+	return os.RemoveAll(filepath.Join(rootfsDir, "root.x86_64"))
 }

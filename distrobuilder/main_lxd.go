@@ -76,13 +76,14 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("Unknown generator '%s'", file.Generator)
 		}
 
-		err := generator.CreateLXDData(c.global.sourceDir, file.Path, img)
+		err := generator.CreateLXDData(c.global.flagCacheDir, c.global.sourceDir,
+			file.Path, img)
 		if err != nil {
 			return fmt.Errorf("Failed to create LXD data: %s", err)
 		}
 	}
 
-	err := img.Build(c.flagType == "unified")
+	err := img.Build(c.flagType == "unified", c.flagCompression)
 	if err != nil {
 		return fmt.Errorf("Failed to create LXD image: %s", err)
 	}

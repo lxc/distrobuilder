@@ -41,13 +41,13 @@ func NewLXDImage(sourceDir, targetDir, cacheDir string,
 }
 
 // Build creates a LXD image.
-func (l *LXDImage) Build(unified bool) error {
+func (l *LXDImage) Build(unified bool, compression string) error {
 	err := l.createMetadata()
 	if err != nil {
 		return nil
 	}
 
-	file, err := os.Create(filepath.Join(l.sourceDir, "metadata.yaml"))
+	file, err := os.Create(filepath.Join(l.cacheDir, "metadata.yaml"))
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (l *LXDImage) Build(unified bool) error {
 	paths := []string{"metadata.yaml"}
 
 	// Only include templates directory in the tarball if it's present.
-	info, err := os.Stat(filepath.Join(l.sourceDir, "templates"))
+	info, err := os.Stat(filepath.Join(l.cacheDir, "templates"))
 	if err == nil && info.IsDir() {
 		paths = append(paths, "templates")
 	}
@@ -86,22 +86,31 @@ func (l *LXDImage) Build(unified bool) error {
 			fname = "lxd"
 		}
 
-		paths = append(paths, "rootfs")
-		err = shared.Pack(filepath.Join(l.targetDir, fmt.Sprintf("%s.tar.xz", fname)),
-			l.sourceDir, paths...)
+		// Add the rootfs to the tarball, prefix all files with "rootfs"
+		err = shared.Pack(filepath.Join(l.targetDir, fmt.Sprintf("%s.tar", fname)),
+			"", l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
 		if err != nil {
 			return err
 		}
+
+		// Add the metadata to the tarball which is located in the cache directory
+		err = shared.PackUpdate(filepath.Join(l.targetDir, fmt.Sprintf("%s.tar", fname)),
+			compression, l.cacheDir, paths...)
+		if err != nil {
+			return err
+		}
+
 	} else {
 		// Create rootfs as squashfs.
-		err = shared.RunCommand("mksquashfs", filepath.Join(l.sourceDir, "rootfs"),
+		err = shared.RunCommand("mksquashfs", l.sourceDir,
 			filepath.Join(l.targetDir, "rootfs.squashfs"), "-noappend")
 		if err != nil {
 			return err
 		}
 
 		// Create metadata tarball.
-		err = shared.Pack(filepath.Join(l.targetDir, "lxd.tar.xz"), l.sourceDir, paths...)
+		err = shared.Pack(filepath.Join(l.targetDir, "lxd.tar"), compression,
+			l.cacheDir, paths...)
 		if err != nil {
 			return err
 		}

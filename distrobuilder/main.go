@@ -67,6 +67,7 @@ type cmdGlobal struct {
 	definition *shared.Definition
 	sourceDir  string
 	targetDir  string
+	rootfsDir  string
 }
 
 func main() {
@@ -131,10 +132,10 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Special case: Make cache directory the target directory. This will
-	// prevent us from having to move ${cacheDir}/rootfs to ${target}/rootfs.
 	if cmd.CalledAs() == "build-dir" {
-		c.flagCacheDir = c.targetDir
+		c.rootfsDir = c.targetDir
+	} else {
+		c.rootfsDir = filepath.Join(c.flagCacheDir, "rootfs")
 	}
 
 	var err error
@@ -151,10 +152,12 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Create cache directory
-	err = os.MkdirAll(c.flagCacheDir, 0755)
-	if err != nil {
-		return err
+	// Create cache directory if we also plan on creating LXC or LXD images
+	if cmd.CalledAs() != "build-dir" {
+		err = os.MkdirAll(c.flagCacheDir, 0755)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Get the downloader to use for this image
@@ -164,13 +167,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Download the root filesystem
-	err = downloader.Run(c.definition.Source, c.definition.Image.Release, arch, c.flagCacheDir)
+	err = downloader.Run(c.definition.Source, c.definition.Image.Release, arch, c.rootfsDir)
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
 
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := setupChroot(filepath.Join(c.flagCacheDir, "rootfs"))
+	exitChroot, err := setupChroot(c.rootfsDir)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}
@@ -191,7 +194,11 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	var err error
 
-	c.sourceDir = args[1]
+	// resolve path
+	c.sourceDir, err = filepath.Abs(args[1])
+	if err != nil {
+		return err
+	}
 
 	c.targetDir = "."
 	if len(args) == 3 {
@@ -200,12 +207,6 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 
 	// Get the image definition
 	c.definition, err = getDefinition(args[0])
-	if err != nil {
-		return err
-	}
-
-	// Create cache directory
-	err = os.MkdirAll(c.flagCacheDir, 0755)
 	if err != nil {
 		return err
 	}

@@ -58,7 +58,8 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		err := generator.CreateLXCData(c.global.flagCacheDir, file.Path, img)
+		err := generator.CreateLXCData(c.global.flagCacheDir, c.global.sourceDir,
+			file.Path, img)
 		if err != nil {
 			continue
 		}
@@ -70,7 +71,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Clean up the chroot by restoring the orginal files.
-	err = generators.RestoreFiles(c.global.flagCacheDir)
+	err = generators.RestoreFiles(c.global.flagCacheDir, c.global.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Failed to restore cached files: %s", err)
 	}
