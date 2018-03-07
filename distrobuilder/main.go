@@ -194,7 +194,11 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	var err error
 
-	c.sourceDir = args[1]
+	// resolve path
+	c.sourceDir, err = filepath.Abs(args[1])
+	if err != nil {
+		return err
+	}
 
 	c.targetDir = "."
 	if len(args) == 3 {
