@@ -10,7 +10,7 @@ image:
   variant: default # optional
   description: Ubuntu Artful # optional
   expiry: 30d # optional: defaults to 30d
-  arch: x86_64 # optional: defaults to local architecture
+  arch: amd64 # optional: defaults to local architecture
 
 source:
   downloader: ubuntu-http
