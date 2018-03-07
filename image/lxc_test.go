@@ -25,11 +25,55 @@ var lxcImageDef = shared.DefinitionImage{
 
 var lxcTarget = shared.DefinitionTargetLXC{
 	CreateMessage: "Welcome to {{ image.Distribution|capfirst}} {{ image.Release }}",
-	Config: `lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
-lxc.arch = x86_64`,
-	ConfigUser: `lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
-lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.userns.conf
-lxc.arch = x86_64`,
+	Config: []shared.DefinitionTargetLXCConfig{
+		{
+			Type:    "all",
+			Before:  5,
+			Content: "all_before_5",
+		},
+		{
+			Type:    "user",
+			Before:  5,
+			Content: "user_before_5",
+		},
+		{
+			Type:    "all",
+			After:   4,
+			Content: "all_after_4",
+		},
+		{
+			Type:    "user",
+			After:   4,
+			Content: "user_after_4",
+		},
+		{
+			Type:    "all",
+			Content: "all",
+		},
+		{
+			Type:    "system",
+			Before:  2,
+			Content: "system_before_2",
+		},
+		{
+			Type:    "system",
+			Before:  2,
+			After:   4,
+			Content: "system_before_2_after_4",
+		},
+		{
+			Type:    "user",
+			Before:  3,
+			After:   3,
+			Content: "user_before_3_after_3",
+		},
+		{
+			Type:    "system",
+			Before:  4,
+			After:   2,
+			Content: "system_before_4_after_2",
+		},
+	},
 }
 
 func lxcCacheDir() string {
@@ -127,7 +171,7 @@ func TestLXCBuild(t *testing.T) {
 	}()
 }
 
-func TestLXCCreateMetadata(t *testing.T) {
+func TestLXCCreateMetadataBasic(t *testing.T) {
 	defaultImage := setupLXC()
 	defer teardownLXC()
 
@@ -148,16 +192,13 @@ func TestLXCCreateMetadata(t *testing.T) {
 			true,
 			"Error writing 'config': .+",
 			func(l LXCImage) *LXCImage {
-				l.target.Config = "{{ invalid }"
-				return &l
-			},
-		},
-		{
-			"invalid config-user template",
-			true,
-			"Error writing 'config-user': .+",
-			func(l LXCImage) *LXCImage {
-				l.target.ConfigUser = "{{ invalid }"
+				l.target.Config = []shared.DefinitionTargetLXCConfig{
+					{
+						Type:    "all",
+						After:   4,
+						Content: "{{ invalid }",
+					},
+				}
 				return &l
 			},
 		},
@@ -205,6 +246,81 @@ func TestLXCCreateMetadata(t *testing.T) {
 	}
 }
 
+func TestLXCCreateMetadataConfig(t *testing.T) {
+	image := setupLXC()
+	defer teardownLXC()
+
+	tests := []struct {
+		configFile string
+		expected   string
+	}{
+		{
+			"config",
+			"all_after_4\nall\nsystem_before_2_after_4\n",
+		},
+		{
+			"config.1",
+			"all_before_5\nall\nsystem_before_2\nsystem_before_2_after_4\n",
+		},
+		{
+			"config.2",
+			"all_before_5\nall\n",
+		},
+		{
+			"config.3",
+			"all_before_5\nall\nsystem_before_4_after_2\n",
+		},
+		{
+			"config.4",
+			"all_before_5\nall\n",
+		},
+		{
+			"config.user",
+			"all_after_4\nuser_after_4\nall\nuser_before_3_after_3\n",
+		},
+		{
+			"config.user.1",
+			"all_before_5\nuser_before_5\nall\nuser_before_3_after_3\n",
+		},
+		{
+			"config.user.2",
+			"all_before_5\nuser_before_5\nall\nuser_before_3_after_3\n",
+		},
+		{
+			"config.user.3",
+			"all_before_5\nuser_before_5\nall\n",
+		},
+		{
+			"config.user.4",
+			"all_before_5\nuser_before_5\nall\nuser_before_3_after_3\n",
+		},
+	}
+
+	err := image.createMetadata()
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	for _, tt := range tests {
+		log.Printf("Checking '%s'", tt.configFile)
+		file, err := os.Open(filepath.Join(lxcCacheDir(), "metadata", tt.configFile))
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		var buffer bytes.Buffer
+		_, err = io.Copy(&buffer, file)
+		file.Close()
+		if err != nil {
+			t.Fatalf("Unexpected error: %s", err)
+		}
+
+		if buffer.String() != tt.expected {
+			t.Fatalf("Expected '%s', got '%s'", tt.expected, buffer.String())
+		}
+	}
+}
+
 func TestLXCPackMetadata(t *testing.T) {
 	image := setupLXC()
 	defer func() {
@@ -243,13 +359,13 @@ func TestLXCWriteMetadata(t *testing.T) {
 	defer teardownLXC()
 
 	// Should fail due to invalid path
-	err := image.writeMetadata("/path/file", "")
+	err := image.writeMetadata("/path/file", "", false)
 	if err == nil {
 		t.Fatal("Expected failure")
 	}
 
 	// Should succeed
-	err = image.writeMetadata("test", "metadata")
+	err = image.writeMetadata("test", "metadata", false)
 	if err != nil {
 		t.Fatalf("Unexpected failure: %s", err)
 	}
