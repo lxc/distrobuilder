@@ -73,7 +73,8 @@ func (l *LXCImage) Build() error {
 		return err
 	}
 
-	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar.xz"), l.sourceDir, "rootfs")
+	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar.xz"), l.sourceDir,
+		"--transform", "s,^./,rootfs/,", ".")
 	if err != nil {
 		return err
 	}
@@ -107,8 +108,8 @@ func (l *LXCImage) createMetadata() error {
 
 	var excludesUser string
 
-	if lxd.PathExists(filepath.Join(l.sourceDir, "rootfs", "dev")) {
-		err := filepath.Walk(filepath.Join(l.sourceDir, "rootfs", "dev"),
+	if lxd.PathExists(filepath.Join(l.sourceDir, "dev")) {
+		err := filepath.Walk(filepath.Join(l.sourceDir, "dev"),
 			func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					return err
@@ -116,7 +117,7 @@ func (l *LXCImage) createMetadata() error {
 
 				if info.Mode()&os.ModeDevice != 0 {
 					excludesUser += fmt.Sprintf("%s\n",
-						strings.TrimPrefix(path, filepath.Join(l.sourceDir, "rootfs")))
+						strings.TrimPrefix(path, l.sourceDir))
 				}
 
 				return nil

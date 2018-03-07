@@ -47,7 +47,7 @@ func (l *LXDImage) Build(unified bool) error {
 		return nil
 	}
 
-	file, err := os.Create(filepath.Join(l.sourceDir, "metadata.yaml"))
+	file, err := os.Create(filepath.Join(l.cacheDir, "metadata.yaml"))
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (l *LXDImage) Build(unified bool) error {
 	paths := []string{"metadata.yaml"}
 
 	// Only include templates directory in the tarball if it's present.
-	info, err := os.Stat(filepath.Join(l.sourceDir, "templates"))
+	info, err := os.Stat(filepath.Join(l.cacheDir, "templates"))
 	if err == nil && info.IsDir() {
 		paths = append(paths, "templates")
 	}
@@ -94,14 +94,14 @@ func (l *LXDImage) Build(unified bool) error {
 		}
 	} else {
 		// Create rootfs as squashfs.
-		err = shared.RunCommand("mksquashfs", filepath.Join(l.sourceDir, "rootfs"),
+		err = shared.RunCommand("mksquashfs", l.sourceDir,
 			filepath.Join(l.targetDir, "rootfs.squashfs"), "-noappend")
 		if err != nil {
 			return err
 		}
 
 		// Create metadata tarball.
-		err = shared.Pack(filepath.Join(l.targetDir, "lxd.tar.xz"), l.sourceDir, paths...)
+		err = shared.Pack(filepath.Join(l.targetDir, "lxd.tar.xz"), l.cacheDir, paths...)
 		if err != nil {
 			return err
 		}
