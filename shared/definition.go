@@ -40,11 +40,18 @@ type DefinitionSource struct {
 	AptSources string   `yaml:"apt_sources,omitempty"`
 }
 
+// A DefinitionTargetLXCConfig represents the config part of the metadata.
+type DefinitionTargetLXCConfig struct {
+	Type    string `yaml:"type"`
+	Before  uint   `yaml:"before,omitempty"`
+	After   uint   `yaml:"after,omitempty"`
+	Content string `yaml:"content"`
+}
+
 // A DefinitionTargetLXC represents LXC specific files as part of the metadata.
 type DefinitionTargetLXC struct {
-	CreateMessage string `yaml:"create-message,omitempty"`
-	Config        string `yaml:"config,omitempty"`
-	ConfigUser    string `yaml:"config-user,omitempty"`
+	CreateMessage string                      `yaml:"create-message,omitempty"`
+	Config        []DefinitionTargetLXCConfig `yaml:"config,omitempty"`
 }
 
 // A DefinitionTarget specifies target dependent files.

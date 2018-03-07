@@ -13,6 +13,8 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
+const maxLXCCompatLevel = 5
+
 // LXCImage represents a LXC image.
 type LXCImage struct {
 	sourceDir  string
@@ -85,23 +87,58 @@ func (l *LXCImage) Build() error {
 func (l *LXCImage) createMetadata() error {
 	metaDir := filepath.Join(l.cacheDir, "metadata")
 
-	err := l.writeMetadata(filepath.Join(metaDir, "config"), l.target.Config)
-	if err != nil {
-		return fmt.Errorf("Error writing 'config': %s", err)
+	for _, c := range l.target.Config {
+		// If not specified, create files up to ${maxLXCCompatLevel}
+		if c.Before == 0 {
+			c.Before = maxLXCCompatLevel + 1
+		}
+		for i := uint(1); i < maxLXCCompatLevel+1; i++ {
+			// Bound checking
+			if c.After < c.Before {
+				if i <= c.After || i >= c.Before {
+					continue
+				}
+
+			} else if c.After >= c.Before {
+				if i <= c.After && i >= c.Before {
+					continue
+				}
+			}
+
+			switch c.Type {
+			case "all":
+				err := l.writeConfig(i, filepath.Join(metaDir, "config"), c.Content)
+				if err != nil {
+					return err
+				}
+
+				err = l.writeConfig(i, filepath.Join(metaDir, "config.user"), c.Content)
+				if err != nil {
+					return err
+				}
+			case "system":
+				err := l.writeConfig(i, filepath.Join(metaDir, "config"), c.Content)
+				if err != nil {
+					return err
+				}
+			case "user":
+				err := l.writeConfig(i, filepath.Join(metaDir, "config.user"), c.Content)
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
 
-	err = l.writeMetadata(filepath.Join(metaDir, "config-user"), l.target.ConfigUser)
-	if err != nil {
-		return fmt.Errorf("Error writing 'config-user': %s", err)
-	}
-
-	err = l.writeMetadata(filepath.Join(metaDir, "create-message"), l.target.CreateMessage)
+	err := l.writeMetadata(filepath.Join(metaDir, "create-message"),
+		l.target.CreateMessage, false)
 	if err != nil {
 		return fmt.Errorf("Error writing 'create-message': %s", err)
 	}
 
 	err = l.writeMetadata(filepath.Join(metaDir, "expiry"),
-		fmt.Sprint(shared.GetExpiryDate(time.Now(), l.definition.Expiry).Unix()))
+		fmt.Sprint(shared.GetExpiryDate(time.Now(), l.definition.Expiry).Unix()),
+		false)
 	if err != nil {
 		return fmt.Errorf("Error writing 'expiry': %s", err)
 	}
@@ -127,7 +164,8 @@ func (l *LXCImage) createMetadata() error {
 		}
 	}
 
-	err = l.writeMetadata(filepath.Join(metaDir, "excludes-user"), excludesUser)
+	err = l.writeMetadata(filepath.Join(metaDir, "excludes-user"), excludesUser,
+		false)
 	if err != nil {
 		return fmt.Errorf("Error writing 'excludes-user': %s", err)
 	}
@@ -136,14 +174,23 @@ func (l *LXCImage) createMetadata() error {
 }
 
 func (l *LXCImage) packMetadata() error {
-	files := []string{"config", "config-user", "create-message", "expiry",
-		"excludes-user"}
+	files := []string{"create-message", "expiry", "excludes-user"}
+
+	// Get all config and config.user files
+	configs, err := filepath.Glob(filepath.Join(l.cacheDir, "metadata", "config*"))
+	if err != nil {
+		return err
+	}
+
+	for _, c := range configs {
+		files = append(files, filepath.Base(c))
+	}
 
 	if lxd.PathExists(filepath.Join(l.cacheDir, "metadata", "templates")) {
 		files = append(files, "templates")
 	}
 
-	err := shared.Pack(filepath.Join(l.targetDir, "meta.tar"), "xz",
+	err = shared.Pack(filepath.Join(l.targetDir, "meta.tar"), "xz",
 		filepath.Join(l.cacheDir, "metadata"), files...)
 	if err != nil {
 		return fmt.Errorf("Failed to create metadata: %s", err)
@@ -151,8 +198,15 @@ func (l *LXCImage) packMetadata() error {
 
 	return nil
 }
-func (l *LXCImage) writeMetadata(filename, content string) error {
-	file, err := os.Create(filename)
+func (l *LXCImage) writeMetadata(filename, content string, append bool) error {
+	var file *os.File
+	var err error
+
+	if append {
+		file, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	} else {
+		file, err = os.Create(filename)
+	}
 	if err != nil {
 		return err
 	}
@@ -167,9 +221,22 @@ func (l *LXCImage) writeMetadata(filename, content string) error {
 		return err
 	}
 
-	_, err = file.WriteString(out)
+	_, err = file.WriteString(out + "\n")
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (l *LXCImage) writeConfig(compatLevel uint, filename, content string) error {
+	// Only add suffix if it's not the latest compatLevel
+	if compatLevel != maxLXCCompatLevel {
+		filename = fmt.Sprintf("%s.%d", filename, compatLevel)
+	}
+	err := l.writeMetadata(filename, content, true)
+	if err != nil {
+		return fmt.Errorf("Error writing '%s': %s", filepath.Base(filename), err)
 	}
 
 	return nil
