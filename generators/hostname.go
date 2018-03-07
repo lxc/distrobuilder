@@ -14,17 +14,15 @@ import (
 type HostnameGenerator struct{}
 
 // CreateLXCData creates a hostname template.
-func (g HostnameGenerator) CreateLXCData(cacheDir, path string, img *image.LXCImage) error {
-	rootfs := filepath.Join(cacheDir, "rootfs")
-
+func (g HostnameGenerator) CreateLXCData(cacheDir, sourceDir, path string, img *image.LXCImage) error {
 	// Store original file
-	err := StoreFile(cacheDir, path)
+	err := StoreFile(cacheDir, sourceDir, path)
 	if err != nil {
 		return err
 	}
 
 	// Create new hostname file
-	file, err := os.Create(filepath.Join(rootfs, path))
+	file, err := os.Create(filepath.Join(sourceDir, path))
 	if err != nil {
 		return err
 	}
@@ -41,7 +39,7 @@ func (g HostnameGenerator) CreateLXCData(cacheDir, path string, img *image.LXCIm
 }
 
 // CreateLXDData creates a hostname template.
-func (g HostnameGenerator) CreateLXDData(cacheDir, path string, img *image.LXDImage) error {
+func (g HostnameGenerator) CreateLXDData(cacheDir, sourceDir, path string, img *image.LXDImage) error {
 	templateDir := filepath.Join(cacheDir, "templates")
 
 	err := os.MkdirAll(templateDir, 0755)

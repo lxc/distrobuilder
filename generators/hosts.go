@@ -13,16 +13,14 @@ import (
 type HostsGenerator struct{}
 
 // CreateLXCData creates a LXC specific entry in the hosts file.
-func (g HostsGenerator) CreateLXCData(cacheDir, path string, img *image.LXCImage) error {
-	rootfs := filepath.Join(cacheDir, "rootfs")
-
+func (g HostsGenerator) CreateLXCData(cacheDir, sourceDir, path string, img *image.LXCImage) error {
 	// Store original file
-	err := StoreFile(cacheDir, path)
+	err := StoreFile(cacheDir, sourceDir, path)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.OpenFile(filepath.Join(rootfs, path),
+	file, err := os.OpenFile(filepath.Join(sourceDir, path),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -37,7 +35,7 @@ func (g HostsGenerator) CreateLXCData(cacheDir, path string, img *image.LXCImage
 }
 
 // CreateLXDData creates a hosts template.
-func (g HostsGenerator) CreateLXDData(cacheDir, path string, img *image.LXDImage) error {
+func (g HostsGenerator) CreateLXDData(cacheDir, sourceDir, path string, img *image.LXDImage) error {
 	templateDir := filepath.Join(cacheDir, "templates")
 
 	// Create templates path
@@ -53,7 +51,7 @@ func (g HostsGenerator) CreateLXDData(cacheDir, path string, img *image.LXDImage
 	}
 	defer file.Close()
 
-	hostsFile, err := os.Open(filepath.Join(cacheDir, "rootfs", path))
+	hostsFile, err := os.Open(filepath.Join(sourceDir, path))
 	if err != nil {
 		return err
 	}
