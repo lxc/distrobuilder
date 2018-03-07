@@ -25,6 +25,8 @@ func Get(generator string) Generator {
 		return HostnameGenerator{}
 	case "hosts":
 		return HostsGenerator{}
+	case "remove":
+		return RemoveGenerator{}
 	}
 
 	return nil
