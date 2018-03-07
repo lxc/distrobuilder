@@ -8,21 +8,23 @@ import (
 	"github.com/lxc/lxd/shared/api"
 
 	"github.com/lxc/distrobuilder/image"
+	"github.com/lxc/distrobuilder/shared"
 )
 
 // HostnameGenerator represents the Hostname generator.
 type HostnameGenerator struct{}
 
-// CreateLXCData creates a hostname template.
-func (g HostnameGenerator) CreateLXCData(cacheDir, sourceDir, path string, img *image.LXCImage) error {
+// RunLXC creates a hostname template.
+func (g HostnameGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
+	defFile shared.DefinitionFile) error {
 	// Store original file
-	err := StoreFile(cacheDir, sourceDir, path)
+	err := StoreFile(cacheDir, sourceDir, defFile.Path)
 	if err != nil {
 		return err
 	}
 
 	// Create new hostname file
-	file, err := os.Create(filepath.Join(sourceDir, path))
+	file, err := os.Create(filepath.Join(sourceDir, defFile.Path))
 	if err != nil {
 		return err
 	}
@@ -35,11 +37,12 @@ func (g HostnameGenerator) CreateLXCData(cacheDir, sourceDir, path string, img *
 	}
 
 	// Add hostname path to LXC's templates file
-	return img.AddTemplate(path)
+	return img.AddTemplate(defFile.Path)
 }
 
-// CreateLXDData creates a hostname template.
-func (g HostnameGenerator) CreateLXDData(cacheDir, sourceDir, path string, img *image.LXDImage) error {
+// RunLXD creates a hostname template.
+func (g HostnameGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
+	defFile shared.DefinitionFile) error {
 	templateDir := filepath.Join(cacheDir, "templates")
 
 	err := os.MkdirAll(templateDir, 0755)
@@ -59,7 +62,7 @@ func (g HostnameGenerator) CreateLXDData(cacheDir, sourceDir, path string, img *
 	}
 
 	// Add to LXD templates
-	img.Metadata.Templates[path] = &api.ImageMetadataTemplate{
+	img.Metadata.Templates[defFile.Path] = &api.ImageMetadataTemplate{
 		Template: "hostname.tpl",
 		When: []string{
 			"create",
