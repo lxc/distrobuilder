@@ -73,7 +73,7 @@ func (l *LXCImage) Build() error {
 		return err
 	}
 
-	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar.xz"), l.sourceDir,
+	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar"), "xz", l.sourceDir,
 		"--transform", "s,^./,rootfs/,", ".")
 	if err != nil {
 		return err
@@ -143,7 +143,7 @@ func (l *LXCImage) packMetadata() error {
 		files = append(files, "templates")
 	}
 
-	err := shared.Pack(filepath.Join(l.targetDir, "meta.tar.xz"),
+	err := shared.Pack(filepath.Join(l.targetDir, "meta.tar"), "xz",
 		filepath.Join(l.cacheDir, "metadata"), files...)
 	if err != nil {
 		return fmt.Errorf("Failed to create metadata: %s", err)

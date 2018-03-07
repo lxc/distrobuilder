@@ -83,7 +83,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	err := img.Build(c.flagType == "unified")
+	err := img.Build(c.flagType == "unified", c.flagCompression)
 	if err != nil {
 		return fmt.Errorf("Failed to create LXD image: %s", err)
 	}
