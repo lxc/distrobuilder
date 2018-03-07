@@ -5,6 +5,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"gopkg.in/flosch/pongo2.v3"
+
 	"github.com/lxc/distrobuilder/shared"
 )
 
@@ -57,5 +59,38 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, rootfsD
 		defer os.Remove(link)
 	}
 
-	return shared.RunCommand("debootstrap", args...)
+	err := shared.RunCommand("debootstrap", args...)
+	if err != nil {
+		return err
+	}
+
+	if source.AptSources != "" {
+		ctx := pongo2.Context{
+			"source": source,
+			// We use an anonymous struct instead of DefinitionImage because we
+			// need the mapped architecture, and Release is all one
+			// needs in the sources.list.
+			"image": struct {
+				Release string
+			}{
+				release,
+			},
+		}
+
+		out, err := shared.RenderTemplate(source.AptSources, ctx)
+		if err != nil {
+			return err
+		}
+
+		// Replace content of sources.list with the templated content.
+		file, err := os.Create(filepath.Join(rootfsDir, "etc", "apt", "sources.list"))
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		file.WriteString(out)
+	}
+
+	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"gopkg.in/flosch/pongo2.v3"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -61,7 +62,40 @@ func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDi
 		return fmt.Errorf("Error downloading Ubuntu image: %s", err)
 	}
 
-	return s.unpack(filepath.Join(os.TempDir(), s.fname), rootfsDir)
+	err = s.unpack(filepath.Join(os.TempDir(), s.fname), rootfsDir)
+	if err != nil {
+		return err
+	}
+
+	if source.AptSources != "" {
+		ctx := pongo2.Context{
+			"source": source,
+			// We use an anonymous struct instead of DefinitionImage because we
+			// need the mapped architecture, and Release is all one needs in
+			// the sources.list.
+			"image": struct {
+				Release string
+			}{
+				release,
+			},
+		}
+
+		out, err := shared.RenderTemplate(source.AptSources, ctx)
+		if err != nil {
+			return err
+		}
+
+		// Replace content of sources.list with the templated content.
+		file, err := os.Create(filepath.Join(rootfsDir, "etc", "apt", "sources.list"))
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		file.WriteString(out)
+	}
+
+	return nil
 }
 
 func (s UbuntuHTTP) unpack(filePath, rootDir string) error {
