@@ -80,7 +80,7 @@ func (l *LXDImage) Build(unified bool, compression string) error {
 		var fname string
 		if l.definition.Name != "" {
 			// Use a custom name for the unified tarball.
-			fname, _ = renderTemplate(l.definition.Name, ctx)
+			fname, _ = shared.RenderTemplate(l.definition.Name, ctx)
 		} else {
 			// Default name for the unified tarball.
 			fname = "lxd"
@@ -148,12 +148,12 @@ func (l *LXDImage) createMetadata() error {
 		"creation_date": l.creationDate.Format("20060201_1504"),
 	}
 
-	l.Metadata.Properties["description"], err = renderTemplate(l.definition.Description, ctx)
+	l.Metadata.Properties["description"], err = shared.RenderTemplate(l.definition.Description, ctx)
 	if err != err {
 		return nil
 	}
 
-	l.Metadata.Properties["name"], err = renderTemplate(l.definition.Name, ctx)
+	l.Metadata.Properties["name"], err = shared.RenderTemplate(l.definition.Name, ctx)
 	if err != nil {
 		return err
 	}
