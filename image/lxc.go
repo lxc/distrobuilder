@@ -162,7 +162,7 @@ func (l *LXCImage) writeMetadata(filename, content string) error {
 		"image": l.definition,
 	}
 
-	out, err := renderTemplate(content, ctx)
+	out, err := shared.RenderTemplate(content, ctx)
 	if err != nil {
 		return err
 	}
