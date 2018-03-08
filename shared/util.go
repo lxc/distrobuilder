@@ -17,6 +17,13 @@ import (
 	"gopkg.in/flosch/pongo2.v3"
 )
 
+// EnvVariable represents a environment variable.
+type EnvVariable struct {
+	Key   string
+	Value string
+	Set   bool
+}
+
 // Copy copies a file.
 func Copy(src, dest string) error {
 	var err error
@@ -47,13 +54,6 @@ func Copy(src, dest string) error {
 func RunCommand(name string, arg ...string) error {
 	cmd := exec.Command(name, arg...)
 
-	cmd.Env = []string{
-		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
-		"SHELL=/bin/sh",
-		"TERM=xterm",
-		"DEBIAN_FRONTEND=noninteractive",
-	}
-
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -67,13 +67,7 @@ func RunCommand(name string, arg ...string) error {
 func RunScript(content string) error {
 	cmd := exec.Command("sh")
 
-	cmd.Env = []string{
-		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
-		"SHELL=/bin/sh",
-		"TERM=xterm"}
-
-	buffer := bytes.NewBufferString(content)
-	cmd.Stdin = buffer
+	cmd.Stdin = bytes.NewBufferString(content)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -232,4 +226,28 @@ func RenderTemplate(template string, ctx pongo2.Context) (string, error) {
 	}
 
 	return ret, err
+}
+
+// SetEnvVariables sets the provided environment variables and returns the
+// old ones.
+func SetEnvVariables(env []EnvVariable) []EnvVariable {
+	oldEnv := make([]EnvVariable, len(env))
+
+	for i := 0; i < len(env); i++ {
+		// Check whether the env variables are set at the moment
+		oldVal, set := os.LookupEnv(env[i].Key)
+
+		// Store old env variables
+		oldEnv[i].Key = env[i].Key
+		oldEnv[i].Value = oldVal
+		oldEnv[i].Set = set
+
+		if env[i].Set {
+			os.Setenv(env[i].Key, env[i].Value)
+		} else {
+			os.Unsetenv(env[i].Key)
+		}
+	}
+
+	return oldEnv
 }
