@@ -112,11 +112,6 @@ func SetDefinitionDefaults(def *Definition) {
 	if def.Source.Keyserver == "" {
 		def.Source.Keyserver = "hkps.pool.sks-keyservers.net"
 	}
-
-	// If no Source.Variant is specified, use the one in Image.Variant.
-	if def.Source.Variant == "" {
-		def.Source.Variant = def.Image.Variant
-	}
 }
 
 // ValidateDefinition validates the given Definition.
