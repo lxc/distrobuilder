@@ -21,70 +21,84 @@ source:
 
 targets:
   lxc:
-    create-message: |
-        You just created an Ubuntu container (release=artful, arch=amd64, variant=default)
+    create-message: |-
+      You just created an Ubuntu container (release=artful, arch=amd64, variant=default)
 
-        To enable sshd, run: apt-get install openssh-server
+      To enable sshd, run: apt-get install openssh-server
 
-        For security reason, container images ship without user accounts
-        and without a root password.
+      For security reason, container images ship without user accounts
+      and without a root password.
 
-        Use lxc-attach or chroot directly into the rootfs to set a root password
-        or create user accounts.
-    config: |
-        lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
-        lxc.arch = x86_64
-    config-user: |
-        lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
-        lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.userns.conf
-        lxc.arch = x86_64
+      Use lxc-attach or chroot directly into the rootfs to set a root password
+      or create user accounts.
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = x86_64
 
 files:
- # lxc: Puts the LXC_NAME placeholder in place
- # lxd: Adds a template to generate the file on create and copy
- - path: /etc/hostname
-   generator: hostname
+  # lxc: Puts the LXC_NAME placeholder in place
+  # lxd: Adds a template to generate the file on create and copy
+  - path: /etc/hostname
+    generator: hostname
 
- # lxc: Puts the LXC_NAME placeholder in place
- # lxd: Adds a template to generate the file on create
- - path: /etc/hosts
-   generator: hosts
+  # lxc: Puts the LXC_NAME placeholder in place
+  # lxd: Adds a template to generate the file on create
+  - path: /etc/hosts
+    generator: hosts
 
- # all: Add the upstart job to deal with ttys
- - path: /etc/init/lxc-tty.conf
-   generator: upstart-tty
-   releases:
-    - precise
-    - trusty
+  # all: Add the upstart job to deal with ttys
+  - path: /etc/init/lxc-tty.conf
+    generator: upstart-tty
+    releases:
+      - precise
+      - trusty
 
 packages:
-    manager: apt
+  manager: apt
 
-    update: false
-    install:
-        - systemd
-        - nginx
-        - vim
-    remove:
-        - vim
+  update: false
+  install:
+    - systemd
+    - nginx
+    - vim
+  remove:
+    - vim
 
 actions:
-    post-unpack: |-
+  - trigger: post-update
+    action: |-
       #!/bin/sh
-      echo "This is run after unpacking the downloaded content"
+      rm -rf /run/*
 
-    post-update: |-
-      #!/bin/sh
-      echo "This is run after updating all packages"
-
-    post-packages: |-
-      #!/bin/sh
-      echo "This is run after installing/removing packages"
-
-    post-files: |-
-      #!/bin/sh
-      echo "This is run after running the file templates"
+ - trigger: post-unpack
+   action: |-
+     #!/bin/sh
+     sed -i "s/foo/bar/g" /etc/hosts
+   releases:
+     - precise
+     - trusty
 
 mappings:
-    architecture_map: debian
+  architecture_map: debian
 ```
