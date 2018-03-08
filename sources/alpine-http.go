@@ -3,6 +3,7 @@ package sources
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,22 +27,34 @@ func (s *AlpineLinuxHTTP) Run(source shared.DefinitionSource, release, arch, roo
 	tarball := fmt.Sprintf("%s/v%s/releases/%s/%s", source.URL,
 		strings.Join(strings.Split(release, ".")[0:2], "."), arch, fname)
 
-	err := shared.Download(tarball, tarball+".sha256")
+	url, err := url.Parse(tarball)
 	if err != nil {
 		return err
 	}
 
-	shared.Download(tarball+".asc", "")
-	valid, err := shared.VerifyFile(
-		filepath.Join(os.TempDir(), fname),
-		filepath.Join(os.TempDir(), fname+".asc"),
-		source.Keys,
-		source.Keyserver)
+	if url.Scheme != "https" && len(source.Keys) == 0 {
+		return errors.New("GPG keys are required if downloading from HTTP")
+	}
+
+	err = shared.Download(tarball, tarball+".sha256")
 	if err != nil {
 		return err
 	}
-	if !valid {
-		return errors.New("Failed to verify tarball")
+
+	// Force gpg checks when using http
+	if url.Scheme != "https" {
+		shared.Download(tarball+".asc", "")
+		valid, err := shared.VerifyFile(
+			filepath.Join(os.TempDir(), fname),
+			filepath.Join(os.TempDir(), fname+".asc"),
+			source.Keys,
+			source.Keyserver)
+		if err != nil {
+			return err
+		}
+		if !valid {
+			return errors.New("Failed to verify tarball")
+		}
 	}
 
 	// Unpack
