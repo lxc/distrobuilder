@@ -3,6 +3,7 @@ package sources
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -25,23 +26,35 @@ func (s *ArchLinuxHTTP) Run(source shared.DefinitionSource, release, arch, rootf
 	fname := fmt.Sprintf("archlinux-bootstrap-%s-x86_64.tar.gz", release)
 	tarball := fmt.Sprintf("%s/%s/%s", source.URL, release, fname)
 
-	err := shared.Download(tarball, "")
+	url, err := url.Parse(tarball)
 	if err != nil {
 		return err
 	}
 
-	shared.Download(tarball+".sig", "")
+	if url.Scheme != "https" && len(source.Keys) == 0 {
+		return errors.New("GPG keys are required if downloading from HTTP")
+	}
 
-	valid, err := shared.VerifyFile(
-		filepath.Join(os.TempDir(), fname),
-		filepath.Join(os.TempDir(), fname+".sig"),
-		source.Keys,
-		source.Keyserver)
+	err = shared.Download(tarball, "")
 	if err != nil {
 		return err
 	}
-	if !valid {
-		return errors.New("Failed to verify tarball")
+
+	// Force gpg checks when using http
+	if url.Scheme != "https" {
+		shared.Download(tarball+".sig", "")
+
+		valid, err := shared.VerifyFile(
+			filepath.Join(os.TempDir(), fname),
+			filepath.Join(os.TempDir(), fname+".sig"),
+			source.Keys,
+			source.Keyserver)
+		if err != nil {
+			return err
+		}
+		if !valid {
+			return errors.New("Failed to verify tarball")
+		}
 	}
 
 	// Unpack

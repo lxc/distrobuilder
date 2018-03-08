@@ -1,9 +1,11 @@
 package sources
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -40,24 +42,36 @@ func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDi
 		}
 	}
 
-	shared.Download(baseURL+"SHA256SUMS.gpg", "")
-	shared.Download(baseURL+"SHA256SUMS", "")
-
-	valid, err := shared.VerifyFile(
-		filepath.Join(os.TempDir(), "SHA256SUMS"),
-		filepath.Join(os.TempDir(), "SHA256SUMS.gpg"),
-		source.Keys,
-		source.Keyserver)
+	url, err := url.Parse(baseURL)
 	if err != nil {
 		return err
 	}
-	if !valid {
-		return fmt.Errorf("Failed to validate tarball")
+
+	checksumFile := ""
+	// Force gpg checks when using http
+	if url.Scheme != "https" {
+		if len(source.Keys) == 0 {
+			return errors.New("GPG keys are required if downloading from HTTP")
+		}
+
+		checksumFile = baseURL + "SHA256SUMS"
+		shared.Download(baseURL+"SHA256SUMS.gpg", "")
+		shared.Download(checksumFile, "")
+
+		valid, err := shared.VerifyFile(
+			filepath.Join(os.TempDir(), "SHA256SUMS"),
+			filepath.Join(os.TempDir(), "SHA256SUMS.gpg"),
+			source.Keys,
+			source.Keyserver)
+		if err != nil {
+			return err
+		}
+		if !valid {
+			return fmt.Errorf("Failed to validate tarball")
+		}
 	}
 
-	err = shared.Download(
-		baseURL+s.fname,
-		baseURL+"SHA256SUMS")
+	err = shared.Download(baseURL+s.fname, checksumFile)
 	if err != nil {
 		return fmt.Errorf("Error downloading Ubuntu image: %s", err)
 	}

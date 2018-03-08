@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -34,17 +35,31 @@ func (s *CentOSHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDi
 		return fmt.Errorf("Couldn't get name of iso")
 	}
 
-	shared.Download(baseURL+"sha256sum.txt.asc", "")
-	valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), "sha256sum.txt.asc"), "",
-		source.Keys, source.Keyserver)
+	url, err := url.Parse(baseURL)
 	if err != nil {
 		return err
 	}
-	if !valid {
-		return errors.New("Failed to verify tarball")
+
+	checksumFile := ""
+	// Force gpg checks when using http
+	if url.Scheme != "https" {
+		if len(source.Keys) == 0 {
+			return errors.New("GPG keys are required if downloading from HTTP")
+		}
+
+		checksumFile = "sha256sum.txt.asc"
+		shared.Download(baseURL+checksumFile, "")
+		valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), checksumFile), "",
+			source.Keys, source.Keyserver)
+		if err != nil {
+			return err
+		}
+		if !valid {
+			return errors.New("Failed to verify tarball")
+		}
 	}
 
-	err = shared.Download(baseURL+s.fname, "sha256sum.txt.asc")
+	err = shared.Download(baseURL+s.fname, checksumFile)
 	if err != nil {
 		return fmt.Errorf("Error downloading CentOS image: %s", err)
 	}
