@@ -74,3 +74,9 @@ func (g HostsGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 
 	return err
 }
+
+// Run does nothing.
+func (g HostsGenerator) Run(cacheDir, sourceDir string,
+	defFile shared.DefinitionFile) error {
+	return nil
+}

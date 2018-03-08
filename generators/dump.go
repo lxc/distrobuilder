@@ -14,12 +14,17 @@ type DumpGenerator struct{}
 // RunLXC dumps content to a file.
 func (g DumpGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 	defFile shared.DefinitionFile) error {
-	return g.dumpFile(filepath.Join(sourceDir, defFile.Path), defFile.Content)
+	return g.Run(cacheDir, sourceDir, defFile)
 }
 
 // RunLXD dumps content to a file.
 func (g DumpGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 	defFile shared.DefinitionFile) error {
+	return g.Run(cacheDir, sourceDir, defFile)
+}
+
+// Run dumps content to a file.
+func (g DumpGenerator) Run(cacheDir, sourceDir string, defFile shared.DefinitionFile) error {
 	return g.dumpFile(filepath.Join(sourceDir, defFile.Path), defFile.Content)
 }
 
