@@ -198,8 +198,36 @@ func setupChroot(rootfs string) (func() error, error) {
 		return nil, err
 	}
 
+	// Set environment variables
+	oldEnvVariables := shared.SetEnvVariables(
+		[]shared.EnvVariable{
+			{
+				Key:   "PATH",
+				Value: "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
+				Set:   true,
+			},
+			{
+				Key:   "SHELL",
+				Value: "/bin/sh",
+				Set:   true,
+			},
+			{
+				Key:   "TERM",
+				Value: "xterm",
+				Set:   true,
+			},
+			{
+				Key:   "DEBIAN_FRONTEND",
+				Value: "noninteractive",
+				Set:   true,
+			},
+		})
+
 	return func() error {
 		defer root.Close()
+
+		// Reset old environment variables
+		shared.SetEnvVariables(oldEnvVariables)
 
 		// Switch back to the host rootfs
 		err = root.Chdir()

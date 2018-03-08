@@ -171,3 +171,36 @@ func TestRenderTemplate(t *testing.T) {
 		}
 	}
 }
+
+func TestSetEnvVariables(t *testing.T) {
+	// Initial variables
+	os.Setenv("FOO", "bar")
+
+	env := []EnvVariable{
+		{"FOO", "bla", true},
+		{"BAR", "blub", true},
+	}
+
+	// Set new env variables
+	oldEnv := SetEnvVariables(env)
+
+	for _, e := range env {
+		v, set := os.LookupEnv(e.Key)
+		if !set || e.Value != v {
+			t.Fatalf("Expected %s to be '%s', got '%s'", e.Key, e.Value, v)
+		}
+	}
+
+	// Reset env variables
+	SetEnvVariables(oldEnv)
+
+	val, set := os.LookupEnv("FOO")
+	if !set || val != "bar" {
+		t.Fatalf("Expected %s to be '%s', got '%s'", "FOO", "bar", val)
+	}
+
+	val, set = os.LookupEnv("BAR")
+	if set {
+		t.Fatalf("Expected %s to be unset", "BAR")
+	}
+}
