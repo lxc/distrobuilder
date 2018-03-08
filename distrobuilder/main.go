@@ -53,6 +53,7 @@ import (
 	"os"
 	"path/filepath"
 
+	lxd "github.com/lxc/lxd/shared"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
@@ -179,23 +180,35 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run post unpack hook
-	if c.definition.Actions.PostUnpack != "" {
-		err := shared.RunScript(c.definition.Actions.PostUnpack)
+	hook, ok := c.definition.Actions["post-unpack"]
+	if ok && (len(hook.Releases) == 0 ||
+		lxd.StringInSlice(c.definition.Image.Release, hook.Releases)) {
+		err := shared.RunScript(hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %s", err)
 		}
 	}
 
+	//
+	hook, ok = c.definition.Actions["post-update"]
+	if len(hook.Releases) > 0 &&
+		!lxd.StringInSlice(c.definition.Image.Release, hook.Releases) {
+		// Set empty action to prevent if from running
+		hook.Action = ""
+	}
+
 	// Install/remove/update packages
-	err = managePackages(c.definition.Packages, c.definition.Actions.PostUpdate)
+	err = managePackages(c.definition.Packages, hook.Action)
 	if err != nil {
 		exitChroot()
 		return fmt.Errorf("Failed to manage packages: %s", err)
 	}
 
 	// Run post packages hook
-	if c.definition.Actions.PostPackages != "" {
-		err := shared.RunScript(c.definition.Actions.PostPackages)
+	hook, ok = c.definition.Actions["post-packages"]
+	if ok && (len(hook.Releases) == 0 ||
+		lxd.StringInSlice(c.definition.Image.Release, hook.Releases)) {
+		err := shared.RunScript(hook.Action)
 		if err != nil {
 			exitChroot()
 			return fmt.Errorf("Failed to run post-packages: %s", err)

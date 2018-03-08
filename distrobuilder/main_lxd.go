@@ -91,8 +91,10 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run post files hook
-	if c.global.definition.Actions.PostFiles != "" {
-		err := shared.RunScript(c.global.definition.Actions.PostFiles)
+	hook, ok := c.global.definition.Actions["post-files"]
+	if ok && (len(hook.Releases) == 0 ||
+		lxd.StringInSlice(c.global.definition.Image.Release, hook.Releases)) {
+		err := shared.RunScript(hook.Action)
 		if err != nil {
 			exitChroot()
 			return fmt.Errorf("Failed to run post-files: %s", err)
