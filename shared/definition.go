@@ -105,6 +105,11 @@ func SetDefinitionDefaults(def *Definition) {
 		def.Image.Expiry = "30d"
 	}
 
+	// Set default variant
+	if def.Image.Variant == "" {
+		def.Image.Variant = "default"
+	}
+
 	if def.Source.Keyserver == "" {
 		def.Source.Keyserver = "hkps.pool.sks-keyservers.net"
 	}
