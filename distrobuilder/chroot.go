@@ -256,7 +256,7 @@ func setupChroot(rootfs string) (func() error, error) {
 	}, nil
 }
 
-func managePackages(def shared.DefinitionPackages, postUpdate string) error {
+func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAction) error {
 	var err error
 
 	manager := managers.Get(def.Manager)
@@ -276,8 +276,8 @@ func managePackages(def shared.DefinitionPackages, postUpdate string) error {
 		}
 
 		// Run post update hook
-		if postUpdate != "" {
-			err = shared.RunScript(postUpdate)
+		for _, action := range actions {
+			err = shared.RunScript(action.Action)
 			if err != nil {
 				return fmt.Errorf("Failed to run post-update: %s", err)
 			}

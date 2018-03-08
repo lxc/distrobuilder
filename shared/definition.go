@@ -70,6 +70,7 @@ type DefinitionFile struct {
 // A DefinitionAction specifies a custom action (script) which is to be run after
 // a certain action.
 type DefinitionAction struct {
+	Trigger  string   `yaml:"trigger"`
 	Action   string   `yaml:"action"`
 	Releases []string `yaml:"releases,omitempty"`
 }
@@ -82,13 +83,13 @@ type DefinitionMappings struct {
 
 // A Definition a definition.
 type Definition struct {
-	Image    DefinitionImage             `yaml:"image"`
-	Source   DefinitionSource            `yaml:"source"`
-	Targets  DefinitionTarget            `yaml:"targets,omitempty"`
-	Files    []DefinitionFile            `yaml:"files,omitempty"`
-	Packages DefinitionPackages          `yaml:"packages,omitempty"`
-	Actions  map[string]DefinitionAction `yaml:"actions,omitempty"`
-	Mappings DefinitionMappings          `yaml:"mappings,omitempty"`
+	Image    DefinitionImage    `yaml:"image"`
+	Source   DefinitionSource   `yaml:"source"`
+	Targets  DefinitionTarget   `yaml:"targets,omitempty"`
+	Files    []DefinitionFile   `yaml:"files,omitempty"`
+	Packages DefinitionPackages `yaml:"packages,omitempty"`
+	Actions  []DefinitionAction `yaml:"actions,omitempty"`
+	Mappings DefinitionMappings `yaml:"mappings,omitempty"`
 }
 
 // SetDefinitionDefaults sets some default values for the given Definition.

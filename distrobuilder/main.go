@@ -180,37 +180,25 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run post unpack hook
-	hook, ok := c.definition.Actions["post-unpack"]
-	if ok && (len(hook.Releases) == 0 ||
-		lxd.StringInSlice(c.definition.Image.Release, hook.Releases)) {
+	for _, hook := range getRunnableActions("post-unpack", c.definition) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %s", err)
 		}
 	}
 
-	//
-	hook, ok = c.definition.Actions["post-update"]
-	if len(hook.Releases) > 0 &&
-		!lxd.StringInSlice(c.definition.Image.Release, hook.Releases) {
-		// Set empty action to prevent if from running
-		hook.Action = ""
-	}
-
 	// Install/remove/update packages
-	err = managePackages(c.definition.Packages, hook.Action)
+	err = managePackages(c.definition.Packages,
+		getRunnableActions("post-update", c.definition))
 	if err != nil {
 		exitChroot()
 		return fmt.Errorf("Failed to manage packages: %s", err)
 	}
 
 	// Run post packages hook
-	hook, ok = c.definition.Actions["post-packages"]
-	if ok && (len(hook.Releases) == 0 ||
-		lxd.StringInSlice(c.definition.Image.Release, hook.Releases)) {
+	for _, hook := range getRunnableActions("post-packages", c.definition) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			exitChroot()
 			return fmt.Errorf("Failed to run post-packages: %s", err)
 		}
 	}
@@ -318,4 +306,22 @@ func getMappedArchitecture(def *shared.Definition) (string, error) {
 	}
 
 	return arch, nil
+}
+
+func getRunnableActions(trigger string, definition *shared.Definition) []shared.DefinitionAction {
+	out := []shared.DefinitionAction{}
+
+	for _, action := range definition.Actions {
+		if action.Trigger != trigger {
+			continue
+		}
+
+		if len(action.Releases) > 0 && !lxd.StringInSlice(definition.Image.Release, action.Releases) {
+			continue
+		}
+
+		out = append(out, action)
+	}
+
+	return out
 }
