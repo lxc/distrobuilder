@@ -53,6 +53,7 @@ import (
 	"os"
 	"path/filepath"
 
+	lxd "github.com/lxc/lxd/shared"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
@@ -172,37 +173,38 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
 
-	// Run post unpack hook
-	if c.definition.Actions.PostUnpack != "" {
-		err := shared.RunScript(c.definition.Actions.PostUnpack)
-		if err != nil {
-			return fmt.Errorf("Failed to run post-unpack: %s", err)
-		}
-	}
-
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := setupChroot(c.rootfsDir)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}
 
+	// Run post unpack hook
+	for _, hook := range getRunnableActions("post-unpack", c.definition) {
+		err := shared.RunScript(hook.Action)
+		if err != nil {
+			return fmt.Errorf("Failed to run post-unpack: %s", err)
+		}
+	}
+
 	// Install/remove/update packages
-	err = managePackages(c.definition.Packages, c.definition.Actions.PostUpdate)
+	err = managePackages(c.definition.Packages,
+		getRunnableActions("post-update", c.definition))
 	if err != nil {
 		exitChroot()
 		return fmt.Errorf("Failed to manage packages: %s", err)
 	}
 
-	// Unmount everything and exit the chroot
-	exitChroot()
-
 	// Run post packages hook
-	if c.definition.Actions.PostPackages != "" {
-		err := shared.RunScript(c.definition.Actions.PostPackages)
+	for _, hook := range getRunnableActions("post-packages", c.definition) {
+		err := shared.RunScript(hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %s", err)
 		}
 	}
+
+	// Unmount everything and exit the chroot
+	exitChroot()
 
 	return nil
 }
@@ -304,4 +306,22 @@ func getMappedArchitecture(def *shared.Definition) (string, error) {
 	}
 
 	return arch, nil
+}
+
+func getRunnableActions(trigger string, definition *shared.Definition) []shared.DefinitionAction {
+	out := []shared.DefinitionAction{}
+
+	for _, action := range definition.Actions {
+		if action.Trigger != trigger {
+			continue
+		}
+
+		if len(action.Releases) > 0 && !lxd.StringInSlice(definition.Image.Release, action.Releases) {
+			continue
+		}
+
+		out = append(out, action)
+	}
+
+	return out
 }

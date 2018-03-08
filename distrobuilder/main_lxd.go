@@ -85,15 +85,23 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Run post packages hook
-	if c.global.definition.Actions.PostPackages != "" {
-		err := shared.RunScript(c.global.definition.Actions.PostPackages)
+	exitChroot, err := setupChroot(c.global.sourceDir)
+	if err != nil {
+		return err
+	}
+
+	// Run post files hook
+	for _, action := range getRunnableActions("post-files", c.global.definition) {
+		err := shared.RunScript(action.Action)
 		if err != nil {
-			return fmt.Errorf("Failed to run post-packages: %s", err)
+			exitChroot()
+			return fmt.Errorf("Failed to run post-files: %s", err)
 		}
 	}
 
-	err := img.Build(c.flagType == "unified", c.flagCompression)
+	exitChroot()
+
+	err = img.Build(c.flagType == "unified", c.flagCompression)
 	if err != nil {
 		return fmt.Errorf("Failed to create LXD image: %s", err)
 	}

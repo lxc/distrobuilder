@@ -67,13 +67,12 @@ type DefinitionFile struct {
 	Releases  []string `yaml:"releases,omitempty"`
 }
 
-// DefinitionActions specifies custom actions (scripts) which are to be run after
-// certain actions.
-type DefinitionActions struct {
-	PostUnpack   string `yaml:"post-unpack,omitempty"`
-	PostUpdate   string `yaml:"post-update,omitempty"`
-	PostPackages string `yaml:"post-packages,omitempty"`
-	PostFiles    string `yaml:"post-files,omitempty"`
+// A DefinitionAction specifies a custom action (script) which is to be run after
+// a certain action.
+type DefinitionAction struct {
+	Trigger  string   `yaml:"trigger"`
+	Action   string   `yaml:"action"`
+	Releases []string `yaml:"releases,omitempty"`
 }
 
 // DefinitionMappings defines custom mappings.
@@ -89,7 +88,7 @@ type Definition struct {
 	Targets  DefinitionTarget   `yaml:"targets,omitempty"`
 	Files    []DefinitionFile   `yaml:"files,omitempty"`
 	Packages DefinitionPackages `yaml:"packages,omitempty"`
-	Actions  DefinitionActions  `yaml:"actions,omitempty"`
+	Actions  []DefinitionAction `yaml:"actions,omitempty"`
 	Mappings DefinitionMappings `yaml:"mappings,omitempty"`
 }
 
