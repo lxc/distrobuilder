@@ -23,6 +23,11 @@ func (g DumpGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 	return g.dumpFile(filepath.Join(sourceDir, defFile.Path), defFile.Content)
 }
 
+// Run dumps content to a file.
+func (g DumpGenerator) Run(cacheDir, sourceDir string, defFile shared.DefinitionFile) error {
+	return g.dumpFile(filepath.Join(sourceDir, defFile.Path), defFile.Content)
+}
+
 func (g DumpGenerator) dumpFile(path, content string) error {
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {

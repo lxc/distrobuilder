@@ -22,3 +22,9 @@ func (g RemoveGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 	defFile shared.DefinitionFile) error {
 	return os.RemoveAll(filepath.Join(sourceDir, defFile.Path))
 }
+
+// Run removes a path.
+func (g RemoveGenerator) Run(cacheDir, sourceDir string,
+	defFile shared.DefinitionFile) error {
+	return os.RemoveAll(filepath.Join(sourceDir, defFile.Path))
+}

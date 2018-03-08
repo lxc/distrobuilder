@@ -16,6 +16,7 @@ import (
 type Generator interface {
 	RunLXC(string, string, *image.LXCImage, shared.DefinitionFile) error
 	RunLXD(string, string, *image.LXDImage, shared.DefinitionFile) error
+	Run(string, string, shared.DefinitionFile) error
 }
 
 // Get returns a Generator.
