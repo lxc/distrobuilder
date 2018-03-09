@@ -43,6 +43,11 @@ func TestValidateDefinition(t *testing.T) {
 				Packages: DefinitionPackages{
 					Manager: "apt",
 				},
+				Files: []DefinitionFile{
+					{
+						Generator: "dump",
+					},
+				},
 			},
 			"",
 			false,
@@ -81,6 +86,30 @@ func TestValidateDefinition(t *testing.T) {
 			},
 			"",
 			false,
+		},
+		{
+			"invalid generator",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					Manager: "apt",
+				},
+				Files: []DefinitionFile{
+					{
+						Generator: "foo",
+					},
+				},
+			},
+			"files\\.\\*\\.generator must be one of .+",
+			true,
 		},
 		{
 			"empty image.distribution",

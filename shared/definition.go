@@ -141,5 +141,18 @@ func ValidateDefinition(def Definition) error {
 		return fmt.Errorf("packages.manager must be one of %v", validManagers)
 	}
 
+	validGenerators := []string{
+		"hostname",
+		"hosts",
+		"remove",
+		"dump",
+	}
+
+	for _, file := range def.Files {
+		if !shared.StringInSlice(strings.TrimSpace(file.Generator), validGenerators) {
+			return fmt.Errorf("files.*.generator must be one of %v", validGenerators)
+		}
+	}
+
 	return nil
 }
