@@ -33,7 +33,7 @@ func (c *cmdBuildDir) command() *cobra.Command {
 					continue
 				}
 
-				err := generator.Run(c.global.flagCacheDir, c.global.sourceDir, file)
+				err := generator.Run(c.global.flagCacheDir, c.global.targetDir, file)
 				if err != nil {
 					continue
 				}

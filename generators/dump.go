@@ -40,7 +40,7 @@ func (g DumpGenerator) dumpFile(path, content string) error {
 	}
 	defer file.Close()
 
-	_, err = file.WriteString(content)
+	_, err = file.WriteString(content + "\n")
 	if err != nil {
 		return err
 	}
