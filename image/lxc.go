@@ -75,8 +75,7 @@ func (l *LXCImage) Build() error {
 		return err
 	}
 
-	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar"), "xz", l.sourceDir,
-		"--transform", "s,^./,rootfs/,", ".")
+	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar"), "xz", l.sourceDir, ".")
 	if err != nil {
 		return err
 	}
