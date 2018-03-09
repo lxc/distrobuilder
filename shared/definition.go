@@ -141,5 +141,31 @@ func ValidateDefinition(def Definition) error {
 		return fmt.Errorf("packages.manager must be one of %v", validManagers)
 	}
 
+	validGenerators := []string{
+		"hostname",
+		"hosts",
+		"remove",
+		"dump",
+	}
+
+	for _, file := range def.Files {
+		if !shared.StringInSlice(strings.TrimSpace(file.Generator), validGenerators) {
+			return fmt.Errorf("files.*.generator must be one of %v", validGenerators)
+		}
+	}
+
+	validMappings := []string{
+		"alpinelinux",
+		"centos",
+		"debian",
+	}
+
+	architectureMap := strings.TrimSpace(def.Mappings.ArchitectureMap)
+	if architectureMap != "" {
+		if !shared.StringInSlice(architectureMap, validMappings) {
+			return fmt.Errorf("mappings.architecture_map must be one of %v", validMappings)
+		}
+	}
+
 	return nil
 }
