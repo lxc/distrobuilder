@@ -48,6 +48,9 @@ func TestValidateDefinition(t *testing.T) {
 						Generator: "dump",
 					},
 				},
+				Mappings: DefinitionMappings{
+					ArchitectureMap: "debian",
+				},
 			},
 			"",
 			false,
@@ -86,6 +89,33 @@ func TestValidateDefinition(t *testing.T) {
 			},
 			"",
 			false,
+		},
+		{
+			"invalid ArchitectureMap",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					Manager: "apt",
+				},
+				Files: []DefinitionFile{
+					{
+						Generator: "dump",
+					},
+				},
+				Mappings: DefinitionMappings{
+					ArchitectureMap: "foo",
+				},
+			},
+			"mappings.architecture_map must be one of .+",
+			true,
 		},
 		{
 			"invalid generator",

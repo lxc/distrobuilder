@@ -154,5 +154,18 @@ func ValidateDefinition(def Definition) error {
 		}
 	}
 
+	validMappings := []string{
+		"alpinelinux",
+		"centos",
+		"debian",
+	}
+
+	architectureMap := strings.TrimSpace(def.Mappings.ArchitectureMap)
+	if architectureMap != "" {
+		if !shared.StringInSlice(architectureMap, validMappings) {
+			return fmt.Errorf("mappings.architecture_map must be one of %v", validMappings)
+		}
+	}
+
 	return nil
 }
