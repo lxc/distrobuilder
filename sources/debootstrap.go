@@ -37,7 +37,7 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, rootfsD
 		if err != nil {
 			return err
 		}
-		defer os.RemoveAll(path.Base(keyring))
+		defer os.RemoveAll(path.Dir(keyring))
 
 		args = append(args, "--keyring", keyring)
 	}
