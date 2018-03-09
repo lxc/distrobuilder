@@ -46,7 +46,7 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 
 	io.Copy(&buffer, file)
 
-	if buffer.String() != "hello world" {
+	if buffer.String() != "hello world\n" {
 		t.Fatalf("Expected '%s', got '%s'", "hello world", buffer.String())
 	}
 }
@@ -85,7 +85,7 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 
 	io.Copy(&buffer, file)
 
-	if buffer.String() != "hello world" {
+	if buffer.String() != "hello world\n" {
 		t.Fatalf("Expected '%s', got '%s'", "hello world", buffer.String())
 	}
 }
