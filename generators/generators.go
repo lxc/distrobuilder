@@ -30,6 +30,8 @@ func Get(generator string) Generator {
 		return RemoveGenerator{}
 	case "dump":
 		return DumpGenerator{}
+	case "upstart-tty":
+		return UpstartTTYGenerator{}
 	}
 
 	return nil

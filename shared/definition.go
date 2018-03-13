@@ -159,10 +159,11 @@ func ValidateDefinition(def Definition) error {
 	}
 
 	validGenerators := []string{
+		"dump",
 		"hostname",
 		"hosts",
 		"remove",
-		"dump",
+		"upstart-tty",
 	}
 
 	for _, file := range def.Files {
