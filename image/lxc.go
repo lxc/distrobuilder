@@ -163,7 +163,7 @@ func (l *LXCImage) createMetadata() error {
 		}
 	}
 
-	err = l.writeMetadata(filepath.Join(metaDir, "excludes-user"), excludesUser,
+	err = l.writeMetadata(filepath.Join(metaDir, "excludes-user"), strings.TrimSuffix(excludesUser, "\n"),
 		false)
 	if err != nil {
 		return fmt.Errorf("Error writing 'excludes-user': %s", err)
