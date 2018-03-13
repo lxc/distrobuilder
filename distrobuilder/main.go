@@ -20,8 +20,14 @@ __attribute__((constructor)) void init(void) {
 	}
 
 	// Unshare a new mntns so our mounts don't leak
-	if (unshare(CLONE_NEWNS | CLONE_NEWPID) < 0) {
+	if (unshare(CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWUTS) < 0) {
 		fprintf(stderr, "Failed to unshare namespaces: %s\n", strerror(errno));
+		_exit(1);
+	}
+
+	// Hardcode the hostname to "distrobuilder"
+	if (sethostname("distrobuilder", 13) < 0) {
+		fprintf(stderr, "Failed to set hostname: %s\n", strerror(errno));
 		_exit(1);
 	}
 

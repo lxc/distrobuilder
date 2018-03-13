@@ -76,6 +76,8 @@ func TestHostnameGeneratorRunLXD(t *testing.T) {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
+	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "hostname")
+
 	err = generator.RunLXD(cacheDir, rootfsDir, image,
 		shared.DefinitionFile{Path: "/etc/hostname"})
 	if err != nil {

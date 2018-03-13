@@ -1,12 +1,14 @@
 package generators
 
 import (
-	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
+	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
 )
 
@@ -16,21 +18,37 @@ type HostsGenerator struct{}
 // RunLXC creates a LXC specific entry in the hosts file.
 func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 	defFile shared.DefinitionFile) error {
+
+	// Skip if the file doesn't exist
+	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
+		return nil
+	}
+
 	// Store original file
 	err := StoreFile(cacheDir, sourceDir, defFile.Path)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.OpenFile(filepath.Join(sourceDir, defFile.Path),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// Read the current content
+	content, err := ioutil.ReadFile(filepath.Join(sourceDir, defFile.Path))
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
-	// Append hosts entry
-	file.WriteString("127.0.0.1\tLXC_NAME\n")
+	// Replace hostname with placeholder
+	content = []byte(strings.Replace(string(content), "distrobuilder", "LXC_NAME", -1))
+
+	// Add a new line if needed
+	if !strings.Contains(string(content), "LXC_NAME") {
+		content = append([]byte("127.0.1.1\tLXC_NAME\n"), content...)
+	}
+
+	// Overwrite the file
+	err = ioutil.WriteFile(filepath.Join(sourceDir, defFile.Path), content, 0644)
+	if err != nil {
+		return err
+	}
 
 	// Add hostname path to LXC's templates file
 	return img.AddTemplate(defFile.Path)
@@ -39,6 +57,12 @@ func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 // RunLXD creates a hosts template.
 func (g HostsGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 	defFile shared.DefinitionFile) error {
+
+	// Skip if the file doesn't exist
+	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
+		return nil
+	}
+
 	templateDir := filepath.Join(cacheDir, "templates")
 
 	// Create templates path
@@ -47,22 +71,20 @@ func (g HostsGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 		return err
 	}
 
-	// Create hosts template
-	file, err := os.Create(filepath.Join(templateDir, "hosts.tpl"))
+	// Read the current content
+	content, err := ioutil.ReadFile(filepath.Join(sourceDir, defFile.Path))
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
-	hostsFile, err := os.Open(filepath.Join(sourceDir, defFile.Path))
+	// Replace hostname with placeholder
+	content = []byte(strings.Replace(string(content), "distrobuilder", "{{ container.name }}", -1))
+
+	// Write the template
+	err = ioutil.WriteFile(filepath.Join(templateDir, "hosts.tpl"), content, 0644)
 	if err != nil {
 		return err
 	}
-	defer hostsFile.Close()
-
-	// Copy old content, and append LXD specific entry
-	io.Copy(file, hostsFile)
-	file.WriteString("127.0.0.1\t{{ container.name }}\n")
 
 	img.Metadata.Templates[defFile.Path] = &api.ImageMetadataTemplate{
 		Template: "hosts.tpl",
