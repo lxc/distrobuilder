@@ -113,6 +113,15 @@ func SetDefinitionDefaults(def *Definition) {
 	if def.Source.Keyserver == "" {
 		def.Source.Keyserver = "hkps.pool.sks-keyservers.net"
 	}
+
+	// Set default name and description templates
+	if def.Image.Name == "" {
+		def.Image.Name = "{{ image.Distribution }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Variant }}-{{ creation_date }}"
+	}
+
+	if def.Image.Description == "" {
+		def.Image.Description = "{{ image.Distribution|capfirst }} {{ image.Release }} {{ image.Architecture }}{% if image.Variant != \"default\" %} ({{ image.Variant }}){% endif %} ({{ creation_date }})"
+	}
 }
 
 // ValidateDefinition validates the given Definition.
