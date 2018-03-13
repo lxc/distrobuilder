@@ -99,7 +99,6 @@ func (l *LXDImage) Build(unified bool, compression string) error {
 		if err != nil {
 			return err
 		}
-
 	} else {
 		// Create rootfs as squashfs.
 		err = shared.RunCommand("mksquashfs", l.sourceDir,
@@ -142,6 +141,7 @@ func (l *LXDImage) createMetadata() error {
 	l.Metadata.Properties["architecture"] = l.definition.Architecture
 	l.Metadata.Properties["os"] = l.definition.Distribution
 	l.Metadata.Properties["release"] = l.definition.Release
+	l.Metadata.Properties["variant"] = l.definition.Variant
 
 	ctx := pongo2.Context{
 		"image":         l.definition,
