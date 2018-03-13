@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/lxc/lxd/shared"
 )
@@ -23,10 +24,11 @@ type DefinitionImage struct {
 	Description  string `yaml:"description"`
 	Distribution string `yaml:"distribution"`
 	Release      string `yaml:"release,omitempty"`
-	Arch         string `yaml:"arch,omitempty"`
+	Architecture string `yaml:"arch,omitempty"`
 	Expiry       string `yaml:"expiry,omitempty"`
 	Variant      string `yaml:"variant,omitempty"`
 	Name         string `yaml:"name,omitempty"`
+	Serial       string `yaml:"serial,omitempty"`
 }
 
 // A DefinitionSource specifies the download type and location
@@ -95,8 +97,8 @@ type Definition struct {
 // SetDefinitionDefaults sets some default values for the given Definition.
 func SetDefinitionDefaults(def *Definition) {
 	// default to local arch
-	if def.Image.Arch == "" {
-		def.Image.Arch = runtime.GOARCH
+	if def.Image.Architecture == "" {
+		def.Image.Architecture = runtime.GOARCH
 	}
 
 	// set default expiry of 30 days
@@ -104,13 +106,28 @@ func SetDefinitionDefaults(def *Definition) {
 		def.Image.Expiry = "30d"
 	}
 
+	// Set default serial number
+	if def.Image.Serial == "" {
+		def.Image.Serial = time.Now().UTC().Format("20060102_1504")
+	}
+
 	// Set default variant
 	if def.Image.Variant == "" {
 		def.Image.Variant = "default"
 	}
 
+	// Set default keyserver
 	if def.Source.Keyserver == "" {
 		def.Source.Keyserver = "hkps.pool.sks-keyservers.net"
+	}
+
+	// Set default name and description templates
+	if def.Image.Name == "" {
+		def.Image.Name = "{{ image.Distribution }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Variant }}-{{ image.Serial }}"
+	}
+
+	if def.Image.Description == "" {
+		def.Image.Description = "{{ image.Distribution|capfirst }} {{ image.Release }} {{ image.Architecture }}{% if image.Variant != \"default\" %} ({{ image.Variant }}){% endif %} ({{ image.Serial }})"
 	}
 }
 

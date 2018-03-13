@@ -12,8 +12,8 @@ func TestSetDefinitionDefaults(t *testing.T) {
 
 	SetDefinitionDefaults(&def)
 
-	if def.Image.Arch != runtime.GOARCH {
-		t.Fatalf("Expected image.arch to be '%s', got '%s'", runtime.GOARCH, def.Image.Arch)
+	if def.Image.Architecture != runtime.GOARCH {
+		t.Fatalf("Expected image.arch to be '%s', got '%s'", runtime.GOARCH, def.Image.Architecture)
 	}
 
 	if def.Image.Expiry != "30d" {

@@ -18,9 +18,9 @@ var lxcImageDef = shared.DefinitionImage{
 	Description:  "{{ image. Distribution|capfirst }} {{ image.Release }}",
 	Distribution: "ubuntu",
 	Release:      "17.10",
-	Arch:         "amd64",
+	Architecture: "amd64",
 	Expiry:       "30d",
-	Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Arch }}-{{ creation_date }}",
+	Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Serial }}",
 }
 
 var lxcTarget = shared.DefinitionTargetLXC{
@@ -231,7 +231,7 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 		err := image.createMetadata()
 		if tt.shouldFail {
 			if err == nil {
-				t.Fatal("Expected to fail, but didn't")
+				t.Fatalf("Expected to fail, but didn't: %s", tt.name)
 			}
 
 			match, _ := regexp.MatchString(tt.expectedError, err.Error())
