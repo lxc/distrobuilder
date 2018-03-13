@@ -2,11 +2,14 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"syscall"
+
+	lxd "github.com/lxc/lxd/shared"
 
 	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
@@ -223,8 +226,29 @@ func setupChroot(rootfs string) (func() error, error) {
 			},
 		})
 
+	// Setup policy-rc.d override
+	policyCleanup := false
+	if lxd.PathExists("/usr/sbin/") && !lxd.PathExists("/usr/sbin/policy-rc.d") {
+		err = ioutil.WriteFile("/usr/sbin/policy-rc.d", []byte(`#!/bin/sh
+exit 101
+`), 0755)
+		if err != nil {
+			return nil, err
+		}
+
+		policyCleanup = true
+	}
+
 	return func() error {
 		defer root.Close()
+
+		// Cleanup policy-rc.d
+		if policyCleanup {
+			err = os.Remove("/usr/sbin/policy-rc.d")
+			if err != nil {
+				return err
+			}
+		}
 
 		// Reset old environment variables
 		shared.SetEnvVariables(oldEnvVariables)

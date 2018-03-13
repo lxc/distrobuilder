@@ -4,7 +4,6 @@ import (
 	"os"
 	p "path"
 	"path/filepath"
-	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
 
@@ -30,18 +29,30 @@ func Get(generator string) Generator {
 		return RemoveGenerator{}
 	case "dump":
 		return DumpGenerator{}
+	case "upstart-tty":
+		return UpstartTTYGenerator{}
 	}
 
 	return nil
 }
 
+var storedFiles = map[string]string{}
+
 // StoreFile caches a file which can be restored with the RestoreFiles function.
 func StoreFile(cacheDir, sourceDir, path string) error {
+	// Record newly created files
+	if !lxd.PathExists(filepath.Join(sourceDir, path)) {
+		storedFiles[filepath.Join(sourceDir, path)] = ""
+		return nil
+	}
+
 	// create temporary directory containing old files
 	err := os.MkdirAll(filepath.Join(cacheDir, "tmp", p.Dir(path)), 0755)
 	if err != nil {
 		return err
 	}
+
+	storedFiles[filepath.Join(sourceDir, path)] = filepath.Join(cacheDir, "tmp", path)
 
 	return lxd.FileCopy(filepath.Join(sourceDir, path),
 		filepath.Join(cacheDir, "tmp", path))
@@ -49,16 +60,25 @@ func StoreFile(cacheDir, sourceDir, path string) error {
 
 // RestoreFiles restores original files which were cached by StoreFile.
 func RestoreFiles(cacheDir, sourceDir string) error {
-	f := func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			// We don't care about directories. They should be present so there's
-			// no need to create them.
-			return nil
+	for origPath, tmpPath := range storedFiles {
+		// Deal with newly created files
+		if tmpPath == "" {
+			err := os.Remove(origPath)
+			if err != nil {
+				return err
+			}
+
+			continue
 		}
 
-		return lxd.FileCopy(path, filepath.Join(sourceDir,
-			strings.TrimPrefix(path, filepath.Join(cacheDir, "tmp"))))
+		err := lxd.FileCopy(tmpPath, origPath)
+		if err != nil {
+			return err
+		}
 	}
 
-	return filepath.Walk(filepath.Join(cacheDir, "tmp"), f)
+	// Reset the list of stored files
+	storedFiles = map[string]string{}
+
+	return nil
 }
