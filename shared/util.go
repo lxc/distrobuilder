@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
@@ -214,7 +215,7 @@ func RenderTemplate(template string, ctx pongo2.Context) (string, error) {
 	)
 
 	// Load template from string
-	tpl, err := pongo2.FromString(template)
+	tpl, err := pongo2.FromString("{% autoescape off %}" + template + "{% endautoescape %}")
 	if err != nil {
 		return ret, err
 	}
@@ -223,6 +224,11 @@ func RenderTemplate(template string, ctx pongo2.Context) (string, error) {
 	ret, err = tpl.Execute(ctx)
 	if err != nil {
 		return ret, err
+	}
+
+	// Looks like we're nesting templates so run pongo again
+	if strings.Contains(ret, "{{") || strings.Contains(ret, "{%") {
+		return RenderTemplate(ret, ctx)
 	}
 
 	return ret, err
