@@ -16,12 +16,11 @@ import (
 
 // A LXDImage represents a LXD image.
 type LXDImage struct {
-	sourceDir    string
-	targetDir    string
-	cacheDir     string
-	creationDate time.Time
-	Metadata     api.ImageMetadata
-	definition   shared.DefinitionImage
+	sourceDir  string
+	targetDir  string
+	cacheDir   string
+	Metadata   api.ImageMetadata
+	definition shared.DefinitionImage
 }
 
 // NewLXDImage returns a LXDImage.
@@ -31,7 +30,6 @@ func NewLXDImage(sourceDir, targetDir, cacheDir string,
 		sourceDir,
 		targetDir,
 		cacheDir,
-		time.Now(),
 		api.ImageMetadata{
 			Properties: make(map[string]string),
 			Templates:  make(map[string]*api.ImageMetadataTemplate),
@@ -73,8 +71,7 @@ func (l *LXDImage) Build(unified bool, compression string) error {
 
 	if unified {
 		ctx := pongo2.Context{
-			"image":         l.definition,
-			"creation_date": l.creationDate.Format("20060201_1504"),
+			"image": l.definition,
 		}
 
 		var fname string
@@ -137,16 +134,15 @@ func (l *LXDImage) createMetadata() error {
 	l.definition.Architecture = arch
 
 	l.Metadata.Architecture = l.definition.Architecture
-	l.Metadata.CreationDate = l.creationDate.Unix()
+	l.Metadata.CreationDate = time.Now().UTC().Unix()
 	l.Metadata.Properties["architecture"] = l.definition.Architecture
 	l.Metadata.Properties["os"] = l.definition.Distribution
 	l.Metadata.Properties["release"] = l.definition.Release
 	l.Metadata.Properties["variant"] = l.definition.Variant
-	l.Metadata.Properties["serial"] = l.creationDate.Format("20060201_1504")
+	l.Metadata.Properties["serial"] = l.definition.Serial
 
 	ctx := pongo2.Context{
-		"image":         l.definition,
-		"creation_date": l.creationDate.Format("20060201_1504"),
+		"image": l.definition,
 	}
 
 	l.Metadata.Properties["description"], err = shared.RenderTemplate(l.definition.Description, ctx)
@@ -159,7 +155,7 @@ func (l *LXDImage) createMetadata() error {
 		return err
 	}
 
-	l.Metadata.ExpiryDate = shared.GetExpiryDate(l.creationDate, l.definition.Expiry).Unix()
+	l.Metadata.ExpiryDate = shared.GetExpiryDate(time.Now(), l.definition.Expiry).Unix()
 
 	return err
 }

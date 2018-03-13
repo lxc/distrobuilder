@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/lxc/lxd/shared"
 )
@@ -27,6 +28,7 @@ type DefinitionImage struct {
 	Expiry       string `yaml:"expiry,omitempty"`
 	Variant      string `yaml:"variant,omitempty"`
 	Name         string `yaml:"name,omitempty"`
+	Serial       string `yaml:"serial,omitempty"`
 }
 
 // A DefinitionSource specifies the download type and location
@@ -104,6 +106,11 @@ func SetDefinitionDefaults(def *Definition) {
 		def.Image.Expiry = "30d"
 	}
 
+	// Set default serial number
+	if def.Image.Serial == "" {
+		def.Image.Serial = time.Now().UTC().Format("20060201_1504")
+	}
+
 	// Set default variant
 	if def.Image.Variant == "" {
 		def.Image.Variant = "default"
@@ -116,11 +123,11 @@ func SetDefinitionDefaults(def *Definition) {
 
 	// Set default name and description templates
 	if def.Image.Name == "" {
-		def.Image.Name = "{{ image.Distribution }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Variant }}-{{ creation_date }}"
+		def.Image.Name = "{{ image.Distribution }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Variant }}-{{ image.Serial }}"
 	}
 
 	if def.Image.Description == "" {
-		def.Image.Description = "{{ image.Distribution|capfirst }} {{ image.Release }} {{ image.Architecture }}{% if image.Variant != \"default\" %} ({{ image.Variant }}){% endif %} ({{ creation_date }})"
+		def.Image.Description = "{{ image.Distribution|capfirst }} {{ image.Release }} {{ image.Architecture }}{% if image.Variant != \"default\" %} ({{ image.Variant }}){% endif %} ({{ image.Serial }})"
 	}
 }
 

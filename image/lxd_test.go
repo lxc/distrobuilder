@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	lxd "github.com/lxc/lxd/shared"
 
@@ -21,7 +20,8 @@ var lxdImageDef = shared.DefinitionImage{
 	Release:      "17.10",
 	Architecture: "amd64",
 	Expiry:       "30d",
-	Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Architecture }}-{{ creation_date }}",
+	Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Serial }}",
+	Serial:       "testing",
 }
 
 func setupLXD(t *testing.T) *LXDImage {
@@ -38,9 +38,6 @@ func setupLXD(t *testing.T) *LXDImage {
 	}
 
 	image := NewLXDImage(cacheDir, "", cacheDir, lxdImageDef)
-
-	// Override creation date
-	image.creationDate = time.Date(2006, 1, 2, 3, 4, 5, 0, time.UTC)
 
 	// Check cache directory
 	if image.cacheDir != cacheDir {
@@ -94,10 +91,10 @@ func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
-	defer os.Remove("ubuntu-17.10-x86_64-20060201_0304.tar.xz")
+	defer os.Remove("ubuntu-17.10-x86_64-testing.tar.xz")
 
-	if !lxd.PathExists("ubuntu-17.10-x86_64-20060201_0304.tar.xz") {
-		t.Fatalf("File '%s' does not exist", "ubuntu-17.10-x86_64-20060201_0304.tar.xz")
+	if !lxd.PathExists("ubuntu-17.10-x86_64-testing.tar.xz") {
+		t.Fatalf("File '%s' does not exist", "ubuntu-17.10-x86_64-testing.tar.xz")
 	}
 
 	// Create unified tarball with default name.
@@ -133,11 +130,6 @@ func TestLXDCreateMetadata(t *testing.T) {
 			"x86_64",
 		},
 		{
-			"CreationDate",
-			fmt.Sprint(image.Metadata.CreationDate),
-			fmt.Sprint(image.creationDate.Unix()),
-		},
-		{
 			"Properties[architecture]",
 			image.Metadata.Properties["architecture"],
 			"x86_64",
@@ -162,12 +154,7 @@ func TestLXDCreateMetadata(t *testing.T) {
 			"Properties[name]",
 			image.Metadata.Properties["name"],
 			fmt.Sprintf("%s-%s-%s-%s", strings.ToLower(lxdImageDef.Distribution),
-				lxdImageDef.Release, "x86_64", image.creationDate.Format("20060201_1504")),
-		},
-		{
-			"ExpiryDate",
-			fmt.Sprintf("%d", image.Metadata.ExpiryDate),
-			"1138763045",
+				lxdImageDef.Release, "x86_64", lxdImageDef.Serial),
 		},
 	}
 
