@@ -109,6 +109,7 @@ func SetDefinitionDefaults(def *Definition) {
 		def.Image.Variant = "default"
 	}
 
+	// Set default keyserver
 	if def.Source.Keyserver == "" {
 		def.Source.Keyserver = "hkps.pool.sks-keyservers.net"
 	}
