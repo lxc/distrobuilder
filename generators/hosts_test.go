@@ -34,7 +34,7 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 	}
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
-		"127.0.0.1\tlocalhost\n")
+		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 
 	err = generator.RunLXC(cacheDir, rootfsDir, image,
 		shared.DefinitionFile{Path: "/etc/hosts"})
@@ -43,7 +43,7 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 	}
 
 	validateTestFile(t, filepath.Join(cacheDir, "tmp", "etc", "hosts"),
-		"127.0.0.1\tlocalhost\n")
+		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tLXC_NAME\n")
 
@@ -53,7 +53,7 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 	}
 
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
-		"127.0.0.1\tlocalhost\n")
+		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 }
 
 func TestHostsGeneratorRunLXD(t *testing.T) {
@@ -81,7 +81,7 @@ func TestHostsGeneratorRunLXD(t *testing.T) {
 	}
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
-		"127.0.0.1\tlocalhost\n")
+		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 
 	err = generator.RunLXD(cacheDir, rootfsDir, image,
 		shared.DefinitionFile{Path: "/etc/hosts"})

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
 
 	"github.com/lxc/distrobuilder/image"
@@ -17,6 +18,12 @@ type HostnameGenerator struct{}
 // RunLXC creates a hostname template.
 func (g HostnameGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 	defFile shared.DefinitionFile) error {
+
+	// Skip if the file doesn't exist
+	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
+		return nil
+	}
+
 	// Store original file
 	err := StoreFile(cacheDir, sourceDir, defFile.Path)
 	if err != nil {
@@ -43,6 +50,12 @@ func (g HostnameGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImag
 // RunLXD creates a hostname template.
 func (g HostnameGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 	defFile shared.DefinitionFile) error {
+
+	// Skip if the file doesn't exist
+	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
+		return nil
+	}
+
 	templateDir := filepath.Join(cacheDir, "templates")
 
 	err := os.MkdirAll(templateDir, 0755)
