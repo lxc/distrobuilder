@@ -108,7 +108,7 @@ func SetDefinitionDefaults(def *Definition) {
 
 	// Set default serial number
 	if def.Image.Serial == "" {
-		def.Image.Serial = time.Now().UTC().Format("20060201_1504")
+		def.Image.Serial = time.Now().UTC().Format("20060102_1504")
 	}
 
 	// Set default variant
