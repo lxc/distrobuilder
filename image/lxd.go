@@ -142,6 +142,7 @@ func (l *LXDImage) createMetadata() error {
 	l.Metadata.Properties["os"] = l.definition.Distribution
 	l.Metadata.Properties["release"] = l.definition.Release
 	l.Metadata.Properties["variant"] = l.definition.Variant
+	l.Metadata.Properties["serial"] = l.creationDate.Format("20060201_1504")
 
 	ctx := pongo2.Context{
 		"image":         l.definition,
