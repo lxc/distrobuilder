@@ -123,7 +123,7 @@ func (l *LXDImage) createMetadata() error {
 	var err error
 
 	// Get the arch ID of the provided architecture.
-	ID, err := osarch.ArchitectureId(l.definition.Arch)
+	ID, err := osarch.ArchitectureId(l.definition.Architecture)
 	if err != nil {
 		return err
 	}
@@ -135,11 +135,11 @@ func (l *LXDImage) createMetadata() error {
 	}
 
 	// Use proper architecture name from now on.
-	l.definition.Arch = arch
+	l.definition.Architecture = arch
 
-	l.Metadata.Architecture = l.definition.Arch
+	l.Metadata.Architecture = l.definition.Architecture
 	l.Metadata.CreationDate = l.creationDate.Unix()
-	l.Metadata.Properties["architecture"] = l.definition.Arch
+	l.Metadata.Properties["architecture"] = l.definition.Architecture
 	l.Metadata.Properties["os"] = l.definition.Distribution
 	l.Metadata.Properties["release"] = l.definition.Release
 

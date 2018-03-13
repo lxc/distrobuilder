@@ -294,21 +294,21 @@ func getMappedArchitecture(def *shared.Definition) (string, error) {
 	if def.Mappings.ArchitectureMap != "" {
 		// Translate the architecture using the requested map
 		var err error
-		arch, err = shared.GetArch(def.Mappings.ArchitectureMap, def.Image.Arch)
+		arch, err = shared.GetArch(def.Mappings.ArchitectureMap, def.Image.Architecture)
 		if err != nil {
 			return "", fmt.Errorf("Failed to translate the architecture name: %s", err)
 		}
 	} else if len(def.Mappings.Architectures) > 0 {
 		// Translate the architecture using a user specified mapping
 		var ok bool
-		arch, ok = def.Mappings.Architectures[def.Image.Arch]
+		arch, ok = def.Mappings.Architectures[def.Image.Architecture]
 		if !ok {
 			// If no mapping exists, it means it doesn't need translating
-			arch = def.Image.Arch
+			arch = def.Image.Architecture
 		}
 	} else {
 		// No map or mappings provided, just go with it as it is
-		arch = def.Image.Arch
+		arch = def.Image.Architecture
 	}
 
 	return arch, nil

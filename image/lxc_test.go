@@ -18,9 +18,9 @@ var lxcImageDef = shared.DefinitionImage{
 	Description:  "{{ image. Distribution|capfirst }} {{ image.Release }}",
 	Distribution: "ubuntu",
 	Release:      "17.10",
-	Arch:         "amd64",
+	Architecture: "amd64",
 	Expiry:       "30d",
-	Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Arch }}-{{ creation_date }}",
+	Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Architecture }}-{{ creation_date }}",
 }
 
 var lxcTarget = shared.DefinitionTargetLXC{

@@ -23,7 +23,7 @@ type DefinitionImage struct {
 	Description  string `yaml:"description"`
 	Distribution string `yaml:"distribution"`
 	Release      string `yaml:"release,omitempty"`
-	Arch         string `yaml:"arch,omitempty"`
+	Architecture string `yaml:"arch,omitempty"`
 	Expiry       string `yaml:"expiry,omitempty"`
 	Variant      string `yaml:"variant,omitempty"`
 	Name         string `yaml:"name,omitempty"`
@@ -95,8 +95,8 @@ type Definition struct {
 // SetDefinitionDefaults sets some default values for the given Definition.
 func SetDefinitionDefaults(def *Definition) {
 	// default to local arch
-	if def.Image.Arch == "" {
-		def.Image.Arch = runtime.GOARCH
+	if def.Image.Architecture == "" {
+		def.Image.Architecture = runtime.GOARCH
 	}
 
 	// set default expiry of 30 days
