@@ -24,14 +24,14 @@ source:
   keyserver: pgp.mit.edu # optional
 
   apt_source:: |-
-    deb {{ source.URL }} {{ image.Release }} main restricted universe multiverse
-    deb {{ source.URL }} {{ image.Release }}-updates main restricted universe multiverse
-    deb http://security.ubuntu.com/ubuntu {{ image.Release }}-security main restricted universe multiverse
+    deb {{ source.url }} {{ image.release }} main restricted universe multiverse
+    deb {{ source.url }} {{ image.release }}-updates main restricted universe multiverse
+    deb http://security.ubuntu.com/ubuntu {{ image.release }}-security main restricted universe multiverse
 
 targets:
   lxc:
     create-message: |-
-        You just created an {{ image.Description }} container.
+        You just created an {{ image.description }} container.
 
         To enable SSH, run: apt install openssh-server
         No default root or user password are set by LXC.
