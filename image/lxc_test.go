@@ -14,64 +14,67 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-var lxcImageDef = shared.DefinitionImage{
-	Description:  "{{ image. Distribution|capfirst }} {{ image.Release }}",
-	Distribution: "ubuntu",
-	Release:      "17.10",
-	Architecture: "amd64",
-	Expiry:       "30d",
-	Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Serial }}",
-}
-
-var lxcTarget = shared.DefinitionTargetLXC{
-	CreateMessage: "Welcome to {{ image.Distribution|capfirst}} {{ image.Release }}",
-	Config: []shared.DefinitionTargetLXCConfig{
-		{
-			Type:    "all",
-			Before:  5,
-			Content: "all_before_5",
-		},
-		{
-			Type:    "user",
-			Before:  5,
-			Content: "user_before_5",
-		},
-		{
-			Type:    "all",
-			After:   4,
-			Content: "all_after_4",
-		},
-		{
-			Type:    "user",
-			After:   4,
-			Content: "user_after_4",
-		},
-		{
-			Type:    "all",
-			Content: "all",
-		},
-		{
-			Type:    "system",
-			Before:  2,
-			Content: "system_before_2",
-		},
-		{
-			Type:    "system",
-			Before:  2,
-			After:   4,
-			Content: "system_before_2_after_4",
-		},
-		{
-			Type:    "user",
-			Before:  3,
-			After:   3,
-			Content: "user_before_3_after_3",
-		},
-		{
-			Type:    "system",
-			Before:  4,
-			After:   2,
-			Content: "system_before_4_after_2",
+var lxcDef = shared.Definition{
+	Image: shared.DefinitionImage{
+		Description:  "{{ image. Distribution|capfirst }} {{ image.Release }}",
+		Distribution: "ubuntu",
+		Release:      "17.10",
+		Architecture: "amd64",
+		Expiry:       "30d",
+		Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Serial }}",
+	},
+	Targets: shared.DefinitionTarget{
+		LXC: shared.DefinitionTargetLXC{
+			CreateMessage: "Welcome to {{ image.Distribution|capfirst}} {{ image.Release }}",
+			Config: []shared.DefinitionTargetLXCConfig{
+				{
+					Type:    "all",
+					Before:  5,
+					Content: "all_before_5",
+				},
+				{
+					Type:    "user",
+					Before:  5,
+					Content: "user_before_5",
+				},
+				{
+					Type:    "all",
+					After:   4,
+					Content: "all_after_4",
+				},
+				{
+					Type:    "user",
+					After:   4,
+					Content: "user_after_4",
+				},
+				{
+					Type:    "all",
+					Content: "all",
+				},
+				{
+					Type:    "system",
+					Before:  2,
+					Content: "system_before_2",
+				},
+				{
+					Type:    "system",
+					Before:  2,
+					After:   4,
+					Content: "system_before_2_after_4",
+				},
+				{
+					Type:    "user",
+					Before:  3,
+					After:   3,
+					Content: "user_before_3_after_3",
+				},
+				{
+					Type:    "system",
+					Before:  4,
+					After:   2,
+					Content: "system_before_4_after_2",
+				},
+			},
 		},
 	},
 }
@@ -82,7 +85,7 @@ func lxcCacheDir() string {
 }
 
 func setupLXC() *LXCImage {
-	return NewLXCImage(lxcCacheDir(), "", lxcCacheDir(), lxcImageDef, lxcTarget)
+	return NewLXCImage(lxcCacheDir(), "", lxcCacheDir(), lxcDef)
 }
 
 func teardownLXC() {
@@ -90,7 +93,7 @@ func teardownLXC() {
 }
 
 func TestNewLXCImage(t *testing.T) {
-	image := NewLXCImage(lxcCacheDir(), "", lxcCacheDir(), lxcImageDef, lxcTarget)
+	image := NewLXCImage(lxcCacheDir(), "", lxcCacheDir(), lxcDef)
 	defer teardownLXC()
 
 	if image.cacheDir != lxcCacheDir() {
@@ -98,12 +101,8 @@ func TestNewLXCImage(t *testing.T) {
 			image.cacheDir)
 	}
 
-	if !reflect.DeepEqual(image.definition, lxcImageDef) {
+	if !reflect.DeepEqual(image.definition, lxcDef) {
 		t.Fatalf("lxcImageDef and image.definition are not equal")
-	}
-
-	if !reflect.DeepEqual(image.target, lxcTarget) {
-		t.Fatalf("lxcTarget and image.target are not equal")
 	}
 }
 
@@ -192,7 +191,7 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 			true,
 			"Error writing 'config': .+",
 			func(l LXCImage) *LXCImage {
-				l.target.Config = []shared.DefinitionTargetLXCConfig{
+				l.definition.Targets.LXC.Config = []shared.DefinitionTargetLXCConfig{
 					{
 						Type:    "all",
 						After:   4,
@@ -207,7 +206,7 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 			true,
 			"Error writing 'create-message': .+",
 			func(l LXCImage) *LXCImage {
-				l.target.CreateMessage = "{{ invalid }"
+				l.definition.Targets.LXC.CreateMessage = "{{ invalid }"
 				return &l
 			},
 		},

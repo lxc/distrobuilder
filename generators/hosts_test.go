@@ -21,12 +21,14 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 		t.Fatal("Expected hosts generator, got nil")
 	}
 
-	definition := shared.DefinitionImage{
-		Distribution: "ubuntu",
-		Release:      "artful",
+	definition := shared.Definition{
+		Image: shared.DefinitionImage{
+			Distribution: "ubuntu",
+			Release:      "artful",
+		},
 	}
 
-	image := image.NewLXCImage(cacheDir, "", cacheDir, definition, shared.DefinitionTargetLXC{})
+	image := image.NewLXCImage(cacheDir, "", cacheDir, definition)
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "etc"), 0755)
 	if err != nil {
@@ -68,9 +70,11 @@ func TestHostsGeneratorRunLXD(t *testing.T) {
 		t.Fatal("Expected hosts generator, got nil")
 	}
 
-	definition := shared.DefinitionImage{
-		Distribution: "ubuntu",
-		Release:      "artful",
+	definition := shared.Definition{
+		Image: shared.DefinitionImage{
+			Distribution: "ubuntu",
+			Release:      "artful",
+		},
 	}
 
 	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
