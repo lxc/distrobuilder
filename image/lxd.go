@@ -8,7 +8,6 @@ import (
 
 	"github.com/lxc/lxd/shared/api"
 	"github.com/lxc/lxd/shared/osarch"
-	"gopkg.in/flosch/pongo2.v3"
 	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -20,12 +19,12 @@ type LXDImage struct {
 	targetDir  string
 	cacheDir   string
 	Metadata   api.ImageMetadata
-	definition shared.DefinitionImage
+	definition shared.Definition
 }
 
 // NewLXDImage returns a LXDImage.
 func NewLXDImage(sourceDir, targetDir, cacheDir string,
-	imageDef shared.DefinitionImage) *LXDImage {
+	definition shared.Definition) *LXDImage {
 	return &LXDImage{
 		sourceDir,
 		targetDir,
@@ -34,7 +33,7 @@ func NewLXDImage(sourceDir, targetDir, cacheDir string,
 			Properties: make(map[string]string),
 			Templates:  make(map[string]*api.ImageMetadataTemplate),
 		},
-		imageDef,
+		definition,
 	}
 }
 
@@ -70,14 +69,10 @@ func (l *LXDImage) Build(unified bool, compression string) error {
 	}
 
 	if unified {
-		ctx := pongo2.Context{
-			"image": l.definition,
-		}
-
 		var fname string
-		if l.definition.Name != "" {
+		if l.definition.Image.Name != "" {
 			// Use a custom name for the unified tarball.
-			fname, _ = shared.RenderTemplate(l.definition.Name, ctx)
+			fname, _ = shared.RenderTemplate(l.definition.Image.Name, l.definition)
 		} else {
 			// Default name for the unified tarball.
 			fname = "lxd"
@@ -119,7 +114,7 @@ func (l *LXDImage) createMetadata() error {
 	var err error
 
 	// Get the arch ID of the provided architecture.
-	ID, err := osarch.ArchitectureId(l.definition.Architecture)
+	ID, err := osarch.ArchitectureId(l.definition.Image.Architecture)
 	if err != nil {
 		return err
 	}
@@ -131,31 +126,30 @@ func (l *LXDImage) createMetadata() error {
 	}
 
 	// Use proper architecture name from now on.
-	l.definition.Architecture = arch
+	l.definition.Image.Architecture = arch
 
-	l.Metadata.Architecture = l.definition.Architecture
+	l.Metadata.Architecture = l.definition.Image.Architecture
 	l.Metadata.CreationDate = time.Now().UTC().Unix()
-	l.Metadata.Properties["architecture"] = l.definition.Architecture
-	l.Metadata.Properties["os"] = l.definition.Distribution
-	l.Metadata.Properties["release"] = l.definition.Release
-	l.Metadata.Properties["variant"] = l.definition.Variant
-	l.Metadata.Properties["serial"] = l.definition.Serial
+	l.Metadata.Properties["architecture"] = l.definition.Image.Architecture
+	l.Metadata.Properties["os"] = l.definition.Image.Distribution
+	l.Metadata.Properties["release"] = l.definition.Image.Release
+	l.Metadata.Properties["variant"] = l.definition.Image.Variant
+	l.Metadata.Properties["serial"] = l.definition.Image.Serial
 
-	ctx := pongo2.Context{
-		"image": l.definition,
-	}
-
-	l.Metadata.Properties["description"], err = shared.RenderTemplate(l.definition.Description, ctx)
+	l.Metadata.Properties["description"], err = shared.RenderTemplate(
+		l.definition.Image.Description, l.definition)
 	if err != err {
 		return nil
 	}
 
-	l.Metadata.Properties["name"], err = shared.RenderTemplate(l.definition.Name, ctx)
+	l.Metadata.Properties["name"], err = shared.RenderTemplate(
+		l.definition.Image.Name, l.definition)
 	if err != nil {
 		return err
 	}
 
-	l.Metadata.ExpiryDate = shared.GetExpiryDate(time.Now(), l.definition.Expiry).Unix()
+	l.Metadata.ExpiryDate = shared.GetExpiryDate(time.Now(),
+		l.definition.Image.Expiry).Unix()
 
 	return err
 }

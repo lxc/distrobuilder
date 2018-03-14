@@ -16,6 +16,7 @@ import (
 
 	lxd "github.com/lxc/lxd/shared"
 	"gopkg.in/flosch/pongo2.v3"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // EnvVariable represents a environment variable.
@@ -208,27 +209,32 @@ func GetExpiryDate(creationDate time.Time, format string) time.Time {
 }
 
 // RenderTemplate renders a pongo2 template.
-func RenderTemplate(template string, ctx pongo2.Context) (string, error) {
-	var (
-		err error
-		ret string
-	)
+func RenderTemplate(template string, iface interface{}) (string, error) {
+	// Serialize interface
+	data, err := yaml.Marshal(iface)
+	if err != nil {
+		return "", err
+	}
+
+	// Decode document and write it to a pongo2 Context
+	var ctx pongo2.Context
+	yaml.Unmarshal(data, &ctx)
 
 	// Load template from string
 	tpl, err := pongo2.FromString("{% autoescape off %}" + template + "{% endautoescape %}")
 	if err != nil {
-		return ret, err
+		return "", err
 	}
 
 	// Get rendered template
-	ret, err = tpl.Execute(ctx)
+	ret, err := tpl.Execute(ctx)
 	if err != nil {
 		return ret, err
 	}
 
 	// Looks like we're nesting templates so run pongo again
 	if strings.Contains(ret, "{{") || strings.Contains(ret, "{%") {
-		return RenderTemplate(ret, ctx)
+		return RenderTemplate(ret, iface)
 	}
 
 	return ret, err

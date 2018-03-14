@@ -65,7 +65,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 
 func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 	img := image.NewLXDImage(c.global.sourceDir, c.global.targetDir,
-		c.global.flagCacheDir, c.global.definition.Image)
+		c.global.flagCacheDir, *c.global.definition)
 
 	for _, file := range c.global.definition.Files {
 		if len(file.Releases) > 0 && !lxd.StringInSlice(c.global.definition.Image.Release,

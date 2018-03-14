@@ -46,8 +46,7 @@ func (c *cmdLXC) commandPack() *cobra.Command {
 
 func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 	img := image.NewLXCImage(c.global.sourceDir, c.global.targetDir,
-		c.global.flagCacheDir, c.global.definition.Image,
-		c.global.definition.Targets.LXC)
+		c.global.flagCacheDir, *c.global.definition)
 
 	for _, file := range c.global.definition.Files {
 		generator := generators.Get(file.Generator)
