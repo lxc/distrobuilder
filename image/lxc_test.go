@@ -2,12 +2,14 @@ package image
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -16,16 +18,14 @@ import (
 
 var lxcDef = shared.Definition{
 	Image: shared.DefinitionImage{
-		Description:  "{{ image. Distribution|capfirst }} {{ image.Release }}",
 		Distribution: "ubuntu",
 		Release:      "17.10",
 		Architecture: "amd64",
 		Expiry:       "30d",
-		Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Serial }}",
 	},
 	Targets: shared.DefinitionTarget{
 		LXC: shared.DefinitionTargetLXC{
-			CreateMessage: "Welcome to {{ image.Distribution|capfirst}} {{ image.Release }}",
+			CreateMessage: "Welcome to {{ image.distribution|capfirst}} {{ image.release }}",
 			Config: []shared.DefinitionTargetLXCConfig{
 				{
 					Type:    "all",
@@ -242,6 +242,26 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 		if !tt.shouldFail && err != nil {
 			t.Fatalf("Unexpected error: %s", err)
 		}
+	}
+
+	// Verify create-message template
+	f, err := os.Open(filepath.Join(lxcCacheDir(), "metadata", "create-message"))
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+	defer f.Close()
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, f)
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	expected := fmt.Sprintf("Welcome to %s %s\n",
+		strings.Title(lxcDef.Image.Distribution), lxcDef.Image.Release)
+	if buf.String() != expected {
+		t.Fatalf("create-message: Expected '%s', got '%s'", expected,
+			buf.String())
 	}
 }
 
