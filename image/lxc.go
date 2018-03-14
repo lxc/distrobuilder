@@ -8,7 +8,6 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
-	"gopkg.in/flosch/pongo2.v3"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -20,19 +19,16 @@ type LXCImage struct {
 	sourceDir  string
 	targetDir  string
 	cacheDir   string
-	definition shared.DefinitionImage
-	target     shared.DefinitionTargetLXC
+	definition shared.Definition
 }
 
 // NewLXCImage returns a LXCImage.
-func NewLXCImage(sourceDir, targetDir, cacheDir string, definition shared.DefinitionImage,
-	target shared.DefinitionTargetLXC) *LXCImage {
+func NewLXCImage(sourceDir, targetDir, cacheDir string, definition shared.Definition) *LXCImage {
 	img := LXCImage{
 		sourceDir,
 		targetDir,
 		cacheDir,
 		definition,
-		target,
 	}
 
 	// create metadata directory
@@ -86,7 +82,7 @@ func (l *LXCImage) Build() error {
 func (l *LXCImage) createMetadata() error {
 	metaDir := filepath.Join(l.cacheDir, "metadata")
 
-	for _, c := range l.target.Config {
+	for _, c := range l.definition.Targets.LXC.Config {
 		// If not specified, create files up to ${maxLXCCompatLevel}
 		if c.Before == 0 {
 			c.Before = maxLXCCompatLevel + 1
@@ -130,13 +126,13 @@ func (l *LXCImage) createMetadata() error {
 	}
 
 	err := l.writeMetadata(filepath.Join(metaDir, "create-message"),
-		l.target.CreateMessage, false)
+		l.definition.Targets.LXC.CreateMessage, false)
 	if err != nil {
 		return fmt.Errorf("Error writing 'create-message': %s", err)
 	}
 
 	err = l.writeMetadata(filepath.Join(metaDir, "expiry"),
-		fmt.Sprint(shared.GetExpiryDate(time.Now(), l.definition.Expiry).Unix()),
+		fmt.Sprint(shared.GetExpiryDate(time.Now(), l.definition.Image.Expiry).Unix()),
 		false)
 	if err != nil {
 		return fmt.Errorf("Error writing 'expiry': %s", err)
@@ -211,11 +207,7 @@ func (l *LXCImage) writeMetadata(filename, content string, append bool) error {
 	}
 	defer file.Close()
 
-	ctx := pongo2.Context{
-		"image": l.definition,
-	}
-
-	out, err := shared.RenderTemplate(content, ctx)
+	out, err := shared.RenderTemplate(content, l.definition)
 	if err != nil {
 		return err
 	}

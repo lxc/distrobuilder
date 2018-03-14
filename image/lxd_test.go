@@ -14,14 +14,16 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-var lxdImageDef = shared.DefinitionImage{
-	Description:  "{{ image. Distribution|capfirst }} {{ image.Release }}",
-	Distribution: "ubuntu",
-	Release:      "17.10",
-	Architecture: "amd64",
-	Expiry:       "30d",
-	Name:         "{{ image.Distribution|lower }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Serial }}",
-	Serial:       "testing",
+var lxdDef = shared.Definition{
+	Image: shared.DefinitionImage{
+		Description:  "{{ image.distribution|capfirst }} {{ image. release }}",
+		Distribution: "ubuntu",
+		Release:      "17.10",
+		Architecture: "amd64",
+		Expiry:       "30d",
+		Name:         "{{ image.distribution|lower }}-{{ image.release }}-{{ image.architecture }}-{{ image.serial }}",
+		Serial:       "testing",
+	},
 }
 
 func setupLXD(t *testing.T) *LXDImage {
@@ -37,7 +39,7 @@ func setupLXD(t *testing.T) *LXDImage {
 		t.Fatalf("Failed to create templates directory: %s", err)
 	}
 
-	image := NewLXDImage(cacheDir, "", cacheDir, lxdImageDef)
+	image := NewLXDImage(cacheDir, "", cacheDir, lxdDef)
 
 	// Check cache directory
 	if image.cacheDir != cacheDir {
@@ -45,9 +47,9 @@ func setupLXD(t *testing.T) *LXDImage {
 		t.Fatalf("Expected cacheDir to be '%s', is '%s'", cacheDir, image.cacheDir)
 	}
 
-	if !reflect.DeepEqual(lxdImageDef, image.definition) {
+	if !reflect.DeepEqual(lxdDef, image.definition) {
 		teardownLXD(t)
-		t.Fatal("lxdImageDef and image.definition are not equal")
+		t.Fatal("lxdDef and image.definition are not equal")
 	}
 
 	return image
@@ -98,7 +100,7 @@ func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 	}
 
 	// Create unified tarball with default name.
-	image.definition.Name = ""
+	image.definition.Image.Name = ""
 	err = image.Build(true, "xz")
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
@@ -137,24 +139,24 @@ func TestLXDCreateMetadata(t *testing.T) {
 		{
 			"Properties[os]",
 			image.Metadata.Properties["os"],
-			lxdImageDef.Distribution,
+			lxdDef.Image.Distribution,
 		},
 		{
 			"Properties[release]",
 			image.Metadata.Properties["release"],
-			lxdImageDef.Release,
+			lxdDef.Image.Release,
 		},
 		{
 			"Properties[description]",
 			image.Metadata.Properties["description"],
-			fmt.Sprintf("%s %s", strings.Title(lxdImageDef.Distribution),
-				lxdImageDef.Release),
+			fmt.Sprintf("%s %s", strings.Title(lxdDef.Image.Distribution),
+				lxdDef.Image.Release),
 		},
 		{
 			"Properties[name]",
 			image.Metadata.Properties["name"],
-			fmt.Sprintf("%s-%s-%s-%s", strings.ToLower(lxdImageDef.Distribution),
-				lxdImageDef.Release, "x86_64", lxdImageDef.Serial),
+			fmt.Sprintf("%s-%s-%s-%s", strings.ToLower(lxdDef.Image.Distribution),
+				lxdDef.Image.Release, "x86_64", lxdDef.Image.Serial),
 		},
 	}
 

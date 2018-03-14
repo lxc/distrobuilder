@@ -119,13 +119,25 @@ func TestCreateGPGKeyring(t *testing.T) {
 func TestRenderTemplate(t *testing.T) {
 	tests := []struct {
 		name       string
-		context    pongo2.Context
+		iface      interface{}
 		template   string
 		expected   string
 		shouldFail bool
 	}{
 		{
-			"valid template",
+			"valid template with yaml tags",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "Ubuntu",
+					Release:      "Bionic",
+				},
+			},
+			"{{ image.distribution }} {{ image.release }}",
+			"Ubuntu Bionic",
+			false,
+		},
+		{
+			"valid template without yaml tags",
 			pongo2.Context{
 				"foo": "bar",
 			},
@@ -162,7 +174,7 @@ func TestRenderTemplate(t *testing.T) {
 
 	for i, tt := range tests {
 		log.Printf("Running test #%d: %s", i, tt.name)
-		ret, err := RenderTemplate(tt.template, tt.context)
+		ret, err := RenderTemplate(tt.template, tt.iface)
 		if tt.shouldFail && err == nil {
 			t.Fatal("test should have failed")
 		}
