@@ -3,8 +3,9 @@ package shared
 import (
 	"log"
 	"regexp"
-	"runtime"
 	"testing"
+
+	"github.com/lxc/lxd/shared"
 )
 
 func TestSetDefinitionDefaults(t *testing.T) {
@@ -12,8 +13,10 @@ func TestSetDefinitionDefaults(t *testing.T) {
 
 	SetDefinitionDefaults(&def)
 
-	if def.Image.Architecture != runtime.GOARCH {
-		t.Fatalf("Expected image.arch to be '%s', got '%s'", runtime.GOARCH, def.Image.Architecture)
+	uname, _ := shared.Uname()
+
+	if def.Image.Architecture != uname.Machine {
+		t.Fatalf("Expected image.arch to be '%s', got '%s'", uname.Machine, def.Image.Architecture)
 	}
 
 	if def.Image.Expiry != "30d" {
