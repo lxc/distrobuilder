@@ -74,7 +74,6 @@ type cmdGlobal struct {
 	definition *shared.Definition
 	sourceDir  string
 	targetDir  string
-	rootfsDir  string
 }
 
 func main() {
@@ -121,7 +120,8 @@ func main() {
 }
 
 func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
-	c.sourceDir = c.flagCacheDir
+	// Clean up cache directory before doing anything
+	os.RemoveAll(c.flagCacheDir)
 
 	if len(args) > 1 {
 		// Create and set target directory if provided
@@ -140,12 +140,16 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	if cmd.CalledAs() == "build-dir" {
-		c.rootfsDir = c.targetDir
+		c.sourceDir = c.targetDir
 	} else {
-		c.rootfsDir = filepath.Join(c.flagCacheDir, "rootfs")
+		c.sourceDir = filepath.Join(c.flagCacheDir, "rootfs")
 	}
 
-	var err error
+	// Create source directory if it doesn't exist
+	err := os.MkdirAll(c.sourceDir, 0755)
+	if err != nil {
+		return err
+	}
 
 	// Get the image definition
 	c.definition, err = getDefinition(args[0])
@@ -174,16 +178,18 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Download the root filesystem
-	err = downloader.Run(c.definition.Source, c.definition.Image.Release, arch, c.rootfsDir)
+	err = downloader.Run(c.definition.Source, c.definition.Image.Release, arch, c.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
 
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := setupChroot(c.rootfsDir)
+	exitChroot, err := setupChroot(c.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}
+	// Unmount everything and exit the chroot
+	defer exitChroot()
 
 	// Run post unpack hook
 	for _, hook := range getRunnableActions("post-unpack", c.definition) {
@@ -197,7 +203,6 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	err = managePackages(c.definition.Packages,
 		getRunnableActions("post-update", c.definition))
 	if err != nil {
-		exitChroot()
 		return fmt.Errorf("Failed to manage packages: %s", err)
 	}
 
@@ -209,14 +214,14 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Unmount everything and exit the chroot
-	exitChroot()
-
 	return nil
 }
 
 func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	var err error
+
+	// Clean up cache directory before doing anything
+	os.RemoveAll(c.flagCacheDir)
 
 	// resolve path
 	c.sourceDir, err = filepath.Abs(args[1])
@@ -239,9 +244,8 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 }
 
 func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
-	// Clean up cache directory if needed. Do not clean up if the build-dir
-	// sub-command is run since the directory is needed for further actions.
-	if c.flagCleanup && cmd.CalledAs() != "build-dir" {
+	// Clean up cache directory
+	if c.flagCleanup {
 		return os.RemoveAll(c.flagCacheDir)
 	}
 
