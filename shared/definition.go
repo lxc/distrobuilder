@@ -3,7 +3,6 @@ package shared
 import (
 	"errors"
 	"fmt"
-	"runtime"
 	"strings"
 	"time"
 
@@ -98,7 +97,8 @@ type Definition struct {
 func SetDefinitionDefaults(def *Definition) {
 	// default to local arch
 	if def.Image.Architecture == "" {
-		def.Image.Architecture = runtime.GOARCH
+		uname, _ := shared.Uname()
+		def.Image.Architecture = uname.Machine
 	}
 
 	// set default expiry of 30 days
