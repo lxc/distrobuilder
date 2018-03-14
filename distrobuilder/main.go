@@ -54,10 +54,12 @@ import "C"
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/spf13/cobra"
@@ -70,6 +72,7 @@ import (
 type cmdGlobal struct {
 	flagCleanup  bool
 	flagCacheDir string
+	flagOptions  []string
 
 	definition *shared.Definition
 	sourceDir  string
@@ -97,6 +100,8 @@ func main() {
 		"Clean up cache directory")
 	app.PersistentFlags().StringVar(&globalCmd.flagCacheDir, "cache-dir",
 		"/var/cache/distrobuilder", "Cache directory"+"``")
+	app.PersistentFlags().StringSliceVarP(&globalCmd.flagOptions, "options", "o",
+		[]string{}, "Override options (list of key=value)"+"``")
 
 	// LXC sub-commands
 	LXCCmd := cmdLXC{global: &globalCmd}
@@ -152,7 +157,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get the image definition
-	c.definition, err = getDefinition(args[0])
+	c.definition, err = getDefinition(args[0], c.flagOptions)
 	if err != nil {
 		return err
 	}
@@ -235,7 +240,7 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get the image definition
-	c.definition, err = getDefinition(args[0])
+	c.definition, err = getDefinition(args[0], c.flagOptions)
 	if err != nil {
 		return err
 	}
@@ -252,7 +257,7 @@ func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func getDefinition(fname string) (*shared.Definition, error) {
+func getDefinition(fname string, options []string) (*shared.Definition, error) {
 	// Read the provided file, or if none was given, read from stdin
 	var buf bytes.Buffer
 	if fname == "" || fname == "-" {
@@ -278,6 +283,19 @@ func getDefinition(fname string) (*shared.Definition, error) {
 	err := yaml.Unmarshal(buf.Bytes(), &def)
 	if err != nil {
 		return nil, err
+	}
+
+	// Set options from the command line
+	for _, o := range options {
+		parts := strings.Split(o, "=")
+		if len(parts) != 2 {
+			return nil, errors.New("Options need to be of type key=value")
+		}
+
+		err := def.SetValue(parts[0], parts[1])
+		if err != nil {
+			return nil, fmt.Errorf("Failed to set option %s: %s", o, err)
+		}
 	}
 
 	// Apply some defaults on top of the provided configuration

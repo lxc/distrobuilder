@@ -3,6 +3,8 @@ package shared
 import (
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -91,6 +93,40 @@ type Definition struct {
 	Packages DefinitionPackages `yaml:"packages,omitempty"`
 	Actions  []DefinitionAction `yaml:"actions,omitempty"`
 	Mappings DefinitionMappings `yaml:"mappings,omitempty"`
+}
+
+// SetValue writes the provided value to a field represented by the yaml tag 'key'.
+func (d *Definition) SetValue(key string, value interface{}) error {
+	// Walk through the definition and find the field with the given key
+	field, err := getFieldByTag(reflect.ValueOf(d).Elem(), reflect.TypeOf(d).Elem(), key)
+	if err != nil {
+		return err
+	}
+
+	// Fail if the field cannot be set
+	if !field.CanSet() {
+		return fmt.Errorf("Cannot set value for %s", key)
+	}
+
+	if reflect.TypeOf(value).Kind() != field.Kind() {
+		return fmt.Errorf("Cannot assign %s value to %s",
+			reflect.TypeOf(value).Kind(), field.Kind())
+	}
+
+	switch reflect.TypeOf(value).Kind() {
+	case reflect.Bool:
+		field.SetBool(value.(bool))
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		field.SetInt(value.(int64))
+	case reflect.String:
+		field.SetString(value.(string))
+	case reflect.Uint, reflect.Uintptr, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		field.SetUint(value.(uint64))
+	default:
+		return fmt.Errorf("Unknown value type %s", reflect.TypeOf(value).Kind())
+	}
+
+	return nil
 }
 
 // SetDefinitionDefaults sets some default values for the given Definition.
@@ -186,4 +222,43 @@ func ValidateDefinition(def Definition) error {
 	}
 
 	return nil
+}
+
+func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, error) {
+	parts := strings.SplitN(tag, ".", 2)
+
+	if t.Kind() == reflect.Slice {
+		// Get index, e.g. '0' from tag 'foo.0'
+		value, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return reflect.Value{}, err
+		}
+
+		if t.Elem().Kind() == reflect.Struct {
+			// Make sure we are in range, otherwise return error
+			if value < 0 || value >= v.Len() {
+				return reflect.Value{}, errors.New("Index out of range")
+			}
+			return getFieldByTag(v.Index(value), t.Elem(), parts[1])
+		}
+
+		// Primitive type
+		return v.Index(value), nil
+	}
+
+	if t.Kind() == reflect.Struct {
+		// Find struct field with correct tag
+		for i := 0; i < t.NumField(); i++ {
+			value, ok := t.Field(i).Tag.Lookup("yaml")
+			if ok && strings.Split(value, ",")[0] == parts[0] {
+				if len(parts) == 1 {
+					return v.Field(i), nil
+				}
+				return getFieldByTag(v.Field(i), t.Field(i).Type, parts[1])
+			}
+		}
+	}
+
+	// Return its value if it's a primitive type
+	return v, nil
 }
