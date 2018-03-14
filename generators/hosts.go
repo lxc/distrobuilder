@@ -80,6 +80,11 @@ func (g HostsGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 	// Replace hostname with placeholder
 	content = []byte(strings.Replace(string(content), "distrobuilder", "{{ container.name }}", -1))
 
+	// Add a new line if needed
+	if !strings.Contains(string(content), "{{ container.name }}") {
+		content = append([]byte("127.0.1.1\t{{ container.name }}\n"), content...)
+	}
+
 	// Write the template
 	err = ioutil.WriteFile(filepath.Join(templateDir, "hosts.tpl"), content, 0644)
 	if err != nil {
