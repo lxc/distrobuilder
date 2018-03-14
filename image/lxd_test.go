@@ -16,7 +16,7 @@ import (
 
 var lxdDef = shared.Definition{
 	Image: shared.DefinitionImage{
-		Description:  "{{ image. distribution|capfirst }} {{ image.release }}",
+		Description:  "{{ image.distribution|capfirst }} {{ image. release }}",
 		Distribution: "ubuntu",
 		Release:      "17.10",
 		Architecture: "amd64",
