@@ -143,6 +143,8 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 func Pack(filename, compression, path string, args ...string) error {
 	err := RunCommand("tar", append([]string{"-cf", filename, "-C", path}, args...)...)
 	if err != nil {
+		// Clean up incomplete tarball
+		os.Remove(filename)
 		return err
 	}
 
