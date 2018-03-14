@@ -24,7 +24,7 @@ type DefinitionImage struct {
 	Description  string `yaml:"description"`
 	Distribution string `yaml:"distribution"`
 	Release      string `yaml:"release,omitempty"`
-	Architecture string `yaml:"arch,omitempty"`
+	Architecture string `yaml:"architecture,omitempty"`
 	Expiry       string `yaml:"expiry,omitempty"`
 	Variant      string `yaml:"variant,omitempty"`
 	Name         string `yaml:"name,omitempty"`

@@ -21,7 +21,7 @@ var lxdDef = shared.Definition{
 		Release:      "17.10",
 		Architecture: "amd64",
 		Expiry:       "30d",
-		Name:         "{{ image.distribution|lower }}-{{ image.release }}-{{ image.arch }}-{{ image.serial }}",
+		Name:         "{{ image.distribution|lower }}-{{ image.release }}-{{ image.architecture }}-{{ image.serial }}",
 		Serial:       "testing",
 	},
 }
