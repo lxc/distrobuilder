@@ -201,3 +201,58 @@ func TestValidateDefinition(t *testing.T) {
 		}
 	}
 }
+
+func TestDefinitionSetValue(t *testing.T) {
+	d := Definition{
+		Image: DefinitionImage{
+			Distribution: "ubuntu",
+			Release:      "artful",
+		},
+		Source: DefinitionSource{
+			Downloader: "debootstrap",
+			URL:        "https://ubuntu.com",
+			Keys:       []string{"0xCODE"},
+		},
+		Packages: DefinitionPackages{
+			Manager: "apt",
+		},
+		Actions: []DefinitionAction{
+			{
+				Trigger: "post-update",
+				Action:  "/bin/true",
+			},
+			{
+				Trigger: "post-packages",
+				Action:  "/bin/false",
+			},
+		},
+	}
+
+	err := d.SetValue("image.release", "bionic")
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+	if d.Image.Release != "bionic" {
+		t.Fatalf("Expected '%s', got '%s'", "bionic", d.Image.Release)
+	}
+
+	err = d.SetValue("actions.0.trigger", "post-files")
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+	if d.Actions[0].Trigger != "post-files" {
+		t.Fatalf("Expected '%s', got '%s'", "post-files", d.Actions[0].Trigger)
+	}
+
+	// Index out of bounds
+	err = d.SetValue("actions.3.trigger", "post-files")
+	if err == nil || err.Error() != "Index out of range" {
+		t.Fatal("Expected index out of range")
+	}
+
+	// Nonsense
+	err = d.SetValue("image", "[foo: bar]")
+	if err == nil || err.Error() != "Cannot assign string value to struct" {
+		t.Fatal("Expected unsupported assignment")
+	}
+}
