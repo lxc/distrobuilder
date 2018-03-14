@@ -123,11 +123,11 @@ func SetDefinitionDefaults(def *Definition) {
 
 	// Set default name and description templates
 	if def.Image.Name == "" {
-		def.Image.Name = "{{ image.Distribution }}-{{ image.Release }}-{{ image.Architecture }}-{{ image.Variant }}-{{ image.Serial }}"
+		def.Image.Name = "{{ image.distribution }}-{{ image.release }}-{{ image.architecture }}-{{ image.variant }}-{{ image.serial }}"
 	}
 
 	if def.Image.Description == "" {
-		def.Image.Description = "{{ image.Distribution|capfirst }} {{ image.Release }} {{ image.Architecture }}{% if image.Variant != \"default\" %} ({{ image.Variant }}){% endif %} ({{ image.Serial }})"
+		def.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.architecture }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
 	}
 }
 
