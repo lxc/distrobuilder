@@ -249,8 +249,8 @@ func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, 
 	if t.Kind() == reflect.Struct {
 		// Find struct field with correct tag
 		for i := 0; i < t.NumField(); i++ {
-			value, ok := t.Field(i).Tag.Lookup("yaml")
-			if ok && strings.Split(value, ",")[0] == parts[0] {
+			value := t.Field(i).Tag.Get("yaml")
+			if value != "" && strings.Split(value, ",")[0] == parts[0] {
 				if len(parts) == 1 {
 					return v.Field(i), nil
 				}
