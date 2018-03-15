@@ -99,6 +99,11 @@ func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDi
 			return err
 		}
 
+		// Append final new line if missing
+		if !strings.HasSuffix(out, "\n") {
+			out += "\n"
+		}
+
 		// Replace content of sources.list with the templated content.
 		file, err := os.Create(filepath.Join(rootfsDir, "etc", "apt", "sources.list"))
 		if err != nil {

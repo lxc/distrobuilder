@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/flosch/pongo2.v3"
 
@@ -80,6 +81,11 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, rootfsD
 		out, err := shared.RenderTemplate(source.AptSources, ctx)
 		if err != nil {
 			return err
+		}
+
+		// Append final new line if missing
+		if !strings.HasSuffix(out, "\n") {
+			out += "\n"
 		}
 
 		// Replace content of sources.list with the templated content.
