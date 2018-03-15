@@ -57,6 +57,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -99,7 +100,7 @@ func main() {
 	app.PersistentFlags().BoolVar(&globalCmd.flagCleanup, "cleanup", true,
 		"Clean up cache directory")
 	app.PersistentFlags().StringVar(&globalCmd.flagCacheDir, "cache-dir",
-		"/var/cache/distrobuilder", "Cache directory"+"``")
+		"", "Cache directory"+"``")
 	app.PersistentFlags().StringSliceVarP(&globalCmd.flagOptions, "options", "o",
 		[]string{}, "Override options (list of key=value)"+"``")
 
@@ -116,6 +117,17 @@ func main() {
 	// build-dir sub-command
 	buildDirCmd := cmdBuildDir{global: &globalCmd}
 	app.AddCommand(buildDirCmd.command())
+
+	// Create temp directory if the cache directory isn't explicitly set
+	if globalCmd.flagCacheDir == "" {
+		dir, err := ioutil.TempDir("/var/cache", "distrobuilder.")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create cache directory: %s", err)
+			os.Exit(1)
+		}
+
+		globalCmd.flagCacheDir = dir
+	}
 
 	// Run the main command and handle errors
 	err := app.Execute()
