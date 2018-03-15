@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/flosch/pongo2.v3"
-
 	"github.com/lxc/distrobuilder/shared"
 )
 
@@ -20,21 +18,21 @@ func NewDebootstrap() *Debootstrap {
 }
 
 // Run runs debootstrap.
-func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
+func (s *Debootstrap) Run(definition shared.Definition, release, arch, rootfsDir string) error {
 	var args []string
 
 	os.RemoveAll(rootfsDir)
 
-	if source.Variant != "" {
-		args = append(args, "--variant", source.Variant)
+	if definition.Source.Variant != "" {
+		args = append(args, "--variant", definition.Source.Variant)
 	}
 
 	if arch != "" {
 		args = append(args, "--arch", arch)
 	}
 
-	if len(source.Keys) > 0 {
-		keyring, err := shared.CreateGPGKeyring(source.Keyserver, source.Keys)
+	if len(definition.Source.Keys) > 0 {
+		keyring, err := shared.CreateGPGKeyring(definition.Source.Keyserver, definition.Source.Keys)
 		if err != nil {
 			return err
 		}
@@ -45,15 +43,15 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, rootfsD
 
 	args = append(args, release, rootfsDir)
 
-	if source.URL != "" {
-		args = append(args, source.URL)
+	if definition.Source.URL != "" {
+		args = append(args, definition.Source.URL)
 	}
 
-	// If source.Suite is set, create a symlink in /usr/share/debootstrap/scripts
-	// pointing release to source.Suite.
-	if source.Suite != "" {
+	// If definition.Source.Suite is set, create a symlink in /usr/share/debootstrap/scripts
+	// pointing release to definition.Source.Suite.
+	if definition.Source.Suite != "" {
 		link := filepath.Join("/usr/share/debootstrap/scripts", release)
-		err := os.Symlink(source.Suite, link)
+		err := os.Symlink(definition.Source.Suite, link)
 		if err != nil {
 			return err
 		}
@@ -65,20 +63,9 @@ func (s *Debootstrap) Run(source shared.DefinitionSource, release, arch, rootfsD
 		return err
 	}
 
-	if source.AptSources != "" {
-		ctx := pongo2.Context{
-			"source": source,
-			// We use an anonymous struct instead of DefinitionImage because we
-			// need the mapped architecture, and Release is all one
-			// needs in the sources.list.
-			"image": struct {
-				Release string
-			}{
-				release,
-			},
-		}
-
-		out, err := shared.RenderTemplate(source.AptSources, ctx)
+	if definition.Source.AptSources != "" {
+		// Run the template
+		out, err := shared.RenderTemplate(definition.Source.AptSources, definition)
 		if err != nil {
 			return err
 		}
