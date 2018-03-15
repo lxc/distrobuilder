@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"gopkg.in/flosch/pongo2.v3"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -29,14 +28,14 @@ func NewUbuntuHTTP() *UbuntuHTTP {
 }
 
 // Run downloads the tarball and unpacks it.
-func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
-	baseURL := fmt.Sprintf("%s/releases/%s/release/", source.URL, release)
+func (s *UbuntuHTTP) Run(definition shared.Definition, release, arch, rootfsDir string) error {
+	baseURL := fmt.Sprintf("%s/releases/%s/release/", definition.Source.URL, release)
 
 	if strings.ContainsAny(release, "0123456789") {
 		s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz", release, arch)
 	} else {
 		// if release is non-numerical, find the latest release
-		s.fname = getLatestRelease(source.URL, release, arch)
+		s.fname = getLatestRelease(definition.Source.URL, release, arch)
 		if s.fname == "" {
 			return fmt.Errorf("Couldn't find latest release")
 		}
@@ -50,7 +49,7 @@ func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDi
 	checksumFile := ""
 	// Force gpg checks when using http
 	if url.Scheme != "https" {
-		if len(source.Keys) == 0 {
+		if len(definition.Source.Keys) == 0 {
 			return errors.New("GPG keys are required if downloading from HTTP")
 		}
 
@@ -61,8 +60,8 @@ func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDi
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), "SHA256SUMS"),
 			filepath.Join(os.TempDir(), "SHA256SUMS.gpg"),
-			source.Keys,
-			source.Keyserver)
+			definition.Source.Keys,
+			definition.Source.Keyserver)
 		if err != nil {
 			return err
 		}
@@ -81,22 +80,16 @@ func (s *UbuntuHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDi
 		return err
 	}
 
-	if source.AptSources != "" {
-		ctx := pongo2.Context{
-			"source": source,
-			// We use an anonymous struct instead of DefinitionImage because we
-			// need the mapped architecture, and Release is all one needs in
-			// the sources.list.
-			"image": struct {
-				Release string
-			}{
-				release,
-			},
-		}
-
-		out, err := shared.RenderTemplate(source.AptSources, ctx)
+	if definition.Source.AptSources != "" {
+		// Run the template
+		out, err := shared.RenderTemplate(definition.Source.AptSources, definition)
 		if err != nil {
 			return err
+		}
+
+		// Append final new line if missing
+		if !strings.HasSuffix(out, "\n") {
+			out += "\n"
 		}
 
 		// Replace content of sources.list with the templated content.

@@ -22,16 +22,16 @@ func NewArchLinuxHTTP() *ArchLinuxHTTP {
 }
 
 // Run downloads an Arch Linux tarball.
-func (s *ArchLinuxHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
+func (s *ArchLinuxHTTP) Run(definition shared.Definition, release, arch, rootfsDir string) error {
 	fname := fmt.Sprintf("archlinux-bootstrap-%s-x86_64.tar.gz", release)
-	tarball := fmt.Sprintf("%s/%s/%s", source.URL, release, fname)
+	tarball := fmt.Sprintf("%s/%s/%s", definition.Source.URL, release, fname)
 
 	url, err := url.Parse(tarball)
 	if err != nil {
 		return err
 	}
 
-	if url.Scheme != "https" && len(source.Keys) == 0 {
+	if url.Scheme != "https" && len(definition.Source.Keys) == 0 {
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
@@ -47,8 +47,8 @@ func (s *ArchLinuxHTTP) Run(source shared.DefinitionSource, release, arch, rootf
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), fname),
 			filepath.Join(os.TempDir(), fname+".sig"),
-			source.Keys,
-			source.Keyserver)
+			definition.Source.Keys,
+			definition.Source.Keyserver)
 		if err != nil {
 			return err
 		}

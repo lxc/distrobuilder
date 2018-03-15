@@ -159,8 +159,7 @@ func (l *LXCImage) createMetadata() error {
 		}
 	}
 
-	err = l.writeMetadata(filepath.Join(metaDir, "excludes-user"), strings.TrimSuffix(excludesUser, "\n"),
-		false)
+	err = l.writeMetadata(filepath.Join(metaDir, "excludes-user"), excludesUser, false)
 	if err != nil {
 		return fmt.Errorf("Error writing 'excludes-user': %s", err)
 	}
@@ -193,17 +192,21 @@ func (l *LXCImage) packMetadata() error {
 
 	return nil
 }
-func (l *LXCImage) writeMetadata(filename, content string, append bool) error {
+func (l *LXCImage) writeMetadata(filename, content string, appendContent bool) error {
 	var file *os.File
 	var err error
 
-	if append {
+	// Open the file either in append or create mode
+	if appendContent {
 		file, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
 	} else {
 		file, err = os.Create(filename)
-	}
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 	defer file.Close()
 
@@ -212,7 +215,13 @@ func (l *LXCImage) writeMetadata(filename, content string, append bool) error {
 		return err
 	}
 
-	_, err = file.WriteString(out + "\n")
+	// Append final new line if missing
+	if !strings.HasSuffix(out, "\n") {
+		out += "\n"
+	}
+
+	// Write the content
+	_, err = file.WriteString(out)
 	if err != nil {
 		return err
 	}

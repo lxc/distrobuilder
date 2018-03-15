@@ -27,10 +27,10 @@ func NewCentOSHTTP() *CentOSHTTP {
 }
 
 // Run downloads the tarball and unpacks it.
-func (s *CentOSHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
-	baseURL := fmt.Sprintf("%s/%s/isos/%s/", source.URL, strings.Split(release, ".")[0], arch)
+func (s *CentOSHTTP) Run(definition shared.Definition, release, arch, rootfsDir string) error {
+	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL, strings.Split(release, ".")[0], arch)
 
-	s.fname = getRelease(source.URL, release, source.Variant, arch)
+	s.fname = getRelease(definition.Source.URL, release, definition.Source.Variant, arch)
 	if s.fname == "" {
 		return fmt.Errorf("Couldn't get name of iso")
 	}
@@ -43,14 +43,14 @@ func (s *CentOSHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDi
 	checksumFile := ""
 	// Force gpg checks when using http
 	if url.Scheme != "https" {
-		if len(source.Keys) == 0 {
+		if len(definition.Source.Keys) == 0 {
 			return errors.New("GPG keys are required if downloading from HTTP")
 		}
 
 		checksumFile = "sha256sum.txt.asc"
 		shared.Download(baseURL+checksumFile, "")
 		valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), checksumFile), "",
-			source.Keys, source.Keyserver)
+			definition.Source.Keys, definition.Source.Keyserver)
 		if err != nil {
 			return err
 		}

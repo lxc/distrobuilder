@@ -22,9 +22,9 @@ func NewAlpineLinuxHTTP() *AlpineLinuxHTTP {
 }
 
 // Run downloads an Alpine Linux mini root filesystem.
-func (s *AlpineLinuxHTTP) Run(source shared.DefinitionSource, release, arch, rootfsDir string) error {
+func (s *AlpineLinuxHTTP) Run(definition shared.Definition, release, arch, rootfsDir string) error {
 	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", release, arch)
-	tarball := fmt.Sprintf("%s/v%s/releases/%s/%s", source.URL,
+	tarball := fmt.Sprintf("%s/v%s/releases/%s/%s", definition.Source.URL,
 		strings.Join(strings.Split(release, ".")[0:2], "."), arch, fname)
 
 	url, err := url.Parse(tarball)
@@ -32,7 +32,7 @@ func (s *AlpineLinuxHTTP) Run(source shared.DefinitionSource, release, arch, roo
 		return err
 	}
 
-	if url.Scheme != "https" && len(source.Keys) == 0 {
+	if url.Scheme != "https" && len(definition.Source.Keys) == 0 {
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
@@ -47,8 +47,8 @@ func (s *AlpineLinuxHTTP) Run(source shared.DefinitionSource, release, arch, roo
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), fname),
 			filepath.Join(os.TempDir(), fname+".asc"),
-			source.Keys,
-			source.Keyserver)
+			definition.Source.Keys,
+			definition.Source.Keyserver)
 		if err != nil {
 			return err
 		}

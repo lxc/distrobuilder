@@ -3,6 +3,7 @@ package generators
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -29,18 +30,26 @@ func (g DumpGenerator) Run(cacheDir, sourceDir string, defFile shared.Definition
 }
 
 func (g DumpGenerator) dumpFile(path, content string) error {
+	// Create any missing directory
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		return err
 	}
 
+	// Open the target file (create if needed)
 	file, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	_, err = file.WriteString(content + "\n")
+	// Append final new line if missing
+	if !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+
+	// Write the content
+	_, err = file.WriteString(content)
 	if err != nil {
 		return err
 	}
