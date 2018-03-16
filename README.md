@@ -1,6 +1,11 @@
 # distrobuilder
 System container image builder for LXC and LXD
 
+## Status
+Type            | Service               | Status
+---             | ---                   | ---
+CI              | Jenkins               | [![Build Status](https://travis-ci.org/lxc/distrobuilder.svg?branch=master)](https://travis-ci.org/lxc/distrobuilder)
+Project status  | CII Best Practices    | [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1728/badge)](https://bestpractices.coreinfrastructure.org/projects/1728)
 ## Example yaml file
 
 Save the following yaml as a file (for example `ubuntu.yaml`). To create
