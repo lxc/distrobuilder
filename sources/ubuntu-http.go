@@ -28,14 +28,17 @@ func NewUbuntuHTTP() *UbuntuHTTP {
 }
 
 // Run downloads the tarball and unpacks it.
-func (s *UbuntuHTTP) Run(definition shared.Definition, release, arch, rootfsDir string) error {
-	baseURL := fmt.Sprintf("%s/releases/%s/release/", definition.Source.URL, release)
+func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
+	baseURL := fmt.Sprintf("%s/releases/%s/release/", definition.Source.URL,
+		definition.Image.Release)
 
-	if strings.ContainsAny(release, "0123456789") {
-		s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz", release, arch)
+	if strings.ContainsAny(definition.Image.Release, "0123456789") {
+		s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz",
+			definition.Image.Release, definition.Image.MappedArchitecture)
 	} else {
 		// if release is non-numerical, find the latest release
-		s.fname = getLatestRelease(definition.Source.URL, release, arch)
+		s.fname = getLatestRelease(definition.Source.URL,
+			definition.Image.Release, definition.Image.MappedArchitecture)
 		if s.fname == "" {
 			return fmt.Errorf("Couldn't find latest release")
 		}

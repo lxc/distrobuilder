@@ -22,10 +22,12 @@ func NewAlpineLinuxHTTP() *AlpineLinuxHTTP {
 }
 
 // Run downloads an Alpine Linux mini root filesystem.
-func (s *AlpineLinuxHTTP) Run(definition shared.Definition, release, arch, rootfsDir string) error {
-	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", release, arch)
+func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
+	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", definition.Image.Release,
+		definition.Image.MappedArchitecture)
 	tarball := fmt.Sprintf("%s/v%s/releases/%s/%s", definition.Source.URL,
-		strings.Join(strings.Split(release, ".")[0:2], "."), arch, fname)
+		strings.Join(strings.Split(definition.Image.Release, ".")[0:2], "."),
+		definition.Image.MappedArchitecture, fname)
 
 	url, err := url.Parse(tarball)
 	if err != nil {

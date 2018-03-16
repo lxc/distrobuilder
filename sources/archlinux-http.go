@@ -22,9 +22,11 @@ func NewArchLinuxHTTP() *ArchLinuxHTTP {
 }
 
 // Run downloads an Arch Linux tarball.
-func (s *ArchLinuxHTTP) Run(definition shared.Definition, release, arch, rootfsDir string) error {
-	fname := fmt.Sprintf("archlinux-bootstrap-%s-x86_64.tar.gz", release)
-	tarball := fmt.Sprintf("%s/%s/%s", definition.Source.URL, release, fname)
+func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
+	fname := fmt.Sprintf("archlinux-bootstrap-%s-%s.tar.gz",
+		definition.Image.Release, definition.Image.MappedArchitecture)
+	tarball := fmt.Sprintf("%s/%s/%s", definition.Source.URL,
+		definition.Image.Release, fname)
 
 	url, err := url.Parse(tarball)
 	if err != nil {
@@ -65,7 +67,8 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, release, arch, rootfsD
 
 	// Move everything inside 'root.x86_64' (which was is the tarball) to its
 	// parent directory
-	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(rootfsDir, "root.x86_64")))
+	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(rootfsDir,
+		"root", definition.Image.MappedArchitecture)))
 	if err != nil {
 		return err
 	}
@@ -77,5 +80,6 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, release, arch, rootfsD
 		}
 	}
 
-	return os.RemoveAll(filepath.Join(rootfsDir, "root.x86_64"))
+	return os.RemoveAll(filepath.Join(rootfsDir, "root",
+		definition.Image.MappedArchitecture))
 }

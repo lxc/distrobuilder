@@ -4,7 +4,7 @@ import "github.com/lxc/distrobuilder/shared"
 
 // A Downloader represents a source downloader.
 type Downloader interface {
-	Run(shared.Definition, string, string, string) error
+	Run(shared.Definition, string) error
 }
 
 // Get returns a Downloader.

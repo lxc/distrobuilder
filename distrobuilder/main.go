@@ -188,8 +188,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Download the root filesystem
-	err = downloader.Run(*c.definition, c.definition.Image.Release,
-		c.definition.Image.MappedArchitecture, c.sourceDir)
+	err = downloader.Run(*c.definition, c.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
