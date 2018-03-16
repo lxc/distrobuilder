@@ -19,10 +19,16 @@ var lxdDef = shared.Definition{
 		Description:  "{{ image.distribution|capfirst }} {{ image. release }}",
 		Distribution: "ubuntu",
 		Release:      "17.10",
-		Architecture: "amd64",
+		Architecture: "x86_64",
 		Expiry:       "30d",
 		Name:         "{{ image.distribution|lower }}-{{ image.release }}-{{ image.architecture }}-{{ image.serial }}",
 		Serial:       "testing",
+	},
+	Source: shared.DefinitionSource{
+		Downloader: "debootstrap",
+	},
+	Packages: shared.DefinitionPackages{
+		Manager: "apt",
 	},
 }
 
@@ -50,6 +56,14 @@ func setupLXD(t *testing.T) *LXDImage {
 	if !reflect.DeepEqual(lxdDef, image.definition) {
 		teardownLXD(t)
 		t.Fatal("lxdDef and image.definition are not equal")
+	}
+
+	lxdDef.SetDefaults()
+
+	err = lxdDef.Validate()
+	if err != nil {
+		teardownLXD(t)
+		t.Fatalf("Failed to validate image: %s", err)
 	}
 
 	return image

@@ -62,7 +62,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	lxd "github.com/lxc/lxd/shared"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
@@ -174,12 +173,6 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Get the mapped architecture
-	arch, err := getMappedArchitecture(c.definition)
-	if err != nil {
-		return err
-	}
-
 	// Create cache directory if we also plan on creating LXC or LXD images
 	if cmd.CalledAs() != "build-dir" {
 		err = os.MkdirAll(c.flagCacheDir, 0755)
@@ -195,7 +188,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Download the root filesystem
-	err = downloader.Run(*c.definition, c.definition.Image.Release, arch, c.sourceDir)
+	err = downloader.Run(*c.definition, c.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
@@ -209,7 +202,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	defer exitChroot()
 
 	// Run post unpack hook
-	for _, hook := range getRunnableActions("post-unpack", c.definition) {
+	for _, hook := range c.definition.GetRunnableActions("post-unpack") {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %s", err)
@@ -218,13 +211,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Install/remove/update packages
 	err = managePackages(c.definition.Packages,
-		getRunnableActions("post-update", c.definition))
+		c.definition.GetRunnableActions("post-update"))
 	if err != nil {
 		return fmt.Errorf("Failed to manage packages: %s", err)
 	}
 
 	// Run post packages hook
-	for _, hook := range getRunnableActions("post-packages", c.definition) {
+	for _, hook := range c.definition.GetRunnableActions("post-packages") {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %s", err)
@@ -311,57 +304,13 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 	}
 
 	// Apply some defaults on top of the provided configuration
-	shared.SetDefinitionDefaults(&def)
+	def.SetDefaults()
 
 	// Validate the result
-	err = shared.ValidateDefinition(def)
+	err = def.Validate()
 	if err != nil {
 		return nil, err
 	}
 
 	return &def, nil
-}
-
-func getMappedArchitecture(def *shared.Definition) (string, error) {
-	var arch string
-
-	if def.Mappings.ArchitectureMap != "" {
-		// Translate the architecture using the requested map
-		var err error
-		arch, err = shared.GetArch(def.Mappings.ArchitectureMap, def.Image.Architecture)
-		if err != nil {
-			return "", fmt.Errorf("Failed to translate the architecture name: %s", err)
-		}
-	} else if len(def.Mappings.Architectures) > 0 {
-		// Translate the architecture using a user specified mapping
-		var ok bool
-		arch, ok = def.Mappings.Architectures[def.Image.Architecture]
-		if !ok {
-			// If no mapping exists, it means it doesn't need translating
-			arch = def.Image.Architecture
-		}
-	} else {
-		// No map or mappings provided, just go with it as it is
-		arch = def.Image.Architecture
-	}
-
-	return arch, nil
-}
-
-func getRunnableActions(trigger string, definition *shared.Definition) []shared.DefinitionAction {
-	out := []shared.DefinitionAction{}
-
-	for _, action := range definition.Actions {
-		if action.Trigger != trigger {
-			continue
-		}
-
-		if len(action.Releases) > 0 && !lxd.StringInSlice(definition.Image.Release, action.Releases) {
-			continue
-		}
-
-		out = append(out, action)
-	}
-
-	return out
 }

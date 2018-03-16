@@ -11,7 +11,7 @@ import (
 func TestSetDefinitionDefaults(t *testing.T) {
 	def := Definition{}
 
-	SetDefinitionDefaults(&def)
+	def.SetDefaults()
 
 	uname, _ := shared.Uname()
 
@@ -187,7 +187,8 @@ func TestValidateDefinition(t *testing.T) {
 
 	for i, tt := range tests {
 		log.Printf("Running test #%d: %s", i, tt.name)
-		err := ValidateDefinition(tt.definition)
+		tt.definition.SetDefaults()
+		err := tt.definition.Validate()
 		if !tt.shouldFail && err != nil {
 			t.Fatalf("Validation failed: %s", err)
 		} else if tt.shouldFail {

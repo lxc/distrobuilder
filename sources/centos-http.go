@@ -27,10 +27,13 @@ func NewCentOSHTTP() *CentOSHTTP {
 }
 
 // Run downloads the tarball and unpacks it.
-func (s *CentOSHTTP) Run(definition shared.Definition, release, arch, rootfsDir string) error {
-	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL, strings.Split(release, ".")[0], arch)
+func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
+	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL,
+		strings.Split(definition.Image.Release, ".")[0],
+		definition.Image.MappedArchitecture)
 
-	s.fname = getRelease(definition.Source.URL, release, definition.Source.Variant, arch)
+	s.fname = getRelease(definition.Source.URL, definition.Image.Release,
+		definition.Source.Variant, definition.Image.MappedArchitecture)
 	if s.fname == "" {
 		return fmt.Errorf("Couldn't get name of iso")
 	}
