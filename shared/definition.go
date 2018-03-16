@@ -22,14 +22,15 @@ type DefinitionPackages struct {
 
 // A DefinitionImage represents the image.
 type DefinitionImage struct {
-	Description  string `yaml:"description"`
-	Distribution string `yaml:"distribution"`
-	Release      string `yaml:"release,omitempty"`
-	Architecture string `yaml:"architecture,omitempty"`
-	Expiry       string `yaml:"expiry,omitempty"`
-	Variant      string `yaml:"variant,omitempty"`
-	Name         string `yaml:"name,omitempty"`
-	Serial       string `yaml:"serial,omitempty"`
+	Description        string `yaml:"description"`
+	Distribution       string `yaml:"distribution"`
+	Release            string `yaml:"release,omitempty"`
+	Architecture       string `yaml:"architecture,omitempty"`
+	Expiry             string `yaml:"expiry,omitempty"`
+	Variant            string `yaml:"variant,omitempty"`
+	Name               string `yaml:"name,omitempty"`
+	Serial             string `yaml:"serial,omitempty"`
+	MappedArchitecture string `yaml:"mapped_architecture,omitempty"`
 }
 
 // A DefinitionSource specifies the download type and location

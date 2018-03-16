@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/lxc/lxd/shared/api"
-	"github.com/lxc/lxd/shared/osarch"
 	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -113,24 +112,9 @@ func (l *LXDImage) Build(unified bool, compression string) error {
 func (l *LXDImage) createMetadata() error {
 	var err error
 
-	// Get the arch ID of the provided architecture.
-	ID, err := osarch.ArchitectureId(l.definition.Image.Architecture)
-	if err != nil {
-		return err
-	}
-
-	// Get the "proper" name of the architecture.
-	arch, err := osarch.ArchitectureName(ID)
-	if err != nil {
-		return err
-	}
-
-	// Use proper architecture name from now on.
-	l.definition.Image.Architecture = arch
-
 	l.Metadata.Architecture = l.definition.Image.Architecture
 	l.Metadata.CreationDate = time.Now().UTC().Unix()
-	l.Metadata.Properties["architecture"] = l.definition.Image.Architecture
+	l.Metadata.Properties["architecture"] = l.definition.Image.MappedArchitecture
 	l.Metadata.Properties["os"] = l.definition.Image.Distribution
 	l.Metadata.Properties["release"] = l.definition.Image.Release
 	l.Metadata.Properties["variant"] = l.definition.Image.Variant

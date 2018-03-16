@@ -174,12 +174,6 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Get the mapped architecture
-	arch, err := getMappedArchitecture(c.definition)
-	if err != nil {
-		return err
-	}
-
 	// Create cache directory if we also plan on creating LXC or LXD images
 	if cmd.CalledAs() != "build-dir" {
 		err = os.MkdirAll(c.flagCacheDir, 0755)
@@ -195,7 +189,8 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Download the root filesystem
-	err = downloader.Run(*c.definition, c.definition.Image.Release, arch, c.sourceDir)
+	err = downloader.Run(*c.definition, c.definition.Image.Release,
+		c.definition.Image.MappedArchitecture, c.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Error while downloading source: %s", err)
 	}
@@ -315,6 +310,12 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 
 	// Validate the result
 	err = shared.ValidateDefinition(def)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the mapped architecture
+	def.Image.MappedArchitecture, err = getMappedArchitecture(&def)
 	if err != nil {
 		return nil, err
 	}
