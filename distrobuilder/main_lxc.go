@@ -72,7 +72,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run post files hook
-	for _, action := range getRunnableActions("post-files", c.global.definition) {
+	for _, action := range c.global.definition.GetRunnableActions("post-files") {
 		err := shared.RunScript(action.Action)
 		if err != nil {
 			exitChroot()

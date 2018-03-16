@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	lxd "github.com/lxc/lxd/shared"
+
 	"github.com/lxc/lxd/shared"
 )
 
@@ -130,47 +132,47 @@ func (d *Definition) SetValue(key string, value interface{}) error {
 	return nil
 }
 
-// SetDefinitionDefaults sets some default values for the given Definition.
-func SetDefinitionDefaults(def *Definition) {
+// SetDefaults sets some default values.
+func (d *Definition) SetDefaults() {
 	// default to local arch
-	if def.Image.Architecture == "" {
+	if d.Image.Architecture == "" {
 		uname, _ := shared.Uname()
-		def.Image.Architecture = uname.Machine
+		d.Image.Architecture = uname.Machine
 	}
 
 	// set default expiry of 30 days
-	if def.Image.Expiry == "" {
-		def.Image.Expiry = "30d"
+	if d.Image.Expiry == "" {
+		d.Image.Expiry = "30d"
 	}
 
 	// Set default serial number
-	if def.Image.Serial == "" {
-		def.Image.Serial = time.Now().UTC().Format("20060102_1504")
+	if d.Image.Serial == "" {
+		d.Image.Serial = time.Now().UTC().Format("20060102_1504")
 	}
 
 	// Set default variant
-	if def.Image.Variant == "" {
-		def.Image.Variant = "default"
+	if d.Image.Variant == "" {
+		d.Image.Variant = "default"
 	}
 
 	// Set default keyserver
-	if def.Source.Keyserver == "" {
-		def.Source.Keyserver = "hkps.pool.sks-keyservers.net"
+	if d.Source.Keyserver == "" {
+		d.Source.Keyserver = "hkps.pool.sks-keyservers.net"
 	}
 
 	// Set default name and description templates
-	if def.Image.Name == "" {
-		def.Image.Name = "{{ image.distribution }}-{{ image.release }}-{{ image.architecture }}-{{ image.variant }}-{{ image.serial }}"
+	if d.Image.Name == "" {
+		d.Image.Name = "{{ image.distribution }}-{{ image.release }}-{{ image.architecture }}-{{ image.variant }}-{{ image.serial }}"
 	}
 
-	if def.Image.Description == "" {
-		def.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.architecture }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
+	if d.Image.Description == "" {
+		d.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.architecture }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
 	}
 }
 
-// ValidateDefinition validates the given Definition.
-func ValidateDefinition(def Definition) error {
-	if strings.TrimSpace(def.Image.Distribution) == "" {
+// Validate validates the Definition.
+func (d *Definition) Validate() error {
+	if strings.TrimSpace(d.Image.Distribution) == "" {
 		return errors.New("image.distribution may not be empty")
 	}
 
@@ -181,7 +183,7 @@ func ValidateDefinition(def Definition) error {
 		"debootstrap",
 		"ubuntu-http",
 	}
-	if !shared.StringInSlice(strings.TrimSpace(def.Source.Downloader), validDownloaders) {
+	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
 	}
 
@@ -191,7 +193,7 @@ func ValidateDefinition(def Definition) error {
 		"yum",
 		"pacman",
 	}
-	if !shared.StringInSlice(strings.TrimSpace(def.Packages.Manager), validManagers) {
+	if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
 		return fmt.Errorf("packages.manager must be one of %v", validManagers)
 	}
 
@@ -203,7 +205,7 @@ func ValidateDefinition(def Definition) error {
 		"upstart-tty",
 	}
 
-	for _, file := range def.Files {
+	for _, file := range d.Files {
 		if !shared.StringInSlice(strings.TrimSpace(file.Generator), validGenerators) {
 			return fmt.Errorf("files.*.generator must be one of %v", validGenerators)
 		}
@@ -215,14 +217,66 @@ func ValidateDefinition(def Definition) error {
 		"debian",
 	}
 
-	architectureMap := strings.TrimSpace(def.Mappings.ArchitectureMap)
+	architectureMap := strings.TrimSpace(d.Mappings.ArchitectureMap)
 	if architectureMap != "" {
 		if !shared.StringInSlice(architectureMap, validMappings) {
 			return fmt.Errorf("mappings.architecture_map must be one of %v", validMappings)
 		}
 	}
 
+	var err error
+	d.Image.MappedArchitecture, err = d.getMappedArchitecture()
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// GetRunnableActions returns a list of actions depending on the trigger
+// and releases.
+func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
+	out := []DefinitionAction{}
+
+	for _, action := range d.Actions {
+		if action.Trigger != trigger {
+			continue
+		}
+
+		if len(action.Releases) > 0 && !lxd.StringInSlice(d.Image.Release, action.Releases) {
+			continue
+		}
+
+		out = append(out, action)
+	}
+
+	return out
+}
+
+func (d *Definition) getMappedArchitecture() (string, error) {
+	var arch string
+
+	if d.Mappings.ArchitectureMap != "" {
+		// Translate the architecture using the requested map
+		var err error
+		arch, err = GetArch(d.Mappings.ArchitectureMap, d.Image.Architecture)
+		if err != nil {
+			return "", fmt.Errorf("Failed to translate the architecture name: %s", err)
+		}
+	} else if len(d.Mappings.Architectures) > 0 {
+		// Translate the architecture using a user specified mapping
+		var ok bool
+		arch, ok = d.Mappings.Architectures[d.Image.Architecture]
+		if !ok {
+			// If no mapping exists, it means it doesn't need translating
+			arch = d.Image.Architecture
+		}
+	} else {
+		// No map or mappings provided, just go with it as it is
+		arch = d.Image.Architecture
+	}
+
+	return arch, nil
 }
 
 func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, error) {
