@@ -30,10 +30,10 @@ func NewCentOSHTTP() *CentOSHTTP {
 func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL,
 		strings.Split(definition.Image.Release, ".")[0],
-		definition.Image.MappedArchitecture)
+		definition.Image.ArchitectureMapped)
 
 	s.fname = getRelease(definition.Source.URL, definition.Image.Release,
-		definition.Source.Variant, definition.Image.MappedArchitecture)
+		definition.Source.Variant, definition.Image.ArchitectureMapped)
 	if s.fname == "" {
 		return fmt.Errorf("Couldn't get name of iso")
 	}

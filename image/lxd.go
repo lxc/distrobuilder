@@ -114,7 +114,7 @@ func (l *LXDImage) createMetadata() error {
 
 	l.Metadata.Architecture = l.definition.Image.Architecture
 	l.Metadata.CreationDate = time.Now().UTC().Unix()
-	l.Metadata.Properties["architecture"] = l.definition.Image.MappedArchitecture
+	l.Metadata.Properties["architecture"] = l.definition.Image.ArchitectureMapped
 	l.Metadata.Properties["os"] = l.definition.Image.Distribution
 	l.Metadata.Properties["release"] = l.definition.Image.Release
 	l.Metadata.Properties["variant"] = l.definition.Image.Variant

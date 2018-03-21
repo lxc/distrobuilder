@@ -34,11 +34,11 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 
 	if strings.ContainsAny(definition.Image.Release, "0123456789") {
 		s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz",
-			definition.Image.Release, definition.Image.MappedArchitecture)
+			definition.Image.Release, definition.Image.ArchitectureMapped)
 	} else {
 		// if release is non-numerical, find the latest release
 		s.fname = getLatestRelease(definition.Source.URL,
-			definition.Image.Release, definition.Image.MappedArchitecture)
+			definition.Image.Release, definition.Image.ArchitectureMapped)
 		if s.fname == "" {
 			return fmt.Errorf("Couldn't find latest release")
 		}

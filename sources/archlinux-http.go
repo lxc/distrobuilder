@@ -24,7 +24,7 @@ func NewArchLinuxHTTP() *ArchLinuxHTTP {
 // Run downloads an Arch Linux tarball.
 func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	fname := fmt.Sprintf("archlinux-bootstrap-%s-%s.tar.gz",
-		definition.Image.Release, definition.Image.MappedArchitecture)
+		definition.Image.Release, definition.Image.ArchitectureMapped)
 	tarball := fmt.Sprintf("%s/%s/%s", definition.Source.URL,
 		definition.Image.Release, fname)
 
@@ -68,7 +68,7 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	// Move everything inside 'root.x86_64' (which was is the tarball) to its
 	// parent directory
 	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(rootfsDir,
-		"root", definition.Image.MappedArchitecture)))
+		"root", definition.Image.ArchitectureMapped)))
 	if err != nil {
 		return err
 	}
@@ -81,5 +81,5 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	}
 
 	return os.RemoveAll(filepath.Join(rootfsDir, "root",
-		definition.Image.MappedArchitecture))
+		definition.Image.ArchitectureMapped))
 }
