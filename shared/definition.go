@@ -9,6 +9,7 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
+	lxdarch "github.com/lxc/lxd/shared/osarch"
 
 	"github.com/lxc/lxd/shared"
 )
@@ -24,15 +25,19 @@ type DefinitionPackages struct {
 
 // A DefinitionImage represents the image.
 type DefinitionImage struct {
-	Description        string `yaml:"description"`
-	Distribution       string `yaml:"distribution"`
-	Release            string `yaml:"release,omitempty"`
-	Architecture       string `yaml:"architecture,omitempty"`
-	Expiry             string `yaml:"expiry,omitempty"`
-	Variant            string `yaml:"variant,omitempty"`
-	Name               string `yaml:"name,omitempty"`
-	Serial             string `yaml:"serial,omitempty"`
-	MappedArchitecture string `yaml:"mapped_architecture,omitempty"`
+	Description  string `yaml:"description"`
+	Distribution string `yaml:"distribution"`
+	Release      string `yaml:"release,omitempty"`
+	Architecture string `yaml:"architecture,omitempty"`
+	Expiry       string `yaml:"expiry,omitempty"`
+	Variant      string `yaml:"variant,omitempty"`
+	Name         string `yaml:"name,omitempty"`
+	Serial       string `yaml:"serial,omitempty"`
+
+	// Internal fields (YAML input ignored)
+	ArchitectureMapped      string `yaml:"architecture_mapped,omitempty"`
+	ArchitectureKernel      string `yaml:"architecture_kernel,omitempty"`
+	ArchitecturePersonality string `yaml:"architecture_personality,omitempty"`
 }
 
 // A DefinitionSource specifies the download type and location
@@ -224,11 +229,33 @@ func (d *Definition) Validate() error {
 		}
 	}
 
-	var err error
-	d.Image.MappedArchitecture, err = d.getMappedArchitecture()
+	// Mapped architecture (distro name)
+	archMapped, err := d.getMappedArchitecture()
 	if err != nil {
 		return err
 	}
+
+	d.Image.ArchitectureMapped = archMapped
+
+	// Kernel architecture and personality
+	archID, err := lxdarch.ArchitectureId(d.Image.Architecture)
+	if err != nil {
+		return err
+	}
+
+	archName, err := lxdarch.ArchitectureName(archID)
+	if err != nil {
+		return err
+	}
+
+	d.Image.ArchitectureMapped = archName
+
+	archPersonality, err := lxdarch.ArchitecturePersonality(archID)
+	if err != nil {
+		return err
+	}
+
+	d.Image.ArchitecturePersonality = archPersonality
 
 	return nil
 }

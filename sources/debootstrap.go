@@ -27,8 +27,8 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 		args = append(args, "--variant", definition.Source.Variant)
 	}
 
-	if definition.Image.MappedArchitecture != "" {
-		args = append(args, "--arch", definition.Image.MappedArchitecture)
+	if definition.Image.ArchitectureMapped != "" {
+		args = append(args, "--arch", definition.Image.ArchitectureMapped)
 	}
 
 	if len(definition.Source.Keys) > 0 {
