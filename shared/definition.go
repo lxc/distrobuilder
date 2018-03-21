@@ -162,11 +162,11 @@ func (d *Definition) SetDefaults() {
 
 	// Set default name and description templates
 	if d.Image.Name == "" {
-		d.Image.Name = "{{ image.distribution }}-{{ image.release }}-{{ image.architecture }}-{{ image.variant }}-{{ image.serial }}"
+		d.Image.Name = "{{ image.distribution }}-{{ image.release }}-{{ image.mapped_architecture }}-{{ image.variant }}-{{ image.serial }}"
 	}
 
 	if d.Image.Description == "" {
-		d.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.architecture }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
+		d.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.mapped_architecture }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
 	}
 }
 
