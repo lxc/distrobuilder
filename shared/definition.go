@@ -248,7 +248,7 @@ func (d *Definition) Validate() error {
 		return err
 	}
 
-	d.Image.ArchitectureMapped = archName
+	d.Image.ArchitectureKernel = archName
 
 	archPersonality, err := lxdarch.ArchitecturePersonality(archID)
 	if err != nil {
