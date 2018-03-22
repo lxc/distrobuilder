@@ -89,7 +89,7 @@ func main() {
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// Sanity checks
 			if os.Geteuid() != 0 {
-				fmt.Fprintln(os.Stderr, "You must be root to run this tool")
+				fmt.Fprintf(os.Stderr, "You must be root to run this tool\n")
 				os.Exit(1)
 			}
 		},
@@ -121,7 +121,7 @@ func main() {
 	if globalCmd.flagCacheDir == "" {
 		dir, err := ioutil.TempDir("/var/cache", "distrobuilder.")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create cache directory: %s", err)
+			fmt.Fprintf(os.Stderr, "Failed to create cache directory: %s\n", err)
 			os.Exit(1)
 		}
 
