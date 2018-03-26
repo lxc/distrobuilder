@@ -27,14 +27,16 @@ type Manager struct {
 // Get returns a Manager specified by name.
 func Get(name string) *Manager {
 	switch name {
+	case "apk":
+		return NewApk()
 	case "apt":
 		return NewApt()
+	case "dnf":
+		return NewDnf()
 	case "pacman":
 		return NewPacman()
 	case "yum":
 		return NewYum()
-	case "apk":
-		return NewApk()
 	}
 
 	return nil
