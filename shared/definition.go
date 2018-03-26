@@ -186,6 +186,7 @@ func (d *Definition) Validate() error {
 		"archlinux-http",
 		"centos-http",
 		"debootstrap",
+		"fedora-http",
 		"ubuntu-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
@@ -195,8 +196,9 @@ func (d *Definition) Validate() error {
 	validManagers := []string{
 		"apk",
 		"apt",
-		"yum",
+		"dnf",
 		"pacman",
+		"yum",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
 		return fmt.Errorf("packages.manager must be one of %v", validManagers)
