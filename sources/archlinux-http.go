@@ -68,7 +68,7 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	// Move everything inside 'root.x86_64' (which was is the tarball) to its
 	// parent directory
 	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(rootfsDir,
-		"root", definition.Image.ArchitectureMapped)))
+		"root."+definition.Image.ArchitectureMapped)))
 	if err != nil {
 		return err
 	}
