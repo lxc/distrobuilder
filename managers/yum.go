@@ -6,7 +6,7 @@ func NewYum() *Manager {
 		command: "yum",
 		flags: ManagerFlags{
 			clean: []string{
-				"clean",
+				"clean", "all",
 			},
 			global: []string{
 				"-y",
@@ -18,10 +18,10 @@ func NewYum() *Manager {
 				"remove",
 			},
 			refresh: []string{
-				"update",
+				"makecache",
 			},
 			update: []string{
-				"upgrade",
+				"update",
 			},
 		},
 	}
