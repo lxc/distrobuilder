@@ -32,7 +32,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		strings.Split(definition.Image.Release, ".")[0],
 		definition.Image.ArchitectureMapped)
 
-	s.fname = getRelease(definition.Source.URL, definition.Image.Release,
+	s.fname = s.getRelease(definition.Source.URL, definition.Image.Release,
 		definition.Source.Variant, definition.Image.ArchitectureMapped)
 	if s.fname == "" {
 		return fmt.Errorf("Couldn't get name of iso")
@@ -76,6 +76,7 @@ func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
 	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
 
 	os.MkdirAll(isoDir, 0755)
+	os.MkdirAll(squashfsDir, 0755)
 	os.MkdirAll(tempRootDir, 0755)
 	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
 
@@ -86,13 +87,15 @@ func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
 	}
 	defer syscall.Unmount(isoDir, 0)
 
-	err = shared.RunCommand("unsquashfs", "-d", squashfsDir,
-		filepath.Join(isoDir, "LiveOS/squashfs.img"))
+	err = shared.RunCommand("mount", filepath.Join(isoDir, "LiveOS",
+		"squashfs.img"), squashfsDir)
 	if err != nil {
 		return err
 	}
+	defer syscall.Unmount(squashfsDir, 0)
 
-	err = shared.RunCommand("mount", filepath.Join(squashfsDir, "LiveOS", "rootfs.img"), tempRootDir)
+	err = shared.RunCommand("mount", filepath.Join(squashfsDir, "LiveOS",
+		"rootfs.img"), tempRootDir)
 	if err != nil {
 		return err
 	}
@@ -110,10 +113,40 @@ func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
 		return err
 	}
 
+	// Create cdrom repo for yum
+	err = os.MkdirAll(filepath.Join(rootfsDir, "mnt", "cdrom"), 0755)
+	if err != nil {
+		return err
+	}
+
+	// Copy repo relevant files to the cdrom
+	err = shared.RunCommand("rsync", "-qa",
+		filepath.Join(isoDir, "Packages"),
+		filepath.Join(isoDir, "repodata"),
+		filepath.Join(rootfsDir, "mnt", "cdrom"))
+	if err != nil {
+		return err
+	}
+
+	// Find all relevant GPG keys
+	gpgKeys, err := filepath.Glob(filepath.Join(isoDir, "RPM-GPG-KEY-*"))
+	if err != nil {
+		return err
+	}
+
+	// Copy the keys to the cdrom
+	for _, key := range gpgKeys {
+		err = shared.RunCommand("rsync", "-qa", key,
+			filepath.Join(rootfsDir, "mnt", "cdrom"))
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func getRelease(URL, release, variant, arch string) string {
+func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 	resp, err := http.Get(URL + path.Join("/", strings.Split(release, ".")[0], "isos", arch))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
