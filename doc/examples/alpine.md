@@ -1,0 +1,60 @@
+# Alpine Linux
+
+```yaml
+image:
+  distribution: alpinelinux
+  release: 3.7.0
+  description: Alpine Linux
+  expiry: 30d
+  architecture: x86_64
+
+source:
+  downloader: alpinelinux-http
+  url: http://dl-cdn.alpinelinux.org/alpine/
+  keys:
+    - 0482D84022F52DF1C4E7CD43293ACD0907D9495A
+
+targets:
+  lxc:
+    create-message: |
+        You just created an Alpine container (release={{ image.release }}, arch={{ image.architecture }})
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/alpine.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/alpine.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_kernel }}
+
+files:
+ - path: /etc/hostname
+   generator: hostname
+
+ - path: /etc/hosts
+   generator: hosts
+
+packages:
+    manager: apk
+
+    update: true
+    install:
+        - neovim
+```
