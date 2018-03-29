@@ -38,14 +38,14 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
-	err = shared.Download(tarball, tarball+".sha256")
+	err = shared.DownloadSha256(tarball, tarball+".sha256")
 	if err != nil {
 		return err
 	}
 
 	// Force gpg checks when using http
 	if url.Scheme != "https" {
-		shared.Download(tarball+".asc", "")
+		shared.DownloadSha256(tarball+".asc", "")
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), fname),
 			filepath.Join(os.TempDir(), fname+".asc"),

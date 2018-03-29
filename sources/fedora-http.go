@@ -41,7 +41,7 @@ func (s *FedoraHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		definition.Image.Release, build, definition.Image.ArchitectureMapped)
 
 	// Download image
-	err = shared.Download(fmt.Sprintf("%s/%s/%s/images/%s",
+	err = shared.DownloadSha256(fmt.Sprintf("%s/%s/%s/images/%s",
 		baseURL, definition.Image.Release, build, fname), "")
 	if err != nil {
 		return err
