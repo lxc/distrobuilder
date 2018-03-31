@@ -1,0 +1,68 @@
+image:
+  distribution: ubuntu
+  release: artful
+  variant: default
+  description: Ubuntu {{ image.release }}
+  expiry: 30d
+  arch: amd64
+
+source:
+  downloader: ubuntu-http
+  url: http://cdimage.ubuntu.com/ubuntu-base
+  keys:
+    - 0x46181433FBB75451
+    - 0xD94AA3F0EFE21092
+
+targets:
+  lxc:
+    create-message: |
+        You just created an Ubuntu container (release={{ image.release }}, arch={{ image.architecture }}, variant={{ image.variant }})
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_kernel }}
+
+files:
+ - path: /etc/hostname
+   generator: hostname
+
+ - path: /etc/hosts
+   generator: hosts
+
+ - path: /etc/init/lxc-tty.conf
+   generator: upstart-tty
+   releases:
+    - precise
+    - trusty
+
+packages:
+  manager: apt
+
+  update: true
+  install:
+    - systemd
+    - neovim
+
+mappings:
+  architecture_map: debian

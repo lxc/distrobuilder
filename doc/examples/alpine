@@ -1,30 +1,31 @@
-# Debian
-
-```yaml
 image:
-  distribution: debian
-  release: testing
-  description: Debian testing
+  distribution: alpinelinux
+  release: 3.7.0
+  description: Alpine Linux
   expiry: 30d
+  architecture: x86_64
 
 source:
-  downloader: debootstrap
+  downloader: alpinelinux-http
+  url: http://dl-cdn.alpinelinux.org/alpine/
+  keys:
+    - 0482D84022F52DF1C4E7CD43293ACD0907D9495A
 
 targets:
   lxc:
     create-message: |
-        You just created a Debian container (release={{ image.release }}, arch={{ image.architecture }}, variant={{ image.variant }})
+        You just created an Alpine container (release={{ image.release }}, arch={{ image.architecture }})
 
     config:
       - type: all
         before: 5
         content: |-
-          lxc.include = LXC_TEMPLATE_CONFIG/debian.common.conf
+          lxc.include = LXC_TEMPLATE_CONFIG/alpine.common.conf
 
       - type: user
         before: 5
         content: |-
-          lxc.include = LXC_TEMPLATE_CONFIG/debian.userns.conf
+          lxc.include = LXC_TEMPLATE_CONFIG/alpine.userns.conf
 
       - type: all
         after: 4
@@ -41,22 +42,15 @@ targets:
           lxc.arch = {{ image.architecture_kernel }}
 
 files:
- - name: hostname
-   path: /etc/hostname
+ - path: /etc/hostname
    generator: hostname
 
- - name: hosts
-   path: /etc/hosts
+ - path: /etc/hosts
    generator: hosts
 
 packages:
-    manager: apt
+    manager: apk
 
     update: true
     install:
-        - systemd
         - neovim
-
-mappings:
-  architecture_map: debian
-```
