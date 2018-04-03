@@ -199,6 +199,7 @@ func (d *Definition) Validate() error {
 		"apt",
 		"dnf",
 		"pacman",
+		"portage",
 		"yum",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {

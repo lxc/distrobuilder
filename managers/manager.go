@@ -35,6 +35,8 @@ func Get(name string) *Manager {
 		return NewDnf()
 	case "pacman":
 		return NewPacman()
+	case "portage":
+		return NewPortage()
 	case "yum":
 		return NewYum()
 	}
