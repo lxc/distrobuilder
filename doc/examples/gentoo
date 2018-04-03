@@ -1,0 +1,64 @@
+image:
+  distribution: gentoo
+  description: Gentoo
+  expiry: 30d
+  architecture: amd64
+
+source:
+  downloader: gentoo-http
+  url: http://distfiles.gentoo.org
+  keys:
+    - 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
+
+targets:
+  lxc:
+    create-message: |
+      You just created a Gentoo container (arch={{ image.architecture }})
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/alpine.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/alpine.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_kernel }}
+
+files:
+ - path: /etc/hostname
+   generator: hostname
+
+ - path: /etc/hosts
+   generator: hosts
+
+packages:
+  manager: portage
+
+  update: true
+  install:
+    - neovim
+
+actions:
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      rm -rf /usr/portage/
+
+mappings:
+  architecture_map: debian
