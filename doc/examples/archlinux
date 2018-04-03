@@ -1,32 +1,31 @@
-# Fedora
-
-```yaml
 image:
-  distribution: fedora
-  release: 28
-  description: Fedora {{ image.release }}
+  distribution: archlinux
+  release: 2018.03.01
+  description: Arch Linux
   expiry: 30d
-  arch: x86_64
+  architecture: x86_64
 
 source:
-  downloader: fedora-http
-  url: https://kojipkgs.fedoraproject.org
+  downloader: archlinux-http
+  url: https://archive.archlinux.org/iso
+  keys:
+    - 4AA4767BBC9C4B1D18AE28B77F2D434B9741E8AC
 
 targets:
   lxc:
     create-message: |
-      You just created a Fedora container (release={{ image.release }}, arch={{ image.architecture }})
+      You just created an Arch Linux container (release={{ image.release }}, arch={{ image.architecture }})
 
     config:
       - type: all
         before: 5
         content: |-
-          lxc.include = LXC_TEMPLATE_CONFIG/fedora.common.conf
+          lxc.include = LXC_TEMPLATE_CONFIG/archlinux.common.conf
 
       - type: user
         before: 5
         content: |-
-          lxc.include = LXC_TEMPLATE_CONFIG/fedora.userns.conf
+          lxc.include = LXC_TEMPLATE_CONFIG/archlinux.userns.conf
 
       - type: all
         after: 4
@@ -43,17 +42,17 @@ targets:
           lxc.arch = {{ image.architecture_kernel }}
 
 files:
-  - path: /etc/hostname
+  - name: hostname
+    path: /etc/hostname
     generator: hostname
 
-  - path: /etc/hosts
+  - name: hosts
+    path: /etc/hosts
     generator: hosts
 
 packages:
-  manager: dnf
+  manager: pacman
 
   update: true
   install:
-    - systemd
     - neovim
-```
