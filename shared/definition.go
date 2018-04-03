@@ -187,6 +187,7 @@ func (d *Definition) Validate() error {
 		"centos-http",
 		"debootstrap",
 		"fedora-http",
+		"gentoo-http",
 		"ubuntu-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
@@ -198,6 +199,7 @@ func (d *Definition) Validate() error {
 		"apt",
 		"dnf",
 		"pacman",
+		"portage",
 		"yum",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {

@@ -20,6 +20,8 @@ func Get(name string) Downloader {
 		return NewDebootstrap()
 	case "fedora-http":
 		return NewFedoraHTTP()
+	case "gentoo-http":
+		return NewGentooHTTP()
 	case "ubuntu-http":
 		return NewUbuntuHTTP()
 	}

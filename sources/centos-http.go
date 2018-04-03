@@ -51,7 +51,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 
 		checksumFile = "sha256sum.txt.asc"
-		shared.Download(baseURL+checksumFile, "")
+		shared.DownloadSha256(baseURL+checksumFile, "")
 		valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), checksumFile), "",
 			definition.Source.Keys, definition.Source.Keyserver)
 		if err != nil {
@@ -62,7 +62,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 	}
 
-	err = shared.Download(baseURL+s.fname, checksumFile)
+	err = shared.DownloadSha256(baseURL+s.fname, checksumFile)
 	if err != nil {
 		return fmt.Errorf("Error downloading CentOS image: %s", err)
 	}

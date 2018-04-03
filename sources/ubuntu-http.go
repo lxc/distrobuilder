@@ -57,8 +57,8 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 
 		checksumFile = baseURL + "SHA256SUMS"
-		shared.Download(baseURL+"SHA256SUMS.gpg", "")
-		shared.Download(checksumFile, "")
+		shared.DownloadSha256(baseURL+"SHA256SUMS.gpg", "")
+		shared.DownloadSha256(checksumFile, "")
 
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), "SHA256SUMS"),
@@ -73,7 +73,7 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 	}
 
-	err = shared.Download(baseURL+s.fname, checksumFile)
+	err = shared.DownloadSha256(baseURL+s.fname, checksumFile)
 	if err != nil {
 		return fmt.Errorf("Error downloading Ubuntu image: %s", err)
 	}
