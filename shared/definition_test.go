@@ -183,6 +183,30 @@ func TestValidateDefinition(t *testing.T) {
 			"packages.manager must be one of .+",
 			true,
 		},
+		{
+			"invalid action trigger",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					Manager: "apt",
+				},
+				Actions: []DefinitionAction{
+					{
+						Trigger: "post-build",
+					},
+				},
+			},
+			"actions\\.\\*\\.trigger must be one of .+",
+			true,
+		},
 	}
 
 	for i, tt := range tests {

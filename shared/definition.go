@@ -233,6 +233,19 @@ func (d *Definition) Validate() error {
 		}
 	}
 
+	validTriggers := []string{
+		"post-files",
+		"post-packages",
+		"post-unpack",
+		"post-update",
+	}
+
+	for _, action := range d.Actions {
+		if !shared.StringInSlice(action.Trigger, validTriggers) {
+			return fmt.Errorf("actions.*.trigger must be one of %v", validTriggers)
+		}
+	}
+
 	// Mapped architecture (distro name)
 	archMapped, err := d.getMappedArchitecture()
 	if err != nil {
