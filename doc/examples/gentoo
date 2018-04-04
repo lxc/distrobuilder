@@ -19,12 +19,12 @@ targets:
       - type: all
         before: 5
         content: |-
-          lxc.include = LXC_TEMPLATE_CONFIG/alpine.common.conf
+          lxc.include = LXC_TEMPLATE_CONFIG/gentoo.common.conf
 
       - type: user
         before: 5
         content: |-
-          lxc.include = LXC_TEMPLATE_CONFIG/alpine.userns.conf
+          lxc.include = LXC_TEMPLATE_CONFIG/gentoo.userns.conf
 
       - type: all
         after: 4
