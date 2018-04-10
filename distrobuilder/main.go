@@ -92,6 +92,17 @@ func main() {
 				fmt.Fprintf(os.Stderr, "You must be root to run this tool\n")
 				os.Exit(1)
 			}
+
+			// Create temp directory if the cache directory isn't explicitly set
+			if globalCmd.flagCacheDir == "" {
+				dir, err := ioutil.TempDir("/var/cache", "distrobuilder.")
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Failed to create cache directory: %s\n", err)
+					os.Exit(1)
+				}
+
+				globalCmd.flagCacheDir = dir
+			}
 		},
 		PersistentPostRunE: globalCmd.postRun,
 	}
@@ -116,17 +127,6 @@ func main() {
 	// build-dir sub-command
 	buildDirCmd := cmdBuildDir{global: &globalCmd}
 	app.AddCommand(buildDirCmd.command())
-
-	// Create temp directory if the cache directory isn't explicitly set
-	if globalCmd.flagCacheDir == "" {
-		dir, err := ioutil.TempDir("/var/cache", "distrobuilder.")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create cache directory: %s\n", err)
-			os.Exit(1)
-		}
-
-		globalCmd.flagCacheDir = dir
-	}
 
 	// Run the main command and handle errors
 	err := app.Execute()
