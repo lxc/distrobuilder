@@ -26,8 +26,7 @@ type chrootMount struct {
 
 func setupMounts(rootfs string, mounts []chrootMount) error {
 	// Create a temporary mount path
-	err := os.MkdirAll(filepath.Join(rootfs, ".distrobuilder"), 0700)
-	if err != nil {
+	if err := os.MkdirAll(filepath.Join(rootfs, ".distrobuilder"), 0700); err != nil {
 		return err
 	}
 
@@ -37,13 +36,11 @@ func setupMounts(rootfs string, mounts []chrootMount) error {
 
 		// Create the target mountpoint
 		if mount.isDir {
-			err := os.Mkdir(tmpTarget, 0755)
-			if err != nil {
+			if err := os.Mkdir(tmpTarget, 0755); err != nil {
 				return err
 			}
 		} else {
-			_, err = os.Create(tmpTarget)
-			if err != nil {
+			if _, err := os.Create(tmpTarget); err != nil {
 				return err
 			}
 		}
@@ -87,39 +84,33 @@ func moveMounts(mounts []chrootMount) error {
 		}
 
 		// Create parent paths if missing
-		err := os.MkdirAll(filepath.Dir(target), 0755)
-		if err != nil {
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 			return err
 		}
 
 		// Create target path
 		if mount.isDir {
-			err = os.MkdirAll(target, 0755)
-			if err != nil {
+			if err := os.MkdirAll(target, 0755); err != nil {
 				return err
 			}
 		} else {
-			_, err = os.Create(target)
-			if err != nil {
+			if _, err := os.Create(target); err != nil {
 				return err
 			}
 		}
 
 		// Move the mount to its destination
-		err = syscall.Mount(tmpSource, target, "", syscall.MS_MOVE, "")
-		if err != nil {
+		if err := syscall.Mount(tmpSource, target, "", syscall.MS_MOVE, ""); err != nil {
 			return fmt.Errorf("Failed to mount '%s': %s", mount.source, err)
 		}
 	}
 
 	// Cleanup our temporary path
-	err := os.RemoveAll(filepath.Join("/", ".distrobuilder"))
-	if err != nil {
+	if err := os.RemoveAll(filepath.Join("/", ".distrobuilder")); err != nil {
 		return err
 	}
 
 	return nil
-
 }
 
 func killChrootProcesses(rootfs string) error {
@@ -151,8 +142,7 @@ func killChrootProcesses(rootfs string) error {
 
 func setupChroot(rootfs string) (func() error, error) {
 	// Mount the rootfs
-	err := syscall.Mount(rootfs, rootfs, "", syscall.MS_BIND, "")
-	if err != nil {
+	if err := syscall.Mount(rootfs, rootfs, "", syscall.MS_BIND, ""); err != nil {
 		return nil, fmt.Errorf("Failed to mount '%s': %s", rootfs, err)
 	}
 
@@ -178,26 +168,22 @@ func setupChroot(rootfs string) (func() error, error) {
 	}
 
 	// Setup all needed mounts in a temporary location
-	err = setupMounts(rootfs, mounts)
-	if err != nil {
+	if err := setupMounts(rootfs, mounts); err != nil {
 		return nil, fmt.Errorf("Failed to mount filesystems: %v", err)
 	}
 
 	// Chroot into the container's rootfs
-	err = syscall.Chroot(rootfs)
-	if err != nil {
+	if err := syscall.Chroot(rootfs); err != nil {
 		root.Close()
 		return nil, err
 	}
 
-	err = syscall.Chdir("/")
-	if err != nil {
+	if err := syscall.Chdir("/"); err != nil {
 		return nil, err
 	}
 
 	// Move all the mounts into place
-	err = moveMounts(mounts)
-	if err != nil {
+	if err := moveMounts(mounts); err != nil {
 		return nil, err
 	}
 
@@ -244,8 +230,7 @@ exit 101
 
 		// Cleanup policy-rc.d
 		if policyCleanup {
-			err = os.Remove("/usr/sbin/policy-rc.d")
-			if err != nil {
+			if err := os.Remove("/usr/sbin/policy-rc.d"); err != nil {
 				return err
 			}
 		}
@@ -254,18 +239,15 @@ exit 101
 		shared.SetEnvVariables(oldEnvVariables)
 
 		// Switch back to the host rootfs
-		err = root.Chdir()
-		if err != nil {
+		if err := root.Chdir(); err != nil {
 			return err
 		}
 
-		err = syscall.Chroot(".")
-		if err != nil {
+		if err := syscall.Chroot("."); err != nil {
 			return err
 		}
 
-		err = syscall.Chdir(cwd)
-		if err != nil {
+		if err := syscall.Chdir(cwd); err != nil {
 			return err
 		}
 
@@ -281,45 +263,37 @@ exit 101
 }
 
 func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAction) error {
-	var err error
-
 	manager := managers.Get(def.Manager)
 	if manager == nil {
 		return fmt.Errorf("Couldn't get manager")
 	}
 
-	err = manager.Refresh()
-	if err != nil {
+	if err := manager.Refresh(); err != nil {
 		return err
 	}
 
 	if def.Update {
-		err = manager.Update()
-		if err != nil {
+		if err := manager.Update(); err != nil {
 			return err
 		}
 
 		// Run post update hook
 		for _, action := range actions {
-			err = shared.RunScript(action.Action)
-			if err != nil {
+			if err := shared.RunScript(action.Action); err != nil {
 				return fmt.Errorf("Failed to run post-update: %s", err)
 			}
 		}
 	}
 
-	err = manager.Install(def.Install)
-	if err != nil {
+	if err := manager.Install(def.Install); err != nil {
 		return err
 	}
 
-	err = manager.Remove(def.Remove)
-	if err != nil {
+	if err := manager.Remove(def.Remove); err != nil {
 		return err
 	}
 
-	err = manager.Clean()
-	if err != nil {
+	if err := manager.Clean(); err != nil {
 		return err
 	}
 
