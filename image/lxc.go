@@ -148,7 +148,7 @@ func (l *LXCImage) createMetadata() error {
 				}
 
 				if info.Mode()&os.ModeDevice != 0 {
-					excludesUser += fmt.Sprintf("%s\n",
+					excludesUser += fmt.Sprintf(".%s\n",
 						strings.TrimPrefix(path, l.sourceDir))
 				}
 
