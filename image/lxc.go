@@ -107,7 +107,7 @@ func (l *LXCImage) createMetadata() error {
 					return err
 				}
 
-				err = l.writeConfig(i, filepath.Join(metaDir, "config.user"), c.Content)
+				err = l.writeConfig(i, filepath.Join(metaDir, "config-user"), c.Content)
 				if err != nil {
 					return err
 				}
@@ -117,7 +117,7 @@ func (l *LXCImage) createMetadata() error {
 					return err
 				}
 			case "user":
-				err := l.writeConfig(i, filepath.Join(metaDir, "config.user"), c.Content)
+				err := l.writeConfig(i, filepath.Join(metaDir, "config-user"), c.Content)
 				if err != nil {
 					return err
 				}
@@ -170,7 +170,7 @@ func (l *LXCImage) createMetadata() error {
 func (l *LXCImage) packMetadata() error {
 	files := []string{"create-message", "expiry", "excludes-user"}
 
-	// Get all config and config.user files
+	// Get all config and config-user files
 	configs, err := filepath.Glob(filepath.Join(l.cacheDir, "metadata", "config*"))
 	if err != nil {
 		return err

@@ -294,23 +294,23 @@ func TestLXCCreateMetadataConfig(t *testing.T) {
 			"all_before_5\nall\n",
 		},
 		{
-			"config.user",
+			"config-user",
 			"all_after_4\nuser_after_4\nall\nuser_before_3_after_3\n",
 		},
 		{
-			"config.user.1",
+			"config-user.1",
 			"all_before_5\nuser_before_5\nall\nuser_before_3_after_3\n",
 		},
 		{
-			"config.user.2",
+			"config-user.2",
 			"all_before_5\nuser_before_5\nall\nuser_before_3_after_3\n",
 		},
 		{
-			"config.user.3",
+			"config-user.3",
 			"all_before_5\nuser_before_5\nall\n",
 		},
 		{
-			"config.user.4",
+			"config-user.4",
 			"all_before_5\nuser_before_5\nall\nuser_before_3_after_3\n",
 		},
 	}
