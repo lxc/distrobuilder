@@ -41,7 +41,19 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 		args = append(args, "--keyring", keyring)
 	}
 
-	args = append(args, definition.Image.Release, rootfsDir)
+	// If source.ignore_release is set, debootstrap will not use image.release
+	// but source.suite as the release. This is important for derivatives which
+	// don't have own sources, e.g. Linux Mint.
+	if definition.Source.IgnoreRelease {
+		// If source.suite is set, use it when calling debootstrap
+		if definition.Source.Suite != "" {
+			args = append(args, definition.Source.Suite, rootfsDir)
+		} else {
+			args = append(args, definition.Image.Release, rootfsDir)
+		}
+	} else {
+		args = append(args, definition.Image.Release, rootfsDir)
+	}
 
 	if definition.Source.URL != "" {
 		args = append(args, definition.Source.URL)
