@@ -77,6 +77,7 @@ type DefinitionFile struct {
 	Path      string   `yaml:"path,omitempty"`
 	Content   string   `yaml:"content,omitempty"`
 	Releases  []string `yaml:"releases,omitempty"`
+	Name      string   `yaml:"name"`
 }
 
 // A DefinitionAction specifies a custom action (script) which is to be run after
@@ -209,6 +210,7 @@ func (d *Definition) Validate() error {
 
 	validGenerators := []string{
 		"dump",
+		"dump-template",
 		"hostname",
 		"hosts",
 		"remove",
