@@ -78,7 +78,7 @@ type DefinitionFile struct {
 	Content   string                     `yaml:"content,omitempty"`
 	Releases  []string                   `yaml:"releases,omitempty"`
 	Name      string                     `yaml:"name,omitempty"`
-	Settings  DefinitionTemplateSettings `yaml:"settings,omitempty"`
+	Template  DefinitionTemplateSettings `yaml:"template,omitempty"`
 }
 
 // A DefinitionTemplateSettings represents the settings used by generators

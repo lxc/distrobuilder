@@ -46,11 +46,11 @@ func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 	// Add to LXD templates
 	img.Metadata.Templates[defFile.Path] = &api.ImageMetadataTemplate{
 		Template:   template,
-		Properties: defFile.Settings.Properties,
-		When:       defFile.Settings.When,
+		Properties: defFile.Template.Properties,
+		When:       defFile.Template.When,
 	}
 
-	if len(defFile.Settings.When) > 0 {
+	if len(defFile.Template.When) > 0 {
 		img.Metadata.Templates[defFile.Path].When = []string{
 			"create",
 			"copy",
