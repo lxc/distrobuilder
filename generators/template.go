@@ -10,18 +10,18 @@ import (
 	"github.com/lxc/lxd/shared/api"
 )
 
-// DumpTemplateGenerator represents the Remove generator.
-type DumpTemplateGenerator struct{}
+// TemplateGenerator represents the Remove generator.
+type TemplateGenerator struct{}
 
 // RunLXC dumps content to a file.
-func (g DumpTemplateGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
+func (g TemplateGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 	defFile shared.DefinitionFile) error {
 	// no template support for LXC, ignoring generator
 	return nil
 }
 
 // RunLXD dumps content to a file.
-func (g DumpTemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
+func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 	defFile shared.DefinitionFile) error {
 	templateDir := filepath.Join(cacheDir, "templates")
 
@@ -61,7 +61,7 @@ func (g DumpTemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXD
 }
 
 // Run does nothing.
-func (g DumpTemplateGenerator) Run(cacheDir, sourceDir string,
+func (g TemplateGenerator) Run(cacheDir, sourceDir string,
 	defFile shared.DefinitionFile) error {
 	return nil
 }

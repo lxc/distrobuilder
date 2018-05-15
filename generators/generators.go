@@ -29,8 +29,8 @@ func Get(generator string) Generator {
 		return RemoveGenerator{}
 	case "dump":
 		return DumpGenerator{}
-	case "dump-template":
-		return DumpTemplateGenerator{}
+	case "template":
+		return TemplateGenerator{}
 	case "upstart-tty":
 		return UpstartTTYGenerator{}
 	}

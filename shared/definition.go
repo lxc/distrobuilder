@@ -217,7 +217,7 @@ func (d *Definition) Validate() error {
 
 	validGenerators := []string{
 		"dump",
-		"dump-template",
+		"template",
 		"hostname",
 		"hosts",
 		"remove",
