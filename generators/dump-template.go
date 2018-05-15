@@ -45,11 +45,16 @@ func (g DumpTemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXD
 
 	// Add to LXD templates
 	img.Metadata.Templates[defFile.Path] = &api.ImageMetadataTemplate{
-		Template: template,
-		When: []string{
+		Template:   template,
+		Properties: defFile.Settings.Properties,
+		When:       defFile.Settings.When,
+	}
+
+	if len(defFile.Settings.When) > 0 {
+		img.Metadata.Templates[defFile.Path].When = []string{
 			"create",
 			"copy",
-		},
+		}
 	}
 
 	return err
