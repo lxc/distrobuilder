@@ -38,13 +38,85 @@ targets:
           lxc.arch = {{ image.architecture_kernel }}
 
 files:
- - name: hostname
-   path: /etc/hostname
-   generator: hostname
+  - name: interfaces
+    generator: dump
+    path: /etc/network/interfaces
+    content: |
+      # interfaces(5) file used by ifup(8) and ifdown(8)
+      # Include files from /etc/network/interfaces.d:
+      source-directory /etc/network/interfaces.d
+      source /etc/network/interfaces.d/50-cloud-init.cfg
 
- - name: hosts
-   path: /etc/hosts
-   generator: hosts
+  - name: hostname
+    path: /etc/hostname
+    generator: hostname
+
+  - name: hosts
+    path: /etc/hosts
+    generator: hosts
+  - path: /etc/resolvconf/resolv.conf.d/original
+    generator: remove
+
+  - path: /etc/resolvconf/resolv.conf.d/tail
+    generator: remove
+
+  - path: /etc/machine-id
+    generator: remove
+
+  - name: cloud-init-meta
+    path: /var/lib/cloud/seed/nocloud-net/meta-data
+    generator: template
+    template:
+      when:
+        - create
+        - copy
+    content: |
+      #cloud-config
+      instance-id: {{ container.name }}
+      local-hostname: {{ container.name }}
+      {{ config_get("user.meta-data", "") }}
+
+  - name: cloud-init-network
+    path: /var/lib/cloud/seed/nocloud-net/network-config
+    generator: template
+    template:
+      when:
+        - create
+        - copy
+    content: |
+      {% if config_get("user.network-config", "") == "" %}version: 1
+      config:
+         - type: physical
+           name: eth0
+           subnets:
+               - type: {% if config_get("user.network_mode", "") == "link-local" %}manual{% else %}dhcp{% endif %}
+                 control: auto{% else %}{{ config_get("user.network-config", "") }}{% endif %}
+
+  - name: cloud-init-user-data
+    path: /var/lib/cloud/seed/nocloud-net/user-data
+    generator: template
+    content: '{{ config_get("user.user-data", properties.default) }}'
+    template:
+      properties:
+        default: |
+          #cloud-config
+          {}
+      when:
+        - create
+        - copy
+
+  - name: cloud-init-vedor-data
+    path: /var/lib/cloud/seed/nocloud-net/vendor-data
+    generator: template
+    content: '{{ config_get("user.vendor-data", properties.default) }}'
+    template:
+      properties:
+        default: |
+          #cloud-config
+          {}
+      when:
+        - create
+        - copy
 
 packages:
     manager: apt
@@ -52,7 +124,18 @@ packages:
     update: true
     install:
         - systemd
-        - neovim
+        - dialog
+        - ifupdown
+        - locales
+        - netbase
+        - net-tools
+        - cloud-init
+        - cloud-utils
+        - sudo
+        - adduser
+        - locales
+        - file
+        - openssh-server
 
 mappings:
   architecture_map: debian
