@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	lxd "github.com/lxc/lxd/shared"
+
 	"github.com/lxc/distrobuilder/shared"
 )
 
@@ -59,16 +61,16 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 		args = append(args, definition.Source.URL)
 	}
 
-	// If definition.Source.Suite is set, create a symlink in /usr/share/debootstrap/scripts
+	// If definition.Source.SameAs is set, create a symlink in /usr/share/debootstrap/scripts
 	// pointing release to definition.Source.Suite.
-	if definition.Source.Suite != "" {
-		link := filepath.Join("/usr/share/debootstrap/scripts",
-			definition.Image.Release)
-		err := os.Symlink(definition.Source.Suite, link)
+	scriptPath := filepath.Join("/usr/share/debootstrap/scripts", definition.Image.Release)
+	if !lxd.PathExists(scriptPath) && definition.Source.SameAs != "" {
+		err := os.Symlink(definition.Source.SameAs, scriptPath)
 		if err != nil {
 			return err
 		}
-		defer os.Remove(link)
+
+		defer os.Remove(scriptPath)
 	}
 
 	err := shared.RunCommand("debootstrap", args...)
