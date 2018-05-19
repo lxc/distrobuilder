@@ -11,7 +11,7 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// TemplateGenerator represents the Remove generator.
+// TemplateGenerator represents the Template generator.
 type TemplateGenerator struct{}
 
 // RunLXC dumps content to a file.
