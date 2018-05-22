@@ -48,6 +48,7 @@ type DefinitionSource struct {
 	Keyserver     string   `yaml:"keyserver,omitempty"`
 	Variant       string   `yaml:"variant,omitempty"`
 	Suite         string   `yaml:"suite,omitempty"`
+	SameAs        string   `yaml:"same_as,omitempty"`
 	AptSources    string   `yaml:"apt_sources,omitempty"`
 	IgnoreRelease bool     `yaml:"ignore_release,omitempty"`
 }
