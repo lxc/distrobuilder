@@ -19,7 +19,7 @@ func TestVerifyFile(t *testing.T) {
 	testdataDir := filepath.Join(wd, "..", "testdata")
 
 	keys := []string{"0x5DE8949A899C8D99"}
-	keyserver := "keys.gnupg.net"
+	keyserver := "keyserver.ubuntu.com"
 
 	tests := []struct {
 		name          string
@@ -93,7 +93,7 @@ func TestVerifyFile(t *testing.T) {
 }
 
 func TestCreateGPGKeyring(t *testing.T) {
-	keyring, err := CreateGPGKeyring("pgp.mit.edu", []string{"0x5DE8949A899C8D99"})
+	keyring, err := CreateGPGKeyring("keyserver.ubuntu.com", []string{"0x5DE8949A899C8D99"})
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
