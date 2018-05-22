@@ -73,10 +73,18 @@ type DefinitionTarget struct {
 
 // A DefinitionFile represents a file which is to be created inside to chroot.
 type DefinitionFile struct {
-	Generator string   `yaml:"generator"`
-	Path      string   `yaml:"path,omitempty"`
-	Content   string   `yaml:"content,omitempty"`
-	Releases  []string `yaml:"releases,omitempty"`
+	Generator string                 `yaml:"generator"`
+	Path      string                 `yaml:"path,omitempty"`
+	Content   string                 `yaml:"content,omitempty"`
+	Releases  []string               `yaml:"releases,omitempty"`
+	Name      string                 `yaml:"name,omitempty"`
+	Template  DefinitionFileTemplate `yaml:"template,omitempty"`
+}
+
+// A DefinitionFileTemplate represents the settings used by generators
+type DefinitionFileTemplate struct {
+	Properties map[string]string `yaml:"properties,omitempty"`
+	When       []string          `yaml:"when,omitempty"`
 }
 
 // A DefinitionAction specifies a custom action (script) which is to be run after
@@ -209,6 +217,7 @@ func (d *Definition) Validate() error {
 
 	validGenerators := []string{
 		"dump",
+		"template",
 		"hostname",
 		"hosts",
 		"remove",
