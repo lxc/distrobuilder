@@ -55,4 +55,5 @@ packages:
 
   update: true
   install:
+    - systemd-sysvcompat
     - neovim
