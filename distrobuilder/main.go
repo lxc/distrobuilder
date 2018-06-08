@@ -136,6 +136,9 @@ func main() {
 }
 
 func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
+	// if an error is returned, disable the usage message
+	cmd.SilenceUsage = true
+
 	// Clean up cache directory before doing anything
 	os.RemoveAll(c.flagCacheDir)
 
