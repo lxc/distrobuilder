@@ -66,7 +66,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	exitChroot, err := setupChroot(c.global.sourceDir)
+	exitChroot, err := shared.SetupChroot(c.global.sourceDir)
 	if err != nil {
 		return err
 	}
