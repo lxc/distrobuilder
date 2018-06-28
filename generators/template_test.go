@@ -48,7 +48,7 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	validateTestFile(t, filepath.Join(cacheDir, "templates", "template.tpl"), "==test==")
+	validateTestFile(t, filepath.Join(cacheDir, "templates", "template.tpl"), "==test==\n")
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "root", "template"), "--test--")
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lxc/lxd/shared/api"
 
@@ -38,6 +39,11 @@ func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 	}
 
 	defer file.Close()
+
+	// Append final new line if missing
+	if !strings.HasSuffix(defFile.Content, "\n") {
+		defFile.Content += "\n"
+	}
 
 	_, err = file.WriteString(defFile.Content)
 	if err != nil {
