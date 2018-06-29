@@ -64,8 +64,8 @@ actions:
     action: |-
       #!/bin/sh
       cd /mnt/cdrom/Packages
-      rpm -ivh --nodeps rpm-4.11.3-25.el7.x86_64.rpm
-      rpm -ivh --nodeps yum-3.4.3-154.el7.centos.noarch.rpm
+      rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
+      rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
 
       # add cdrom repo
       mkdir -p /etc/yum.repos.d

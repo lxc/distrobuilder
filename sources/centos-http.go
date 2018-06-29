@@ -81,7 +81,7 @@ func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
 	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
 
 	// this is easier than doing the whole loop thing ourselves
-	err := shared.RunCommand("mount", filePath, isoDir)
+	err := shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
 	if err != nil {
 		return err
 	}
