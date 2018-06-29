@@ -11,6 +11,7 @@ source:
   url: http://centos.uib.no
   keys:
     - 24C6A8A7F4A80EB5
+    - 0946FCA2C105B9DE
   variant: Minimal
 
 targets:
@@ -63,6 +64,8 @@ actions:
   - trigger: post-unpack
     action: |-
       #!/bin/sh
+      touch /etc/mtab /etc/fstab
+
       cd /mnt/cdrom/Packages
       rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
       rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
@@ -75,15 +78,39 @@ actions:
       baseurl=file:///mnt/cdrom
       enabled=0
       gpgcheck=1
-      gpgkey=file:///mnt/cdrom/RPM-GPG-KEY-CentOS-7
       EOF
 
-      yum --disablerepo=\* --enablerepo=cdrom -y reinstall yum
-      yum --disablerepo=\* --enablerepo=cdrom -y groupinstall "Minimal Install"
+  - trigger: post-unpack
+    action: |-
+      echo gpgkey=file:///mnt/cdrom/RPM-GPG-KEY-CentOS-6 >> /etc/yum.repos.d/cdrom.repo
+    releases:
+      - 6
 
-      rm -rf /mnt/cdrom /etc/yum.repos.d/cdrom.repo
+  - trigger: post-unpack
+    action: |-
+      echo gpgkey=file:///mnt/cdrom/RPM-GPG-KEY-CentOS-7 >> /etc/yum.repos.d/cdrom.repo
     releases:
       - 7
+
+  - trigger: post-unpack
+    action: |-
+      yum --disablerepo=\* --enablerepo=cdrom -y reinstall yum
+
+  - trigger: post-unpack
+    action: |-
+      yum --disablerepo=\* --enablerepo=cdrom -y groupinstall "Core"
+    releases:
+      - 6
+
+  - trigger: post-unpack
+    action: |-
+      yum --disablerepo=\* --enablerepo=cdrom -y groupinstall "Minimal Install"
+    releases:
+      - 7
+
+  - trigger: post-unpack
+    action: |-
+      rm -rf /mnt/cdrom /etc/yum.repos.d/cdrom.repo
 
   - trigger: post-packages
     action: |-
