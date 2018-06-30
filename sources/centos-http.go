@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/lxc/distrobuilder/shared"
+	lxd "github.com/lxc/lxd/shared"
 )
 
 // CentOSHTTP represents the CentOS HTTP downloader.
@@ -87,15 +88,23 @@ func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
 	}
 	defer syscall.Unmount(isoDir, 0)
 
-	err = shared.RunCommand("mount", filepath.Join(isoDir, "LiveOS",
-		"squashfs.img"), squashfsDir)
-	if err != nil {
-		return err
-	}
-	defer syscall.Unmount(squashfsDir, 0)
+	var rootfsImage string
+	squashfsImage := filepath.Join(isoDir, "LiveOS", "squashfs.img")
+	if lxd.PathExists(squashfsImage) {
+		// The squashfs.img contains an image containing the rootfs, so first
+		// mount squashfs.img
+		err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
+		if err != nil {
+			return err
+		}
+		defer syscall.Unmount(squashfsDir, 0)
 
-	err = shared.RunCommand("mount", filepath.Join(squashfsDir, "LiveOS",
-		"rootfs.img"), tempRootDir)
+		rootfsImage = filepath.Join(squashfsDir, "LiveOS", "rootfs.img")
+	} else {
+		rootfsImage = filepath.Join(isoDir, "images", "install.img")
+	}
+
+	err = shared.RunCommand("mount", "-o", "ro", rootfsImage, tempRootDir)
 	if err != nil {
 		return err
 	}
@@ -147,7 +156,8 @@ func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
 }
 
 func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
-	resp, err := http.Get(URL + path.Join("/", strings.Split(release, ".")[0], "isos", arch))
+	releaseFields := strings.Split(release, ".")
+	resp, err := http.Get(URL + path.Join("/", releaseFields[0], "isos", arch))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return ""
@@ -155,7 +165,19 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return ""
+	}
 
-	regex := regexp.MustCompile(fmt.Sprintf("CentOS-%s-%s-(?i:%s)(-\\d+)?.iso", release, arch, variant))
-	return regex.FindString(string(body))
+	var re string
+	if len(releaseFields) > 1 {
+		re = fmt.Sprintf("CentOS-%s.%s-%s-(?i:%s)(-\\d+)?.iso",
+			releaseFields[0], releaseFields[1], arch, variant)
+	} else {
+		re = fmt.Sprintf("CentOS-%s(.\\d+)?-%s-(?i:%s)(-\\d+)?.iso",
+			releaseFields[0], arch, variant)
+	}
+
+	return regexp.MustCompile(re).FindString(string(body))
 }
