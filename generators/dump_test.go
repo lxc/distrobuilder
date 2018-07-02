@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	lxd "github.com/lxc/lxd/shared"
+	"github.com/stretchr/testify/require"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -20,35 +20,25 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 	defer teardown(cacheDir)
 
 	generator := Get("dump")
-	if generator == nil {
-		t.Fatal("Expected dump generator, got nil")
-	}
+	require.Equal(t, DumpGenerator{}, generator)
 
 	err := generator.RunLXC(cacheDir, rootfsDir, nil,
 		shared.DefinitionFile{
 			Path:    "/hello/world",
 			Content: "hello world",
 		})
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
-	if !lxd.PathExists(filepath.Join(rootfsDir, "hello", "world")) {
-		t.Fatalf("Directory '%s' wasn't created", "/hello/world")
-	}
+	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world"))
 
 	var buffer bytes.Buffer
 	file, err := os.Open(filepath.Join(rootfsDir, "hello", "world"))
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 	defer file.Close()
 
 	io.Copy(&buffer, file)
 
-	if buffer.String() != "hello world\n" {
-		t.Fatalf("Expected '%s', got '%s'", "hello world", buffer.String())
-	}
+	require.Equal(t, "hello world\n", buffer.String())
 }
 
 func TestDumpGeneratorRunLXD(t *testing.T) {
@@ -59,33 +49,23 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	defer teardown(cacheDir)
 
 	generator := Get("dump")
-	if generator == nil {
-		t.Fatal("Expected dump generator, got nil")
-	}
+	require.Equal(t, DumpGenerator{}, generator)
 
 	err := generator.RunLXD(cacheDir, rootfsDir, nil,
 		shared.DefinitionFile{
 			Path:    "/hello/world",
 			Content: "hello world",
 		})
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
-	if !lxd.PathExists(filepath.Join(rootfsDir, "hello", "world")) {
-		t.Fatalf("Directory '%s' wasn't created", "/hello/world")
-	}
+	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world"))
 
 	var buffer bytes.Buffer
 	file, err := os.Open(filepath.Join(rootfsDir, "hello", "world"))
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 	defer file.Close()
 
 	io.Copy(&buffer, file)
 
-	if buffer.String() != "hello world\n" {
-		t.Fatalf("Expected '%s', got '%s'", "hello world", buffer.String())
-	}
+	require.Equal(t, "hello world\n", buffer.String())
 }

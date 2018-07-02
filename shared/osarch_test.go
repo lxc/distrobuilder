@@ -3,6 +3,8 @@ package shared
 import (
 	"log"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetArch(t *testing.T) {
@@ -41,21 +43,13 @@ func TestGetArch(t *testing.T) {
 	for i, tt := range tests {
 		log.Printf("Running test #%d: %s %s", i, tt.distro, tt.arch)
 		arch, err := GetArch(tt.distro, tt.arch)
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
-		}
-		if arch != tt.expected {
-			t.Fatalf("Wrong arch: Expected '%s', got '%s'", tt.expected, arch)
-		}
+		require.NoError(t, err)
+		require.Equal(t, tt.expected, arch)
 	}
 
 	_, err := GetArch("distro", "")
-	if err == nil || err.Error() != "Architecture map isn't supported: distro" {
-		t.Fatalf("Expected unsupported architecture map, got '%s'", err)
-	}
+	require.EqualError(t, err, "Architecture map isn't supported: distro")
 
 	_, err = GetArch("debian", "arch")
-	if err == nil || err.Error() != "Architecture isn't supported: arch" {
-		t.Fatalf("Expected unsupported architecture, got '%s'", err)
-	}
+	require.EqualError(t, err, "Architecture isn't supported: arch")
 }

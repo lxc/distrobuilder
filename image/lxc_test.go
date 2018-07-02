@@ -7,11 +7,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
-	"regexp"
 	"strings"
 	"syscall"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -96,14 +96,8 @@ func TestNewLXCImage(t *testing.T) {
 	image := NewLXCImage(lxcCacheDir(), "", lxcCacheDir(), lxcDef)
 	defer teardownLXC()
 
-	if image.cacheDir != lxcCacheDir() {
-		t.Fatalf("Expected image.cacheDir to be '%s', got '%s'", lxcCacheDir(),
-			image.cacheDir)
-	}
-
-	if !reflect.DeepEqual(image.definition, lxcDef) {
-		t.Fatalf("lxcImageDef and image.definition are not equal")
-	}
+	require.Equal(t, lxcCacheDir(), image.cacheDir)
+	require.Equal(t, lxcDef, image.definition)
 }
 
 func TestLXCAddTemplate(t *testing.T) {
@@ -111,44 +105,33 @@ func TestLXCAddTemplate(t *testing.T) {
 	defer teardownLXC()
 
 	// Make sure templates file is empty.
-	info, err := os.Stat(filepath.Join(lxcCacheDir(), "metadata", "templates"))
-	if err == nil && info.Size() > 0 {
-		t.Fatalf("Expected file size to be 0, got %d", info.Size())
-	}
+	_, err := os.Stat(filepath.Join(lxcCacheDir(), "metadata", "templates"))
+	require.EqualError(t, err, fmt.Sprintf("stat %s: no such file or directory",
+		filepath.Join(lxcCacheDir(), "metadata", "templates")))
 
 	// Add first template entry.
 	image.AddTemplate("/path/file1")
 	file, err := os.Open(filepath.Join(lxcCacheDir(), "metadata", "templates"))
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Copy file content to buffer.
 	var buffer bytes.Buffer
 	io.Copy(&buffer, file)
 	file.Close()
 
-	if buffer.String() != "/path/file1\n" {
-		t.Fatalf("Expected templates content to be '%s', got '%s'",
-			"/path/file", buffer.String())
-	}
+	require.Equal(t, "/path/file1\n", buffer.String())
 
 	// Add second template entry.
 	image.AddTemplate("/path/file2")
 	file, err = os.Open(filepath.Join(lxcCacheDir(), "metadata", "templates"))
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Copy file content to buffer.
 	buffer.Reset()
 	io.Copy(&buffer, file)
 	file.Close()
 
-	if buffer.String() != "/path/file1\n/path/file2\n" {
-		t.Fatalf("Expected templates content to be '%s', got '%s'",
-			"/path/file1\n/path/file2", buffer.String())
-	}
+	require.Equal(t, "/path/file1\n/path/file2\n", buffer.String())
 }
 
 func TestLXCBuild(t *testing.T) {
@@ -156,14 +139,10 @@ func TestLXCBuild(t *testing.T) {
 	defer teardownLXC()
 
 	err := os.MkdirAll(filepath.Join(lxcCacheDir(), "rootfs"), 0755)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	err = image.Build()
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 	defer func() {
 		os.Remove("meta.tar.xz")
 		os.Remove("rootfs.tar.xz")
@@ -229,40 +208,23 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 		image := tt.prepareImage(*defaultImage)
 		err := image.createMetadata()
 		if tt.shouldFail {
-			if err == nil {
-				t.Fatalf("Expected to fail, but didn't: %s", tt.name)
-			}
-
-			match, _ := regexp.MatchString(tt.expectedError, err.Error())
-			if !match {
-				t.Fatalf("Expected to fail with '%s', got '%s'", tt.expectedError,
-					err.Error())
-			}
-		}
-		if !tt.shouldFail && err != nil {
-			t.Fatalf("Unexpected error: %s", err)
+			require.Regexp(t, tt.expectedError, err)
+		} else {
+			require.NoError(t, err)
 		}
 	}
 
 	// Verify create-message template
 	f, err := os.Open(filepath.Join(lxcCacheDir(), "metadata", "create-message"))
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 	defer f.Close()
 
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, f)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-
-	expected := fmt.Sprintf("Welcome to %s %s\n",
-		strings.Title(lxcDef.Image.Distribution), lxcDef.Image.Release)
-	if buf.String() != expected {
-		t.Fatalf("create-message: Expected '%s', got '%s'", expected,
-			buf.String())
-	}
+	require.NoError(t, err)
+	require.Equal(t, fmt.Sprintf("Welcome to %s %s\n",
+		strings.Title(lxcDef.Image.Distribution), lxcDef.Image.Release),
+		buf.String())
 }
 
 func TestLXCCreateMetadataConfig(t *testing.T) {
@@ -316,27 +278,18 @@ func TestLXCCreateMetadataConfig(t *testing.T) {
 	}
 
 	err := image.createMetadata()
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	for _, tt := range tests {
 		log.Printf("Checking '%s'", tt.configFile)
 		file, err := os.Open(filepath.Join(lxcCacheDir(), "metadata", tt.configFile))
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
-		}
+		require.NoError(t, err)
 
 		var buffer bytes.Buffer
 		_, err = io.Copy(&buffer, file)
 		file.Close()
-		if err != nil {
-			t.Fatalf("Unexpected error: %s", err)
-		}
-
-		if buffer.String() != tt.expected {
-			t.Fatalf("Expected '%s', got '%s'", tt.expected, buffer.String())
-		}
+		require.NoError(t, err)
+		require.Equal(t, tt.expected, buffer.String())
 	}
 }
 
@@ -348,28 +301,20 @@ func TestLXCPackMetadata(t *testing.T) {
 	}()
 
 	err := image.createMetadata()
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	err = image.packMetadata()
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Include templates directory.
 	image.AddTemplate("/path/file")
 	err = image.packMetadata()
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Provoke error by removing the metadata directory
 	os.RemoveAll(filepath.Join(lxcCacheDir(), "metadata"))
 	err = image.packMetadata()
-	if err == nil {
-		t.Fatal("Expected failure")
-	}
+	require.Error(t, err)
 
 }
 
@@ -379,14 +324,10 @@ func TestLXCWriteMetadata(t *testing.T) {
 
 	// Should fail due to invalid path
 	err := image.writeMetadata("/path/file", "", false)
-	if err == nil {
-		t.Fatal("Expected failure")
-	}
+	require.Error(t, err)
 
 	// Should succeed
 	err = image.writeMetadata("test", "metadata", false)
-	if err != nil {
-		t.Fatalf("Unexpected failure: %s", err)
-	}
+	require.NoError(t, err)
 	os.Remove("test")
 }

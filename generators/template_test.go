@@ -3,8 +3,9 @@ package generators
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -18,9 +19,7 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 	defer teardown(cacheDir)
 
 	generator := Get("template")
-	if generator == nil {
-		t.Fatal("Expected template generator, got nil")
-	}
+	require.Equal(t, TemplateGenerator{}, generator)
 
 	definition := shared.Definition{
 		Image: shared.DefinitionImage{
@@ -32,9 +31,7 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "root"), 0755)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "root", "template"), "--test--")
 
@@ -44,9 +41,7 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 		Content:   "==test==",
 		Path:      "/root/template",
 	})
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "templates", "template.tpl"), "==test==\n")
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "root", "template"), "--test--")
@@ -60,9 +55,7 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 	defer teardown(cacheDir)
 
 	generator := Get("template")
-	if generator == nil {
-		t.Fatal("Expected template generator, got nil")
-	}
+	require.Equal(t, TemplateGenerator{}, generator)
 
 	definition := shared.Definition{
 		Image: shared.DefinitionImage{
@@ -79,9 +72,8 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 		Content:   "==test==",
 		Path:      "test-default-when",
 	})
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
+
 	err = generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionFile{
 		Generator: "template",
 		Name:      "test-when",
@@ -91,16 +83,11 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 			When: []string{"create"},
 		},
 	})
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	testvalue := []string{"create", "copy"}
-	if reflect.DeepEqual(image.Metadata.Templates["test-default-when"].When, testvalue) == false {
-		t.Fatalf("When default value not correct [%v] != [%v]", image.Metadata.Templates["test-default-when"].When, testvalue)
-	}
+	require.Equal(t, image.Metadata.Templates["test-default-when"].When, testvalue)
+
 	testvalue = []string{"create"}
-	if reflect.DeepEqual(image.Metadata.Templates["test-when"].When, testvalue) == false {
-		t.Fatalf("When value not correct [%v] != [%v]", image.Metadata.Templates["test-when"].When, testvalue)
-	}
+	require.Equal(t, image.Metadata.Templates["test-when"].When, testvalue)
 }

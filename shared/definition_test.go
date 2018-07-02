@@ -2,10 +2,10 @@ package shared
 
 import (
 	"log"
-	"regexp"
 	"testing"
 
 	"github.com/lxc/lxd/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetDefinitionDefaults(t *testing.T) {
@@ -15,13 +15,8 @@ func TestSetDefinitionDefaults(t *testing.T) {
 
 	uname, _ := shared.Uname()
 
-	if def.Image.Architecture != uname.Machine {
-		t.Fatalf("Expected image.arch to be '%s', got '%s'", uname.Machine, def.Image.Architecture)
-	}
-
-	if def.Image.Expiry != "30d" {
-		t.Fatalf("Expected image.expiry to be '%s', got '%s'", "30d", def.Image.Expiry)
-	}
+	require.Equal(t, uname.Machine, def.Image.Architecture)
+	require.Equal(t, "30d", def.Image.Expiry)
 }
 
 func TestValidateDefinition(t *testing.T) {
@@ -213,16 +208,10 @@ func TestValidateDefinition(t *testing.T) {
 		log.Printf("Running test #%d: %s", i, tt.name)
 		tt.definition.SetDefaults()
 		err := tt.definition.Validate()
-		if !tt.shouldFail && err != nil {
-			t.Fatalf("Validation failed: %s", err)
-		} else if tt.shouldFail {
-			if err == nil {
-				t.Fatal("Expected failure")
-			}
-			match, _ := regexp.MatchString(tt.expected, err.Error())
-			if !match {
-				t.Fatalf("Validation failed: Expected '%s', got '%s'", tt.expected, err.Error())
-			}
+		if tt.shouldFail {
+			require.Regexp(t, tt.expected, err)
+		} else {
+			require.NoError(t, err)
 		}
 	}
 }
@@ -255,38 +244,22 @@ func TestDefinitionSetValue(t *testing.T) {
 	}
 
 	err := d.SetValue("image.release", "bionic")
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	if d.Image.Release != "bionic" {
-		t.Fatalf("Expected '%s', got '%s'", "bionic", d.Image.Release)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "bionic", d.Image.Release)
 
 	err = d.SetValue("actions.0.trigger", "post-files")
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	if d.Actions[0].Trigger != "post-files" {
-		t.Fatalf("Expected '%s', got '%s'", "post-files", d.Actions[0].Trigger)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "post-files", d.Actions[0].Trigger)
 
 	// Index out of bounds
 	err = d.SetValue("actions.3.trigger", "post-files")
-	if err == nil || err.Error() != "Index out of range" {
-		t.Fatal("Expected index out of range")
-	}
+	require.EqualError(t, err, "Index out of range")
 
 	// Nonsense
 	err = d.SetValue("image", "[foo: bar]")
-	if err == nil || err.Error() != "Unsupported type 'struct'" {
-		t.Fatal("Expected unsupported assignment")
-	}
+	require.EqualError(t, err, "Unsupported type 'struct'")
 
 	err = d.SetValue("source.ignore_release", "true")
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	if !d.Source.IgnoreRelease {
-		t.Fatalf("Expected '%v', got '%v'", true, d.Source.IgnoreRelease)
-	}
+	require.NoError(t, err)
+	require.Equal(t, true, d.Source.IgnoreRelease)
 }
