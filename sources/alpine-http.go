@@ -56,17 +56,22 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		return err
 	}
 
-	if url.Scheme != "https" && len(definition.Source.Keys) == 0 {
+	if !definition.Source.SkipVerification && url.Scheme != "https" &&
+		len(definition.Source.Keys) == 0 {
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
-	err = shared.DownloadSha256(tarball, tarball+".sha256")
+	if definition.Source.SkipVerification {
+		err = shared.DownloadSha256(tarball, "")
+	} else {
+		err = shared.DownloadSha256(tarball, tarball+".sha256")
+	}
 	if err != nil {
 		return err
 	}
 
 	// Force gpg checks when using http
-	if url.Scheme != "https" {
+	if !definition.Source.SkipVerification && url.Scheme != "https" {
 		shared.DownloadSha256(tarball+".asc", "")
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), fname),

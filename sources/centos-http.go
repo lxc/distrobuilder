@@ -45,21 +45,23 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	checksumFile := ""
-	// Force gpg checks when using http
-	if url.Scheme != "https" {
-		if len(definition.Source.Keys) == 0 {
-			return errors.New("GPG keys are required if downloading from HTTP")
-		}
+	if !definition.Source.SkipVerification {
+		// Force gpg checks when using http
+		if url.Scheme != "https" {
+			if len(definition.Source.Keys) == 0 {
+				return errors.New("GPG keys are required if downloading from HTTP")
+			}
 
-		checksumFile = "sha256sum.txt.asc"
-		shared.DownloadSha256(baseURL+checksumFile, "")
-		valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), checksumFile), "",
-			definition.Source.Keys, definition.Source.Keyserver)
-		if err != nil {
-			return err
-		}
-		if !valid {
-			return errors.New("Failed to verify tarball")
+			checksumFile = "sha256sum.txt"
+			shared.DownloadSha256(baseURL+checksumFile, "")
+			valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), checksumFile), "",
+				definition.Source.Keys, definition.Source.Keyserver)
+			if err != nil {
+				return err
+			}
+			if !valid {
+				return errors.New("Failed to verify tarball")
+			}
 		}
 	}
 

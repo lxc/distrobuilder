@@ -42,15 +42,16 @@ type DefinitionImage struct {
 
 // A DefinitionSource specifies the download type and location
 type DefinitionSource struct {
-	Downloader    string   `yaml:"downloader"`
-	URL           string   `yaml:"url,omitempty"`
-	Keys          []string `yaml:"keys,omitempty"`
-	Keyserver     string   `yaml:"keyserver,omitempty"`
-	Variant       string   `yaml:"variant,omitempty"`
-	Suite         string   `yaml:"suite,omitempty"`
-	SameAs        string   `yaml:"same_as,omitempty"`
-	AptSources    string   `yaml:"apt_sources,omitempty"`
-	IgnoreRelease bool     `yaml:"ignore_release,omitempty"`
+	Downloader       string   `yaml:"downloader"`
+	URL              string   `yaml:"url,omitempty"`
+	Keys             []string `yaml:"keys,omitempty"`
+	Keyserver        string   `yaml:"keyserver,omitempty"`
+	Variant          string   `yaml:"variant,omitempty"`
+	Suite            string   `yaml:"suite,omitempty"`
+	SameAs           string   `yaml:"same_as,omitempty"`
+	AptSources       string   `yaml:"apt_sources,omitempty"`
+	IgnoreRelease    bool     `yaml:"ignore_release,omitempty"`
+	SkipVerification bool     `yaml:"skip_verification,omitempty"`
 }
 
 // A DefinitionTargetLXCConfig represents the config part of the metadata.
