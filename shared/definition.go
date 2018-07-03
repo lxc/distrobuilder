@@ -42,15 +42,16 @@ type DefinitionImage struct {
 
 // A DefinitionSource specifies the download type and location
 type DefinitionSource struct {
-	Downloader    string   `yaml:"downloader"`
-	URL           string   `yaml:"url,omitempty"`
-	Keys          []string `yaml:"keys,omitempty"`
-	Keyserver     string   `yaml:"keyserver,omitempty"`
-	Variant       string   `yaml:"variant,omitempty"`
-	Suite         string   `yaml:"suite,omitempty"`
-	SameAs        string   `yaml:"same_as,omitempty"`
-	AptSources    string   `yaml:"apt_sources,omitempty"`
-	IgnoreRelease bool     `yaml:"ignore_release,omitempty"`
+	Downloader       string   `yaml:"downloader"`
+	URL              string   `yaml:"url,omitempty"`
+	Keys             []string `yaml:"keys,omitempty"`
+	Keyserver        string   `yaml:"keyserver,omitempty"`
+	Variant          string   `yaml:"variant,omitempty"`
+	Suite            string   `yaml:"suite,omitempty"`
+	SameAs           string   `yaml:"same_as,omitempty"`
+	AptSources       string   `yaml:"apt_sources,omitempty"`
+	IgnoreRelease    bool     `yaml:"ignore_release,omitempty"`
+	SkipVerification bool     `yaml:"skip_verification,omitempty"`
 }
 
 // A DefinitionTargetLXCConfig represents the config part of the metadata.
@@ -114,7 +115,7 @@ type Definition struct {
 }
 
 // SetValue writes the provided value to a field represented by the yaml tag 'key'.
-func (d *Definition) SetValue(key string, value interface{}) error {
+func (d *Definition) SetValue(key string, value string) error {
 	// Walk through the definition and find the field with the given key
 	field, err := getFieldByTag(reflect.ValueOf(d).Elem(), reflect.TypeOf(d).Elem(), key)
 	if err != nil {
@@ -126,22 +127,29 @@ func (d *Definition) SetValue(key string, value interface{}) error {
 		return fmt.Errorf("Cannot set value for %s", key)
 	}
 
-	if reflect.TypeOf(value).Kind() != field.Kind() {
-		return fmt.Errorf("Cannot assign %s value to %s",
-			reflect.TypeOf(value).Kind(), field.Kind())
-	}
-
-	switch reflect.TypeOf(value).Kind() {
+	switch field.Kind() {
 	case reflect.Bool:
-		field.SetBool(value.(bool))
+		v, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+		field.SetBool(v)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		field.SetInt(value.(int64))
+		v, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		field.SetInt(v)
 	case reflect.String:
-		field.SetString(value.(string))
+		field.SetString(value)
 	case reflect.Uint, reflect.Uintptr, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		field.SetUint(value.(uint64))
+		v, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return err
+		}
+		field.SetUint(v)
 	default:
-		return fmt.Errorf("Unknown value type %s", reflect.TypeOf(value).Kind())
+		return fmt.Errorf("Unsupported type '%s'", field.Kind())
 	}
 
 	return nil

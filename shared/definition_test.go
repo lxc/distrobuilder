@@ -234,9 +234,10 @@ func TestDefinitionSetValue(t *testing.T) {
 			Release:      "artful",
 		},
 		Source: DefinitionSource{
-			Downloader: "debootstrap",
-			URL:        "https://ubuntu.com",
-			Keys:       []string{"0xCODE"},
+			Downloader:    "debootstrap",
+			URL:           "https://ubuntu.com",
+			Keys:          []string{"0xCODE"},
+			IgnoreRelease: true,
 		},
 		Packages: DefinitionPackages{
 			Manager: "apt",
@@ -277,7 +278,15 @@ func TestDefinitionSetValue(t *testing.T) {
 
 	// Nonsense
 	err = d.SetValue("image", "[foo: bar]")
-	if err == nil || err.Error() != "Cannot assign string value to struct" {
+	if err == nil || err.Error() != "Unsupported type 'struct'" {
 		t.Fatal("Expected unsupported assignment")
+	}
+
+	err = d.SetValue("source.ignore_release", "true")
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+	if !d.Source.IgnoreRelease {
+		t.Fatalf("Expected '%v', got '%v'", true, d.Source.IgnoreRelease)
 	}
 }

@@ -51,7 +51,7 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 
 	checksumFile := ""
 	// Force gpg checks when using http
-	if url.Scheme != "https" {
+	if !definition.Source.SkipVerification && url.Scheme != "https" {
 		if len(definition.Source.Keys) == 0 {
 			return errors.New("GPG keys are required if downloading from HTTP")
 		}

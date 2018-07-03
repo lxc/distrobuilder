@@ -33,6 +33,10 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 		args = append(args, "--arch", definition.Image.ArchitectureMapped)
 	}
 
+	if definition.Source.SkipVerification {
+		args = append(args, "--no-check-gpg")
+	}
+
 	if len(definition.Source.Keys) > 0 {
 		keyring, err := shared.CreateGPGKeyring(definition.Source.Keyserver, definition.Source.Keys)
 		if err != nil {
