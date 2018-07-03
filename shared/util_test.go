@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/flosch/pongo2.v3"
 )
 
@@ -83,36 +84,29 @@ func TestVerifyFile(t *testing.T) {
 		log.Printf("Running test #%d: %s", i, tt.name)
 		valid, err := VerifyFile(tt.signedFile, tt.signatureFile, tt.keys,
 			tt.keyserver)
-		if !tt.shouldFail && !valid {
-			t.Fatalf("Failed to verify: %s\n%s", tt.name, err)
-		}
-		if tt.shouldFail && valid {
-			t.Fatalf("Expected to fail: %s", tt.name)
+		if tt.shouldFail {
+			require.Error(t, err)
+			require.False(t, valid)
+		} else {
+			require.NoError(t, err)
+			require.True(t, valid)
 		}
 	}
 }
 
 func TestCreateGPGKeyring(t *testing.T) {
 	keyring, err := CreateGPGKeyring("keyserver.ubuntu.com", []string{"0x5DE8949A899C8D99"})
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
-	if !lxd.PathExists(keyring) {
-		t.Fatalf("Failed to create GPG keyring '%s'", keyring)
-	}
+	require.FileExists(t, keyring)
 	os.RemoveAll(path.Dir(keyring))
 
 	// This shouldn't fail, but the keyring file should not be created since
 	// there are no keys to be exported.
 	keyring, err = CreateGPGKeyring("", []string{})
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
-	if lxd.PathExists(keyring) {
-		t.Fatalf("GPG keyring '%s' should not exist", keyring)
-	}
+	require.False(t, lxd.PathExists(keyring), "File should not exist")
 	os.RemoveAll(path.Dir(keyring))
 }
 
@@ -175,11 +169,11 @@ func TestRenderTemplate(t *testing.T) {
 	for i, tt := range tests {
 		log.Printf("Running test #%d: %s", i, tt.name)
 		ret, err := RenderTemplate(tt.template, tt.iface)
-		if tt.shouldFail && err == nil {
-			t.Fatal("test should have failed")
-		}
-		if ret != tt.expected {
-			t.Fatalf("expected '%s', got '%s'", tt.expected, ret)
+		if tt.shouldFail {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, ret)
 		}
 	}
 }
@@ -198,21 +192,17 @@ func TestSetEnvVariables(t *testing.T) {
 
 	for _, e := range env {
 		v, set := os.LookupEnv(e.Key)
-		if !set || e.Value != v {
-			t.Fatalf("Expected %s to be '%s', got '%s'", e.Key, e.Value, v)
-		}
+		require.True(t, set)
+		require.Equal(t, e.Value, v)
 	}
 
 	// Reset env variables
 	SetEnvVariables(oldEnv)
 
 	val, set := os.LookupEnv("FOO")
-	if !set || val != "bar" {
-		t.Fatalf("Expected %s to be '%s', got '%s'", "FOO", "bar", val)
-	}
+	require.True(t, set)
+	require.Equal(t, val, "bar")
 
 	val, set = os.LookupEnv("BAR")
-	if set {
-		t.Fatalf("Expected %s to be unset", "BAR")
-	}
+	require.False(t, set, "Expected 'BAR' to be unset")
 }

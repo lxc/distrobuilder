@@ -5,11 +5,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
-	lxd "github.com/lxc/lxd/shared"
+	"github.com/stretchr/testify/require"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -36,36 +35,30 @@ func setupLXD(t *testing.T) *LXDImage {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
-	if err != nil {
-		t.Fatalf("Failed to create rootfs directory: %s", err)
-	}
+	require.NoError(t, err)
 
 	err = os.MkdirAll(filepath.Join(cacheDir, "templates"), 0755)
-	if err != nil {
-		t.Fatalf("Failed to create templates directory: %s", err)
-	}
+	require.NoError(t, err)
 
 	image := NewLXDImage(cacheDir, "", cacheDir, lxdDef)
 
-	// Check cache directory
-	if image.cacheDir != cacheDir {
-		teardownLXD(t)
-		t.Fatalf("Expected cacheDir to be '%s', is '%s'", cacheDir, image.cacheDir)
-	}
+	fail := true
+	defer func() {
+		if fail {
+			teardownLXD(t)
+		}
+	}()
 
-	if !reflect.DeepEqual(lxdDef, image.definition) {
-		teardownLXD(t)
-		t.Fatal("lxdDef and image.definition are not equal")
-	}
+	// Check cache directory
+	require.Equal(t, cacheDir, image.cacheDir)
+	require.Equal(t, lxdDef, image.definition)
 
 	lxdDef.SetDefaults()
 
 	err = lxdDef.Validate()
-	if err != nil {
-		teardownLXD(t)
-		t.Fatalf("Failed to validate image: %s", err)
-	}
+	require.NoError(t, err)
 
+	fail = false
 	return image
 }
 
@@ -84,46 +77,31 @@ func TestLXDBuild(t *testing.T) {
 func testLXDBuildSplitImage(t *testing.T, image *LXDImage) {
 	// Create split tarball and squashfs.
 	err := image.Build(false, "xz")
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 	defer func() {
 		os.Remove("lxd.tar.xz")
 		os.Remove("rootfs.squashfs")
 	}()
 
-	if !lxd.PathExists("lxd.tar.xz") {
-		t.Fatalf("File '%s' does not exist", "lxd.tar.xz")
-	}
-
-	if !lxd.PathExists("rootfs.squashfs") {
-		t.Fatalf("File '%s' does not exist", "rootfs.squashfs")
-	}
+	require.FileExists(t, "lxd.tar.xz")
+	require.FileExists(t, "rootfs.squashfs")
 }
 
 func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 	// Create unified tarball with custom name.
 	err := image.Build(true, "xz")
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 	defer os.Remove("ubuntu-17.10-x86_64-testing.tar.xz")
 
-	if !lxd.PathExists("ubuntu-17.10-x86_64-testing.tar.xz") {
-		t.Fatalf("File '%s' does not exist", "ubuntu-17.10-x86_64-testing.tar.xz")
-	}
+	require.FileExists(t, "ubuntu-17.10-x86_64-testing.tar.xz")
 
 	// Create unified tarball with default name.
 	image.definition.Image.Name = ""
 	err = image.Build(true, "xz")
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 	defer os.Remove("lxd.tar.xz")
 
-	if !lxd.PathExists("lxd.tar.xz") {
-		t.Fatalf("File '%s' does not exist", "lxd.tar.xz")
-	}
+	require.FileExists(t, "lxd.tar.xz")
 }
 
 func TestLXDCreateMetadata(t *testing.T) {
@@ -131,9 +109,7 @@ func TestLXDCreateMetadata(t *testing.T) {
 	defer teardownLXD(t)
 
 	err := image.createMetadata()
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	tests := []struct {
 		name     string
@@ -176,8 +152,6 @@ func TestLXDCreateMetadata(t *testing.T) {
 
 	for i, tt := range tests {
 		log.Printf("Running test #%d: %s", i, tt.name)
-		if tt.have != tt.expected {
-			t.Fatalf("Expected '%s', got '%s'", tt.expected, tt.have)
-		}
+		require.Equal(t, tt.expected, tt.have)
 	}
 }

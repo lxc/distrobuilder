@@ -5,16 +5,15 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func setup(t *testing.T, cacheDir string) {
 	// Create rootfs directory
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
-	if err != nil {
-		t.Fatalf("Failed to create rootfs directory: %s", err)
-	}
+	require.NoError(t, err)
 }
 
 func teardown(cacheDir string) {
@@ -23,19 +22,13 @@ func teardown(cacheDir string) {
 
 func TestGet(t *testing.T) {
 	generator := Get("hostname")
-	if generator == nil || reflect.DeepEqual(&generator, HostnameGenerator{}) {
-		t.Fatal("Expected hostname generator")
-	}
+	require.Equal(t, HostnameGenerator{}, generator)
 
 	generator = Get("hosts")
-	if generator == nil || reflect.DeepEqual(&generator, HostsGenerator{}) {
-		t.Fatal("Expected hosts generator")
-	}
+	require.Equal(t, HostsGenerator{}, generator)
 
 	generator = Get("")
-	if generator != nil {
-		t.Fatalf("Expected nil, got '%v'", generator)
-	}
+	require.Nil(t, generator)
 }
 
 func TestRestoreFiles(t *testing.T) {
@@ -47,9 +40,7 @@ func TestRestoreFiles(t *testing.T) {
 
 	// Create test directory
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "testdir1"), 0755)
-	if err != nil {
-		t.Fatalf("Failed to create test directory: %s", err)
-	}
+	require.NoError(t, err)
 
 	// Create original test file
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "testdir1", "testfile1"),
@@ -57,25 +48,17 @@ func TestRestoreFiles(t *testing.T) {
 
 	// Chmod cache directory which should lead to StoreFile failing
 	err = os.Chmod(cacheDir, 0600)
-	if err != nil {
-		t.Fatalf("Failed to chmod cache directory: %s", err)
-	}
+	require.NoError(t, err)
 
 	err = StoreFile(cacheDir, cacheDir, filepath.Join("/testdir1", "testfile1"))
-	if err == nil {
-		t.Fatal("Expected failure")
-	}
+	require.Error(t, err)
 
 	// Restore permissions
 	err = os.Chmod(cacheDir, 0755)
-	if err != nil {
-		t.Fatalf("Failed to chmod cache directory: %s", err)
-	}
+	require.NoError(t, err)
 
 	err = StoreFile(cacheDir, rootfsDir, filepath.Join("/testdir1", "testfile1"))
-	if err != nil {
-		t.Fatalf("Failed to store file: %s", err)
-	}
+	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "tmp", "testdir1", "testfile1"),
 		"original file")
@@ -85,9 +68,7 @@ func TestRestoreFiles(t *testing.T) {
 		"modified file")
 
 	err = RestoreFiles(cacheDir, rootfsDir)
-	if err != nil {
-		t.Fatalf("Failed to restore file: %s", err)
-	}
+	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "testdir1", "testfile1"),
 		"original file")
@@ -95,28 +76,20 @@ func TestRestoreFiles(t *testing.T) {
 
 func createTestFile(t *testing.T, path, content string) {
 	file, err := os.Create(path)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 	defer file.Close()
 
 	_, err = file.WriteString(content)
-	if err != nil {
-		t.Fatalf("Failed to write to testfile")
-	}
+	require.NoError(t, err)
 }
 
 func validateTestFile(t *testing.T, path, content string) {
 	file, err := os.Open(path)
-	if err != nil {
-		t.Fatalf("Failed to open testfile: %s", err)
-	}
+	require.NoError(t, err)
 	defer file.Close()
 
 	var buffer bytes.Buffer
 	io.Copy(&buffer, file)
 
-	if buffer.String() != content {
-		t.Fatalf("Expected file content to be '%s', got '%s'", content, buffer.String())
-	}
+	require.Equal(t, content, buffer.String())
 }

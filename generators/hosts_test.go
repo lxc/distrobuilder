@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -17,9 +19,7 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 	defer teardown(cacheDir)
 
 	generator := Get("hosts")
-	if generator == nil {
-		t.Fatal("Expected hosts generator, got nil")
-	}
+	require.Equal(t, HostsGenerator{}, generator)
 
 	definition := shared.Definition{
 		Image: shared.DefinitionImage{
@@ -31,18 +31,14 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 	image := image.NewLXCImage(cacheDir, "", cacheDir, definition)
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "etc"), 0755)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 
 	err = generator.RunLXC(cacheDir, rootfsDir, image,
 		shared.DefinitionFile{Path: "/etc/hosts"})
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "tmp", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
@@ -50,9 +46,7 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 		"127.0.0.1\tlocalhost\n127.0.0.1\tLXC_NAME\n")
 
 	err = RestoreFiles(cacheDir, rootfsDir)
-	if err != nil {
-		t.Fatalf("Failed to restore files: %s", err)
-	}
+	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
@@ -66,9 +60,7 @@ func TestHostsGeneratorRunLXD(t *testing.T) {
 	defer teardown(cacheDir)
 
 	generator := Get("hosts")
-	if generator == nil {
-		t.Fatal("Expected hosts generator, got nil")
-	}
+	require.Equal(t, HostsGenerator{}, generator)
 
 	definition := shared.Definition{
 		Image: shared.DefinitionImage{
@@ -80,18 +72,14 @@ func TestHostsGeneratorRunLXD(t *testing.T) {
 	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "etc"), 0755)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 
 	err = generator.RunLXD(cacheDir, rootfsDir, image,
 		shared.DefinitionFile{Path: "/etc/hosts"})
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "templates", "hosts.tpl"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\t{{ container.name }}\n")
