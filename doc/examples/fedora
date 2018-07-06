@@ -3,7 +3,7 @@ image:
   release: 28
   description: Fedora {{ image.release }}
   expiry: 30d
-  arch: x86_64
+  architecture: x86_64
 
 source:
   downloader: fedora-http

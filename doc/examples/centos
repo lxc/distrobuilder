@@ -4,7 +4,7 @@ image:
   variant: Minimal
   description: CentOS {{ image.release }}
   expiry: 30d
-  arch: x86_64
+  architecture: x86_64
 
 source:
   downloader: centos-http
