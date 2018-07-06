@@ -4,7 +4,7 @@ image:
   variant: default
   description: Ubuntu {{ image.release }}
   expiry: 30d
-  arch: amd64
+  architecture: amd64
 
 source:
   downloader: ubuntu-http
