@@ -52,7 +52,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 				return errors.New("GPG keys are required if downloading from HTTP")
 			}
 
-			checksumFile = "sha256sum.txt"
+			checksumFile = "sha256sum.txt.asc"
 			shared.DownloadSha256(baseURL+checksumFile, "")
 			valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), checksumFile), "",
 				definition.Source.Keys, definition.Source.Keyserver)
