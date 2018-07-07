@@ -92,6 +92,7 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		return err
 	}
 
+	// Handle edge builds
 	if definition.Image.Release == "edge" {
 		// Upgrade to edge
 		exitChroot, err := shared.SetupChroot(rootfsDir)
@@ -110,6 +111,12 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		}
 
 		exitChroot()
+	}
+
+	// Fix bad permissions in Alpine tarballs
+	err = os.Chmod(rootfsDir, 0755)
+	if err != nil {
+		return err
 	}
 
 	return nil
