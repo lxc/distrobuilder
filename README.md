@@ -43,15 +43,14 @@ In the following, we see how to create a container image for LXD.
 ### Installation
 
 Currently, there are no binary packages of `distrobuilder`. Therefore, you will need to compile it from source.
-To do so, first install the Go programming language and the `debootstrap` package.
+To do so, first install the Go programming language, and some other dependencies.
 
 ```
 sudo apt update
-sudo apt install -y golang-go
-sudo apt install -y debootstrap
+sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools
 ```
 
-Second, download the source code of the `distrowatch` repository (this repository). The source will be placed in `$HOME/go/src/github.com/lxc/distrobuilder/`
+Second, download the source code of the `distrobuilder` repository (this repository). The source will be placed in `$HOME/go/src/github.com/lxc/distrobuilder/`
 
 ```
 go get -d -v github.com/lxc/distrobuilder
