@@ -147,7 +147,7 @@ func killChrootProcesses(rootfs string) error {
 }
 
 // SetupChroot sets up mount and files, a reverter and then chroots for you
-func SetupChroot(rootfs string) (func() error, error) {
+func SetupChroot(rootfs string, envs DefinitionEnv) (func() error, error) {
 	// Mount the rootfs
 	err := syscall.Mount(rootfs, rootfs, "", syscall.MS_BIND, "")
 	if err != nil {
@@ -199,23 +199,44 @@ func SetupChroot(rootfs string) (func() error, error) {
 		return nil, err
 	}
 
-	env := Environment{
-		"PATH": EnvVariable{
-			Value: "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
-			Set:   true,
-		},
-		"SHELL": EnvVariable{
-			Value: "/bin/sh",
-			Set:   true,
-		},
-		"TERM": EnvVariable{
-			Value: "xterm",
-			Set:   true,
-		},
-		"DEBIAN_FRONTEND": EnvVariable{
-			Value: "noninteractive",
-			Set:   true,
-		},
+	var env Environment
+
+	if envs.ClearDefaults {
+		env = Environment{}
+	} else {
+		env = Environment{
+			"PATH": EnvVariable{
+				Value: "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
+				Set:   true,
+			},
+			"SHELL": EnvVariable{
+				Value: "/bin/sh",
+				Set:   true,
+			},
+			"TERM": EnvVariable{
+				Value: "xterm",
+				Set:   true,
+			},
+			"DEBIAN_FRONTEND": EnvVariable{
+				Value: "noninteractive",
+				Set:   true,
+			},
+		}
+	}
+
+	if envs.EnvVariables != nil && len(envs.EnvVariables) > 0 {
+		for _, e := range envs.EnvVariables {
+			entry, ok := env[e.Key]
+			if ok {
+				entry.Value = e.Value
+				entry.Set = true
+			} else {
+				env[e.Key] = EnvVariable{
+					Value: e.Value,
+					Set:   true,
+				}
+			}
+		}
 	}
 
 	// Set environment variables

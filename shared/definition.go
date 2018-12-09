@@ -110,15 +110,28 @@ type DefinitionMappings struct {
 	ArchitectureMap string            `yaml:"architecture_map,omitempty"`
 }
 
+// DefinitionEnvVars defines custom environment variables.
+type DefinitionEnvVars struct {
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
+}
+
+// DefinitionEnv represents the config part of the environment section.
+type DefinitionEnv struct {
+	ClearDefaults bool                `yaml:"clear_defaults,omitempty"`
+	EnvVariables  []DefinitionEnvVars `yaml:"variables,omitempty"`
+}
+
 // A Definition a definition.
 type Definition struct {
-	Image    DefinitionImage    `yaml:"image"`
-	Source   DefinitionSource   `yaml:"source"`
-	Targets  DefinitionTarget   `yaml:"targets,omitempty"`
-	Files    []DefinitionFile   `yaml:"files,omitempty"`
-	Packages DefinitionPackages `yaml:"packages,omitempty"`
-	Actions  []DefinitionAction `yaml:"actions,omitempty"`
-	Mappings DefinitionMappings `yaml:"mappings,omitempty"`
+	Image       DefinitionImage    `yaml:"image"`
+	Source      DefinitionSource   `yaml:"source"`
+	Targets     DefinitionTarget   `yaml:"targets,omitempty"`
+	Files       []DefinitionFile   `yaml:"files,omitempty"`
+	Packages    DefinitionPackages `yaml:"packages,omitempty"`
+	Actions     []DefinitionAction `yaml:"actions,omitempty"`
+	Mappings    DefinitionMappings `yaml:"mappings,omitempty"`
+	Environment DefinitionEnv      `yaml:"environment,omitempty"`
 }
 
 // SetValue writes the provided value to a field represented by the yaml tag 'key'.
