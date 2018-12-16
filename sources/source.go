@@ -26,6 +26,8 @@ func Get(name string) Downloader {
 		return NewUbuntuHTTP()
 	case "sabayon-http":
 		return NewSabayonHTTP()
+	case "docker-http":
+		return NewDockerHTTP()
 	}
 
 	return nil
