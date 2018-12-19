@@ -199,30 +199,27 @@ func SetupChroot(rootfs string) (func() error, error) {
 		return nil, err
 	}
 
+	env := Environment{
+		"PATH": EnvVariable{
+			Value: "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
+			Set:   true,
+		},
+		"SHELL": EnvVariable{
+			Value: "/bin/sh",
+			Set:   true,
+		},
+		"TERM": EnvVariable{
+			Value: "xterm",
+			Set:   true,
+		},
+		"DEBIAN_FRONTEND": EnvVariable{
+			Value: "noninteractive",
+			Set:   true,
+		},
+	}
+
 	// Set environment variables
-	oldEnvVariables := SetEnvVariables(
-		[]EnvVariable{
-			{
-				Key:   "PATH",
-				Value: "/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
-				Set:   true,
-			},
-			{
-				Key:   "SHELL",
-				Value: "/bin/sh",
-				Set:   true,
-			},
-			{
-				Key:   "TERM",
-				Value: "xterm",
-				Set:   true,
-			},
-			{
-				Key:   "DEBIAN_FRONTEND",
-				Value: "noninteractive",
-				Set:   true,
-			},
-		})
+	oldEnv := SetEnvVariables(env)
 
 	// Setup policy-rc.d override
 	policyCleanup := false
@@ -249,7 +246,7 @@ exit 101
 		}
 
 		// Reset old environment variables
-		SetEnvVariables(oldEnvVariables)
+		SetEnvVariables(oldEnv)
 
 		// Switch back to the host rootfs
 		err = root.Chdir()

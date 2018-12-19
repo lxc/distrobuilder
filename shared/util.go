@@ -21,10 +21,12 @@ import (
 
 // EnvVariable represents a environment variable.
 type EnvVariable struct {
-	Key   string
 	Value string
 	Set   bool
 }
+
+// Environment represents a set of environment variables.
+type Environment map[string]EnvVariable
 
 // Copy copies a file.
 func Copy(src, dest string) error {
@@ -244,22 +246,23 @@ func RenderTemplate(template string, iface interface{}) (string, error) {
 
 // SetEnvVariables sets the provided environment variables and returns the
 // old ones.
-func SetEnvVariables(env []EnvVariable) []EnvVariable {
-	oldEnv := make([]EnvVariable, len(env))
+func SetEnvVariables(env Environment) Environment {
+	oldEnv := Environment{}
 
-	for i := 0; i < len(env); i++ {
+	for k, v := range env {
 		// Check whether the env variables are set at the moment
-		oldVal, set := os.LookupEnv(env[i].Key)
+		oldVal, set := os.LookupEnv(k)
 
 		// Store old env variables
-		oldEnv[i].Key = env[i].Key
-		oldEnv[i].Value = oldVal
-		oldEnv[i].Set = set
+		oldEnv[k] = EnvVariable{
+			Value: oldVal,
+			Set:   set,
+		}
 
-		if env[i].Set {
-			os.Setenv(env[i].Key, env[i].Value)
+		if v.Set {
+			os.Setenv(k, v.Value)
 		} else {
-			os.Unsetenv(env[i].Key)
+			os.Unsetenv(k)
 		}
 	}
 
