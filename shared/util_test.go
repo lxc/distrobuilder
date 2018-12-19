@@ -182,18 +182,24 @@ func TestSetEnvVariables(t *testing.T) {
 	// Initial variables
 	os.Setenv("FOO", "bar")
 
-	env := []EnvVariable{
-		{"FOO", "bla", true},
-		{"BAR", "blub", true},
+	env := Environment{
+		"FOO": EnvVariable{
+			Value: "bla",
+			Set:   true,
+		},
+		"BAR": EnvVariable{
+			Value: "blub",
+			Set:   true,
+		},
 	}
 
 	// Set new env variables
 	oldEnv := SetEnvVariables(env)
 
-	for _, e := range env {
-		v, set := os.LookupEnv(e.Key)
+	for k, v := range env {
+		val, set := os.LookupEnv(k)
 		require.True(t, set)
-		require.Equal(t, e.Value, v)
+		require.Equal(t, v.Value, val)
 	}
 
 	// Reset env variables
