@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -57,8 +58,8 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 
 		checksumFile = baseURL + "SHA256SUMS"
-		shared.DownloadSha256(baseURL+"SHA256SUMS.gpg", "")
-		shared.DownloadSha256(checksumFile, "")
+		shared.DownloadHash(baseURL+"SHA256SUMS.gpg", "", nil)
+		shared.DownloadHash(checksumFile, "", nil)
 
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), "SHA256SUMS"),
@@ -73,7 +74,7 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 	}
 
-	err = shared.DownloadSha256(baseURL+s.fname, checksumFile)
+	err = shared.DownloadHash(baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Error downloading Ubuntu image: %s", err)
 	}

@@ -38,14 +38,14 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
-	err = shared.DownloadSha256(tarball, "")
+	err = shared.DownloadHash(tarball, "", nil)
 	if err != nil {
 		return err
 	}
 
 	// Force gpg checks when using http
 	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadSha256(tarball+".sig", "")
+		shared.DownloadHash(tarball+".sig", "", nil)
 
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), fname),
