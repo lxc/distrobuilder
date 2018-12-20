@@ -43,6 +43,8 @@ func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 		defer image.Close()
 
 		if checksum != "" {
+			hashFunc.Reset()
+
 			_, err = io.Copy(hashFunc, image)
 			if err != nil {
 				return err
