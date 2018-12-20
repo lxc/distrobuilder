@@ -122,20 +122,24 @@ packages:
     manager: apt
 
     update: true
-    install:
-        - systemd
-        - dialog
-        - ifupdown
-        - locales
-        - netbase
-        - net-tools
-        - cloud-init
-        - cloud-utils
-        - sudo
-        - adduser
-        - locales
-        - file
-        - openssh-server
+    cleanup: true
+
+    sets:
+      - packages:
+          - systemd
+          - dialog
+          - ifupdown
+          - locales
+          - netbase
+          - net-tools
+          - cloud-init
+          - cloud-utils
+          - sudo
+          - adduser
+          - locales
+          - file
+          - openssh-server
+        action: install
 
 mappings:
   architecture_map: debian

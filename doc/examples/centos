@@ -57,8 +57,12 @@ packages:
     manager: yum
 
     update: true
-    install:
-        - vim
+    cleanup: true
+
+    sets:
+      - packages:
+          - vim
+        action: install
 
 actions:
   - trigger: post-unpack

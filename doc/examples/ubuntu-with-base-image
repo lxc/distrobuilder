@@ -60,9 +60,13 @@ packages:
   manager: apt
 
   update: true
-  install:
-    - systemd
-    - neovim
+  cleanup: true
+
+  sets:
+    - packages:
+        - systemd
+        - neovim
+      action: install
 
 mappings:
   architecture_map: debian

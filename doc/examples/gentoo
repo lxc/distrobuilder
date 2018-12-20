@@ -51,8 +51,12 @@ packages:
   manager: portage
 
   update: true
-  install:
-    - neovim
+  cleanup: true
+
+  sets:
+    - packages:
+        - neovim
+      action: install
 
 actions:
   - trigger: post-packages
