@@ -80,11 +80,9 @@ func download(file, checksum string, sha hash.Hash) error {
 	}
 
 	if sha.Size() == 32 {
-		_, err = lxd.DownloadFileSha256(&client, "", progress, nil, imagePath,
-			file, hash, image)
+		_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, hash, sha256.New(), image)
 	} else if sha.Size() == 64 {
-		_, err = lxd.DownloadFileSha512(&client, "", progress, nil, imagePath,
-			file, hash, image)
+		_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, hash, sha512.New(), image)
 	} else {
 		return fmt.Errorf("Cannot handle sha%d", sha.Size()*8)
 	}
@@ -124,7 +122,7 @@ func downloadChecksum(URL string, fname string) (string, error) {
 		}
 		defer os.Remove(tempFile.Name())
 
-		_, err = lxd.DownloadFileSha256(&client, "", nil, nil, "", URL, "", tempFile)
+		_, err = lxd.DownloadFileHash(&client, "", nil, nil, "", URL, "", sha256.New(), tempFile)
 		// ignore hash mismatch
 		if err != nil && !strings.HasPrefix(err.Error(), "Hash mismatch") {
 			return "", err
