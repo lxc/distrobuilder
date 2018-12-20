@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net/url"
@@ -62,9 +63,9 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 	}
 
 	if definition.Source.SkipVerification {
-		err = shared.DownloadSha256(tarball, "")
+		err = shared.DownloadHash(tarball, "", nil)
 	} else {
-		err = shared.DownloadSha256(tarball, tarball+".sha256")
+		err = shared.DownloadHash(tarball, tarball+".sha256", sha256.New())
 	}
 	if err != nil {
 		return err
@@ -72,7 +73,7 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 
 	// Force gpg checks when using http
 	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadSha256(tarball+".asc", "")
+		shared.DownloadHash(tarball+".asc", "", nil)
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), fname),
 			filepath.Join(os.TempDir(), fname+".asc"),

@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"crypto/sha512"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -50,9 +51,9 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	if definition.Source.SkipVerification {
-		err = shared.DownloadSha512(tarball, "")
+		err = shared.DownloadHash(tarball, "", nil)
 	} else {
-		err = shared.DownloadSha512(tarball, tarball+".DIGESTS")
+		err = shared.DownloadHash(tarball, tarball+".DIGESTS", sha512.New())
 	}
 	if err != nil {
 		return err
@@ -60,7 +61,7 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 
 	// Force gpg checks when using http
 	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadSha512(tarball+".DIGESTS.asc", "")
+		shared.DownloadHash(tarball+".DIGESTS.asc", "", nil)
 		valid, err := shared.VerifyFile(
 			filepath.Join(os.TempDir(), fname+".DIGESTS.asc"),
 			"",

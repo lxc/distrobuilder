@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -53,7 +54,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 			}
 
 			checksumFile = "sha256sum.txt.asc"
-			shared.DownloadSha256(baseURL+checksumFile, "")
+			shared.DownloadHash(baseURL+checksumFile, "", nil)
 			valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), checksumFile), "",
 				definition.Source.Keys, definition.Source.Keyserver)
 			if err != nil {
@@ -65,7 +66,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 	}
 
-	err = shared.DownloadSha256(baseURL+s.fname, checksumFile)
+	err = shared.DownloadHash(baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Error downloading CentOS image: %s", err)
 	}

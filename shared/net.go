@@ -2,8 +2,6 @@ package shared
 
 import (
 	"bufio"
-	"crypto/sha256"
-	"crypto/sha512"
 	"fmt"
 	"hash"
 	"io"
@@ -18,19 +16,9 @@ import (
 	"github.com/lxc/lxd/shared/ioprogress"
 )
 
-// DownloadSha256 downloads a file. If a checksum file is provided will try and
-// match the sha256 hash.
-func DownloadSha256(file, checksum string) error {
-	return download(file, checksum, sha256.New())
-}
-
-// DownloadSha512 downloads a file. If a checksum file is provided will try and
-// match the sha512 hash.
-func DownloadSha512(file, checksum string) error {
-	return download(file, checksum, sha512.New())
-}
-
-func download(file, checksum string, sha hash.Hash) error {
+// DownloadHash downloads a file. If a checksum file is provided, it will try and
+// match the hash.
+func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 	var (
 		client http.Client
 		hash   string
@@ -38,7 +26,7 @@ func download(file, checksum string, sha hash.Hash) error {
 	)
 
 	if checksum != "" {
-		hash, err = downloadChecksum(checksum, file)
+		hash, err = downloadChecksum(checksum, file, hashFunc)
 		if err != nil {
 			return fmt.Errorf("Error while downloading checksum: %s", err)
 		}
@@ -55,12 +43,12 @@ func download(file, checksum string, sha hash.Hash) error {
 		defer image.Close()
 
 		if checksum != "" {
-			_, err = io.Copy(sha, image)
+			_, err = io.Copy(hashFunc, image)
 			if err != nil {
 				return err
 			}
 
-			result := fmt.Sprintf("%x", sha.Sum(nil))
+			result := fmt.Sprintf("%x", hashFunc.Sum(nil))
 			if result != hash {
 				return fmt.Errorf("Hash mismatch for %s: %s != %s", imagePath, result, hash)
 			}
@@ -79,13 +67,8 @@ func download(file, checksum string, sha hash.Hash) error {
 		fmt.Printf("%s\r", progress.Text)
 	}
 
-	if sha.Size() == 32 {
-		_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, hash, sha256.New(), image)
-	} else if sha.Size() == 64 {
-		_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, hash, sha512.New(), image)
-	} else {
-		return fmt.Errorf("Cannot handle sha%d", sha.Size()*8)
-	}
+	_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, hash, hashFunc,
+		image)
 	if err != nil {
 		if checksum == "" && strings.HasPrefix(err.Error(), "Hash mismatch") {
 			return nil
@@ -99,8 +82,8 @@ func download(file, checksum string, sha hash.Hash) error {
 }
 
 // downloadChecksum downloads or opens URL, and matches fname against the
-// sha256sums inside of the downloaded or opened file.
-func downloadChecksum(URL string, fname string) (string, error) {
+// checksums inside of the downloaded or opened file.
+func downloadChecksum(URL string, fname string, hashFunc hash.Hash) (string, error) {
 	var (
 		client   http.Client
 		tempFile *os.File
@@ -116,13 +99,13 @@ func downloadChecksum(URL string, fname string) (string, error) {
 		}
 		defer os.Remove(tempFile.Name())
 	} else {
-		tempFile, err = ioutil.TempFile(os.TempDir(), "sha256.")
+		tempFile, err = ioutil.TempFile(os.TempDir(), "hash.")
 		if err != nil {
 			return "", err
 		}
 		defer os.Remove(tempFile.Name())
 
-		_, err = lxd.DownloadFileHash(&client, "", nil, nil, "", URL, "", sha256.New(), tempFile)
+		_, err = lxd.DownloadFileHash(&client, "", nil, nil, "", URL, "", hashFunc, tempFile)
 		// ignore hash mismatch
 		if err != nil && !strings.HasPrefix(err.Error(), "Hash mismatch") {
 			return "", err
