@@ -3,11 +3,14 @@ package main
 import (
 	"fmt"
 
+	lxd "github.com/lxc/lxd/shared"
+
 	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAction) error {
+func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAction,
+	release string) error {
 	var err error
 
 	manager := managers.Get(def.Manager)
@@ -35,19 +38,36 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		}
 	}
 
-	err = manager.Install(def.Install)
+	var installablePackages []string
+	var removablePackages []string
+
+	for _, set := range def.Sets {
+		if len(set.Releases) > 0 && !lxd.StringInSlice(release, set.Releases) {
+			continue
+		}
+
+		if set.Action == "install" {
+			installablePackages = append(installablePackages, set.Packages...)
+		} else if set.Action == "remove" {
+			removablePackages = append(removablePackages, set.Packages...)
+		}
+	}
+
+	err = manager.Install(installablePackages)
 	if err != nil {
 		return err
 	}
 
-	err = manager.Remove(def.Remove)
+	err = manager.Remove(removablePackages)
 	if err != nil {
 		return err
 	}
 
-	err = manager.Clean()
-	if err != nil {
-		return err
+	if def.Cleanup {
+		err = manager.Clean()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

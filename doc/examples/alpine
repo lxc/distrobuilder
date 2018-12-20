@@ -52,5 +52,9 @@ packages:
     manager: apk
 
     update: true
-    install:
-        - neovim
+    cleanup: true
+
+    sets:
+      - packages:
+          - neovim
+        action: install

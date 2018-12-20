@@ -202,6 +202,30 @@ func TestValidateDefinition(t *testing.T) {
 			"actions\\.\\*\\.trigger must be one of .+",
 			true,
 		},
+		{
+			"invalid package action",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					Manager: "apt",
+					Sets: []DefinitionPackagesSet{
+						{
+							Action: "update",
+						},
+					},
+				},
+			},
+			"packages\\.\\*\\.set\\.\\*\\.action must be one of .+",
+			true,
+		},
 	}
 
 	for i, tt := range tests {

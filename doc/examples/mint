@@ -119,11 +119,15 @@ packages:
 
     # Do not update here. Updates will take place in the post-unpack action.
     update: false
-    install:
-        - apt-transport-https
-        - language-pack-en
-        - openssh-client
-        - vim
+    cleanup: true
+
+    sets:
+      - packages:
+          - apt-transport-https
+          - language-pack-en
+          - openssh-client
+          - vim
+        action: install
 
 actions:
     - trigger: post-unpack

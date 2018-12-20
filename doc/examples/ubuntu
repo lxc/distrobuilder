@@ -115,11 +115,15 @@ packages:
     manager: apt
 
     update: true
-    install:
-        - apt-transport-https
-        - language-pack-en
-        - openssh-client
-        - vim
+    cleanup: true
+
+    sets:
+      - packages:
+          - apt-transport-https
+          - language-pack-en
+          - openssh-client
+          - vim
+        action: install
 
 actions:
     - trigger: post-update

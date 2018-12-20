@@ -54,6 +54,10 @@ packages:
   manager: pacman
 
   update: true
-  install:
-    - systemd-sysvcompat
-    - neovim
+  cleanup: true
+
+  sets:
+    - packages:
+        - systemd-sysvcompat
+        - neovim
+      action: install
