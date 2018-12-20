@@ -26,6 +26,10 @@ func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 	)
 
 	if checksum != "" {
+		if hashFunc != nil {
+			hashFunc.Reset()
+		}
+
 		hash, err = downloadChecksum(checksum, file, hashFunc)
 		if err != nil {
 			return fmt.Errorf("Error while downloading checksum: %s", err)
@@ -43,7 +47,9 @@ func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 		defer image.Close()
 
 		if checksum != "" {
-			hashFunc.Reset()
+			if hashFunc != nil {
+				hashFunc.Reset()
+			}
 
 			_, err = io.Copy(hashFunc, image)
 			if err != nil {
@@ -69,8 +75,10 @@ func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 		fmt.Printf("%s\r", progress.Text)
 	}
 
-	_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, hash, hashFunc,
-		image)
+	if hashFunc != nil {
+		hashFunc.Reset()
+	}
+	_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, hash, hashFunc, image)
 	if err != nil {
 		if checksum == "" && strings.HasPrefix(err.Error(), "Hash mismatch") {
 			return nil
