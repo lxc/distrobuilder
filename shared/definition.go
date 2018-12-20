@@ -14,13 +14,20 @@ import (
 	"github.com/lxc/lxd/shared"
 )
 
-// A DefinitionPackages list packages which are to be either installed or
-// removed.
+// A DefinitionPackagesSet is a set of packages which are to be installed
+// or removed.
+type DefinitionPackagesSet struct {
+	Packages []string `yaml:"packages"`
+	Action   string   `yaml:"action"`
+	Releases []string `yaml:"releases,omitempty"`
+}
+
+// A DefinitionPackages represents a package handler.
 type DefinitionPackages struct {
-	Manager string   `yaml:"manager"`
-	Install []string `yaml:"install,omitempty"`
-	Remove  []string `yaml:"remove,omitempty"`
-	Update  bool     `yaml:"update,omitempty"`
+	Manager string                  `yaml:"manager"`
+	Update  bool                    `yaml:"update,omitempty"`
+	Cleanup bool                    `yaml:"cleanup,omitempty"`
+	Sets    []DefinitionPackagesSet `yaml:"sets,omitempty"`
 }
 
 // A DefinitionImage represents the image.
@@ -262,6 +269,17 @@ func (d *Definition) Validate() error {
 	for _, action := range d.Actions {
 		if !shared.StringInSlice(action.Trigger, validTriggers) {
 			return fmt.Errorf("actions.*.trigger must be one of %v", validTriggers)
+		}
+	}
+
+	validPackageActions := []string{
+		"install",
+		"remove",
+	}
+
+	for _, set := range d.Packages.Sets {
+		if !shared.StringInSlice(set.Action, validPackageActions) {
+			return fmt.Errorf("packages.*.set.*.action must be one of %v", validPackageActions)
 		}
 	}
 
