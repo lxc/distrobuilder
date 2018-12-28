@@ -8,10 +8,8 @@ import (
 	"strings"
 	"time"
 
-	lxd "github.com/lxc/lxd/shared"
-	lxdarch "github.com/lxc/lxd/shared/osarch"
-
 	"github.com/lxc/lxd/shared"
+	lxdarch "github.com/lxc/lxd/shared/osarch"
 )
 
 // A DefinitionPackagesSet is a set of packages which are to be installed
@@ -22,12 +20,22 @@ type DefinitionPackagesSet struct {
 	Releases []string `yaml:"releases,omitempty"`
 }
 
+// A DefinitionPackagesRepository contains data of a specific repository
+type DefinitionPackagesRepository struct {
+	Name     string   `yaml:"name"`              // Name of the repository
+	URL      string   `yaml:"url"`               // URL (may differ based on manager)
+	Type     string   `yaml:"type,omitempty"`    // For distros that have more than one repository manager
+	Key      string   `yaml:"key,omitempty"`     // GPG armored keyring
+	Releases []string `yaml:"release,omitmepty"` // Releases that this repo applies to
+}
+
 // A DefinitionPackages represents a package handler.
 type DefinitionPackages struct {
-	Manager string                  `yaml:"manager"`
-	Update  bool                    `yaml:"update,omitempty"`
-	Cleanup bool                    `yaml:"cleanup,omitempty"`
-	Sets    []DefinitionPackagesSet `yaml:"sets,omitempty"`
+	Manager      string                         `yaml:"manager"`
+	Update       bool                           `yaml:"update,omitempty"`
+	Cleanup      bool                           `yaml:"cleanup,omitempty"`
+	Sets         []DefinitionPackagesSet        `yaml:"sets,omitempty"`
+	Repositories []DefinitionPackagesRepository `yaml:"repositories,omitempty"`
 }
 
 // A DefinitionImage represents the image.
@@ -110,15 +118,28 @@ type DefinitionMappings struct {
 	ArchitectureMap string            `yaml:"architecture_map,omitempty"`
 }
 
+// DefinitionEnvVars defines custom environment variables.
+type DefinitionEnvVars struct {
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
+}
+
+// DefinitionEnv represents the config part of the environment section.
+type DefinitionEnv struct {
+	ClearDefaults bool                `yaml:"clear_defaults,omitempty"`
+	EnvVariables  []DefinitionEnvVars `yaml:"variables,omitempty"`
+}
+
 // A Definition a definition.
 type Definition struct {
-	Image    DefinitionImage    `yaml:"image"`
-	Source   DefinitionSource   `yaml:"source"`
-	Targets  DefinitionTarget   `yaml:"targets,omitempty"`
-	Files    []DefinitionFile   `yaml:"files,omitempty"`
-	Packages DefinitionPackages `yaml:"packages,omitempty"`
-	Actions  []DefinitionAction `yaml:"actions,omitempty"`
-	Mappings DefinitionMappings `yaml:"mappings,omitempty"`
+	Image       DefinitionImage    `yaml:"image"`
+	Source      DefinitionSource   `yaml:"source"`
+	Targets     DefinitionTarget   `yaml:"targets,omitempty"`
+	Files       []DefinitionFile   `yaml:"files,omitempty"`
+	Packages    DefinitionPackages `yaml:"packages,omitempty"`
+	Actions     []DefinitionAction `yaml:"actions,omitempty"`
+	Mappings    DefinitionMappings `yaml:"mappings,omitempty"`
+	Environment DefinitionEnv      `yaml:"environment,omitempty"`
 }
 
 // SetValue writes the provided value to a field represented by the yaml tag 'key'.
@@ -214,6 +235,8 @@ func (d *Definition) Validate() error {
 		"fedora-http",
 		"gentoo-http",
 		"ubuntu-http",
+		"sabayon-http",
+		"docker-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
@@ -226,6 +249,7 @@ func (d *Definition) Validate() error {
 		"pacman",
 		"portage",
 		"yum",
+		"equo",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
 		return fmt.Errorf("packages.manager must be one of %v", validManagers)
@@ -324,7 +348,7 @@ func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
 			continue
 		}
 
-		if len(action.Releases) > 0 && !lxd.StringInSlice(d.Image.Release, action.Releases) {
+		if len(action.Releases) > 0 && !shared.StringInSlice(d.Image.Release, action.Releases) {
 			continue
 		}
 

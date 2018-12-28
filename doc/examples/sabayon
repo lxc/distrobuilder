@@ -1,0 +1,120 @@
+image:
+  distribution: sabayon
+  decription: Sabayon
+  expiry: 30d
+  architecture: amd64
+
+source:
+  downloader: sabayon-http
+  url: http://dl.sabayon.org/sbi/sabayon%3Aiso/iso
+
+environment:
+  clear_defaults: true
+  variables:
+    - key: "SHELL"
+      value: "/bin/bash"
+    - key: "ACCEPT_LICENSE"
+      value: "*"
+
+targets:
+  lxc:
+    create-message: |
+      You just created a Sabayon container (arch={{ image.architecture }})
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/sabayon.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/sabayon.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_kernel }}
+
+files:
+ - path: /etc/hostname
+   generator: hostname
+
+ - path: /etc/hosts
+   generator: hosts
+
+packages:
+  manager: equo
+
+# repositories:
+#   - name: "community"
+#     type: "enman"
+     # Enable main repository
+#   - name: "sabayonlinux.org"
+#     type: "equo"
+
+  update: true
+  cleanup: true
+
+  sets:
+    - packages:
+        - sabayon-live
+      action: install
+
+actions:
+  # Spinbase image doesn't include enman tool
+  # for external repositories. This is not needed
+  # if external repository aren't used or it's used equ
+  # as repo type.
+  #- trigger: post-unpack
+  #  action: |-
+  #    #!/bin/sh
+  #    equo up && equo i enman
+
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      echo -5 | equo conf update
+
+  # Disable systemd-remount-fs.service because
+  # on unprivileged container systemd can't
+  # remount filesystem.
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      cd /etc/systemd/system
+      ln -s /dev/null systemd-remount-fs.service
+
+  # Disable mount of hugepages
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      cd /etc/systemd/system
+      ln -s /dev/null dev-hugepages.mount
+
+  # Disable sabayon-anti-fork-bomb limits
+  # (already apply to host)
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      sed -i -e 's/^*/#*/g' /etc/security/limits.d/00-sabayon-anti-fork-bomb.conf
+      sed -i -e 's/^root/#root/g' /etc/security/limits.d/00-sabayon-anti-fork-bomb.conf
+
+  # Clean journal directory (to avoid permission errors)
+  - trigger: post-packages
+    action: |-
+      rm -rf /var/log/journal/
+
+mappings:
+  architecture_map: debian
+

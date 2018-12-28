@@ -19,9 +19,10 @@ type ManagerHooks struct {
 
 // A Manager represents a package manager.
 type Manager struct {
-	command string
-	flags   ManagerFlags
-	hooks   ManagerHooks
+	command     string
+	flags       ManagerFlags
+	hooks       ManagerHooks
+	RepoHandler func(repoAction shared.DefinitionPackagesRepository) error
 }
 
 // Get returns a Manager specified by name.
@@ -39,6 +40,8 @@ func Get(name string) *Manager {
 		return NewPortage()
 	case "yum":
 		return NewYum()
+	case "equo":
+		return NewEquo()
 	}
 
 	return nil

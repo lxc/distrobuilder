@@ -24,6 +24,10 @@ func Get(name string) Downloader {
 		return NewGentooHTTP()
 	case "ubuntu-http":
 		return NewUbuntuHTTP()
+	case "sabayon-http":
+		return NewSabayonHTTP()
+	case "docker-http":
+		return NewDockerHTTP()
 	}
 
 	return nil
