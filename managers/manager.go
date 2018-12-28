@@ -40,6 +40,8 @@ func Get(name string) *Manager {
 		return NewPortage()
 	case "yum":
 		return NewYum()
+	case "equo":
+		return NewEquo()
 	}
 
 	return nil

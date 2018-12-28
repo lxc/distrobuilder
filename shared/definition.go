@@ -235,6 +235,7 @@ func (d *Definition) Validate() error {
 		"fedora-http",
 		"gentoo-http",
 		"ubuntu-http",
+		"sabayon-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
@@ -247,6 +248,7 @@ func (d *Definition) Validate() error {
 		"pacman",
 		"portage",
 		"yum",
+		"equo",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
 		return fmt.Errorf("packages.manager must be one of %v", validManagers)
