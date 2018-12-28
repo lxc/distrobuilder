@@ -8,10 +8,8 @@ import (
 	"strings"
 	"time"
 
-	lxd "github.com/lxc/lxd/shared"
-	lxdarch "github.com/lxc/lxd/shared/osarch"
-
 	"github.com/lxc/lxd/shared"
+	lxdarch "github.com/lxc/lxd/shared/osarch"
 )
 
 // A DefinitionPackagesSet is a set of packages which are to be installed
@@ -22,12 +20,22 @@ type DefinitionPackagesSet struct {
 	Releases []string `yaml:"releases,omitempty"`
 }
 
+// A DefinitionPackagesRepository contains data of a specific repository
+type DefinitionPackagesRepository struct {
+	Name     string   `yaml:"name"`              // Name of the repository
+	URL      string   `yaml:"url"`               // URL (may differ based on manager)
+	Type     string   `yaml:"type,omitempty"`    // For distros that have more than one repository manager
+	Key      string   `yaml:"key,omitempty"`     // GPG armored keyring
+	Releases []string `yaml:"release,omitmepty"` // Releases that this repo applies to
+}
+
 // A DefinitionPackages represents a package handler.
 type DefinitionPackages struct {
-	Manager string                  `yaml:"manager"`
-	Update  bool                    `yaml:"update,omitempty"`
-	Cleanup bool                    `yaml:"cleanup,omitempty"`
-	Sets    []DefinitionPackagesSet `yaml:"sets,omitempty"`
+	Manager      string                         `yaml:"manager"`
+	Update       bool                           `yaml:"update,omitempty"`
+	Cleanup      bool                           `yaml:"cleanup,omitempty"`
+	Sets         []DefinitionPackagesSet        `yaml:"sets,omitempty"`
+	Repositories []DefinitionPackagesRepository `yaml:"repositories,omitempty"`
 }
 
 // A DefinitionImage represents the image.
@@ -337,7 +345,7 @@ func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
 			continue
 		}
 
-		if len(action.Releases) > 0 && !lxd.StringInSlice(d.Image.Release, action.Releases) {
+		if len(action.Releases) > 0 && !shared.StringInSlice(d.Image.Release, action.Releases) {
 			continue
 		}
 
