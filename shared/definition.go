@@ -96,6 +96,7 @@ type DefinitionFile struct {
 	Releases  []string               `yaml:"releases,omitempty"`
 	Name      string                 `yaml:"name,omitempty"`
 	Template  DefinitionFileTemplate `yaml:"template,omitempty"`
+	Templated bool                   `yaml:"templated,omitempty"`
 }
 
 // A DefinitionFileTemplate represents the settings used by generators

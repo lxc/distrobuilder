@@ -15,7 +15,16 @@ type DumpGenerator struct{}
 // RunLXC dumps content to a file.
 func (g DumpGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 	defFile shared.DefinitionFile) error {
-	return g.Run(cacheDir, sourceDir, defFile)
+	err := g.Run(cacheDir, sourceDir, defFile)
+	if err != nil {
+		return err
+	}
+
+	if defFile.Templated {
+		return img.AddTemplate(defFile.Path)
+	}
+
+	return nil
 }
 
 // RunLXD dumps content to a file.
