@@ -194,7 +194,7 @@ yum --disablerepo=* --enablerepo=cdrom -y reinstall yum
 
 # Create a minimal rootfs
 mkdir /rootfs
-yum --installroot=/rootfs --disablerepo=* --enablerepo=cdrom -y --releasever=%s install basesystem yum
+yum --installroot=/rootfs --disablerepo=* --enablerepo=cdrom -y --releasever=%s install basesystem centos-release yum
 rm -rf /rootfs/var/cache/yum
 `, s.majorVersion, s.majorVersion))
 	if err != nil {
