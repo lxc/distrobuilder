@@ -81,6 +81,6 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		}
 	}
 
-	return os.RemoveAll(filepath.Join(rootfsDir, "root",
+	return os.RemoveAll(filepath.Join(rootfsDir, "root."+
 		definition.Image.ArchitectureMapped))
 }
