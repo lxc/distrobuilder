@@ -1,24 +1,27 @@
 image:
-  distribution: ubuntu
-  release: artful
-  description: Ubuntu {{ image.release }}
-  architecture: amd64
+  distribution: "ubuntu"
+  release: cosmic
 
 source:
   downloader: debootstrap
-  url: http://us.archive.ubuntu.com/ubuntu
+  same_as: gutsy
+  url: http://archive.ubuntu.com/ubuntu
+  keyserver: keyserver.ubuntu.com
   keys:
     - 0x790BC7277767219C42C86F933B4FE6ACC0B21F32
-  keyserver: pgp.mit.edu
 
   apt_sources: |-
-    deb {{ source.url }} {{ image.release }} main restricted universe multiverse
-    deb {{ source.url }} {{ image.release }}-updates main restricted universe multiverse
+    {% if image.architecture_mapped == "amd64" or image.architecture_mapped == "i386" %}deb http://archive.ubuntu.com/ubuntu {{ image.release }} main restricted universe multiverse
+    deb http://archive.ubuntu.com/ubuntu {{ image.release }}-updates main restricted universe multiverse
     deb http://security.ubuntu.com/ubuntu {{ image.release }}-security main restricted universe multiverse
+    {% else %}deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }} main restricted universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-updates main restricted universe multiverse
+    deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-security main restricted universe multiverse
+    {% endif %}
 
 targets:
   lxc:
-    create-message: |
+    create-message: |-
       You just created an {{ image.description }} container.
 
       To enable SSH, run: apt install openssh-server
@@ -40,27 +43,24 @@ targets:
         content: |-
           lxc.include = LXC_TEMPLATE_CONFIG/common.conf
 
+          # For Ubuntu 14.04
+          lxc.mount.entry = /sys/kernel/debug sys/kernel/debug none bind,optional 0 0
+          lxc.mount.entry = /sys/kernel/security sys/kernel/security none bind,optional 0 0
+          lxc.mount.entry = /sys/fs/pstore sys/fs/pstore none bind,optional 0 0
+          lxc.mount.entry = mqueue dev/mqueue mqueue rw,relatime,create=dir,optional 0 0
+
       - type: user
         after: 4
         content: |-
           lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
 
+          # For Ubuntu 14.04
+          lxc.mount.entry = /sys/firmware/efi/efivars sys/firmware/efi/efivars none bind,optional 0 0
+          lxc.mount.entry = /proc/sys/fs/binfmt_misc proc/sys/fs/binfmt_misc none bind,optional 0 0
+
       - type: all
         content: |-
-          lxc.arch = {{ image.architecture_kernel }}
-
-files:
- - path: /etc/hostname
-   generator: hostname
-
- - path: /etc/hosts
-   generator: hosts
-
- - path: /etc/init/lxc-tty.conf
-   generator: upstart-tty
-   releases:
-    - precise
-    - trusty
+          lxc.arch = {{ image.architecture_personality }}
 
 files:
  - path: /etc/hostname
@@ -82,12 +82,14 @@ files:
    generator: dump
    content: |-
      network:
+       version: 2
        ethernets:
          eth0: {dhcp4: true}
-     version: 2
    releases:
      - artful
      - bionic
+     - cosmic
+     - disco
 
  - path: /etc/network/interfaces
    generator: dump
@@ -108,49 +110,47 @@ files:
  - path: /etc/init/lxc-tty.conf
    generator: upstart-tty
    releases:
-    - precise
     - trusty
 
 packages:
-    manager: apt
+  manager: apt
+  update: true
+  cleanup: true
 
-    update: true
-    cleanup: true
-
-    sets:
-      - packages:
-          - apt-transport-https
-          - language-pack-en
-          - openssh-client
-          - vim
-        action: install
+  sets:
+    - packages:
+      - apt-transport-https
+      - language-pack-en
+      - openssh-client
+      - vim
+      action: install
 
 actions:
-    - trigger: post-update
-      action: |-
-        #!/bin/sh
-        set -eux
+  - trigger: post-update
+    action: |-
+      #!/bin/sh
+      set -eux
 
-        # Create the ubuntu user account
-        getent group sudo >/dev/null 2>&1 || groupadd --system sudo
-        useradd --create-home -s /bin/bash -G sudo -U ubuntu
+      # Create the ubuntu user account
+      getent group sudo >/dev/null 2>&1 || groupadd --system sudo
+      useradd --create-home -s /bin/bash -G sudo -U ubuntu
 
-    - trigger: post-packages
-      action: |-
-        #!/bin/sh
-        set -eux
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      set -eux
 
-        # Make sure the locale is built and functional
-        locale-gen en_US.UTF-8
-        update-locale LANG=en_US.UTF-8
+      # Make sure the locale is built and functional
+      locale-gen en_US.UTF-8
+      update-locale LANG=en_US.UTF-8
 
-        # Cleanup underlying /run
-        mount -o bind / /mnt
-        rm -rf /mnt/run/*
-        umount /mnt
+      # Cleanup underlying /run
+      mount -o bind / /mnt
+      rm -rf /mnt/run/*
+      umount /mnt
 
-        # Cleanup temporary shadow paths
-        rm /etc/*-
+      # Cleanup temporary shadow paths
+      rm /etc/*-
 
 mappings:
   architecture_map: debian

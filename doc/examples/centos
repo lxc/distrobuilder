@@ -1,23 +1,20 @@
 image:
   distribution: centos
   release: 7
-  variant: Minimal
-  description: CentOS {{ image.release }}
-  expiry: 30d
-  architecture: x86_64
 
 source:
   downloader: centos-http
-  url: http://centos.uib.no
+  url: http://centos.mirror.iweb.ca
+  keyserver: keyserver.ubuntu.com
   keys:
-    - 24C6A8A7F4A80EB5
-    - 0946FCA2C105B9DE
-  variant: Minimal
+    - 6341AB2753D78A78A7C27BB124C6A8A7F4A80EB5
+    - C1DAC52D1664E8A4386DBA430946FCA2C105B9DE
+  variant: minimal
 
 targets:
   lxc:
     create-message: |
-        You just created a CentOS container (release={{ image.release }}, arch={{ image.architecture }})
+        You just created a {{ image.description }} container.
 
     config:
       - type: all
@@ -53,13 +50,112 @@ files:
    path: /etc/hosts
    generator: hosts
 
+ - name: ifcfg-eth0
+   path: /etc/sysconfig/network-scripts/ifcfg-eth0
+   generator: dump
+   templated: true
+   content: |-
+     DEVICE=eth0
+     BOOTPROTO=dhcp
+     ONBOOT=yes
+     HOSTNAME=LXC_NAME
+     NM_CONTROLLED=no
+     TYPE=Ethernet
+     MTU=
+     DHCP_HOSTNAME=`hostname`
+
+ - name: network
+   path: /etc/sysconfig/network
+   generator: dump
+   templated: true
+   content: |-
+     NETWORKING=yes
+     HOSTNAME=LXC_NAME
+
+ - name: ifcfg-eth0.lxd
+   path: /etc/sysconfig/network-scripts/ifcfg-eth0
+   generator: template
+   content: |-
+     DEVICE=eth0
+     BOOTPROTO=dhcp
+     ONBOOT=yes
+     HOSTNAME={{ container.name }}
+     NM_CONTROLLED=no
+     TYPE=Ethernet
+     MTU=
+     DHCP_HOSTNAME=`hostname`
+
+ - name: network.lxd
+   path: /etc/sysconfig/network
+   generator: template
+   content: |-
+     NETWORKING=yes
+     HOSTNAME={{ container.name }}
+
+ - name: lxc-sysinit
+   path: /etc/init/lxc-sysinit.conf
+   generator: dump
+   content: |-
+     start on startup
+     env container
+
+     pre-start script
+         if [ "x$container" != "xlxc" -a "x$container" != "xlibvirt" ]; then
+             stop;
+         fi
+
+         rm -f /var/lock/subsys/*
+         rm -f /var/run/*.pid
+         [ -e /etc/mtab ] || ln -s /proc/mounts /etc/mtab
+         mkdir -p /dev/shm
+         mount -t tmpfs -o nosuid,nodev tmpfs /dev/shm
+
+         initctl start tty TTY=console
+         telinit 3
+         exit 0
+     end script
+   releases:
+    - 6
+
+ - name: sigpwr.conf
+   path: /etc/init/power-status-changed.conf
+   generator: dump
+   content: |-
+     start on power-status-changed
+
+     exec /sbin/shutdown -h now "SIGPWR received"
+   releases:
+    - 6
+
 packages:
     manager: yum
-
     update: true
     cleanup: true
 
     sets:
-      - packages:
-          - vim
-        action: install
+     - packages:
+        - cronie
+        - cronie-noanacron
+        - curl
+        - dhclient
+        - initscripts
+        - openssh-clients
+        - passwd
+        - policycoreutils
+        - rootfiles
+        - rsyslog
+        - vim-minimal
+       action: install
+
+actions:
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      set -eux
+
+      # Disable SELinux
+      mkdir -p /selinux
+      echo 0 > /selinux/enforce
+
+      # Disable loginuid in PAM stack
+      sed -i '/^session.*pam_loginuid.so/s/^session/# session/' /etc/pam.d/*
