@@ -153,7 +153,14 @@ func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
 	}
 
 	// Copy the keys to the cdrom
+	gpgKeysPath := ""
 	for _, key := range gpgKeys {
+		fmt.Printf("key=%v\n", key)
+		if len(gpgKeysPath) > 0 {
+			gpgKeysPath += " "
+		}
+		gpgKeysPath += fmt.Sprintf("file:///mnt/cdrom/%s", filepath.Base(key))
+
 		err = shared.RunCommand("rsync", "-qa", key,
 			filepath.Join(tempRootDir, "mnt", "cdrom"))
 		if err != nil {
@@ -169,6 +176,9 @@ func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
 
 	err = shared.RunScript(fmt.Sprintf(`
 #!/bin/sh
+set -eux
+
+GPG_KEYS="%s"
 
 # Create required files
 touch /etc/mtab /etc/fstab
@@ -188,7 +198,7 @@ enabled=0
 gpgcheck=1
 EOF
 
-echo gpgkey=file:///mnt/cdrom/RPM-GPG-KEY-CentOS-%s >> /etc/yum.repos.d/cdrom.repo
+echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
 
 yum --disablerepo=* --enablerepo=cdrom -y reinstall yum
 
@@ -196,7 +206,7 @@ yum --disablerepo=* --enablerepo=cdrom -y reinstall yum
 mkdir /rootfs
 yum --installroot=/rootfs --disablerepo=* --enablerepo=cdrom -y --releasever=%s install basesystem centos-release yum
 rm -rf /rootfs/var/cache/yum
-`, s.majorVersion, s.majorVersion))
+`, gpgKeysPath, s.majorVersion))
 	if err != nil {
 		exitChroot()
 		return err
