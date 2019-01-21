@@ -43,6 +43,17 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		return fmt.Errorf("Couldn't get name of iso")
 	}
 
+	// Skip download if raw image exists and has already been decompressed.
+	if strings.HasSuffix(s.fname, ".raw.xz") {
+		imagePath := filepath.Join(os.TempDir(), filepath.Base(strings.TrimSuffix(s.fname, ".xz")))
+
+		stat, err := os.Stat(imagePath)
+		if err == nil && stat.Size() > 0 {
+			return s.unpackRaw(filepath.Join(os.TempDir(), strings.TrimSuffix(s.fname, ".xz")),
+				rootfsDir)
+		}
+	}
+
 	url, err := url.Parse(baseURL)
 	if err != nil {
 		return err
@@ -56,7 +67,12 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 				return errors.New("GPG keys are required if downloading from HTTP")
 			}
 
-			checksumFile = "sha256sum.txt.asc"
+			if definition.Image.ArchitectureMapped == "armhfp" {
+				checksumFile = "sha256sum.txt"
+			} else {
+				checksumFile = "sha256sum.txt.asc"
+			}
+
 			shared.DownloadHash(baseURL+checksumFile, "", nil)
 			valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), checksumFile), "",
 				definition.Source.Keys, definition.Source.Keyserver)
@@ -74,10 +90,76 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		return fmt.Errorf("Error downloading CentOS image: %s", err)
 	}
 
-	return s.unpack(filepath.Join(os.TempDir(), s.fname), rootfsDir)
+	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
+		return s.unpackRaw(filepath.Join(os.TempDir(), s.fname), rootfsDir)
+	}
+
+	return s.unpackISO(filepath.Join(os.TempDir(), s.fname), rootfsDir)
 }
 
-func (s CentOSHTTP) unpack(filePath, rootfsDir string) error {
+func (s CentOSHTTP) unpackRaw(filePath, rootfsDir string) error {
+	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
+	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
+
+	os.MkdirAll(roRootDir, 0755)
+	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
+
+	if strings.HasSuffix(filePath, ".raw.xz") {
+		// Uncompress raw image
+		err := shared.RunCommand("unxz", filePath)
+		if err != nil {
+			return err
+		}
+	}
+
+	rawFilePath := strings.TrimSuffix(filePath, ".xz")
+
+	// Mount the partition read-only since we don't want to accidently modify it.
+	err := shared.RunCommand("mount", "-o", "ro,loop,offset=1048576",
+		rawFilePath, roRootDir)
+	if err != nil {
+		return err
+	}
+
+	// Since roRootDir is read-only, we need to copy it to a temporary rootfs
+	// directory in order to create the minimal rootfs.
+	err = shared.RunCommand("rsync", "-qa", roRootDir+"/", tempRootDir)
+	if err != nil {
+		return err
+	}
+
+	// Setup the mounts and chroot into the rootfs
+	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{})
+	if err != nil {
+		return fmt.Errorf("Failed to setup chroot: %s", err)
+	}
+
+	err = shared.RunScript(fmt.Sprintf(`
+#!/bin/sh
+set -eux
+
+# Create required files
+touch /etc/mtab /etc/fstab
+
+# Create a minimal rootfs
+mkdir /rootfs
+yum --installroot=/rootfs --disablerepo=* --enablerepo=base -y --releasever=%s install basesystem centos-release yum
+rm -rf /rootfs/var/cache/yum
+
+// Disable CentOS kernel repo
+sed -ri 's/^enabled=.*/enabled=0/g' /rootfs/etc/yum.repos.d/CentOS-armhfp-kernel.repo
+`, s.majorVersion))
+	if err != nil {
+		exitChroot()
+		return err
+	}
+
+	exitChroot()
+
+	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+}
+
+func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
 	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
 	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
@@ -214,9 +296,7 @@ rm -rf /rootfs/var/cache/yum
 
 	exitChroot()
 
-	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
-
-	return nil
+	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 }
 
 func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
@@ -236,11 +316,21 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 
 	var re string
 	if len(releaseFields) > 1 {
-		re = fmt.Sprintf("CentOS-%s.%s-%s-(?i:%s)(-\\d+)?.iso",
-			releaseFields[0], releaseFields[1], arch, variant)
+		if arch == "armhfp" {
+			re = fmt.Sprintf("CentOS-Userland-%s.%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
+				releaseFields[0], releaseFields[1], variant)
+		} else {
+			re = fmt.Sprintf("CentOS-%s.%s-%s-(?i:%s)(-\\d+)?.iso",
+				releaseFields[0], releaseFields[1], arch, variant)
+		}
 	} else {
-		re = fmt.Sprintf("CentOS-%s(.\\d+)?-%s-(?i:%s)(-\\d+)?.iso",
-			releaseFields[0], arch, variant)
+		if arch == "armhfp" {
+			re = fmt.Sprintf("CentOS-Userland-%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
+				releaseFields[0], variant)
+		} else {
+			re = fmt.Sprintf("CentOS-%s(.\\d+)?-%s-(?i:%s)(-\\d+)?.iso",
+				releaseFields[0], arch, variant)
+		}
 	}
 
 	return regexp.MustCompile(re).FindString(string(body))
