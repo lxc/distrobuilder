@@ -146,7 +146,7 @@ mkdir /rootfs
 yum --installroot=/rootfs --disablerepo=* --enablerepo=base -y --releasever=%s install basesystem centos-release yum
 rm -rf /rootfs/var/cache/yum
 
-// Disable CentOS kernel repo
+# Disable CentOS kernel repo
 sed -ri 's/^enabled=.*/enabled=0/g' /rootfs/etc/yum.repos.d/CentOS-armhfp-kernel.repo
 `, s.majorVersion))
 	if err != nil {
