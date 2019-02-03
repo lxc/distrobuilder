@@ -113,7 +113,7 @@ func (s UbuntuHTTP) unpack(filePath, rootDir string) error {
 	os.RemoveAll(rootDir)
 	os.MkdirAll(rootDir, 0755)
 
-	err := lxd.Unpack(filePath, rootDir, false, false)
+	err := lxd.Unpack(filePath, rootDir, false, false, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to unpack tarball: %s", err)
 	}

@@ -76,7 +76,7 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false)
+	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}

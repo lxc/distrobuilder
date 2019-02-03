@@ -48,7 +48,7 @@ func (s *FedoraHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	// Unpack the base image
-	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false)
+	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}
@@ -90,8 +90,7 @@ func (s *FedoraHTTP) unpackLayers(rootfsDir string) error {
 	// remove files not relevant to the image.
 	for _, manifest := range manifests {
 		for _, layer := range manifest.Layers {
-			err := lxd.Unpack(filepath.Join(rootfsDir, layer), rootfsDir,
-				false, false)
+			err := lxd.Unpack(filepath.Join(rootfsDir, layer), rootfsDir, false, false, nil)
 			if err != nil {
 				return err
 			}
