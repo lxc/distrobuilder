@@ -25,10 +25,21 @@ var debianArchitectureNames = map[int]string{
 	osarch.ARCH_64BIT_POWERPC_LITTLE_ENDIAN: "ppc64el",
 }
 
+var gentooArchitectureNames = map[int]string{
+	osarch.ARCH_32BIT_INTEL_X86:             "i686",
+	osarch.ARCH_64BIT_INTEL_X86:             "amd64",
+	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN:   "armv7a_hardfp",
+	osarch.ARCH_32BIT_POWERPC_BIG_ENDIAN:    "ppc",
+	osarch.ARCH_64BIT_POWERPC_BIG_ENDIAN:    "ppc64",
+	osarch.ARCH_64BIT_POWERPC_LITTLE_ENDIAN: "ppc64le",
+	osarch.ARCH_64BIT_S390_BIG_ENDIAN:       "s390x",
+}
+
 var distroArchitecture = map[string]map[int]string{
 	"alpinelinux": alpineLinuxArchitectureNames,
 	"centos":      centosArchitectureNames,
 	"debian":      debianArchitectureNames,
+	"gentoo":      gentooArchitectureNames,
 }
 
 // GetArch returns the correct architecture name used by the specified
