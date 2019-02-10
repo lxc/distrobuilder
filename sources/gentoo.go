@@ -26,7 +26,7 @@ func NewGentooHTTP() *GentooHTTP {
 
 // Run downloads a Gentoo stage3 tarball.
 func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	baseURL := fmt.Sprintf("%s/releases/%s/autobuilds/current-install-%s-minimal",
+	baseURL := fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s",
 		definition.Source.URL, definition.Image.ArchitectureMapped,
 		definition.Image.ArchitectureMapped)
 	fname, err := s.getLatestBuild(baseURL, definition.Image.ArchitectureMapped)
