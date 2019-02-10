@@ -275,6 +275,7 @@ func (d *Definition) Validate() error {
 		"alpinelinux",
 		"centos",
 		"debian",
+		"gentoo",
 	}
 
 	architectureMap := strings.TrimSpace(d.Mappings.ArchitectureMap)
