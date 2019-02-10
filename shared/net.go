@@ -30,7 +30,12 @@ func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 			hashFunc.Reset()
 		}
 
-		hash, err = downloadChecksum(checksum, file, hashFunc)
+		hashLen := 0
+		if hashFunc != nil {
+			hashLen = hashFunc.Size() * 2
+		}
+
+		hash, err = downloadChecksum(checksum, file, hashFunc, hashLen)
 		if err != nil {
 			return fmt.Errorf("Error while downloading checksum: %s", err)
 		}
@@ -93,7 +98,7 @@ func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 
 // downloadChecksum downloads or opens URL, and matches fname against the
 // checksums inside of the downloaded or opened file.
-func downloadChecksum(URL string, fname string, hashFunc hash.Hash) (string, error) {
+func downloadChecksum(URL string, fname string, hashFunc hash.Hash, hashLen int) (string, error) {
 	var (
 		client   http.Client
 		tempFile *os.File
@@ -128,7 +133,7 @@ func downloadChecksum(URL string, fname string, hashFunc hash.Hash) (string, err
 	for scanner.Scan() {
 		s := strings.Split(scanner.Text(), " ")
 		matched, _ := regexp.MatchString(fmt.Sprintf(".*%s", filepath.Base(fname)), s[len(s)-1])
-		if matched {
+		if matched && (hashLen == 0 || hashLen == len(strings.TrimSpace(s[0]))) {
 			return s[0], nil
 		}
 	}
