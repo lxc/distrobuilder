@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
 
@@ -26,8 +27,19 @@ func NewGentooHTTP() *GentooHTTP {
 
 // Run downloads a Gentoo stage3 tarball.
 func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
+	topLevelArch := definition.Image.ArchitectureMapped
+	if topLevelArch == "i686" {
+		topLevelArch = "x86"
+	} else if strings.HasPrefix(topLevelArch, "arm") {
+		topLevelArch = "arm"
+	} else if strings.HasPrefix(topLevelArch, "ppc") {
+		topLevelArch = "ppc"
+	} else if strings.HasPrefix(topLevelArch, "s390") {
+		topLevelArch = "s390"
+	}
+
 	baseURL := fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s",
-		definition.Source.URL, definition.Image.ArchitectureMapped,
+		definition.Source.URL, topLevelArch,
 		definition.Image.ArchitectureMapped)
 	fname, err := s.getLatestBuild(baseURL, definition.Image.ArchitectureMapped)
 	if err != nil {
