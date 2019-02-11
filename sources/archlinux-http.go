@@ -7,10 +7,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-
-	lxd "github.com/lxc/lxd/shared"
+	"strings"
 
 	"github.com/lxc/distrobuilder/shared"
+
+	lxd "github.com/lxc/lxd/shared"
+	"gopkg.in/antchfx/htmlquery.v1"
 )
 
 // ArchLinuxHTTP represents the Arch Linux downloader.
@@ -23,10 +25,22 @@ func NewArchLinuxHTTP() *ArchLinuxHTTP {
 
 // Run downloads an Arch Linux tarball.
 func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
+	release := definition.Image.Release
+
+	if release == "" {
+		var err error
+
+		// Get latest release
+		release, err = s.getLatestRelease()
+		if err != nil {
+			return err
+		}
+	}
+
 	fname := fmt.Sprintf("archlinux-bootstrap-%s-%s.tar.gz",
-		definition.Image.Release, definition.Image.ArchitectureMapped)
+		release, definition.Image.ArchitectureMapped)
 	tarball := fmt.Sprintf("%s/%s/%s", definition.Source.URL,
-		definition.Image.Release, fname)
+		release, fname)
 
 	url, err := url.Parse(tarball)
 	if err != nil {
@@ -83,4 +97,18 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 
 	return os.RemoveAll(filepath.Join(rootfsDir, "root."+
 		definition.Image.ArchitectureMapped))
+}
+
+func (s *ArchLinuxHTTP) getLatestRelease() (string, error) {
+	doc, err := htmlquery.LoadURL("https://www.archlinux.org/download/")
+	if err != nil {
+		return "", err
+	}
+
+	node := htmlquery.FindOne(doc, `//*[@id="arch-downloads"]/ul[1]/li[1]/text()`)
+	if node == nil {
+		return "", fmt.Errorf("Failed to determine latest release")
+	}
+
+	return strings.TrimSpace(node.Data), nil
 }
