@@ -109,23 +109,23 @@ func (s *GentooHTTP) getLatestBuild(baseURL, arch string) (string, error) {
 	}
 
 	// Look for .tar.xz
-	regex := regexp.MustCompile(fmt.Sprintf("stage3-%s-\\d{8}T\\d{6}Z.tar.xz", arch))
+	regex := regexp.MustCompile(fmt.Sprintf(">stage3-%s-.*.tar.xz<", arch))
 
 	// Find all stage3 related files
 	matches := regex.FindAllString(string(body), -1)
-	if len(matches) > 1 {
+	if len(matches) > 0 {
 		// Take the first match since they're all the same anyway
-		return matches[0], nil
+		return strings.Trim(matches[0], "<>"), nil
 	}
 
 	// Look for .tar.bz2
-	regex = regexp.MustCompile(fmt.Sprintf("stage3-%s-\\d{8}T\\d{6}Z.tar.bz2", arch))
+	regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-.*.tar.bz2<", arch))
 
 	// Find all stage3 related files
 	matches = regex.FindAllString(string(body), -1)
-	if len(matches) > 1 {
+	if len(matches) > 0 {
 		// Take the first match since they're all the same anyway
-		return matches[0], nil
+		return strings.Trim(matches[0], "<>"), nil
 	}
 
 	return "", nil
