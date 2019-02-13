@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+
+	lxd "github.com/lxc/lxd/shared"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -65,7 +68,15 @@ func pacmanSetupTrustedKeys() error {
 		return fmt.Errorf("Error initializing with pacman-key: %s", err)
 	}
 
-	err = shared.RunCommand("pacman-key", "--populate", "archlinux")
+	var keyring string
+
+	if lxd.StringInSlice(runtime.GOARCH, []string{"arm", "arm64"}) {
+		keyring = "archlinuxarm"
+	} else {
+		keyring = "archlinux"
+	}
+
+	err = shared.RunCommand("pacman-key", "--populate", keyring)
 	if err != nil {
 		return fmt.Errorf("Error populating with pacman-key: %s", err)
 	}
@@ -80,7 +91,15 @@ func pacmanSetMirrorlist() error {
 	}
 	defer f.Close()
 
-	_, err = f.WriteString("Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch")
+	var mirror string
+
+	if lxd.StringInSlice(runtime.GOARCH, []string{"arm", "arm64"}) {
+		mirror = "Server = http://mirror.archlinuxarm.org/$arch/$repo"
+	} else {
+		mirror = "Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch"
+	}
+
+	_, err = f.WriteString(mirror)
 	if err != nil {
 		return err
 	}
