@@ -11,6 +11,12 @@ var alpineLinuxArchitectureNames = map[int]string{
 	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN: "armhf",
 }
 
+var archLinuxArchitectureNames = map[int]string{
+	osarch.ARCH_64BIT_INTEL_X86:           "x86_64",
+	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN: "armv7",
+	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN: "aarch64",
+}
+
 var centosArchitectureNames = map[int]string{
 	osarch.ARCH_32BIT_INTEL_X86: "i386",
 }
@@ -37,6 +43,7 @@ var gentooArchitectureNames = map[int]string{
 
 var distroArchitecture = map[string]map[int]string{
 	"alpinelinux": alpineLinuxArchitectureNames,
+	"archlinux":   archLinuxArchitectureNames,
 	"centos":      centosArchitectureNames,
 	"debian":      debianArchitectureNames,
 	"gentoo":      gentooArchitectureNames,
