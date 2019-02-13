@@ -27,7 +27,9 @@ func NewArchLinuxHTTP() *ArchLinuxHTTP {
 func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	release := definition.Image.Release
 
-	if release == "" {
+	// Releases are only available for the x86_64 architecture. ARM only has
+	// a "latest" tarball.
+	if definition.Image.ArchitectureMapped == "x86_64" && release == "" {
 		var err error
 
 		// Get latest release
@@ -37,10 +39,19 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		}
 	}
 
-	fname := fmt.Sprintf("archlinux-bootstrap-%s-%s.tar.gz",
-		release, definition.Image.ArchitectureMapped)
-	tarball := fmt.Sprintf("%s/%s/%s", definition.Source.URL,
-		release, fname)
+	var fname string
+	var tarball string
+
+	if definition.Image.ArchitectureMapped == "x86_64" {
+		fname = fmt.Sprintf("archlinux-bootstrap-%s-%s.tar.gz",
+			release, definition.Image.ArchitectureMapped)
+		tarball = fmt.Sprintf("%s/%s/%s", definition.Source.URL,
+			release, fname)
+	} else {
+		fname = fmt.Sprintf("ArchLinuxARM-%s-latest.tar.gz",
+			definition.Image.ArchitectureMapped)
+		tarball = fmt.Sprintf("%s/os/%s", definition.Source.URL, fname)
+	}
 
 	url, err := url.Parse(tarball)
 	if err != nil {
@@ -80,7 +91,7 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		return err
 	}
 
-	// Move everything inside 'root.x86_64' (which was is the tarball) to its
+	// Move everything inside 'root.<architecture>' (which was is the tarball) to its
 	// parent directory
 	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(rootfsDir,
 		"root."+definition.Image.ArchitectureMapped)))
