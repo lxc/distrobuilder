@@ -214,7 +214,8 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Install/remove/update packages
 	err = managePackages(c.definition.Packages,
-		c.definition.GetRunnableActions("post-update"), c.definition.Image.Release)
+		c.definition.GetRunnableActions("post-update"), c.definition.Image.Release,
+		c.definition.Image.ArchitectureMapped)
 	if err != nil {
 		return fmt.Errorf("Failed to manage packages: %s", err)
 	}

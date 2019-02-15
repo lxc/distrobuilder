@@ -10,7 +10,7 @@ import (
 )
 
 func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAction,
-	release string) error {
+	release string, architecture string) error {
 	var err error
 
 	manager := managers.Get(def.Manager)
@@ -57,6 +57,10 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 
 	for _, set := range def.Sets {
 		if len(set.Releases) > 0 && !lxd.StringInSlice(release, set.Releases) {
+			continue
+		}
+
+		if len(set.Architectures) > 0 && !lxd.StringInSlice(architecture, set.Architectures) {
 			continue
 		}
 

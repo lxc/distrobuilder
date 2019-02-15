@@ -15,9 +15,10 @@ import (
 // A DefinitionPackagesSet is a set of packages which are to be installed
 // or removed.
 type DefinitionPackagesSet struct {
-	Packages []string `yaml:"packages"`
-	Action   string   `yaml:"action"`
-	Releases []string `yaml:"releases,omitempty"`
+	Packages      []string `yaml:"packages"`
+	Action        string   `yaml:"action"`
+	Releases      []string `yaml:"releases,omitempty"`
+	Architectures []string `yaml:"architectures,omitempty"`
 }
 
 // A DefinitionPackagesRepository contains data of a specific repository
