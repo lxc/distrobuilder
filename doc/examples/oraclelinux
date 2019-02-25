@@ -1,0 +1,156 @@
+image:
+  distribution: oraclelinux
+  release: 7
+
+source:
+  downloader: oraclelinux-http
+  url: https://mirror.aarnet.edu.au/pub/oraclelinux
+
+targets:
+  lxc:
+    create-message: |
+        You just created a {{ image.description }} container.
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/oraclelinux.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/oraclelinux.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_kernel }}
+
+files:
+ - name: hostname
+   path: /etc/hostname
+   generator: hostname
+
+ - name: hosts
+   path: /etc/hosts
+   generator: hosts
+
+ - name: ifcfg-eth0
+   path: /etc/sysconfig/network-scripts/ifcfg-eth0
+   generator: dump
+   templated: true
+   content: |-
+     DEVICE=eth0
+     BOOTPROTO=dhcp
+     ONBOOT=yes
+     HOSTNAME=LXC_NAME
+     NM_CONTROLLED=no
+     TYPE=Ethernet
+     MTU=
+     DHCP_HOSTNAME=`hostname`
+
+ - name: network
+   path: /etc/sysconfig/network
+   generator: dump
+   templated: true
+   content: |-
+     NETWORKING=yes
+     HOSTNAME=LXC_NAME
+
+ - name: ifcfg-eth0.lxd
+   path: /etc/sysconfig/network-scripts/ifcfg-eth0
+   generator: template
+   content: |-
+     DEVICE=eth0
+     BOOTPROTO=dhcp
+     ONBOOT=yes
+     HOSTNAME={{ container.name }}
+     NM_CONTROLLED=no
+     TYPE=Ethernet
+     MTU=
+     DHCP_HOSTNAME=`hostname`
+
+ - name: network.lxd
+   path: /etc/sysconfig/network
+   generator: template
+   content: |-
+     NETWORKING=yes
+     HOSTNAME={{ container.name }}
+
+ - name: lxc-sysinit
+   path: /etc/init/lxc-sysinit.conf
+   generator: dump
+   content: |-
+     start on startup
+     env container
+
+     pre-start script
+         if [ "x$container" != "xlxc" -a "x$container" != "xlibvirt" ]; then
+             stop;
+         fi
+
+         rm -f /var/lock/subsys/*
+         rm -f /var/run/*.pid
+         [ -e /etc/mtab ] || ln -s /proc/mounts /etc/mtab
+         mkdir -p /dev/shm
+         mount -t tmpfs -o nosuid,nodev tmpfs /dev/shm
+
+         initctl start tty TTY=console
+         telinit 3
+         exit 0
+     end script
+   releases:
+    - 6
+
+ - name: sigpwr.conf
+   path: /etc/init/power-status-changed.conf
+   generator: dump
+   content: |-
+     start on power-status-changed
+
+     exec /sbin/shutdown -h now "SIGPWR received"
+   releases:
+    - 6
+
+packages:
+    manager: yum
+    update: true
+    cleanup: true
+
+    sets:
+     - packages:
+        - cronie
+        - cronie-noanacron
+        - curl
+        - dhclient
+        - initscripts
+        - openssh-clients
+        - passwd
+        - policycoreutils
+        - rootfiles
+        - rsyslog
+        - vim-minimal
+       action: install
+
+actions:
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+      set -eux
+
+      # Disable SELinux
+      mkdir -p /selinux
+      echo 0 > /selinux/enforce
+
+      # Disable loginuid in PAM stack
+      sed -i '/^session.*pam_loginuid.so/s/^session/# session/' /etc/pam.d/*
