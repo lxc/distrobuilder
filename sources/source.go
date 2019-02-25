@@ -28,6 +28,8 @@ func Get(name string) Downloader {
 		return NewSabayonHTTP()
 	case "docker-http":
 		return NewDockerHTTP()
+	case "oraclelinux-http":
+		return NewOracleLinuxHTTP()
 	}
 
 	return nil
