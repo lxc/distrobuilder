@@ -240,6 +240,7 @@ func (d *Definition) Validate() error {
 		"sabayon-http",
 		"docker-http",
 		"oraclelinux-http",
+		"opensuse-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
