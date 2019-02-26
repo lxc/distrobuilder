@@ -78,6 +78,25 @@ func RunScript(content string) error {
 	return cmd.Run()
 }
 
+// GetSignedContent verifies the provided file, and returns its decrypted (plain) content.
+func GetSignedContent(signedFile string, keys []string, keyserver string) ([]byte, error) {
+	keyring, err := CreateGPGKeyring(keyserver, keys)
+	if err != nil {
+		return nil, err
+	}
+
+	gpgDir := path.Dir(keyring)
+	defer os.RemoveAll(gpgDir)
+
+	out, err := exec.Command("gpg", "--homedir", gpgDir, "--keyring", keyring,
+		"--decrypt", signedFile).Output()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get file content: %v", err)
+	}
+
+	return out, nil
+}
+
 // VerifyFile verifies a file using gpg.
 func VerifyFile(signedFile, signatureFile string, keys []string, keyserver string) (bool, error) {
 	keyring, err := CreateGPGKeyring(keyserver, keys)
