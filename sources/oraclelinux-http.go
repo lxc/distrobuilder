@@ -2,12 +2,14 @@ package sources
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"syscall"
 
+	lxd "github.com/lxc/lxd/shared"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -34,13 +36,13 @@ func (s *OracleLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		return err
 	}
 
-	err = shared.DownloadHash(fmt.Sprintf("%s/u%s/x86_64/%s", baseURL, latestUpdate, fname),
+	err = shared.DownloadHash(fmt.Sprintf("%s/%s/x86_64/%s", baseURL, latestUpdate, fname),
 		"", nil)
 	if err != nil {
 		return fmt.Errorf("Error downloading Oracle Linux image: %s", err)
 	}
 
-	return s.unpackISO(latestUpdate, filepath.Join(os.TempDir(), fname), rootfsDir)
+	return s.unpackISO(latestUpdate[1:], filepath.Join(os.TempDir(), fname), rootfsDir)
 }
 
 func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) error {
@@ -63,16 +65,21 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 
 	var rootfsImage string
 	squashfsImage := filepath.Join(isoDir, "LiveOS", "squashfs.img")
+	if lxd.PathExists(squashfsImage) {
 
-	// The squashfs.img contains an image containing the rootfs, so first
-	// mount squashfs.img
-	err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
-	if err != nil {
-		return err
+		// The squashfs.img contains an image containing the rootfs, so first
+		// mount squashfs.img
+		err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
+		if err != nil {
+			return err
+		}
+		defer syscall.Unmount(squashfsDir, 0)
+
+		rootfsImage = filepath.Join(squashfsDir, "LiveOS", "rootfs.img")
+	} else {
+		rootfsImage = filepath.Join(isoDir, "images", "install.img")
+
 	}
-	defer syscall.Unmount(squashfsDir, 0)
-
-	rootfsImage = filepath.Join(squashfsDir, "LiveOS", "rootfs.img")
 
 	err = shared.RunCommand("mount", "-o", "ro", rootfsImage, roRootDir)
 	if err != nil {
@@ -94,6 +101,81 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 		return err
 	}
 
+	// Determine rpm and yum packages
+	baseURL := fmt.Sprintf("https://yum.oracle.com/repo/OracleLinux/OL%s/%s/base/x86_64", s.majorVersion, latestUpdate)
+
+	doc, err := htmlquery.LoadURL(fmt.Sprintf("%s/index.html", baseURL))
+	if err != nil {
+		return err
+	}
+
+	regexRpm := regexp.MustCompile(`^getPackage/rpm-\d+.+\.rpm$`)
+	regexYum := regexp.MustCompile(`^getPackage/yum-\d+.+\.rpm$`)
+
+	var yumPkg string
+	var rpmPkg string
+
+	for _, a := range htmlquery.Find(doc, `//a/@href`) {
+		if rpmPkg == "" && regexRpm.MatchString(a.FirstChild.Data) {
+			rpmPkg = a.FirstChild.Data
+			continue
+		}
+
+		if yumPkg == "" && regexYum.MatchString(a.FirstChild.Data) {
+			yumPkg = a.FirstChild.Data
+			continue
+		}
+
+		if rpmPkg != "" && yumPkg != "" {
+			break
+		}
+	}
+
+	if rpmPkg == "" {
+		return fmt.Errorf("Couldn't determine RPM package")
+	}
+
+	if yumPkg == "" {
+		return fmt.Errorf("Couldn't determine YUM package")
+	}
+
+	rpmFileName := filepath.Join(tempRootDir, filepath.Base(rpmPkg))
+	yumFileName := filepath.Join(tempRootDir, filepath.Base(yumPkg))
+	gpgFileName := filepath.Join(tempRootDir, "RPM-GPG-KEY-oracle")
+
+	rpmFile, err := os.Create(rpmFileName)
+	if err != nil {
+		return err
+	}
+	defer rpmFile.Close()
+
+	yumFile, err := os.Create(yumFileName)
+	if err != nil {
+		return err
+	}
+	defer yumFile.Close()
+
+	gpgFile, err := os.Create(gpgFileName)
+	if err != nil {
+		return err
+	}
+	defer gpgFile.Close()
+
+	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, rpmFileName, fmt.Sprintf("%s/%s", baseURL, rpmPkg), "", nil, rpmFile)
+	if err != nil {
+		return err
+	}
+
+	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, yumFileName, fmt.Sprintf("%s/%s", baseURL, yumPkg), "", nil, yumFile)
+	if err != nil {
+		return err
+	}
+
+	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, gpgFileName, "https://oss.oracle.com/ol6/RPM-GPG-KEY-oracle", "", nil, gpgFile)
+	if err != nil {
+		return err
+	}
+
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{})
 	if err != nil {
@@ -111,14 +193,8 @@ update="%s"
 touch /etc/mtab /etc/fstab
 
 # Fetch and install rpm and yum from the Oracle repo
-_rpm=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64/index.html | grep -Eo '>rpm-[[:digit:]][^ ]+\.rpm<' | tail -1 | tr -d '<>')
-_yum=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64/index.html | grep -Eo '>yum-[[:digit:]][^ ]+\.rpm<' | tail -1 | tr -d '<>')
-
-wget https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64/getPackage/${_rpm}
-wget https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64/getPackage/${_yum}
-
-# There's no OL7 key!
-wget https://oss.oracle.com/ol6/RPM-GPG-KEY-oracle
+_rpm=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64/index.html | grep -Eo '>rpm-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
+_yum=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64/index.html | grep -Eo '>yum-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
 
 rpm -ivh --nodeps "${_rpm}" "${_yum}"
 rpm --import RPM-GPG-KEY-oracle
@@ -161,7 +237,7 @@ EOF
 }
 
 func (s *OracleLinuxHTTP) getLatestUpdate(URL string) (string, error) {
-	re := regexp.MustCompile(`^u\d+/$`)
+	re := regexp.MustCompile(`^[uU]\d+/$`)
 
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
@@ -180,6 +256,5 @@ func (s *OracleLinuxHTTP) getLatestUpdate(URL string) (string, error) {
 		return "", fmt.Errorf("No update found")
 	}
 
-	latestUpdate = strings.TrimPrefix(latestUpdate, "u")
 	return strings.TrimSuffix(latestUpdate, "/"), nil
 }
