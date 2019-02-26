@@ -254,6 +254,7 @@ func (d *Definition) Validate() error {
 		"portage",
 		"yum",
 		"equo",
+		"zypper",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
 		return fmt.Errorf("packages.manager must be one of %v", validManagers)
