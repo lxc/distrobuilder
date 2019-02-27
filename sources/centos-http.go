@@ -73,8 +73,12 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 				checksumFile = "sha256sum.txt.asc"
 			}
 
-			shared.DownloadHash(baseURL+checksumFile, "", nil)
-			valid, err := shared.VerifyFile(filepath.Join(os.TempDir(), checksumFile), "",
+			fpath, err := shared.DownloadHash(definition.Image, baseURL+checksumFile, "", nil)
+			if err != nil {
+				return err
+			}
+
+			valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
 				definition.Source.Keys, definition.Source.Keyserver)
 			if err != nil {
 				return err
@@ -85,16 +89,16 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 	}
 
-	err = shared.DownloadHash(baseURL+s.fname, checksumFile, sha256.New())
+	fpath, err := shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Error downloading CentOS image: %s", err)
 	}
 
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
-		return s.unpackRaw(filepath.Join(os.TempDir(), s.fname), rootfsDir)
+		return s.unpackRaw(filepath.Join(fpath, s.fname), rootfsDir)
 	}
 
-	return s.unpackISO(filepath.Join(os.TempDir(), s.fname), rootfsDir)
+	return s.unpackISO(filepath.Join(fpath, s.fname), rootfsDir)
 }
 
 func (s CentOSHTTP) unpackRaw(filePath, rootfsDir string) error {

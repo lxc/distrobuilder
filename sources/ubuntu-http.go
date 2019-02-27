@@ -50,6 +50,8 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		return err
 	}
 
+	var fpath string
+
 	checksumFile := ""
 	// Force gpg checks when using http
 	if !definition.Source.SkipVerification && url.Scheme != "https" {
@@ -58,12 +60,16 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 
 		checksumFile = baseURL + "SHA256SUMS"
-		shared.DownloadHash(baseURL+"SHA256SUMS.gpg", "", nil)
-		shared.DownloadHash(checksumFile, "", nil)
+		fpath, err = shared.DownloadHash(definition.Image, baseURL+"SHA256SUMS.gpg", "", nil)
+		if err != nil {
+			return err
+		}
+
+		shared.DownloadHash(definition.Image, checksumFile, "", nil)
 
 		valid, err := shared.VerifyFile(
-			filepath.Join(os.TempDir(), "SHA256SUMS"),
-			filepath.Join(os.TempDir(), "SHA256SUMS.gpg"),
+			filepath.Join(fpath, "SHA256SUMS"),
+			filepath.Join(fpath, "SHA256SUMS.gpg"),
 			definition.Source.Keys,
 			definition.Source.Keyserver)
 		if err != nil {
@@ -74,12 +80,12 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 	}
 
-	err = shared.DownloadHash(baseURL+s.fname, checksumFile, sha256.New())
+	fpath, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Error downloading Ubuntu image: %s", err)
 	}
 
-	err = s.unpack(filepath.Join(os.TempDir(), s.fname), rootfsDir)
+	err = s.unpack(filepath.Join(fpath, s.fname), rootfsDir)
 	if err != nil {
 		return err
 	}

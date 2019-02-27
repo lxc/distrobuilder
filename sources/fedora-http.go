@@ -41,14 +41,14 @@ func (s *FedoraHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		definition.Image.Release, build, definition.Image.ArchitectureMapped)
 
 	// Download image
-	err = shared.DownloadHash(fmt.Sprintf("%s/%s/%s/images/%s",
+	fpath, err := shared.DownloadHash(definition.Image, fmt.Sprintf("%s/%s/%s/images/%s",
 		baseURL, definition.Image.Release, build, fname), "", nil)
 	if err != nil {
 		return err
 	}
 
 	// Unpack the base image
-	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}
