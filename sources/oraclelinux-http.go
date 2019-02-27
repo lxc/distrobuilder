@@ -18,6 +18,7 @@ import (
 // OracleLinuxHTTP represents the Oracle Linux downloader.
 type OracleLinuxHTTP struct {
 	majorVersion string
+	architecture string
 }
 
 // NewOracleLinuxHTTP creates a new OracleLinuxHTTP instance.
@@ -28,7 +29,8 @@ func NewOracleLinuxHTTP() *OracleLinuxHTTP {
 // Run downloads Oracle Linux.
 func (s *OracleLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	s.majorVersion = definition.Image.Release
-	fname := "x86_64-boot.iso"
+	s.architecture = definition.Image.ArchitectureMapped
+	fname := fmt.Sprintf("%s-boot.iso", s.architecture)
 	baseURL := fmt.Sprintf("%s/OL%s", definition.Source.URL, definition.Image.Release)
 
 	latestUpdate, err := s.getLatestUpdate(baseURL)
@@ -36,7 +38,7 @@ func (s *OracleLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		return err
 	}
 
-	err = shared.DownloadHash(fmt.Sprintf("%s/%s/x86_64/%s", baseURL, latestUpdate, fname),
+	err = shared.DownloadHash(fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname),
 		"", nil)
 	if err != nil {
 		return fmt.Errorf("Error downloading Oracle Linux image: %s", err)
@@ -102,7 +104,7 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 	}
 
 	// Determine rpm and yum packages
-	baseURL := fmt.Sprintf("https://yum.oracle.com/repo/OracleLinux/OL%s/%s/base/x86_64", s.majorVersion, latestUpdate)
+	baseURL := fmt.Sprintf("https://yum.oracle.com/repo/OracleLinux/OL%s/%s/base/%s", s.majorVersion, latestUpdate, s.architecture)
 
 	doc, err := htmlquery.LoadURL(fmt.Sprintf("%s/index.html", baseURL))
 	if err != nil {
@@ -165,16 +167,19 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 	if err != nil {
 		return err
 	}
+	rpmFile.Close()
 
 	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, yumFileName, fmt.Sprintf("%s/%s", baseURL, yumPkg), "", nil, yumFile)
 	if err != nil {
 		return err
 	}
+	yumFile.Close()
 
 	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, gpgFileName, "https://oss.oracle.com/ol6/RPM-GPG-KEY-oracle", "", nil, gpgFile)
 	if err != nil {
 		return err
 	}
+	gpgFile.Close()
 
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{})
@@ -188,13 +193,14 @@ set -eux
 
 version="%s"
 update="%s"
+arch="%s"
 
 # Create required files
 touch /etc/mtab /etc/fstab
 
 # Fetch and install rpm and yum from the Oracle repo
-_rpm=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64/index.html | grep -Eo '>rpm-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
-_yum=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64/index.html | grep -Eo '>yum-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
+_rpm=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}/index.html | grep -Eo '>rpm-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
+_yum=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}/index.html | grep -Eo '>yum-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
 
 rpm -ivh --nodeps "${_rpm}" "${_yum}"
 rpm --import RPM-GPG-KEY-oracle
@@ -204,7 +210,7 @@ mkdir -p /etc/yum.repos.d
 cat <<- EOF > /etc/yum.repos.d/base.repo
 [base]
 name=Oracle Linux
-baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}
 enabled=1
 gpgcheck=1
 gpgkey=file:///RPM-GPG-KEY-oracle
@@ -220,12 +226,12 @@ mkdir -p /rootfs/etc/yum.repos.d
 cat <<- EOF > /rootfs/etc/yum.repos.d/base.repo
 [base]
 name=Oracle Linux
-baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/x86_64
+baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}
 enabled=1
 gpgcheck=1
 gpgkey=file:///RPM-GPG-KEY-oracle
 EOF
-`, s.majorVersion, latestUpdate))
+`, s.majorVersion, latestUpdate, s.architecture))
 	if err != nil {
 		exitChroot()
 		return err
