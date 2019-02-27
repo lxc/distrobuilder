@@ -165,16 +165,19 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 	if err != nil {
 		return err
 	}
+	rpmFile.Close()
 
 	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, yumFileName, fmt.Sprintf("%s/%s", baseURL, yumPkg), "", nil, yumFile)
 	if err != nil {
 		return err
 	}
+	yumFile.Close()
 
 	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, gpgFileName, "https://oss.oracle.com/ol6/RPM-GPG-KEY-oracle", "", nil, gpgFile)
 	if err != nil {
 		return err
 	}
+	gpgFile.Close()
 
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{})
