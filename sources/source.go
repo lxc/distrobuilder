@@ -30,6 +30,8 @@ func Get(name string) Downloader {
 		return NewDockerHTTP()
 	case "oraclelinux-http":
 		return NewOracleLinuxHTTP()
+	case "opensuse-http":
+		return NewOpenSUSEHTTP()
 	}
 
 	return nil
