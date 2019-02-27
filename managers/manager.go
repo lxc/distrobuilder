@@ -42,6 +42,8 @@ func Get(name string) *Manager {
 		return NewYum()
 	case "equo":
 		return NewEquo()
+	case "zypper":
+		return NewZypper()
 	}
 
 	return nil
