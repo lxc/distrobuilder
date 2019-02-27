@@ -18,12 +18,20 @@ import (
 
 // DownloadHash downloads a file. If a checksum file is provided, it will try and
 // match the hash.
-func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
+func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash) (string, error) {
 	var (
 		client http.Client
 		hash   string
 		err    error
 	)
+	targetDir := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s-%s", def.Distribution, def.Release, def.ArchitectureMapped))
+	targetDir = strings.Replace(targetDir, " ", "", -1)
+	targetDir = strings.ToLower(targetDir)
+
+	err = os.MkdirAll(targetDir, 0755)
+	if err != nil {
+		return "", err
+	}
 
 	if checksum != "" {
 		if hashFunc != nil {
@@ -35,19 +43,19 @@ func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 			hashLen = hashFunc.Size() * 2
 		}
 
-		hash, err = downloadChecksum(checksum, file, hashFunc, hashLen)
+		hash, err = downloadChecksum(targetDir, checksum, file, hashFunc, hashLen)
 		if err != nil {
-			return fmt.Errorf("Error while downloading checksum: %s", err)
+			return "", fmt.Errorf("Error while downloading checksum: %s", err)
 		}
 	}
 
-	imagePath := filepath.Join(os.TempDir(), filepath.Base(file))
+	imagePath := filepath.Join(targetDir, filepath.Base(file))
 
 	stat, err := os.Stat(imagePath)
 	if err == nil && stat.Size() > 0 {
 		image, err := os.Open(imagePath)
 		if err != nil {
-			return err
+			return "", err
 		}
 		defer image.Close()
 
@@ -58,21 +66,21 @@ func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 
 			_, err = io.Copy(hashFunc, image)
 			if err != nil {
-				return err
+				return "", err
 			}
 
 			result := fmt.Sprintf("%x", hashFunc.Sum(nil))
 			if result != hash {
-				return fmt.Errorf("Hash mismatch for %s: %s != %s", imagePath, result, hash)
+				return "", fmt.Errorf("Hash mismatch for %s: %s != %s", imagePath, result, hash)
 			}
 		}
 
-		return nil
+		return targetDir, nil
 	}
 
 	image, err := os.Create(imagePath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer image.Close()
 
@@ -86,19 +94,19 @@ func DownloadHash(file, checksum string, hashFunc hash.Hash) error {
 	_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, hash, hashFunc, image)
 	if err != nil {
 		if checksum == "" && strings.HasPrefix(err.Error(), "Hash mismatch") {
-			return nil
+			return targetDir, nil
 		}
-		return err
+		return "", err
 	}
 
 	fmt.Println("")
 
-	return nil
+	return targetDir, nil
 }
 
 // downloadChecksum downloads or opens URL, and matches fname against the
 // checksums inside of the downloaded or opened file.
-func downloadChecksum(URL string, fname string, hashFunc hash.Hash, hashLen int) (string, error) {
+func downloadChecksum(targetDir string, URL string, fname string, hashFunc hash.Hash, hashLen int) (string, error) {
 	var (
 		client   http.Client
 		tempFile *os.File
@@ -106,15 +114,15 @@ func downloadChecksum(URL string, fname string, hashFunc hash.Hash, hashLen int)
 	)
 
 	// do not re-download checksum file if it's already present
-	fi, err := os.Stat(filepath.Join(os.TempDir(), URL))
+	fi, err := os.Stat(filepath.Join(targetDir, URL))
 	if err == nil && !fi.IsDir() {
-		tempFile, err = os.Open(filepath.Join(os.TempDir(), URL))
+		tempFile, err = os.Open(filepath.Join(targetDir, URL))
 		if err != nil {
 			return "", err
 		}
 		defer os.Remove(tempFile.Name())
 	} else {
-		tempFile, err = ioutil.TempFile(os.TempDir(), "hash.")
+		tempFile, err = ioutil.TempFile(targetDir, "hash.")
 		if err != nil {
 			return "", err
 		}

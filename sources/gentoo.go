@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -62,10 +61,12 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
+	var fpath string
+
 	if definition.Source.SkipVerification {
-		err = shared.DownloadHash(tarball, "", nil)
+		fpath, err = shared.DownloadHash(definition.Image, tarball, "", nil)
 	} else {
-		err = shared.DownloadHash(tarball, tarball+".DIGESTS", sha512.New())
+		fpath, err = shared.DownloadHash(definition.Image, tarball, tarball+".DIGESTS", sha512.New())
 	}
 	if err != nil {
 		return err
@@ -73,9 +74,9 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 
 	// Force gpg checks when using http
 	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(tarball+".DIGESTS.asc", "", nil)
+		shared.DownloadHash(definition.Image, tarball+".DIGESTS.asc", "", nil)
 		valid, err := shared.VerifyFile(
-			filepath.Join(os.TempDir(), fname+".DIGESTS.asc"),
+			filepath.Join(fpath, fname+".DIGESTS.asc"),
 			"",
 			definition.Source.Keys,
 			definition.Source.Keyserver)
@@ -88,7 +89,7 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}

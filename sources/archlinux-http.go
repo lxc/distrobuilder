@@ -63,18 +63,18 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
-	err = shared.DownloadHash(tarball, "", nil)
+	fpath, err := shared.DownloadHash(definition.Image, tarball, "", nil)
 	if err != nil {
 		return err
 	}
 
 	// Force gpg checks when using http
 	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(tarball+".sig", "", nil)
+		shared.DownloadHash(definition.Image, tarball+".sig", "", nil)
 
 		valid, err := shared.VerifyFile(
-			filepath.Join(os.TempDir(), fname),
-			filepath.Join(os.TempDir(), fname+".sig"),
+			filepath.Join(fpath, fname),
+			filepath.Join(fpath, fname+".sig"),
 			definition.Source.Keys,
 			definition.Source.Keyserver)
 		if err != nil {
@@ -86,7 +86,7 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}

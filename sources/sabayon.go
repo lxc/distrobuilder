@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"net/url"
-	"os"
 	"path/filepath"
 
 	lxd "github.com/lxc/lxd/shared"
@@ -30,18 +29,20 @@ func (s *SabayonHTTP) Run(definition shared.Definition, rootfsDir string) error 
 		return err
 	}
 
+	var fpath string
+
 	// From sabayon currently we have only MD5 checksum for now.
 	if definition.Source.SkipVerification {
-		err = shared.DownloadHash(tarball, "", nil)
+		fpath, err = shared.DownloadHash(definition.Image, tarball, "", nil)
 	} else {
-		err = shared.DownloadHash(tarball, tarball+".md5", md5.New())
+		fpath, err = shared.DownloadHash(definition.Image, tarball, tarball+".md5", md5.New())
 	}
 	if err != nil {
 		return err
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}

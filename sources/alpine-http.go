@@ -62,10 +62,12 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
+	var fpath string
+
 	if definition.Source.SkipVerification {
-		err = shared.DownloadHash(tarball, "", nil)
+		fpath, err = shared.DownloadHash(definition.Image, tarball, "", nil)
 	} else {
-		err = shared.DownloadHash(tarball, tarball+".sha256", sha256.New())
+		fpath, err = shared.DownloadHash(definition.Image, tarball, tarball+".sha256", sha256.New())
 	}
 	if err != nil {
 		return err
@@ -73,10 +75,10 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 
 	// Force gpg checks when using http
 	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(tarball+".asc", "", nil)
+		shared.DownloadHash(definition.Image, tarball+".asc", "", nil)
 		valid, err := shared.VerifyFile(
-			filepath.Join(os.TempDir(), fname),
-			filepath.Join(os.TempDir(), fname+".asc"),
+			filepath.Join(fpath, fname),
+			filepath.Join(fpath, fname+".asc"),
 			definition.Source.Keys,
 			definition.Source.Keyserver)
 		if err != nil {
@@ -88,7 +90,7 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(os.TempDir(), fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}

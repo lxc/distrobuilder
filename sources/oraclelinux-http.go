@@ -38,13 +38,13 @@ func (s *OracleLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		return err
 	}
 
-	err = shared.DownloadHash(fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname),
+	fpath, err := shared.DownloadHash(definition.Image, fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname),
 		"", nil)
 	if err != nil {
 		return fmt.Errorf("Error downloading Oracle Linux image: %s", err)
 	}
 
-	return s.unpackISO(latestUpdate[1:], filepath.Join(os.TempDir(), fname), rootfsDir)
+	return s.unpackISO(latestUpdate[1:], filepath.Join(fpath, fname), rootfsDir)
 }
 
 func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) error {
