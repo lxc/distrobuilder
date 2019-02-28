@@ -139,6 +139,8 @@ func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch str
 			u.Path = path.Join(u.Path, "container_ARM")
 		case "ppc64le":
 			u.Path = path.Join(u.Path, "container_PowerPC")
+		case "s390x":
+			u.Path = path.Join(u.Path, "container_zSystems")
 		default:
 			return ""
 		}
