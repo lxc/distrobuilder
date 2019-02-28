@@ -15,6 +15,7 @@ func NewZypper() *Manager {
 			},
 			install: []string{
 				"install",
+				"--allow-downgrade",
 			},
 			remove: []string{
 				"remove",
