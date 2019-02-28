@@ -12,9 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
-	"gopkg.in/antchfx/htmlquery.v1"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 // OpenSUSEHTTP represents the OpenSUSE HTTP downloader.
@@ -102,25 +102,6 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 	return lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
 }
 
-func (s *OpenSUSEHTTP) getLatestBuild(URL string) string {
-	doc, err := htmlquery.LoadURL(URL)
-	if err != nil {
-		return ""
-	}
-
-	if doc == nil {
-		return ""
-	}
-
-	nodes := htmlquery.Find(doc, `//a[starts-with(text(),'opensuse')][ends-with(text(), 'tar.xz')][@href]/text()`)
-
-	if nodes == nil {
-		return ""
-	}
-
-	return nodes[len(nodes)-1].Data
-}
-
 func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
@@ -157,7 +138,8 @@ func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch str
 			u.Path = path.Join(u.Path, "containers_ports")
 		}
 
-		u.Path = path.Join(u.Path, s.getLatestBuild(u.String()))
+		u.Path = path.Join(u.Path, fmt.Sprintf("opensuse-leap-%s-image.%s-lxc.tar.xz", release,
+			arch))
 	}
 
 	return u.String()
