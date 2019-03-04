@@ -7,7 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
+	"regexp"
 
 	"github.com/lxc/distrobuilder/shared"
 
@@ -33,7 +33,7 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		var err error
 
 		// Get latest release
-		release, err = s.getLatestRelease()
+		release, err = s.getLatestRelease(definition.Source.URL, definition.Image.ArchitectureMapped)
 		if err != nil {
 			return err
 		}
@@ -110,16 +110,30 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		definition.Image.ArchitectureMapped))
 }
 
-func (s *ArchLinuxHTTP) getLatestRelease() (string, error) {
-	doc, err := htmlquery.LoadURL("https://www.archlinux.org/download/")
+func (s *ArchLinuxHTTP) getLatestRelease(URL string, arch string) (string, error) {
+	u, err := url.Parse(URL)
 	if err != nil {
 		return "", err
 	}
 
-	node := htmlquery.FindOne(doc, `//*[@id="arch-downloads"]/ul[1]/li[1]/text()`)
+	u.Path = path.Join(u.Path, "latest")
+
+	doc, err := htmlquery.LoadURL(u.String())
+	if err != nil {
+		return "", err
+	}
+
+	node := htmlquery.FindOne(doc, `//a[starts-with(text(),'archlinux-bootstrap-')][ends-with(text(),'.tar.gz')][@href]/text()`)
 	if node == nil {
 		return "", fmt.Errorf("Failed to determine latest release")
 	}
 
-	return strings.TrimSpace(node.Data), nil
+	re := regexp.MustCompile(fmt.Sprintf(`^archlinux-bootstrap-(\d{4}\.\d{2}\.\d{2})-%s.tar.gz$`, arch))
+	match := re.FindStringSubmatch(node.Data)
+
+	if len(match) != 2 {
+		return "", fmt.Errorf("Failed to determine latest release")
+	}
+
+	return match[1], nil
 }
