@@ -138,7 +138,7 @@ func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch str
 			u.Path = path.Join(u.Path, "containers_ports")
 		}
 
-		u.Path = path.Join(u.Path, fmt.Sprintf("opensuse-leap-%s-image.%s-lxc.tar.xz", release,
+		u.Path = path.Join(u.Path, fmt.Sprintf("opensuse-leap-image.%s-lxc.tar.xz",
 			arch))
 	}
 
