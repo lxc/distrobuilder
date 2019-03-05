@@ -25,5 +25,5 @@ func (d *DockerHTTP) Run(definition shared.Definition, rootfsDir string) error {
 
 	// NOTE: For now we use only docker official server but we can
 	//       add a new parameter on DefinitionSource struct.
-	return dcapi.DownloadImage(definition.Source.URL, absRootfsDir, "")
+	return dcapi.DownloadAndUnpackImage(definition.Source.URL, absRootfsDir, nil)
 }
