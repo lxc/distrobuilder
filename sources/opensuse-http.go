@@ -131,15 +131,20 @@ func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch str
 	} else {
 		u.Path = path.Join(u.Path, fmt.Sprintf("openSUSE-Leap-%s", release))
 
-		switch arch {
-		case "x86_64":
-			u.Path = path.Join(u.Path, "containers")
-		case "aarch64", "ppc64le":
-			u.Path = path.Join(u.Path, "containers_ports")
-		}
+		if release == "42.3" {
+			u.Path = path.Join(u.Path, "containers",
+				fmt.Sprintf("openSUSE-Leap-%s-container-image.%s-lxc.tar.xz", release, arch))
+		} else {
+			switch arch {
+			case "x86_64":
+				u.Path = path.Join(u.Path, "containers")
+			case "aarch64", "ppc64le":
+				u.Path = path.Join(u.Path, "containers_ports")
+			}
 
-		u.Path = path.Join(u.Path, fmt.Sprintf("opensuse-leap-image.%s-lxc.tar.xz",
-			arch))
+			u.Path = path.Join(u.Path, fmt.Sprintf("opensuse-leap-image.%s-lxc.tar.xz",
+				arch))
+		}
 	}
 
 	return u.String()
