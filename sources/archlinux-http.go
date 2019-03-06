@@ -8,6 +8,8 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strings"
 
 	"github.com/lxc/distrobuilder/shared"
 
@@ -111,29 +113,27 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 }
 
 func (s *ArchLinuxHTTP) getLatestRelease(URL string, arch string) (string, error) {
-	u, err := url.Parse(URL)
+	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
 		return "", err
 	}
 
-	u.Path = path.Join(u.Path, "latest")
+	re := regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}/?$`)
 
-	doc, err := htmlquery.LoadURL(u.String())
-	if err != nil {
-		return "", err
+	var releases []string
+
+	for _, node := range htmlquery.Find(doc, `//a[@href]/text()`) {
+		if re.MatchString(node.Data) {
+			releases = append(releases, strings.TrimSuffix(node.Data, "/"))
+		}
 	}
 
-	node := htmlquery.FindOne(doc, `//a[starts-with(text(),'archlinux-bootstrap-')][ends-with(text(),'.tar.gz')][@href]/text()`)
-	if node == nil {
+	if len(releases) == 0 {
 		return "", fmt.Errorf("Failed to determine latest release")
 	}
 
-	re := regexp.MustCompile(fmt.Sprintf(`^archlinux-bootstrap-(\d{4}\.\d{2}\.\d{2})-%s.tar.gz$`, arch))
-	match := re.FindStringSubmatch(node.Data)
+	// Sort releases in case they're out-of-order
+	sort.Strings(releases)
 
-	if len(match) != 2 {
-		return "", fmt.Errorf("Failed to determine latest release")
-	}
-
-	return match[1], nil
+	return releases[len(releases)-1], nil
 }
