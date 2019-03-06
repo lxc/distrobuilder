@@ -53,9 +53,6 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		}
 	}
 
-	var installablePackages []string
-	var removablePackages []string
-
 	for _, set := range def.Sets {
 		if len(set.Releases) > 0 && !lxd.StringInSlice(release, set.Releases) {
 			continue
@@ -66,25 +63,18 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		}
 
 		if set.Action == "install" {
-			installablePackages = append(installablePackages, set.Packages...)
+			err = manager.Install(set.Packages)
 		} else if set.Action == "remove" {
-			removablePackages = append(removablePackages, set.Packages...)
+			err = manager.Remove(set.Packages)
+		}
+		if err != nil {
+			return err
 		}
 	}
 
 	// TODO: Remove this once openSUSE Tumbleweed builds properly without it.
 	if strings.ToLower(release) == "tumbleweed" {
 		manager.SetInstallFlags("install", "--allow-downgrade")
-	}
-
-	err = manager.Install(installablePackages)
-	if err != nil {
-		return err
-	}
-
-	err = manager.Remove(removablePackages)
-	if err != nil {
-		return err
 	}
 
 	if def.Cleanup {
