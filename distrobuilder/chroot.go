@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
 
@@ -69,6 +70,11 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		} else if set.Action == "remove" {
 			removablePackages = append(removablePackages, set.Packages...)
 		}
+	}
+
+	// TODO: Remove this once openSUSE Tumbleweed builds properly without it.
+	if strings.ToLower(release) == "tumbleweed" {
+		manager.SetInstallFlags("install", "--allow-downgrade")
 	}
 
 	err = manager.Install(installablePackages)
