@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
 
@@ -72,8 +71,8 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		}
 	}
 
-	// TODO: Remove this once openSUSE Tumbleweed builds properly without it.
-	if strings.ToLower(release) == "tumbleweed" {
+	// TODO: Remove this once openSUSE builds properly without it. OpenSUSE 42.3 doesn't support this flag.
+	if release != "42.3" {
 		manager.SetInstallFlags("install", "--allow-downgrade")
 	}
 
