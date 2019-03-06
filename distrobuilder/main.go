@@ -61,6 +61,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -73,6 +74,7 @@ type cmdGlobal struct {
 	flagCleanup  bool
 	flagCacheDir string
 	flagOptions  []string
+	flagTimeout  uint
 
 	definition *shared.Definition
 	sourceDir  string
@@ -113,6 +115,8 @@ func main() {
 		"", "Cache directory"+"``")
 	app.PersistentFlags().StringSliceVarP(&globalCmd.flagOptions, "options", "o",
 		[]string{}, "Override options (list of key=value)"+"``")
+	app.PersistentFlags().UintVarP(&globalCmd.flagTimeout, "timeout", "t", 0,
+		"Timeout in seconds"+"``")
 
 	// LXC sub-commands
 	LXCCmd := cmdLXC{global: &globalCmd}
@@ -127,6 +131,18 @@ func main() {
 	// build-dir sub-command
 	buildDirCmd := cmdBuildDir{global: &globalCmd}
 	app.AddCommand(buildDirCmd.command())
+
+	// Timeout handler
+	go func() {
+		// No timeout set
+		if globalCmd.flagTimeout == 0 {
+			return
+		}
+
+		time.Sleep(time.Duration(globalCmd.flagTimeout) * time.Second)
+		fmt.Println("Timed out")
+		os.Exit(1)
+	}()
 
 	// Run the main command and handle errors
 	err := app.Execute()
