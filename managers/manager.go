@@ -116,3 +116,8 @@ func (m Manager) Update() error {
 
 	return shared.RunCommand(m.command, args...)
 }
+
+// SetInstallFlags overrides the default install flags.
+func (m *Manager) SetInstallFlags(flags ...string) {
+	m.flags.install = flags
+}
