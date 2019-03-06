@@ -52,6 +52,11 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		}
 	}
 
+	// TODO: Remove this once openSUSE builds properly without it. OpenSUSE 42.3 doesn't support this flag.
+	if release != "42.3" {
+		manager.SetInstallFlags("install", "--allow-downgrade")
+	}
+
 	for _, set := range def.Sets {
 		if len(set.Releases) > 0 && !lxd.StringInSlice(release, set.Releases) {
 			continue
@@ -69,11 +74,6 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		if err != nil {
 			return err
 		}
-	}
-
-	// TODO: Remove this once openSUSE builds properly without it. OpenSUSE 42.3 doesn't support this flag.
-	if release != "42.3" {
-		manager.SetInstallFlags("install", "--allow-downgrade")
 	}
 
 	if def.Cleanup {
