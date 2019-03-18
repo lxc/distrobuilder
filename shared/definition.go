@@ -30,13 +30,30 @@ type DefinitionPackagesRepository struct {
 	Releases []string `yaml:"release,omitmepty"` // Releases that this repo applies to
 }
 
+// CustomManagerCmd represents a command for a custom manager.
+type CustomManagerCmd struct {
+	Command string   `yaml:"cmd"`
+	Flags   []string `yaml:"flags,omitempty"`
+}
+
+// DefinitionPackagesCustomManager represents a custom package manager.
+type DefinitionPackagesCustomManager struct {
+	Clean   CustomManagerCmd `yaml:"clean"`
+	Install CustomManagerCmd `yaml:"install"`
+	Remove  CustomManagerCmd `yaml:"remove"`
+	Refresh CustomManagerCmd `yaml:"refresh"`
+	Update  CustomManagerCmd `yaml:"update"`
+	Flags   []string         `yaml:"flags,omitempty"`
+}
+
 // A DefinitionPackages represents a package handler.
 type DefinitionPackages struct {
-	Manager      string                         `yaml:"manager"`
-	Update       bool                           `yaml:"update,omitempty"`
-	Cleanup      bool                           `yaml:"cleanup,omitempty"`
-	Sets         []DefinitionPackagesSet        `yaml:"sets,omitempty"`
-	Repositories []DefinitionPackagesRepository `yaml:"repositories,omitempty"`
+	Manager       string                           `yaml:"manager,omitempty"`
+	CustomManager *DefinitionPackagesCustomManager `yaml:"custom-manager,omitempty"`
+	Update        bool                             `yaml:"update,omitempty"`
+	Cleanup       bool                             `yaml:"cleanup,omitempty"`
+	Sets          []DefinitionPackagesSet          `yaml:"sets,omitempty"`
+	Repositories  []DefinitionPackagesRepository   `yaml:"repositories,omitempty"`
 }
 
 // A DefinitionImage represents the image.
@@ -241,23 +258,54 @@ func (d *Definition) Validate() error {
 		"docker-http",
 		"oraclelinux-http",
 		"opensuse-http",
+		"plamolinux-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
 	}
 
-	validManagers := []string{
-		"apk",
-		"apt",
-		"dnf",
-		"pacman",
-		"portage",
-		"yum",
-		"equo",
-		"zypper",
-	}
-	if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
-		return fmt.Errorf("packages.manager must be one of %v", validManagers)
+	if d.Packages.Manager != "" {
+		validManagers := []string{
+			"apk",
+			"apt",
+			"dnf",
+			"pacman",
+			"portage",
+			"yum",
+			"equo",
+			"zypper",
+		}
+		if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
+			return fmt.Errorf("packages.manager must be one of %v", validManagers)
+		}
+
+		if d.Packages.CustomManager != nil {
+			return fmt.Errorf("cannot have both packages.manager and packages.custom-manager set")
+		}
+	} else {
+		if d.Packages.CustomManager == nil {
+			return fmt.Errorf("packages.manager or packages.custom-manager needs to be set")
+		}
+
+		if d.Packages.CustomManager.Clean.Command == "" {
+			return fmt.Errorf("packages.custom-manager requires a clean command")
+		}
+
+		if d.Packages.CustomManager.Install.Command == "" {
+			return fmt.Errorf("packages.custom-manager requires an install command")
+		}
+
+		if d.Packages.CustomManager.Remove.Command == "" {
+			return fmt.Errorf("packages.custom-manager requires a remove command")
+		}
+
+		if d.Packages.CustomManager.Refresh.Command == "" {
+			return fmt.Errorf("packages.custom-manager requires a refresh command")
+		}
+
+		if d.Packages.CustomManager.Update.Command == "" {
+			return fmt.Errorf("packages.custom-manager requires an update command")
+		}
 	}
 
 	validGenerators := []string{
