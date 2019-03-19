@@ -26,7 +26,13 @@ func NewPacman() *Manager {
 	}
 
 	return &Manager{
-		command: "pacman",
+		commands: ManagerCommands{
+			clean:   "pacman",
+			install: "pacman",
+			refresh: "pacman",
+			remove:  "pacman",
+			update:  "pacman",
+		},
 		flags: ManagerFlags{
 			clean: []string{
 				"-Sc",

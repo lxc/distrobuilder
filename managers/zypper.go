@@ -3,7 +3,13 @@ package managers
 // NewZypper create a new Manager instance.
 func NewZypper() *Manager {
 	return &Manager{
-		command: "zypper",
+		commands: ManagerCommands{
+			clean:   "zypper",
+			install: "zypper",
+			refresh: "zypper",
+			remove:  "zypper",
+			update:  "zypper",
+		},
 		flags: ManagerFlags{
 			global: []string{
 				"--non-interactive",

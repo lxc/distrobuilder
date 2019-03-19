@@ -40,7 +40,13 @@ func equoRepoCaller(repo shared.DefinitionPackagesRepository) error {
 // NewEquo creates a new Manager instance
 func NewEquo() *Manager {
 	return &Manager{
-		command: "equo",
+		commands: ManagerCommands{
+			clean:   "equo",
+			install: "equo",
+			refresh: "equo",
+			remove:  "equo",
+			update:  "equo",
+		},
 		flags: ManagerFlags{
 			global: []string{},
 			clean: []string{

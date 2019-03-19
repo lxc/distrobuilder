@@ -3,7 +3,13 @@ package managers
 // NewPortage creates a new Manager instance.
 func NewPortage() *Manager {
 	return &Manager{
-		command: "emerge",
+		commands: ManagerCommands{
+			clean:   "emerge",
+			install: "emerge",
+			refresh: "emerge",
+			remove:  "emerge",
+			update:  "emerge",
+		},
 		flags: ManagerFlags{
 			global: []string{},
 			clean:  []string{},

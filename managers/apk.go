@@ -3,7 +3,13 @@ package managers
 // NewApk creates a new Manager instance.
 func NewApk() *Manager {
 	return &Manager{
-		command: "apk",
+		commands: ManagerCommands{
+			clean:   "apk",
+			install: "apk",
+			refresh: "apk",
+			remove:  "apk",
+			update:  "apk",
+		},
 		flags: ManagerFlags{
 			global: []string{
 				"--no-cache",
