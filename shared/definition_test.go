@@ -89,6 +89,39 @@ func TestValidateDefinition(t *testing.T) {
 			false,
 		},
 		{
+			"valid Defintion with packages.custom-manager",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+				},
+				Packages: DefinitionPackages{
+					CustomManager: &DefinitionPackagesCustomManager{
+						Install: CustomManagerCmd{
+							Command: "install",
+						},
+						Remove: CustomManagerCmd{
+							Command: "remove",
+						},
+						Clean: CustomManagerCmd{
+							Command: "clean",
+						},
+						Update: CustomManagerCmd{
+							Command: "update",
+						},
+						Refresh: CustomManagerCmd{
+							Command: "refresh",
+						},
+					},
+				},
+			},
+			"",
+			false,
+		},
+		{
 			"invalid ArchitectureMap",
 			Definition{
 				Image: DefinitionImage{
@@ -176,6 +209,172 @@ func TestValidateDefinition(t *testing.T) {
 				},
 			},
 			"packages.manager must be one of .+",
+			true,
+		},
+		{
+			"missing clean command in packages.custom-manager",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					CustomManager: &DefinitionPackagesCustomManager{},
+				},
+			},
+			"packages.custom-manager requires a clean command",
+			true,
+		},
+		{
+			"missing install command in packages.custom-manager",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					CustomManager: &DefinitionPackagesCustomManager{
+						Clean: CustomManagerCmd{
+							Command: "clean",
+						},
+					},
+				},
+			},
+			"packages.custom-manager requires an install command",
+			true,
+		},
+		{
+			"missing remove command in packages.custom-manager",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					CustomManager: &DefinitionPackagesCustomManager{
+						Clean: CustomManagerCmd{
+							Command: "clean",
+						},
+						Install: CustomManagerCmd{
+							Command: "install",
+						},
+					},
+				},
+			},
+			"packages.custom-manager requires a remove command",
+			true,
+		},
+		{
+			"missing refresh command in packages.custom-manager",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					CustomManager: &DefinitionPackagesCustomManager{
+						Clean: CustomManagerCmd{
+							Command: "clean",
+						},
+						Install: CustomManagerCmd{
+							Command: "install",
+						},
+						Remove: CustomManagerCmd{
+							Command: "remove",
+						},
+					},
+				},
+			},
+			"packages.custom-manager requires a refresh command",
+			true,
+		},
+		{
+			"missing update command in packages.custom-manager",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					CustomManager: &DefinitionPackagesCustomManager{
+						Clean: CustomManagerCmd{
+							Command: "clean",
+						},
+						Install: CustomManagerCmd{
+							Command: "install",
+						},
+						Remove: CustomManagerCmd{
+							Command: "remove",
+						},
+						Refresh: CustomManagerCmd{
+							Command: "refresh",
+						},
+					},
+				},
+			},
+			"packages.custom-manager requires an update command",
+			true,
+		},
+		{
+			"package.manager and package.custom-manager set",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{
+					Manager:       "apt",
+					CustomManager: &DefinitionPackagesCustomManager{},
+				},
+			},
+			"cannot have both packages.manager and packages.custom-manager set",
+			true,
+		},
+		{
+			"package.manager and package.custom-manager unset",
+			Definition{
+				Image: DefinitionImage{
+					Distribution: "ubuntu",
+					Release:      "artful",
+				},
+				Source: DefinitionSource{
+					Downloader: "debootstrap",
+					URL:        "https://ubuntu.com",
+					Keys:       []string{"0xCODE"},
+				},
+				Packages: DefinitionPackages{},
+			},
+			"packages.manager or packages.custom-manager needs to be set",
 			true,
 		},
 		{

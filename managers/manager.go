@@ -17,9 +17,18 @@ type ManagerHooks struct {
 	clean func() error
 }
 
+// ManagerCommands represents all commands.
+type ManagerCommands struct {
+	clean   string
+	install string
+	refresh string
+	remove  string
+	update  string
+}
+
 // A Manager represents a package manager.
 type Manager struct {
-	command     string
+	commands    ManagerCommands
 	flags       ManagerFlags
 	hooks       ManagerHooks
 	RepoHandler func(repoAction shared.DefinitionPackagesRepository) error
@@ -49,6 +58,27 @@ func Get(name string) *Manager {
 	return nil
 }
 
+// GetCustom returns a custom Manager specified by a Definition.
+func GetCustom(def shared.DefinitionPackagesCustomManager) *Manager {
+	return &Manager{
+		commands: ManagerCommands{
+			clean:   def.Clean.Command,
+			install: def.Install.Command,
+			refresh: def.Refresh.Command,
+			remove:  def.Remove.Command,
+			update:  def.Update.Command,
+		},
+		flags: ManagerFlags{
+			clean:   def.Clean.Flags,
+			install: def.Install.Flags,
+			refresh: def.Refresh.Flags,
+			remove:  def.Remove.Flags,
+			update:  def.Update.Flags,
+			global:  def.Flags,
+		},
+	}
+}
+
 // Install installs packages to the rootfs.
 func (m Manager) Install(pkgs []string) error {
 	if len(m.flags.install) == 0 || pkgs == nil || len(pkgs) == 0 {
@@ -58,7 +88,7 @@ func (m Manager) Install(pkgs []string) error {
 	args := append(m.flags.global, m.flags.install...)
 	args = append(args, pkgs...)
 
-	return shared.RunCommand(m.command, args...)
+	return shared.RunCommand(m.commands.install, args...)
 }
 
 // Remove removes packages from the rootfs.
@@ -70,7 +100,7 @@ func (m Manager) Remove(pkgs []string) error {
 	args := append(m.flags.global, m.flags.remove...)
 	args = append(args, pkgs...)
 
-	return shared.RunCommand(m.command, args...)
+	return shared.RunCommand(m.commands.remove, args...)
 }
 
 // Clean cleans up cached files used by the package managers.
@@ -83,7 +113,7 @@ func (m Manager) Clean() error {
 
 	args := append(m.flags.global, m.flags.clean...)
 
-	err = shared.RunCommand(m.command, args...)
+	err = shared.RunCommand(m.commands.clean, args...)
 	if err != nil {
 		return err
 	}
@@ -103,7 +133,7 @@ func (m Manager) Refresh() error {
 
 	args := append(m.flags.global, m.flags.refresh...)
 
-	return shared.RunCommand(m.command, args...)
+	return shared.RunCommand(m.commands.refresh, args...)
 }
 
 // Update updates all packages.
@@ -114,7 +144,7 @@ func (m Manager) Update() error {
 
 	args := append(m.flags.global, m.flags.update...)
 
-	return shared.RunCommand(m.command, args...)
+	return shared.RunCommand(m.commands.update, args...)
 }
 
 // SetInstallFlags overrides the default install flags.

@@ -12,10 +12,15 @@ import (
 func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAction,
 	release string, architecture string) error {
 	var err error
+	var manager *managers.Manager
 
-	manager := managers.Get(def.Manager)
-	if manager == nil {
-		return fmt.Errorf("Couldn't get manager")
+	if def.Manager != "" {
+		manager = managers.Get(def.Manager)
+		if manager == nil {
+			return fmt.Errorf("Couldn't get manager")
+		}
+	} else {
+		manager = managers.GetCustom(*def.CustomManager)
 	}
 
 	// Handle repositories actions
