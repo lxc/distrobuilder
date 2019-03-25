@@ -55,7 +55,7 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 		return lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
 	}
 
-	checksumPath := fmt.Sprintf("%s.sha256", tarballPath)
+	checksumPath := fmt.Sprintf("%s/%s.sha256", baseURL, fname)
 	checksumFile := path.Base(checksumPath)
 
 	shared.DownloadHash(definition.Image, checksumPath, "", nil)
