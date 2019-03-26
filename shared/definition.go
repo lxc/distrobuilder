@@ -248,6 +248,7 @@ func (d *Definition) Validate() error {
 
 	validDownloaders := []string{
 		"alpinelinux-http",
+		"alt-http",
 		"archlinux-http",
 		"centos-http",
 		"debootstrap",

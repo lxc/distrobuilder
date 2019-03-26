@@ -12,6 +12,8 @@ func Get(name string) Downloader {
 	switch name {
 	case "alpinelinux-http":
 		return NewAlpineLinuxHTTP()
+	case "alt-http":
+		return NewALTHTTP()
 	case "archlinux-http":
 		return NewArchLinuxHTTP()
 	case "centos-http":
