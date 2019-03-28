@@ -92,7 +92,7 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 	image.Close()
 
 	result := fmt.Sprintf("%x", hash.Sum(nil))
-	checksumStr := strings.TrimSpace(string(checksum))
+	checksumStr := strings.Split(string(checksum), " ")[0]
 
 	if result != checksumStr {
 		return fmt.Errorf("Hash mismatch for %s: %s != %s", imagePath, result, checksumStr)
