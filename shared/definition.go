@@ -27,7 +27,7 @@ type DefinitionPackagesRepository struct {
 	URL      string   `yaml:"url"`               // URL (may differ based on manager)
 	Type     string   `yaml:"type,omitempty"`    // For distros that have more than one repository manager
 	Key      string   `yaml:"key,omitempty"`     // GPG armored keyring
-	Releases []string `yaml:"release,omitmepty"` // Releases that this repo applies to
+	Releases []string `yaml:"release,omitempty"` // Releases that this repo applies to
 }
 
 // CustomManagerCmd represents a command for a custom manager.
