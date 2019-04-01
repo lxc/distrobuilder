@@ -330,6 +330,7 @@ func (d *Definition) Validate() error {
 		"centos",
 		"debian",
 		"gentoo",
+		"plamolinux",
 	}
 
 	architectureMap := strings.TrimSpace(d.Mappings.ArchitectureMap)

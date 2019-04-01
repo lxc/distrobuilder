@@ -41,12 +41,17 @@ var gentooArchitectureNames = map[int]string{
 	osarch.ARCH_64BIT_S390_BIG_ENDIAN:       "s390x",
 }
 
+var plamoLinuxArchitectureNames = map[int]string{
+	osarch.ARCH_32BIT_INTEL_X86: "x86",
+}
+
 var distroArchitecture = map[string]map[int]string{
 	"alpinelinux": alpineLinuxArchitectureNames,
 	"archlinux":   archLinuxArchitectureNames,
 	"centos":      centosArchitectureNames,
 	"debian":      debianArchitectureNames,
 	"gentoo":      gentooArchitectureNames,
+	"plamolinux":  plamoLinuxArchitectureNames,
 }
 
 // GetArch returns the correct architecture name used by the specified
