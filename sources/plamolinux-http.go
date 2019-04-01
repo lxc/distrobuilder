@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	lxd "github.com/lxc/lxd/shared"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -37,13 +38,12 @@ func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 	mirrorPath := path.Join(u.Path, fmt.Sprintf("Plamo-%s.x", definition.Image.Release),
 		definition.Image.ArchitectureMapped, "plamo")
 
-	paths := []string{
-		path.Join(mirrorPath, "00_base"),
-	}
+	paths := []string{path.Join(mirrorPath, "00_base")}
+	ignoredPkgs := []string{"grub", "kernel", "lilo", "linux_firmware", "microcode_ctl",
+		"linux_firmwares", "cpufreqd", "cpufrequtils", "gpm", "ntp", "kmod", "kmscon"}
 
 	if release < 7 {
 		paths = append(paths, path.Join(mirrorPath, "01_minimum"))
-
 	}
 
 	var pkgDir string
@@ -51,7 +51,7 @@ func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 	for _, p := range paths {
 		u.Path = p
 
-		pkgDir, err = s.downloadFiles(definition.Image, u.String())
+		pkgDir, err = s.downloadFiles(definition.Image, u.String(), ignoredPkgs)
 		if err != nil {
 			return fmt.Errorf("Failed to download packages: %v", err)
 		}
@@ -82,22 +82,34 @@ func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 		return err
 	}
 
+	rootfsDirAbs, err := filepath.Abs(rootfsDir)
+	if err != nil {
+		return err
+	}
+
 	return shared.RunScript(fmt.Sprintf(`#!/bin/sh
+set -eux
 
-dlcache=%s
-rootfs_dir=%s
+# Input variables
+PKG_DIR="%s"
+ROOTFS_DIR="%s"
 
-sed -i "/ldconfig/!s@/sbin@$dlcache&@g" $dlcache/sbin/installpkg*
-PATH=$dlcache/sbin:$PATH
-export LC_ALL=C LANG=C
+# Environment
+export PATH="${PKG_DIR}/sbin:${PATH}"
+export LC_ALL="C.UTF-8"
+export LANG="C"
 
-for p in $(ls -cr $dlcache/*.t?z) ; do
-    installpkg -root $rootfs_dir -priority ADD $p
+# Don't call ldconfig
+sed -i "/ldconfig/!s@/sbin@${PKG_DIR}&@g" ${PKG_DIR}/sbin/installpkg*
+
+# Install all packages
+for pkg in $(ls -cr ${PKG_DIR}/*.t?z); do
+    installpkg -root ${ROOTFS_DIR} -priority ADD ${pkg}
 done
-`, pkgDir, rootfsDir))
+`, pkgDir, rootfsDirAbs))
 }
 
-func (s *PlamoLinuxHTTP) downloadFiles(def shared.DefinitionImage, URL string) (string, error) {
+func (s *PlamoLinuxHTTP) downloadFiles(def shared.DefinitionImage, URL string, ignoredPkgs []string) (string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
 		return "", err
@@ -115,6 +127,11 @@ func (s *PlamoLinuxHTTP) downloadFiles(def shared.DefinitionImage, URL string) (
 		target := htmlquery.InnerText(n)
 
 		if strings.HasSuffix(target, ".txz") {
+			pkgName := strings.Split(target, "-")[0]
+			if lxd.StringInSlice(pkgName, ignoredPkgs) {
+				continue
+			}
+
 			// package
 			dir, err = shared.DownloadHash(def, fmt.Sprintf("%s/%s", URL, target), "", nil)
 			if err != nil {
@@ -129,7 +146,7 @@ func (s *PlamoLinuxHTTP) downloadFiles(def shared.DefinitionImage, URL string) (
 
 			u.Path = path.Join(u.Path, target)
 
-			return s.downloadFiles(def, u.String())
+			return s.downloadFiles(def, u.String(), ignoredPkgs)
 		}
 	}
 
