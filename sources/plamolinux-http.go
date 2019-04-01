@@ -25,7 +25,9 @@ func NewPlamoLinuxHTTP() *PlamoLinuxHTTP {
 
 // Run downloads Plamo Linux.
 func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	release, err := strconv.Atoi(definition.Image.Release)
+	releaseStr := strings.TrimSuffix(definition.Image.Release, ".x")
+
+	release, err := strconv.Atoi(releaseStr)
 	if err != nil {
 		return fmt.Errorf("Failed to determine release: %v", err)
 	}
@@ -35,11 +37,11 @@ func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 		return err
 	}
 
-	mirrorPath := path.Join(u.Path, fmt.Sprintf("Plamo-%s.x", definition.Image.Release),
+	mirrorPath := path.Join(u.Path, fmt.Sprintf("Plamo-%s.x", releaseStr),
 		definition.Image.ArchitectureMapped, "plamo")
 
 	paths := []string{path.Join(mirrorPath, "00_base")}
-	ignoredPkgs := []string{"grub", "kernel", "lilo", "linux_firmware", "microcode_ctl",
+	ignoredPkgs := []string{"alsa_utils", "grub", "kernel", "lilo", "linux_firmware", "microcode_ctl",
 		"linux_firmwares", "cpufreqd", "cpufrequtils", "gpm", "ntp", "kmod", "kmscon"}
 
 	if release < 7 {
