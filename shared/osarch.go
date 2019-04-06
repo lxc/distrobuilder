@@ -51,7 +51,7 @@ var altLinuxArchitectureNames = map[int]string{
 
 var distroArchitecture = map[string]map[int]string{
 	"alpinelinux": alpineLinuxArchitectureNames,
-	"altinux":     altLinuxArchitectureNames,
+	"altlinux":     altLinuxArchitectureNames,
 	"archlinux":   archLinuxArchitectureNames,
 	"centos":      centosArchitectureNames,
 	"debian":      debianArchitectureNames,
