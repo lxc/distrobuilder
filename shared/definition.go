@@ -326,6 +326,7 @@ func (d *Definition) Validate() error {
 
 	validMappings := []string{
 		"alpinelinux",
+		"altlinux",
 		"archlinux",
 		"centos",
 		"debian",
