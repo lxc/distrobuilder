@@ -46,12 +46,14 @@ var plamoLinuxArchitectureNames = map[int]string{
 }
 
 var altLinuxArchitectureNames = map[int]string{
-	osarch.ARCH_32BIT_INTEL_X86: "i586",
+	osarch.ARCH_32BIT_INTEL_X86:           "i586",
+	osarch.ARCH_64BIT_INTEL_X86:           "x86_64",
+	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN: "aarch64",
 }
 
 var distroArchitecture = map[string]map[int]string{
 	"alpinelinux": alpineLinuxArchitectureNames,
-	"altlinux":     altLinuxArchitectureNames,
+	"altlinux":    altLinuxArchitectureNames,
 	"archlinux":   archLinuxArchitectureNames,
 	"centos":      centosArchitectureNames,
 	"debian":      debianArchitectureNames,
