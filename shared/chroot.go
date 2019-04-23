@@ -34,7 +34,7 @@ func setupMounts(rootfs string, mounts []chrootMount) error {
 
 		// Create the target mountpoint
 		if mount.isDir {
-			err := os.Mkdir(tmpTarget, 0755)
+			err := os.MkdirAll(tmpTarget, 0755)
 			if err != nil {
 				return err
 			}
