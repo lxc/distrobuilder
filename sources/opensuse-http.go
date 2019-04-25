@@ -126,7 +126,7 @@ func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch str
 			return ""
 		}
 
-		u.Path = path.Join(u.Path, fmt.Sprintf("opensuse-tumbleweed-image.%s-lxc.tar.xz",
+		u.Path = path.Join(u.Path, fmt.Sprintf("opensuse-tumbleweed-image.%s-1.0.0.tar.xz",
 			arch))
 	} else {
 		u.Path = path.Join(u.Path, fmt.Sprintf("openSUSE-Leap-%s", release))
