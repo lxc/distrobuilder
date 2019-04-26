@@ -10,9 +10,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -126,8 +128,13 @@ func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch str
 			return ""
 		}
 
-		u.Path = path.Join(u.Path, fmt.Sprintf("opensuse-tumbleweed-image.%s-1.0.0.tar.xz",
-			arch))
+		tarballName := s.getTarballName(u, "tumbleweed", arch)
+
+		if tarballName == "" {
+			return ""
+		}
+
+		u.Path = path.Join(u.Path, tarballName)
 	} else {
 		u.Path = path.Join(u.Path, fmt.Sprintf("openSUSE-Leap-%s", release))
 
@@ -138,8 +145,36 @@ func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch str
 			u.Path = path.Join(u.Path, "containers_ports")
 		}
 
-		u.Path = path.Join(u.Path, fmt.Sprintf("opensuse-leap-image.%s-lxc.tar.xz", arch))
+		tarballName := s.getTarballName(u, "leap", arch)
+
+		if tarballName == "" {
+			return ""
+		}
+
+		u.Path = path.Join(u.Path, tarballName)
 	}
 
 	return u.String()
+}
+
+func (s *OpenSUSEHTTP) getTarballName(u *url.URL, release, arch string) string {
+	doc, err := htmlquery.LoadURL(u.String())
+	if err != nil || doc == nil {
+		return ""
+	}
+
+	nodes := htmlquery.Find(doc, `//a/@href`)
+	re := regexp.MustCompile(fmt.Sprintf("^opensuse-%s-image.*%s.*\\.tar.xz$", release, arch))
+
+	for _, n := range nodes {
+		text := htmlquery.InnerText(n)
+
+		if !re.MatchString(text) || strings.Contains(text, "Build") {
+			continue
+		}
+
+		return text
+	}
+
+	return ""
 }
