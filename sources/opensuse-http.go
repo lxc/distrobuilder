@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
@@ -166,14 +167,27 @@ func (s *OpenSUSEHTTP) getTarballName(u *url.URL, release, arch string) string {
 	nodes := htmlquery.Find(doc, `//a/@href`)
 	re := regexp.MustCompile(fmt.Sprintf("^opensuse-%s-image.*%s.*\\.tar.xz$", release, arch))
 
+	var builds []string
+
 	for _, n := range nodes {
 		text := htmlquery.InnerText(n)
 
-		if !re.MatchString(text) || strings.Contains(text, "Build") {
+		if !re.MatchString(text) {
 			continue
 		}
 
-		return text
+		if strings.Contains(text, "Build") {
+			builds = append(builds, text)
+		} else {
+			return text
+		}
+	}
+
+	if len(builds) > 0 {
+		// Unfortunately, the link to the latest build is missing, hence we need
+		// to manually select the latest build.
+		sort.Strings(builds)
+		return builds[len(builds)-1]
 	}
 
 	return ""
