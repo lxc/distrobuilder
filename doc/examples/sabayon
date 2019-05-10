@@ -15,6 +15,8 @@ environment:
       value: "/bin/bash"
     - key: "ACCEPT_LICENSE"
       value: "*"
+    - key: "ETP_NONINTERACTIVE"
+      value: "1"
 
 targets:
   lxc:
@@ -102,6 +104,13 @@ actions:
       cd /etc/systemd/system
       ln -s /dev/null dev-hugepages.mount
 
+  # Disable systemd-journald-audit service
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      cd /etc/systemd/system
+      ln -s /dev/null systemd-journald-audit.socket
+
   # Disable sabayon-anti-fork-bomb limits
   # (already apply to host)
   - trigger: post-packages
@@ -109,6 +118,29 @@ actions:
       #!/bin/bash
       sed -i -e 's/^*/#*/g' /etc/security/limits.d/00-sabayon-anti-fork-bomb.conf
       sed -i -e 's/^root/#root/g' /etc/security/limits.d/00-sabayon-anti-fork-bomb.conf
+
+  # Configure DHCP for interface eth0 by default.
+  # Avoid to use DHCP for any interface to avoid reset of docker
+  # interfaces or others custom interfaces.
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      cat > /etc/systemd/network/default_dhcp.network << "EOF"
+      [Network]
+      DHCP=ipv4
+
+      [Match]
+      Name=eth0
+
+      [DHCP]
+      UseDomains=true
+      EOF
+
+  # Enable systemd-networkd service by default.
+  - trigger: post-packages
+    action: |-
+      #!/bin/bash
+      systemctl enable systemd-networkd
 
   # Clean journal directory (to avoid permission errors)
   - trigger: post-packages
