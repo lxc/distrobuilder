@@ -259,6 +259,7 @@ func (d *Definition) Validate() error {
 		"docker-http",
 		"oraclelinux-http",
 		"opensuse-http",
+		"openwrt-http",
 		"plamolinux-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
@@ -270,6 +271,7 @@ func (d *Definition) Validate() error {
 			"apk",
 			"apt",
 			"dnf",
+			"opkg",
 			"pacman",
 			"portage",
 			"yum",

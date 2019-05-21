@@ -34,6 +34,8 @@ func Get(name string) Downloader {
 		return NewOracleLinuxHTTP()
 	case "opensuse-http":
 		return NewOpenSUSEHTTP()
+	case "openwrt-http":
+		return NewOpenWrtHTTP()
 	case "plamolinux-http":
 		return NewPlamoLinuxHTTP()
 	}
