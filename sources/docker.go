@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"os"
 	"path/filepath"
 
 	dcapi "github.com/mudler/docker-companion/api"
@@ -23,7 +24,9 @@ func (d *DockerHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		return err
 	}
 
-	// NOTE: For now we use only docker official server but we can
-	//       add a new parameter on DefinitionSource struct.
-	return dcapi.DownloadAndUnpackImage(definition.Source.URL, absRootfsDir, nil)
+	// If DOCKER_REGISTRY_BASE is not set it's used default https://registry-1.docker.io
+	return dcapi.DownloadAndUnpackImage(definition.Source.URL, absRootfsDir, &dcapi.DownloadOpts{
+		RegistryBase: os.Getenv("DOCKER_REGISTRY_BASE"),
+		KeepLayers:   false,
+	})
 }
