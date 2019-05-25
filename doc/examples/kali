@@ -24,12 +24,7 @@ targets:
       - type: all
         before: 5
         content: |-
-          lxc.include = LXC_TEMPLATE_CONFIG/kali.common.conf
-
-      - type: user
-        before: 5
-        content: |-
-          lxc.include = LXC_TEMPLATE_CONFIG/kali.userns.conf
+          lxc.include = LXC_TEMPLATE_CONFIG/debian.common.conf
 
       - type: all
         after: 4
