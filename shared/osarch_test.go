@@ -38,16 +38,6 @@ func TestGetArch(t *testing.T) {
 			"s390x",
 			"s390x",
 		},
-		{
-			"kali",
-			"amd64",
-			"amd64",
-		},
-		{
-			"kali",
-			"x86_64",
-			"amd64",
-		},
 	}
 
 	for i, tt := range tests {
@@ -61,8 +51,5 @@ func TestGetArch(t *testing.T) {
 	require.EqualError(t, err, "Architecture map isn't supported: distro")
 
 	_, err = GetArch("debian", "arch")
-	require.EqualError(t, err, "Architecture isn't supported: arch")
-
-	_, err = GetArch("kali", "arch")
 	require.EqualError(t, err, "Architecture isn't supported: arch")
 }

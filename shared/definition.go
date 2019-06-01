@@ -333,7 +333,6 @@ func (d *Definition) Validate() error {
 		"centos",
 		"debian",
 		"gentoo",
-		"kali",
 		"plamolinux",
 	}
 

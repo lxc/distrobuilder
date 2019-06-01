@@ -143,4 +143,4 @@ actions:
       - kali-rolling
 
 mappings:
-  architecture_map: kali
+  architecture_map: debian

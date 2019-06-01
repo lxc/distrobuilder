@@ -49,9 +49,6 @@ func TestValidateDefinition(t *testing.T) {
 				Mappings: DefinitionMappings{
 					ArchitectureMap: "debian",
 				},
-				Mappings: DefinitionMappings{
-					ArchitectureMap: "kali",
-				},
 			},
 			"",
 			false,
