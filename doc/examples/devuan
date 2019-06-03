@@ -13,6 +13,8 @@ source:
   apt_sources: |-
     deb http://deb.devuan.org/merged {{ image.release }} main
     deb http://deb.devuan.org/merged {{ image.release }}-security main
+  early_packages:
+    - devuan-keyring
 
 targets:
   lxc:
@@ -93,7 +95,6 @@ packages:
     - packages:
         - ca-certificates
         - curl
-        - devuan-keyring
         - dialog
         - dnsutils
         - htop

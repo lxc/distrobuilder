@@ -11,6 +11,8 @@ source:
   variant: minbase
   apt_sources: |-
     deb http://http.kali.org/kali {{ image.release }} main non-free contrib
+  early_packages:
+    - kali-archive-keyring
 
 targets:
   lxc:
@@ -112,7 +114,6 @@ packages:
       - tor
       - tshark
       - whois
-      - kali-archive-keyring
       action: install
 
 actions:
