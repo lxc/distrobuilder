@@ -5,6 +5,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"fmt"
 
 	lxd "github.com/lxc/lxd/shared"
 
@@ -35,6 +36,10 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 
 	if definition.Source.SkipVerification {
 		args = append(args, "--no-check-gpg")
+	}
+
+	if len(definition.Source.EarlyPackages) > 0 {
+		args = append(args, fmt.Sprintf("--include=%s", strings.Join(definition.Source.EarlyPackages, ",")))
 	}
 
 	if len(definition.Source.Keys) > 0 {

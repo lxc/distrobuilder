@@ -85,6 +85,7 @@ type DefinitionSource struct {
 	AptSources       string   `yaml:"apt_sources,omitempty"`
 	IgnoreRelease    bool     `yaml:"ignore_release,omitempty"`
 	SkipVerification bool     `yaml:"skip_verification,omitempty"`
+	EarlyPackages    []string `yaml:"early_packages,omitempty"`
 }
 
 // A DefinitionTargetLXCConfig represents the config part of the metadata.
