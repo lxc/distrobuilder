@@ -1,11 +1,11 @@
 package sources
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"fmt"
 
 	lxd "github.com/lxc/lxd/shared"
 
