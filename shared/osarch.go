@@ -64,6 +64,12 @@ var distroArchitecture = map[string]map[int]string{
 // GetArch returns the correct architecture name used by the specified
 // distribution.
 func GetArch(distro, arch string) (string, error) {
+	// Special case armel as it is effectively a different userspace variant
+	// of armv7 without hard-float and so doesn't have its own kernel architecture name
+	if arch == "armel" {
+		return "armel", nil
+	}
+
 	archMap, ok := distroArchitecture[distro]
 	if !ok {
 		return "unknown", fmt.Errorf("Architecture map isn't supported: %s", distro)
