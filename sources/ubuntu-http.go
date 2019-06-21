@@ -4,16 +4,18 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/gobuffalo/packr/v2"
 	lxd "github.com/lxc/lxd/shared"
+	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -21,6 +23,7 @@ import (
 // UbuntuHTTP represents the Ubuntu HTTP downloader.
 type UbuntuHTTP struct {
 	fname string
+	fpath string
 }
 
 // NewUbuntuHTTP creates a new UbuntuHTTP instance.
@@ -30,19 +33,303 @@ func NewUbuntuHTTP() *UbuntuHTTP {
 
 // Run downloads the tarball and unpacks it.
 func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	baseURL := fmt.Sprintf("%s/releases/%s/release/", definition.Source.URL,
-		definition.Image.Release)
+	err := s.downloadImage(definition)
+	if err != nil {
+		return err
+	}
 
-	if strings.ContainsAny(definition.Image.Release, "0123456789") {
-		s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz",
-			definition.Image.Release, definition.Image.ArchitectureMapped)
-	} else {
-		// if release is non-numerical, find the latest release
-		s.fname = getLatestRelease(definition.Source.URL,
-			definition.Image.Release, definition.Image.ArchitectureMapped)
-		if s.fname == "" {
-			return fmt.Errorf("Couldn't find latest release")
+	switch strings.ToLower(definition.Image.Variant) {
+	case "default":
+		return s.runDefaultVariant(definition, rootfsDir)
+	case "core":
+		return s.runCoreVariant(definition, rootfsDir)
+
+	}
+
+	return fmt.Errorf("Unknown Ubuntu variant: %s", definition.Image.Variant)
+}
+
+func (s *UbuntuHTTP) runDefaultVariant(definition shared.Definition, rootfsDir string) error {
+	err := s.unpack(filepath.Join(s.fpath, s.fname), rootfsDir)
+	if err != nil {
+		return err
+	}
+
+	if definition.Source.AptSources != "" {
+		// Run the template
+		out, err := shared.RenderTemplate(definition.Source.AptSources, definition)
+		if err != nil {
+			return err
 		}
+
+		// Append final new line if missing
+		if !strings.HasSuffix(out, "\n") {
+			out += "\n"
+		}
+
+		// Replace content of sources.list with the templated content.
+		file, err := os.Create(filepath.Join(rootfsDir, "etc", "apt", "sources.list"))
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		file.WriteString(out)
+	}
+
+	return nil
+}
+
+func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir string) error {
+	f := filepath.Join(s.fpath, s.fname)
+
+	if !lxd.PathExists(filepath.Join(s.fpath, strings.TrimSuffix(s.fname, ".xz"))) {
+		err := shared.RunCommand("unxz", "-k", filepath.Join(s.fpath, s.fname))
+		if err != nil {
+			return err
+		}
+	}
+
+	s.fname = strings.TrimSuffix(s.fname, ".xz")
+	f = filepath.Join(s.fpath, s.fname)
+
+	output, err := lxd.RunCommand("kpartx", "-a", "-v", f)
+	if err != nil {
+		return err
+	}
+	defer lxd.RunCommand("kpartx", "-d", f)
+
+	lines := strings.Split(output, "\n")
+
+	if len(lines) < 3 {
+		return fmt.Errorf("Failed to mount core image")
+	}
+
+	rootPartition := filepath.Join("/dev", "mapper", strings.Split(lines[2], " ")[2])
+
+	imageDir := filepath.Join(os.TempDir(), "distrobuilder", "image")
+	snapsDir := filepath.Join(os.TempDir(), "distrobuilder", "snaps")
+	baseImageDir := fmt.Sprintf("%s.base", rootfsDir)
+
+	os.MkdirAll(imageDir, 0755)
+	os.MkdirAll(snapsDir, 0755)
+	os.MkdirAll(baseImageDir, 0755)
+	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
+	defer os.RemoveAll(filepath.Join(baseImageDir, "rootfs"))
+
+	err = shared.RunCommand("mount", rootPartition, imageDir)
+	if err != nil {
+		return err
+	}
+	defer unix.Unmount(imageDir, 0)
+
+	err = shared.RunCommand("rsync", "-qa", filepath.Join(imageDir, "system-data"), rootfsDir)
+	if err != nil {
+		return err
+	}
+
+	// Create all the needed paths and links
+
+	dirs := []string{"bin", "dev", "initrd", "lib", "mnt", "proc", "root", "sbin", "sys"}
+
+	for _, d := range dirs {
+		err := os.Mkdir(filepath.Join(rootfsDir, d), 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	links := []struct {
+		target string
+		link   string
+	}{
+		{
+			"lib",
+			filepath.Join(rootfsDir, "lib64"),
+		},
+		{
+			"/bin/busybox",
+			filepath.Join(rootfsDir, "bin", "sh"),
+		},
+		{
+			"/bin/init",
+			filepath.Join(rootfsDir, "sbin", "init"),
+		},
+	}
+
+	for _, l := range links {
+		err = os.Symlink(l.target, l.link)
+		if err != nil {
+			return err
+		}
+	}
+
+	baseDistro := "xenial"
+
+	if definition.Image.Release == "18" {
+		baseDistro = "bionic"
+	}
+
+	// Download the base Ubuntu image
+	coreImage := getLatestCoreBaseImage("https://images.linuxcontainers.org/images", baseDistro, definition.Image.ArchitectureMapped)
+
+	_, err = shared.DownloadHash(definition.Image, coreImage, "", sha256.New())
+	if err != nil {
+		return fmt.Errorf("Error downloading base Ubuntu image: %s", err)
+	}
+
+	err = s.unpack(filepath.Join(s.fpath, "rootfs.tar.xz"), baseImageDir)
+	if err != nil {
+		return err
+	}
+
+	exitChroot, err := shared.SetupChroot(baseImageDir, shared.DefinitionEnv{})
+	if err != nil {
+		return err
+	}
+
+	err = shared.RunScript(`
+	#!/bin/sh
+	apt-get update
+	apt-get install -y busybox-static fuse util-linux squashfuse
+	`)
+	if err != nil {
+		return err
+	}
+
+	err = exitChroot()
+	if err != nil {
+		return err
+	}
+
+	box := packr.New("ubuntu-core", "./data/ubuntu-core")
+
+	file, err := box.Resolve("init")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	target, err := os.Create(filepath.Join(rootfsDir, "bin", "init"))
+	if err != nil {
+		return err
+	}
+	defer target.Close()
+
+	_, err = io.Copy(target, file)
+	if err != nil {
+		return err
+	}
+
+	err = target.Chmod(0755)
+	if err != nil {
+		return err
+	}
+
+	// Copy system binaries
+
+	binaries := []struct {
+		source string
+		target string
+	}{
+		{
+			filepath.Join(baseImageDir, "bin", "busybox"),
+			filepath.Join(rootfsDir, "bin", "busybox"),
+		},
+		{
+			filepath.Join(baseImageDir, "bin", "cpio"),
+			filepath.Join(rootfsDir, "bin", "cpio"),
+		},
+		{
+			filepath.Join(baseImageDir, "sbin", "mount.fuse"),
+			filepath.Join(rootfsDir, "bin", "mount.fuse"),
+		},
+		{
+			filepath.Join(baseImageDir, "sbin", "pivot_root"),
+			filepath.Join(rootfsDir, "bin", "pivot_root"),
+		},
+		{
+			filepath.Join(baseImageDir, "usr", "bin", "squashfuse"),
+			filepath.Join(rootfsDir, "bin", "squashfuse"),
+		},
+	}
+
+	for _, b := range binaries {
+		err := lxd.FileCopy(b.source, b.target)
+		if err != nil {
+			return err
+		}
+
+		err = os.Chmod(b.target, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Copy needed libraries
+
+	patterns := []string{
+		"/lib/*-linux-gnu/ld-linux*.so.2",
+		"/lib/*-linux-gnu/libc.so.6",
+		"/lib/*-linux-gnu/libdl.so.2",
+		"/lib/*-linux-gnu/libfuse.so.2",
+		"/usr/lib/*-linux-gnu/liblz4.so.1",
+		"/lib/*-linux-gnu/liblzma.so.5",
+		"/lib/*-linux-gnu/liblzo2.so.2",
+		"/lib/*-linux-gnu/libpthread.so.0",
+		"/lib/*-linux-gnu/libz.so.1",
+	}
+
+	for _, p := range patterns {
+		matches, err := filepath.Glob(filepath.Join(baseImageDir, p))
+		if err != nil {
+			return err
+		}
+
+		if len(matches) != 1 {
+			continue
+		}
+
+		target := filepath.Join(rootfsDir, "lib", filepath.Base(matches[0]))
+
+		err = lxd.FileCopy(matches[0], target)
+		if err != nil {
+			return err
+		}
+
+		err = os.Chmod(target, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *UbuntuHTTP) downloadImage(definition shared.Definition) error {
+	var baseURL string
+
+	switch strings.ToLower(definition.Image.Variant) {
+	case "default":
+		baseURL = fmt.Sprintf("%s/releases/%s/release/", definition.Source.URL,
+			definition.Image.Release)
+
+		if strings.ContainsAny(definition.Image.Release, "0123456789") {
+			s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz",
+				definition.Image.Release, definition.Image.ArchitectureMapped)
+		} else {
+			// if release is non-numerical, find the latest release
+			s.fname = getLatestRelease(baseURL,
+				definition.Image.Release, definition.Image.ArchitectureMapped)
+			if s.fname == "" {
+				return fmt.Errorf("Couldn't find latest release")
+			}
+		}
+	case "core":
+		baseURL = fmt.Sprintf("%s/%s/stable/current/", definition.Source.URL, definition.Image.Release)
+		s.fname = fmt.Sprintf("ubuntu-core-%s-%s.img.xz", definition.Image.Release, definition.Image.ArchitectureMapped)
+	default:
+		return fmt.Errorf("Unknown Ubuntu variant: %s", definition.Image.Variant)
 	}
 
 	url, err := url.Parse(baseURL)
@@ -80,36 +367,9 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 	}
 
-	fpath, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
+	s.fpath, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Error downloading Ubuntu image: %s", err)
-	}
-
-	err = s.unpack(filepath.Join(fpath, s.fname), rootfsDir)
-	if err != nil {
-		return err
-	}
-
-	if definition.Source.AptSources != "" {
-		// Run the template
-		out, err := shared.RenderTemplate(definition.Source.AptSources, definition)
-		if err != nil {
-			return err
-		}
-
-		// Append final new line if missing
-		if !strings.HasSuffix(out, "\n") {
-			out += "\n"
-		}
-
-		// Replace content of sources.list with the templated content.
-		file, err := os.Create(filepath.Join(rootfsDir, "etc", "apt", "sources.list"))
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		file.WriteString(out)
 	}
 
 	return nil
@@ -127,8 +387,8 @@ func (s UbuntuHTTP) unpack(filePath, rootDir string) error {
 	return nil
 }
 
-func getLatestRelease(URL, release, arch string) string {
-	resp, err := http.Get(URL + path.Join("/", "releases", release, "release"))
+func getLatestRelease(baseURL, release, arch string) string {
+	resp, err := http.Get(baseURL)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return ""
@@ -141,6 +401,34 @@ func getLatestRelease(URL, release, arch string) string {
 
 	if len(releases) > 1 {
 		return string(releases[len(releases)-1])
+	}
+
+	return ""
+}
+
+func getLatestCoreBaseImage(baseURL, release, arch string) string {
+	u, err := url.Parse(fmt.Sprintf("%s/ubuntu/%s/%s/default", baseURL, release, arch))
+	if err != nil {
+		return ""
+	}
+
+	resp, err := http.Get(u.String())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ""
+	}
+
+	regex := regexp.MustCompile(`\d{8}_\d{2}:\d{2}`)
+	releases := regex.FindAllString(string(body), -1)
+
+	if len(releases) > 1 {
+		return fmt.Sprintf("%s/%s/rootfs.tar.xz", u.String(), releases[len(releases)-1])
 	}
 
 	return ""
