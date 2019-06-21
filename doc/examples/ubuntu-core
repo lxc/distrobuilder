@@ -1,0 +1,101 @@
+image:
+  distribution: ubuntu
+  release: 16
+  variant: core
+  description: Ubuntu Core {{ image.release }}
+  expiry: 30d
+  architecture: amd64
+
+source:
+  downloader: ubuntu-http
+  url: http://cdimage.ubuntu.com/ubuntu-core
+  keys:
+    - 0x46181433FBB75451
+    - 0xD94AA3F0EFE21092
+
+targets:
+  lxc:
+    create-message: |-
+      You just created an {{ image.description }} container.
+
+      To enable SSH, run: apt install openssh-server
+      No default root or user password are set by LXC.
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+          # For Ubuntu 14.04
+          lxc.mount.entry = /sys/kernel/debug sys/kernel/debug none bind,optional 0 0
+          lxc.mount.entry = /sys/kernel/security sys/kernel/security none bind,optional 0 0
+          lxc.mount.entry = /sys/fs/pstore sys/fs/pstore none bind,optional 0 0
+          lxc.mount.entry = mqueue dev/mqueue mqueue rw,relatime,create=dir,optional 0 0
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+          # For Ubuntu 14.04
+          lxc.mount.entry = /sys/firmware/efi/efivars sys/firmware/efi/efivars none bind,optional 0 0
+          lxc.mount.entry = /proc/sys/fs/binfmt_misc proc/sys/fs/binfmt_misc none bind,optional 0 0
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_personality }}
+
+packages:
+  custom-manager:
+    install:
+      cmd: true
+    remove:
+      cmd: true
+    update:
+      cmd: true
+    clean:
+      cmd: true 
+    refresh:
+      cmd: true
+
+files:
+  - name: cloud-init-meta
+    path: /lxd/meta-data
+    generator: template
+  - name: cloud-init-network
+    path: /lxd/network-config
+    generator: template
+  - name: cloud-init-user
+    path: /lxd/user-data
+    generator: template
+    template:
+      properties:
+        default: |
+          #cloud-config
+          {}
+  - name: cloud-init-vendor
+    path: /lxd/vendor-data
+    generator: template
+    template:
+      properties:
+        default: |
+          #cloud-config
+          {}	
+  - name: hostname
+    path: /lxd/hostname
+    generator: template
+
+mappings:
+  architecture_map: debian
+  
