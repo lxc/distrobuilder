@@ -47,7 +47,7 @@ To do so, first install the Go programming language, and some other dependencies
 
 ```
 sudo apt update
-sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools
+sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git
 ```
 
 Second, download the source code of the `distrobuilder` repository (this repository). The source will be placed in `$HOME/go/src/github.com/lxc/distrobuilder/`
