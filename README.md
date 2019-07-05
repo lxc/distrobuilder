@@ -53,7 +53,7 @@ sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git
 Second, download the source code of the `distrobuilder` repository (this repository). The source will be placed in `$HOME/go/src/github.com/lxc/distrobuilder/`
 
 ```
-go get -d -v github.com/lxc/distrobuilder
+go get -d -v github.com/lxc/distrobuilder/distrobuilder
 ```
 
 Third, enter the directory with the source code of `distrobuilder` and run `make` to compile the source code. This will generate the executable program `distrobuilder`, and it will be located at `$HOME/go/bin/distrobuilder`.
