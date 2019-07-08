@@ -123,6 +123,54 @@ func VerifyFile(signedFile, signatureFile string, keys []string, keyserver strin
 	return true, nil
 }
 
+func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
+	args := []string{"--homedir", gpgDir}
+
+	if keyserver != "" {
+		args = append(args, "--keyserver", keyserver)
+	}
+
+	args = append(args, append([]string{"--recv-keys"}, keys...)...)
+
+	out, err := lxd.TryRunCommand("gpg", args...)
+	if err != nil {
+		return false, err
+	}
+
+	// Verify output
+	var importedKeys []string
+	var missingKeys []string
+	lines := strings.Split(out, "\n")
+
+	for _, l := range lines {
+		if strings.HasPrefix(l, "gpg: key ") && (strings.HasSuffix(l, " imported") || strings.HasSuffix(l, " not changed")) {
+			key := strings.Split(l, " ")
+			importedKeys = append(importedKeys, strings.Split(key[2], ":")[0])
+		}
+	}
+
+	// Figure out which key(s) couldn't be imported
+	if len(importedKeys) < len(keys) {
+		for _, j := range keys {
+			found := false
+
+			for _, k := range importedKeys {
+				if strings.HasSuffix(j, k) {
+					found = true
+				}
+			}
+
+			if !found {
+				missingKeys = append(missingKeys, j)
+			}
+		}
+
+		return false, fmt.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
+	}
+
+	return true, nil
+}
+
 // CreateGPGKeyring creates a new GPG keyring.
 func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 	gpgDir, err := ioutil.TempDir(os.TempDir(), "distrobuilder.")
@@ -135,22 +183,23 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 		return "", err
 	}
 
-	args := []string{"--homedir", gpgDir}
+	var ok bool
 
-	if keyserver != "" {
-		args = append(args, "--keyserver", keyserver)
+	for i := 0; i < 3; i++ {
+		ok, err = recvGPGKeys(gpgDir, keyserver, keys)
+		if ok {
+			break
+		}
+
+		time.Sleep(2 * time.Second)
 	}
 
-	args = append(args, append([]string{"--recv-keys"}, keys...)...)
-
-	out, err := lxd.TryRunCommand("gpg", args...)
-	if err != nil {
-		os.RemoveAll(gpgDir)
-		return "", fmt.Errorf("Failed to create keyring: %s", out)
+	if !ok {
+		return "", err
 	}
 
 	// Export keys to support gpg1 and gpg2
-	out, err = lxd.RunCommand("gpg", "--homedir", gpgDir, "--export", "--output",
+	out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--export", "--output",
 		filepath.Join(gpgDir, "distrobuilder.gpg"))
 	if err != nil {
 		os.RemoveAll(gpgDir)
