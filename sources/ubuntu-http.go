@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gobuffalo/packr/v2"
@@ -93,19 +94,17 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 	s.fname = strings.TrimSuffix(s.fname, ".xz")
 	f = filepath.Join(s.fpath, s.fname)
 
-	output, err := lxd.RunCommand("kpartx", "-a", "-v", f)
+	output, err := lxd.RunCommand("fdisk", "-l", "-o", "Start", f)
 	if err != nil {
 		return err
 	}
-	defer lxd.RunCommand("kpartx", "-d", f)
 
 	lines := strings.Split(output, "\n")
 
-	if len(lines) < 3 {
-		return fmt.Errorf("Failed to mount core image")
+	offset, err := strconv.Atoi(lines[len(lines)-2])
+	if err != nil {
+		return err
 	}
-
-	rootPartition := filepath.Join("/dev", "mapper", strings.Split(lines[2], " ")[2])
 
 	imageDir := filepath.Join(os.TempDir(), "distrobuilder", "image")
 	snapsDir := filepath.Join(os.TempDir(), "distrobuilder", "snaps")
@@ -117,7 +116,7 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
 	defer os.RemoveAll(filepath.Join(baseImageDir, "rootfs"))
 
-	err = shared.RunCommand("mount", rootPartition, imageDir)
+	err = shared.RunCommand("mount", "-o", fmt.Sprintf("loop,offset=%d", offset*512), f, imageDir)
 	if err != nil {
 		return err
 	}
