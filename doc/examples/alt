@@ -68,7 +68,7 @@ packages:
       flags: ["remove", "-y"]
     update:
       cmd: apt-get
-      flags: ["upgrade", "-y"]
+      flags: ["dist-upgrade", "-y"]
     clean:
       cmd: apt-get
       flags: ["clean"]
