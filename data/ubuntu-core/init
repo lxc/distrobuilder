@@ -40,8 +40,13 @@ else
 fi
 
 # Make sure the snap symlinks exist
-ln -fs ../seed/snaps/${SNAP_KERNEL} /writable/system-data/var/lib/snapd/snaps/${SNAP_KERNEL}
-ln -fs ../seed/snaps/${SNAP_CORE} /writable/system-data/var/lib/snapd/snaps/${SNAP_CORE}
+if [ -e "../seed/snaps/${SNAP_KERNEL}" ]; then
+    ln -fs ../seed/snaps/${SNAP_KERNEL} /writable/system-data/var/lib/snapd/snaps/${SNAP_KERNEL}
+fi
+
+if [ -e "../seed/snaps/${SNAP_CORE}" ]; then
+    ln -fs ../seed/snaps/${SNAP_CORE} /writable/system-data/var/lib/snapd/snaps/${SNAP_CORE}
+fi
 
 # Extract initramfs
 mkdir -p /mnt /initrd
