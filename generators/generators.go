@@ -33,6 +33,8 @@ func Get(generator string) Generator {
 		return TemplateGenerator{}
 	case "upstart-tty":
 		return UpstartTTYGenerator{}
+	case "cloud-init":
+		return CloudInitGenerator{}
 	}
 
 	return nil

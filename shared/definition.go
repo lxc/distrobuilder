@@ -319,6 +319,7 @@ func (d *Definition) Validate() error {
 		"hosts",
 		"remove",
 		"upstart-tty",
+		"cloud-init",
 	}
 
 	for _, file := range d.Files {
