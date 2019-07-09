@@ -126,11 +126,31 @@ func VerifyFile(signedFile, signatureFile string, keys []string, keyserver strin
 func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 	args := []string{"--homedir", gpgDir}
 
+	var fingerprints []string
+	var publicKeys []string
+
+	for _, k := range keys {
+		if strings.HasPrefix(strings.TrimSpace(k), "-----BEGIN PGP PUBLIC KEY BLOCK-----") {
+			publicKeys = append(publicKeys, strings.TrimSpace(k))
+		} else {
+			fingerprints = append(fingerprints, strings.TrimSpace(k))
+		}
+	}
+
+	for _, f := range publicKeys {
+		args := append(args, "--import")
+
+		err := lxd.RunCommandWithFds(strings.NewReader(f), nil, "gpg", args...)
+		if err != nil {
+			return false, err
+		}
+	}
+
 	if keyserver != "" {
 		args = append(args, "--keyserver", keyserver)
 	}
 
-	args = append(args, append([]string{"--recv-keys"}, keys...)...)
+	args = append(args, append([]string{"--recv-keys"}, fingerprints...)...)
 
 	out, err := lxd.TryRunCommand("gpg", args...)
 	if err != nil {
@@ -150,8 +170,8 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 	}
 
 	// Figure out which key(s) couldn't be imported
-	if len(importedKeys) < len(keys) {
-		for _, j := range keys {
+	if len(importedKeys) < len(fingerprints) {
+		for _, j := range fingerprints {
 			found := false
 
 			for _, k := range importedKeys {
