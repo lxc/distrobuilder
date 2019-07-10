@@ -72,60 +72,17 @@ files:
      auto eth0
      iface eth0 inet dhcp
 
- - name: cloud-init-meta
-   path: /var/lib/cloud/seed/nocloud-net/meta-data
-   generator: template
-   template:
-     when:
-       - create
-       - copy
-   content: |
-     #cloud-config
-     instance-id: {{ container.name }}
-     local-hostname: {{ container.name }}
-     {{ config_get("user.meta-data", "") }}
+ - name: meta-data
+   generator: cloud-init
 
- - name: cloud-init-network
-   path: /var/lib/cloud/seed/nocloud-net/network-config
-   generator: template
-   template:
-     when:
-       - create
-       - copy
-   content: |
-     {% if config_get("user.network-config", "") == "" %}version: 1
-     config:
-        - type: physical
-          name: eth0
-          subnets:
-              - type: {% if config_get("user.network_mode", "") == "link-local" %}manual{% else %}dhcp{% endif %}
-                control: auto{% else %}{{ config_get("user.network-config", "") }}{% endif %}
+ - name: network-config
+   generator: cloud-init
 
- - name: cloud-init-user-data
-   path: /var/lib/cloud/seed/nocloud-net/user-data
-   generator: template
-   content: '{{ config_get("user.user-data", properties.default) }}'
-   template:
-     properties:
-       default: |
-         #cloud-config
-         {}
-     when:
-       - create
-       - copy
+ - name: user-data
+   generator: cloud-init
 
- - name: cloud-init-vedor-data
-   path: /var/lib/cloud/seed/nocloud-net/vendor-data
-   generator: template
-   content: '{{ config_get("user.vendor-data", properties.default) }}'
-   template:
-     properties:
-       default: |
-         #cloud-config
-         {}
-     when:
-       - create
-       - copy
+ - name: vendor-data
+   generator: cloud-init
 
 packages:
   manager: apt
