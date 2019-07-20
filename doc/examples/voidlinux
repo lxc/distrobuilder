@@ -1,0 +1,81 @@
+image:
+  distribution: voidlinux
+  description: Void Linux
+  expiry: 30d
+  architecture: x86_64
+
+source:
+  downloader: voidlinux-http
+  url: http://alpha.de.repo.voidlinux.org/live/current
+  keys:
+    - CF24B9C038097D8A44958E2C8DEBDA68B48282A4
+
+targets:
+  lxc:
+    create-message: |
+      You just created a Void Linux container (arch={{ image.architecture }})
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/voidlinux.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/voidlinux.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_kernel }}
+
+files:
+ - path: /etc/hostname
+   generator: hostname
+
+ - path: /etc/hosts
+   generator: hosts
+
+packages:
+  manager: xbps
+
+  update: true
+  cleanup: true
+
+  sets:
+    - packages:
+      - socklog-void
+      - cronie
+      action: install
+
+actions:
+  - trigger: post-packages
+    action: |-
+      #! /bin/sh
+      set -eux
+
+      # Enable services
+      ln -s /etc/sv/socklog-unix /etc/runit/runsvdir/default/
+      ln -s /etc/sv/nanoklogd /etc/runit/runsvdir/default/
+      ln -s /etc/sv/dhcpcd-eth0 /etc/runit/runsvdir/default/
+      ln -s /etc/sv/cronie /etc/runit/runsvdir/default/
+
+      # Disable services
+      for tty in 2 3 4 5 6; do
+          rm /etc/runit/runsvdir/default/agetty-tty${tty}
+          touch /etc/sv/agetty-tty${tty}/down
+      done
+
+mappings:
+  architecture_map: voidlinux

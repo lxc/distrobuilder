@@ -49,6 +49,8 @@ func Get(name string) *Manager {
 		return NewPacman()
 	case "portage":
 		return NewPortage()
+	case "xbps":
+		return NewXbps()
 	case "yum":
 		return NewYum()
 	case "equo":
