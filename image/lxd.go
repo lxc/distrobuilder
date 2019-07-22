@@ -93,7 +93,8 @@ func (l *LXDImage) Build(unified bool, compression string) error {
 	} else {
 		// Create rootfs as squashfs.
 		err = shared.RunCommand("mksquashfs", l.sourceDir,
-			filepath.Join(l.targetDir, "rootfs.squashfs"), "-noappend")
+			filepath.Join(l.targetDir, "rootfs.squashfs"), "-noappend", "-comp",
+			"xz", "-b", "1M", "-no-progress", "-no-recovery")
 		if err != nil {
 			return err
 		}
