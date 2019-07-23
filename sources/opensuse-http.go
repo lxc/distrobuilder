@@ -33,8 +33,19 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 	var baseURL string
 	var fname string
 
+	useCustomURL := true
+
+	if definition.Source.URL == "" {
+		definition.Source.URL = "https://download.opensuse.org"
+		useCustomURL = false
+	}
+
 	tarballPath := s.getPathToTarball(definition.Source.URL, definition.Image.Release,
 		definition.Image.ArchitectureMapped)
+
+	if !useCustomURL {
+		tarballPath = strings.Replace(tarballPath, "download", "downloadcontent", 1)
+	}
 
 	resp, err := http.Head(tarballPath)
 	if err != nil {
