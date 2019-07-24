@@ -109,13 +109,14 @@ type DefinitionTarget struct {
 
 // A DefinitionFile represents a file which is to be created inside to chroot.
 type DefinitionFile struct {
-	Generator string                 `yaml:"generator"`
-	Path      string                 `yaml:"path,omitempty"`
-	Content   string                 `yaml:"content,omitempty"`
-	Releases  []string               `yaml:"releases,omitempty"`
-	Name      string                 `yaml:"name,omitempty"`
-	Template  DefinitionFileTemplate `yaml:"template,omitempty"`
-	Templated bool                   `yaml:"templated,omitempty"`
+	Generator   string                 `yaml:"generator"`
+	Path        string                 `yaml:"path,omitempty"`
+	Destination string                 `yaml:"destination,omitempty"`
+	Content     string                 `yaml:"content,omitempty"`
+	Releases    []string               `yaml:"releases,omitempty"`
+	Name        string                 `yaml:"name,omitempty"`
+	Template    DefinitionFileTemplate `yaml:"template,omitempty"`
+	Templated   bool                   `yaml:"templated,omitempty"`
 }
 
 // A DefinitionFileTemplate represents the settings used by generators
