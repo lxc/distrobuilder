@@ -38,6 +38,8 @@ func Get(name string) Downloader {
 		return NewOpenWrtHTTP()
 	case "plamolinux-http":
 		return NewPlamoLinuxHTTP()
+	case "voidlinux-http":
+		return NewVoidLinuxHTTP()
 	}
 
 	return nil

@@ -51,6 +51,13 @@ var altLinuxArchitectureNames = map[int]string{
 	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN: "aarch64",
 }
 
+var voidLinuxArchitectureNames = map[int]string{
+	osarch.ARCH_32BIT_INTEL_X86:           "i686",
+	osarch.ARCH_64BIT_INTEL_X86:           "x86_64",
+	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN: "armv7l",
+	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN: "aarch64",
+}
+
 var distroArchitecture = map[string]map[int]string{
 	"alpinelinux": alpineLinuxArchitectureNames,
 	"altlinux":    altLinuxArchitectureNames,
@@ -59,6 +66,7 @@ var distroArchitecture = map[string]map[int]string{
 	"debian":      debianArchitectureNames,
 	"gentoo":      gentooArchitectureNames,
 	"plamolinux":  plamoLinuxArchitectureNames,
+	"voidlinux":   voidLinuxArchitectureNames,
 }
 
 // GetArch returns the correct architecture name used by the specified

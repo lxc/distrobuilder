@@ -262,6 +262,7 @@ func (d *Definition) Validate() error {
 		"opensuse-http",
 		"openwrt-http",
 		"plamolinux-http",
+		"voidlinux-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
@@ -277,6 +278,7 @@ func (d *Definition) Validate() error {
 			"portage",
 			"yum",
 			"equo",
+			"xbps",
 			"zypper",
 		}
 		if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
@@ -336,6 +338,7 @@ func (d *Definition) Validate() error {
 		"debian",
 		"gentoo",
 		"plamolinux",
+		"voidlinux",
 	}
 
 	architectureMap := strings.TrimSpace(d.Mappings.ArchitectureMap)
