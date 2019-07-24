@@ -28,6 +28,8 @@ func Get(generator string) Generator {
 		return RemoveGenerator{}
 	case "dump":
 		return DumpGenerator{}
+	case "copy":
+		return CopyGenerator{}
 	case "template":
 		return TemplateGenerator{}
 	case "upstart-tty":
