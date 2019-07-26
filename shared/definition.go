@@ -263,6 +263,7 @@ func (d *Definition) Validate() error {
 		"openwrt-http",
 		"plamolinux-http",
 		"voidlinux-http",
+		"funtoo-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
@@ -273,6 +274,7 @@ func (d *Definition) Validate() error {
 			"apk",
 			"apt",
 			"dnf",
+			"egoportage",
 			"opkg",
 			"pacman",
 			"portage",
@@ -339,6 +341,7 @@ func (d *Definition) Validate() error {
 		"gentoo",
 		"plamolinux",
 		"voidlinux",
+		"funtoo",
 	}
 
 	architectureMap := strings.TrimSpace(d.Mappings.ArchitectureMap)
