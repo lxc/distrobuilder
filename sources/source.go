@@ -40,6 +40,8 @@ func Get(name string) Downloader {
 		return NewPlamoLinuxHTTP()
 	case "voidlinux-http":
 		return NewVoidLinuxHTTP()
+	case "funtoo-http":
+		return NewFuntooHTTP()
 	}
 
 	return nil
