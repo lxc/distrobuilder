@@ -157,6 +157,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Clean up cache directory before doing anything
 	os.RemoveAll(c.flagCacheDir)
+	os.Mkdir(c.flagCacheDir, 0755)
 
 	if len(args) > 1 {
 		// Create and set target directory if provided
@@ -252,6 +253,7 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 
 	// Clean up cache directory before doing anything
 	os.RemoveAll(c.flagCacheDir)
+	os.Mkdir(c.flagCacheDir, 0755)
 
 	// resolve path
 	c.sourceDir, err = filepath.Abs(args[1])
