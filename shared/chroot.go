@@ -292,6 +292,14 @@ exit 101
 		// And now unmount the entire tree
 		syscall.Unmount(rootfs, syscall.MNT_DETACH)
 
-		return nil
+		devPath := filepath.Join(rootfs, "dev")
+
+		// Wipe $rootfs/dev
+		err := os.RemoveAll(devPath)
+		if err != nil {
+			return err
+		}
+
+		return os.MkdirAll(devPath, 0755)
 	}, nil
 }
