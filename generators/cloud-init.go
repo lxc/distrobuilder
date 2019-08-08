@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
@@ -21,20 +22,51 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 	defFile shared.DefinitionFile) error {
 	// With OpenRC:
 	// Remove all symlinks to /etc/init.d/cloud-{init-local,config,init,final} in /etc/runlevels/*
-	filepath.Walk(filepath.Join(sourceDir, "/etc/runlevels"), func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
-		}
+	fullPath := filepath.Join(sourceDir, "/etc/runlevels")
 
-		if lxd.StringInSlice(info.Name(), []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"}) {
-			err := os.Remove(path)
-			if err != nil {
-				return err
+	if lxd.PathExists(fullPath) {
+		filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
 			}
+
+			if lxd.StringInSlice(info.Name(), []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"}) {
+				err := os.Remove(path)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+	}
+
+	// With upstart:
+	// Remove all symlinks to /etc/rc.d/init.d/cloud-{init-local,config,init,final} in /etc/rc.d/rc<runlevel>.d/*
+	re := regexp.MustCompile(`^[KS]\d+cloud-(?:config|final|init|init-local)$`)
+
+	for i := 0; i <= 6; i++ {
+		fullPath := filepath.Join(sourceDir, fmt.Sprintf("/etc/rc.d/rc%d.d", i))
+
+		if !lxd.PathExists(fullPath) {
+			continue
 		}
 
-		return nil
-	})
+		filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
+
+			if re.MatchString(info.Name()) {
+				err := os.Remove(path)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+	}
 
 	// With systemd:
 	// Create file /etc/cloud/cloud-init.disabled
