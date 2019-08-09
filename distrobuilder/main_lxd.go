@@ -73,6 +73,10 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
+		if len(file.Variants) > 0 && !lxd.StringInSlice(c.global.definition.Image.Variant, file.Variants) {
+			continue
+		}
+
 		generator := generators.Get(file.Generator)
 		if generator == nil {
 			return fmt.Errorf("Unknown generator '%s'", file.Generator)

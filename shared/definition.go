@@ -19,6 +19,7 @@ type DefinitionPackagesSet struct {
 	Action        string   `yaml:"action"`
 	Releases      []string `yaml:"releases,omitempty"`
 	Architectures []string `yaml:"architectures,omitempty"`
+	Variants      []string `yaml:"variants,omitempty"`
 }
 
 // A DefinitionPackagesRepository contains data of a specific repository
@@ -116,6 +117,7 @@ type DefinitionFile struct {
 	Name      string                 `yaml:"name,omitempty"`
 	Template  DefinitionFileTemplate `yaml:"template,omitempty"`
 	Templated bool                   `yaml:"templated,omitempty"`
+	Variants  []string               `yaml:"variants,omitempty"`
 }
 
 // A DefinitionFileTemplate represents the settings used by generators
