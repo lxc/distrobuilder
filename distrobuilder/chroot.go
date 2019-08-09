@@ -62,6 +62,8 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		manager.SetInstallFlags("install", "--allow-downgrade")
 	}
 
+	var validSets []shared.DefinitionPackagesSet
+
 	for _, set := range def.Sets {
 		if len(set.Releases) > 0 && !lxd.StringInSlice(release, set.Releases) {
 			continue
@@ -71,6 +73,10 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 			continue
 		}
 
+		validSets = append(validSets, set)
+	}
+
+	for _, set := range optimizePackageSets(validSets) {
 		if set.Action == "install" {
 			err = manager.Install(set.Packages)
 		} else if set.Action == "remove" {
@@ -89,4 +95,39 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 	}
 
 	return nil
+}
+
+// optimizePackageSets groups consecutive package sets with the same action to
+// reduce the amount of calls to manager.{Install,Remove}(). It still honors the
+// order of execution.
+func optimizePackageSets(sets []shared.DefinitionPackagesSet) []shared.DefinitionPackagesSet {
+	if len(sets) < 2 {
+		return sets
+	}
+
+	var newSets []shared.DefinitionPackagesSet
+
+	action := sets[0].Action
+	packages := sets[0].Packages
+
+	for i := 1; i < len(sets); i++ {
+		if sets[i].Action == sets[i-1].Action {
+			packages = append(packages, sets[i].Packages...)
+		} else {
+			newSets = append(newSets, shared.DefinitionPackagesSet{
+				Action:   action,
+				Packages: packages,
+			})
+
+			action = sets[i].Action
+			packages = sets[i].Packages
+		}
+	}
+
+	newSets = append(newSets, shared.DefinitionPackagesSet{
+		Action:   action,
+		Packages: packages,
+	})
+
+	return newSets
 }
