@@ -59,10 +59,10 @@ var voidLinuxArchitectureNames = map[int]string{
 }
 
 var funtooArchitectureNames = map[int]string{
-	osarch.ARCH_32BIT_INTEL_X86:             "generic_32",
-	osarch.ARCH_64BIT_INTEL_X86:             "generic_64",
-	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN:   "armv7a_vfpv3_hardfp",
-	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN:   "arm64_generic",
+	osarch.ARCH_32BIT_INTEL_X86:           "generic_32",
+	osarch.ARCH_64BIT_INTEL_X86:           "generic_64",
+	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN: "armv7a_vfpv3_hardfp",
+	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN: "arm64_generic",
 }
 
 var distroArchitecture = map[string]map[int]string{
