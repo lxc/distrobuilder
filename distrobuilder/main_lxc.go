@@ -59,6 +59,11 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
+		if len(file.Variants) > 0 && !lxd.StringInSlice(
+			c.global.definition.Image.Variant, file.Variants) {
+			continue
+		}
+
 		err := generator.RunLXC(c.global.flagCacheDir, c.global.sourceDir, img,
 			file)
 		if err != nil {
