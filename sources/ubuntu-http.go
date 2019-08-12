@@ -39,15 +39,12 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		return err
 	}
 
-	switch strings.ToLower(definition.Image.Variant) {
-	case "default":
-		return s.runDefaultVariant(definition, rootfsDir)
+	switch strings.ToLower(definition.Source.Variant) {
 	case "core":
 		return s.runCoreVariant(definition, rootfsDir)
-
 	}
 
-	return fmt.Errorf("Unknown Ubuntu variant: %s", definition.Image.Variant)
+	return s.runDefaultVariant(definition, rootfsDir)
 }
 
 func (s *UbuntuHTTP) runDefaultVariant(definition shared.Definition, rootfsDir string) error {
