@@ -22,16 +22,16 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 	defFile shared.DefinitionFile) error {
 	// With OpenRC:
 	// Remove all symlinks to /etc/init.d/cloud-{init-local,config,init,final} in /etc/runlevels/*
-	fullPath := filepath.Join(sourceDir, "/etc/runlevels")
+	fullPath := filepath.Join(sourceDir, "etc", "runlevels")
 
 	if lxd.PathExists(fullPath) {
-		filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
 			if info.IsDir() {
 				return nil
 			}
 
 			if lxd.StringInSlice(info.Name(), []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"}) {
-				err := os.Remove(path)
+				err := StoreFile(cacheDir, sourceDir, strings.TrimPrefix(path, sourceDir))
 				if err != nil {
 					return err
 				}
@@ -39,6 +39,9 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 	}
 
 	// With upstart:
@@ -58,7 +61,7 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 			}
 
 			if re.MatchString(info.Name()) {
-				err := os.Remove(path)
+				err := StoreFile(cacheDir, sourceDir, strings.TrimPrefix(path, sourceDir))
 				if err != nil {
 					return err
 				}
@@ -69,12 +72,24 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 	}
 
 	// With systemd:
-	// Create file /etc/cloud/cloud-init.disabled
-	err := os.MkdirAll(filepath.Join(sourceDir, "/etc/cloud"), 0755)
+	if !lxd.PathExists(filepath.Join(sourceDir, "/etc/cloud")) {
+		err := StoreFile(cacheDir, sourceDir, "/etc/cloud")
+		if err != nil {
+			return err
+		}
+
+		err = os.MkdirAll(filepath.Join(sourceDir, "/etc/cloud"), 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := StoreFile(cacheDir, sourceDir, "/etc/cloud/cloud-init.disabled")
 	if err != nil {
 		return err
 	}
 
+	// Create file /etc/cloud/cloud-init.disabled
 	f, err := os.Create(filepath.Join(sourceDir, "/etc/cloud/cloud-init.disabled"))
 	if err != nil {
 		return err

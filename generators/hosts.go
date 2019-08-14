@@ -24,14 +24,14 @@ func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 		return nil
 	}
 
-	// Store original file
-	err := StoreFile(cacheDir, sourceDir, defFile.Path)
+	// Read the current content
+	content, err := ioutil.ReadFile(filepath.Join(sourceDir, defFile.Path))
 	if err != nil {
 		return err
 	}
 
-	// Read the current content
-	content, err := ioutil.ReadFile(filepath.Join(sourceDir, defFile.Path))
+	// Store original file
+	err = StoreFile(cacheDir, sourceDir, defFile.Path)
 	if err != nil {
 		return err
 	}
@@ -44,8 +44,14 @@ func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 		content = append([]byte("127.0.1.1\tLXC_NAME\n"), content...)
 	}
 
+	f, err := os.Create(filepath.Join(sourceDir, defFile.Path))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
 	// Overwrite the file
-	err = ioutil.WriteFile(filepath.Join(sourceDir, defFile.Path), content, 0644)
+	_, err = f.Write(content)
 	if err != nil {
 		return err
 	}
