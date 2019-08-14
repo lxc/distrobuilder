@@ -12,14 +12,19 @@ import (
 	lxdarch "github.com/lxc/lxd/shared/osarch"
 )
 
-// A DefinitionPackagesSet is a set of packages which are to be installed
-// or removed.
-type DefinitionPackagesSet struct {
-	Packages      []string `yaml:"packages"`
-	Action        string   `yaml:"action"`
+// A DefinitionFilter defines filters for various actions.
+type DefinitionFilter struct {
 	Releases      []string `yaml:"releases,omitempty"`
 	Architectures []string `yaml:"architectures,omitempty"`
 	Variants      []string `yaml:"variants,omitempty"`
+}
+
+// A DefinitionPackagesSet is a set of packages which are to be installed
+// or removed.
+type DefinitionPackagesSet struct {
+	DefinitionFilter
+	Packages []string `yaml:"packages"`
+	Action   string   `yaml:"action"`
 }
 
 // A DefinitionPackagesRepository contains data of a specific repository
@@ -110,14 +115,13 @@ type DefinitionTarget struct {
 
 // A DefinitionFile represents a file which is to be created inside to chroot.
 type DefinitionFile struct {
+	DefinitionFilter
 	Generator string                 `yaml:"generator"`
 	Path      string                 `yaml:"path,omitempty"`
 	Content   string                 `yaml:"content,omitempty"`
-	Releases  []string               `yaml:"releases,omitempty"`
 	Name      string                 `yaml:"name,omitempty"`
 	Template  DefinitionFileTemplate `yaml:"template,omitempty"`
 	Templated bool                   `yaml:"templated,omitempty"`
-	Variants  []string               `yaml:"variants,omitempty"`
 }
 
 // A DefinitionFileTemplate represents the settings used by generators
@@ -129,9 +133,9 @@ type DefinitionFileTemplate struct {
 // A DefinitionAction specifies a custom action (script) which is to be run after
 // a certain action.
 type DefinitionAction struct {
-	Trigger  string   `yaml:"trigger"`
-	Action   string   `yaml:"action"`
-	Releases []string `yaml:"releases,omitempty"`
+	DefinitionFilter
+	Trigger string `yaml:"trigger"`
+	Action  string `yaml:"action"`
 }
 
 // DefinitionMappings defines custom mappings.
@@ -419,6 +423,14 @@ func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
 		}
 
 		if len(action.Releases) > 0 && !shared.StringInSlice(d.Image.Release, action.Releases) {
+			continue
+		}
+
+		if len(action.Architectures) > 0 && !shared.StringInSlice(d.Image.ArchitectureMapped, action.Architectures) {
+			continue
+		}
+
+		if len(action.Variants) > 0 && !shared.StringInSlice(d.Image.Variant, action.Variants) {
 			continue
 		}
 

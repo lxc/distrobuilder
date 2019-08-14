@@ -33,6 +33,16 @@ func (c *cmdBuildDir) command() *cobra.Command {
 					continue
 				}
 
+				if len(file.Architectures) > 0 && !lxd.StringInSlice(
+					c.global.definition.Image.ArchitectureMapped, file.Architectures) {
+					continue
+				}
+
+				if len(file.Variants) > 0 && !lxd.StringInSlice(
+					c.global.definition.Image.Variant, file.Variants) {
+					continue
+				}
+
 				err := generator.Run(c.global.flagCacheDir, c.global.targetDir, file)
 				if err != nil {
 					continue
