@@ -123,8 +123,8 @@ func (l *LXDImage) createMetadata() error {
 
 	l.Metadata.Properties["description"], err = shared.RenderTemplate(
 		l.definition.Image.Description, l.definition)
-	if err != err {
-		return nil
+	if err != nil {
+		return err
 	}
 
 	l.Metadata.Properties["name"], err = shared.RenderTemplate(

@@ -211,4 +211,5 @@ func TestSetEnvVariables(t *testing.T) {
 
 	val, set = os.LookupEnv("BAR")
 	require.False(t, set, "Expected 'BAR' to be unset")
+	require.Empty(t, val)
 }

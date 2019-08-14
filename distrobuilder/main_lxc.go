@@ -17,11 +17,6 @@ type cmdLXC struct {
 	global   *cmdGlobal
 }
 
-type cmdBuildLXC struct {
-	cmd    *cobra.Command
-	global *cmdGlobal
-}
-
 func (c *cmdLXC) commandBuild() *cobra.Command {
 	c.cmdBuild = &cobra.Command{
 		Use:     "build-lxc <filename|-> [target dir]",

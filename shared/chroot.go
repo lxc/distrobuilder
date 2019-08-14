@@ -132,9 +132,10 @@ func killChrootProcesses(rootfs string) error {
 	}
 
 	// Get all processes and kill them
+	re := regexp.MustCompile(`\d+`)
+
 	for _, dir := range dirs {
-		match, _ := regexp.MatchString(`\d+`, dir)
-		if match {
+		if re.MatchString(dir) {
 			link, _ := os.Readlink(filepath.Join(rootfs, "proc", dir, "root"))
 			if link == rootfs {
 				pid, _ := strconv.Atoi(dir)

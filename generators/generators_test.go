@@ -50,7 +50,7 @@ func TestRestoreFiles(t *testing.T) {
 	err = os.Chmod(cacheDir, 0600)
 	require.NoError(t, err)
 
-	err = StoreFile(cacheDir, cacheDir, filepath.Join("/testdir1", "testfile1"))
+	err = StoreFile(cacheDir, rootfsDir, filepath.Join("/testdir1", "testfile1"))
 	require.Error(t, err)
 
 	// Restore permissions

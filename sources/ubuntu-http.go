@@ -79,8 +79,6 @@ func (s *UbuntuHTTP) runDefaultVariant(definition shared.Definition, rootfsDir s
 }
 
 func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir string) error {
-	f := filepath.Join(s.fpath, s.fname)
-
 	if !lxd.PathExists(filepath.Join(s.fpath, strings.TrimSuffix(s.fname, ".xz"))) {
 		err := shared.RunCommand("unxz", "-k", filepath.Join(s.fpath, s.fname))
 		if err != nil {
@@ -89,7 +87,7 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 	}
 
 	s.fname = strings.TrimSuffix(s.fname, ".xz")
-	f = filepath.Join(s.fpath, s.fname)
+	f := filepath.Join(s.fpath, s.fname)
 
 	output, err := lxd.RunCommand("fdisk", "-l", "-o", "Start", f)
 	if err != nil {
@@ -390,7 +388,12 @@ func getLatestRelease(baseURL, release, arch string) string {
 		return ""
 	}
 	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return ""
+	}
 
 	regex := regexp.MustCompile(fmt.Sprintf("ubuntu-base-\\d{2}\\.\\d{2}(\\.\\d+)?-base-%s.tar.gz", arch))
 	releases := regex.FindAllString(string(body), -1)
