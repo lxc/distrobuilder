@@ -17,9 +17,7 @@ import (
 )
 
 // FedoraHTTP represents the Fedora HTTP downloader.
-type FedoraHTTP struct {
-	fname string
-}
+type FedoraHTTP struct{}
 
 // NewFedoraHTTP creates a new FedoraHTTP instance.
 func NewFedoraHTTP() *FedoraHTTP {
