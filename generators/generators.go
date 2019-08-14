@@ -4,6 +4,7 @@ import (
 	"os"
 	p "path"
 	"path/filepath"
+	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
 
@@ -40,13 +41,21 @@ func Get(generator string) Generator {
 	return nil
 }
 
-var storedFiles = map[string]string{}
+var storedFiles = map[string]os.FileInfo{}
 
 // StoreFile caches a file which can be restored with the RestoreFiles function.
 func StoreFile(cacheDir, sourceDir, path string) error {
+	fullPath := filepath.Join(sourceDir, path)
+
+	_, ok := storedFiles[fullPath]
+	if ok {
+		// This file or directory has already been recorded
+		return nil
+	}
+
 	// Record newly created files
-	if !lxd.PathExists(filepath.Join(sourceDir, path)) {
-		storedFiles[filepath.Join(sourceDir, path)] = ""
+	if !lxd.PathExists(fullPath) {
+		storedFiles[fullPath] = nil
 		return nil
 	}
 
@@ -56,18 +65,39 @@ func StoreFile(cacheDir, sourceDir, path string) error {
 		return err
 	}
 
-	storedFiles[filepath.Join(sourceDir, path)] = filepath.Join(cacheDir, "tmp", path)
+	info, err := os.Lstat(fullPath)
+	if err != nil {
+		return err
+	}
 
-	return lxd.FileCopy(filepath.Join(sourceDir, path),
-		filepath.Join(cacheDir, "tmp", path))
+	storedFiles[fullPath] = info
+
+	err = os.Rename(fullPath, filepath.Join(cacheDir, "tmp", path))
+	if err == nil {
+		return nil
+	}
+
+	// Try copying the file since renaming it failed
+	if info.IsDir() {
+		err = lxd.DirCopy(fullPath, filepath.Join(cacheDir, "tmp", path))
+	} else {
+		err = lxd.FileCopy(fullPath, filepath.Join(cacheDir, "tmp", path))
+	}
+	if err != nil {
+		return err
+	}
+
+	return os.RemoveAll(fullPath)
 }
 
 // RestoreFiles restores original files which were cached by StoreFile.
 func RestoreFiles(cacheDir, sourceDir string) error {
-	for origPath, tmpPath := range storedFiles {
+	var err error
+
+	for origPath, fi := range storedFiles {
 		// Deal with newly created files
-		if tmpPath == "" {
-			err := os.Remove(origPath)
+		if fi == nil {
+			err := os.RemoveAll(origPath)
 			if err != nil {
 				return err
 			}
@@ -75,14 +105,24 @@ func RestoreFiles(cacheDir, sourceDir string) error {
 			continue
 		}
 
-		err := lxd.FileCopy(tmpPath, origPath)
+		err = os.Rename(filepath.Join(cacheDir, "tmp", strings.TrimPrefix(origPath, sourceDir)), origPath)
+		if err == nil {
+			continue
+		}
+
+		// Try copying the file or directory since renaming it failed
+		if fi.IsDir() {
+			err = lxd.DirCopy(filepath.Join(cacheDir, "tmp", strings.TrimPrefix(origPath, sourceDir)), origPath)
+		} else {
+			err = lxd.FileCopy(filepath.Join(cacheDir, "tmp", strings.TrimPrefix(origPath, sourceDir)), origPath)
+		}
 		if err != nil {
 			return err
 		}
 	}
 
 	// Reset the list of stored files
-	storedFiles = map[string]string{}
+	storedFiles = map[string]os.FileInfo{}
 
 	return nil
 }
