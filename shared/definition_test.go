@@ -6,6 +6,7 @@ import (
 
 	"github.com/lxc/lxd/shared"
 	"github.com/stretchr/testify/require"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func TestSetDefinitionDefaults(t *testing.T) {
@@ -485,4 +486,20 @@ func TestDefinitionSetValue(t *testing.T) {
 	err = d.SetValue("source.ignore_release", "true")
 	require.NoError(t, err)
 	require.Equal(t, true, d.Source.IgnoreRelease)
+}
+
+func TestDefinitionFilter(t *testing.T) {
+	input := `packages:
+  sets:
+  - packages:
+    - foo
+    architectures:
+    - amd64`
+	def := Definition{}
+
+	err := yaml.Unmarshal([]byte(input), &def)
+	require.NoError(t, err)
+
+	require.Contains(t, def.Packages.Sets[0].Packages, "foo")
+	require.Contains(t, def.Packages.Sets[0].Architectures, "amd64")
 }
