@@ -22,9 +22,9 @@ type DefinitionFilter struct {
 // A DefinitionPackagesSet is a set of packages which are to be installed
 // or removed.
 type DefinitionPackagesSet struct {
-	DefinitionFilter
-	Packages []string `yaml:"packages"`
-	Action   string   `yaml:"action"`
+	DefinitionFilter `yaml:",inline"`
+	Packages         []string `yaml:"packages"`
+	Action           string   `yaml:"action"`
 }
 
 // A DefinitionPackagesRepository contains data of a specific repository
@@ -115,13 +115,13 @@ type DefinitionTarget struct {
 
 // A DefinitionFile represents a file which is to be created inside to chroot.
 type DefinitionFile struct {
-	DefinitionFilter
-	Generator string                 `yaml:"generator"`
-	Path      string                 `yaml:"path,omitempty"`
-	Content   string                 `yaml:"content,omitempty"`
-	Name      string                 `yaml:"name,omitempty"`
-	Template  DefinitionFileTemplate `yaml:"template,omitempty"`
-	Templated bool                   `yaml:"templated,omitempty"`
+	DefinitionFilter `yaml:",inline"`
+	Generator        string                 `yaml:"generator"`
+	Path             string                 `yaml:"path,omitempty"`
+	Content          string                 `yaml:"content,omitempty"`
+	Name             string                 `yaml:"name,omitempty"`
+	Template         DefinitionFileTemplate `yaml:"template,omitempty"`
+	Templated        bool                   `yaml:"templated,omitempty"`
 }
 
 // A DefinitionFileTemplate represents the settings used by generators
@@ -133,9 +133,9 @@ type DefinitionFileTemplate struct {
 // A DefinitionAction specifies a custom action (script) which is to be run after
 // a certain action.
 type DefinitionAction struct {
-	DefinitionFilter
-	Trigger string `yaml:"trigger"`
-	Action  string `yaml:"action"`
+	DefinitionFilter `yaml:",inline"`
+	Trigger          string `yaml:"trigger"`
+	Action           string `yaml:"action"`
 }
 
 // DefinitionMappings defines custom mappings.
