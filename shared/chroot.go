@@ -21,6 +21,9 @@ type chrootMount struct {
 	isDir  bool
 }
 
+// ActiveChroots is a map of all active chroots and their exit functions
+var ActiveChroots = make(map[string]func() error)
+
 func setupMounts(rootfs string, mounts []chrootMount) error {
 	// Create a temporary mount path
 	err := os.MkdirAll(filepath.Join(rootfs, ".distrobuilder"), 0700)
@@ -256,7 +259,7 @@ exit 101
 		policyCleanup = true
 	}
 
-	return func() error {
+	exitFunc := func() error {
 		defer root.Close()
 
 		// Cleanup policy-rc.d
@@ -301,6 +304,12 @@ exit 101
 			return err
 		}
 
+		ActiveChroots[rootfs] = nil
+
 		return os.MkdirAll(devPath, 0755)
-	}, nil
+	}
+
+	ActiveChroots[rootfs] = exitFunc
+
+	return exitFunc, nil
 }
