@@ -59,6 +59,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"time"
@@ -79,6 +80,7 @@ type cmdGlobal struct {
 	definition *shared.Definition
 	sourceDir  string
 	targetDir  string
+	interrupt  chan os.Signal
 }
 
 func main() {
@@ -144,9 +146,28 @@ func main() {
 		os.Exit(1)
 	}()
 
+	go func() {
+		<-globalCmd.interrupt
+
+		// exit all chroots otherwise we cannot remove the cache directory
+		for _, exit := range shared.ActiveChroots {
+			if exit != nil {
+				exit()
+			}
+		}
+
+		globalCmd.postRun(nil, nil)
+		fmt.Println("Interrupted")
+		os.Exit(1)
+	}()
+
+	globalCmd.interrupt = make(chan os.Signal, 1)
+	signal.Notify(globalCmd.interrupt, os.Interrupt)
+
 	// Run the main command and handle errors
 	err := app.Execute()
 	if err != nil {
+		globalCmd.postRun(nil, nil)
 		os.Exit(1)
 	}
 }
