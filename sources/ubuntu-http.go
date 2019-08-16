@@ -188,6 +188,7 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 	apt-get install -y busybox-static fuse util-linux squashfuse
 	`)
 	if err != nil {
+		exitChroot()
 		return err
 	}
 
