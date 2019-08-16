@@ -1,0 +1,25 @@
+name: distrobuilder
+base: core18
+version: git
+summary: System container image builder for LXC and LXD
+description: |-
+  Distrobuilder is a tool which lets you create container images for LXC and LXD.
+license: Apache-2.0
+confinement: classic
+
+apps:
+  distrobuilder:
+    command: bin/distrobuilder
+
+parts:
+  distrobuilder:
+    source: .
+    build-packages:
+      - gcc
+    stage-packages:
+      - debootstrap
+      - gpg
+      - rsync
+      - squashfs-tools
+    plugin: go
+    go-importpath: github.com/lxc/distrobuilder
