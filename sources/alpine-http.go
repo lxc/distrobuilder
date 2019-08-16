@@ -105,11 +105,13 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 
 		err = shared.RunCommand("sed", "-i", "-e", "s/v[[:digit:]]\\.[[:digit:]]/edge/g", "/etc/apk/repositories")
 		if err != nil {
+			exitChroot()
 			return err
 		}
 
 		err = shared.RunCommand("apk", "upgrade", "--update-cache", "--available")
 		if err != nil {
+			exitChroot()
 			return err
 		}
 
