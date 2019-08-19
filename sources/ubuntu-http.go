@@ -285,14 +285,24 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 			continue
 		}
 
-		target := filepath.Join(rootfsDir, "lib", filepath.Base(matches[0]))
+		dest := filepath.Join(rootfsDir, "lib", filepath.Base(matches[0]))
 
-		err = lxd.FileCopy(matches[0], target)
+		source, err := os.Readlink(matches[0])
 		if err != nil {
 			return err
 		}
 
-		err = os.Chmod(target, 0755)
+		// Build absolute path
+		if !strings.HasPrefix(source, "/") {
+			source = filepath.Join(filepath.Dir(matches[0]), source)
+		}
+
+		err = lxd.FileCopy(source, dest)
+		if err != nil {
+			return err
+		}
+
+		err = os.Chmod(dest, 0755)
 		if err != nil {
 			return err
 		}
