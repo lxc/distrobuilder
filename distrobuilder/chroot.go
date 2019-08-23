@@ -30,6 +30,18 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		}
 
 		for _, repo := range def.Repositories {
+			if len(repo.Releases) > 0 && !lxd.StringInSlice(release, repo.Releases) {
+				continue
+			}
+
+			if len(repo.Architectures) > 0 && !lxd.StringInSlice(architecture, repo.Architectures) {
+				continue
+			}
+
+			if len(repo.Variants) > 0 && !lxd.StringInSlice(variant, repo.Variants) {
+				continue
+			}
+
 			err = manager.RepoHandler(repo)
 			if err != nil {
 				return fmt.Errorf("Error for repository %s: %s", repo.Name, err)
