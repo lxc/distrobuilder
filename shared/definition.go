@@ -29,11 +29,11 @@ type DefinitionPackagesSet struct {
 
 // A DefinitionPackagesRepository contains data of a specific repository
 type DefinitionPackagesRepository struct {
-	Name     string   `yaml:"name"`              // Name of the repository
-	URL      string   `yaml:"url"`               // URL (may differ based on manager)
-	Type     string   `yaml:"type,omitempty"`    // For distros that have more than one repository manager
-	Key      string   `yaml:"key,omitempty"`     // GPG armored keyring
-	Releases []string `yaml:"release,omitempty"` // Releases that this repo applies to
+	DefinitionFilter
+	Name string `yaml:"name"`           // Name of the repository
+	URL  string `yaml:"url"`            // URL (may differ based on manager)
+	Type string `yaml:"type,omitempty"` // For distros that have more than one repository manager
+	Key  string `yaml:"key,omitempty"`  // GPG armored keyring
 }
 
 // CustomManagerCmd represents a command for a custom manager.
