@@ -89,7 +89,6 @@ type DefinitionSource struct {
 	Suite            string   `yaml:"suite,omitempty"`
 	SameAs           string   `yaml:"same_as,omitempty"`
 	AptSources       string   `yaml:"apt_sources,omitempty"`
-	IgnoreRelease    bool     `yaml:"ignore_release,omitempty"`
 	SkipVerification bool     `yaml:"skip_verification,omitempty"`
 	EarlyPackages    []string `yaml:"early_packages,omitempty"`
 }
