@@ -52,16 +52,11 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 		args = append(args, "--keyring", keyring)
 	}
 
-	// If source.ignore_release is set, debootstrap will not use image.release
-	// but source.suite as the release. This is important for derivatives which
-	// don't have own sources, e.g. Linux Mint.
-	if definition.Source.IgnoreRelease {
-		// If source.suite is set, use it when calling debootstrap
-		if definition.Source.Suite != "" {
-			args = append(args, definition.Source.Suite, rootfsDir)
-		} else {
-			args = append(args, definition.Image.Release, rootfsDir)
-		}
+	// If source.suite is set, debootstrap will use this instead of
+	// image.release as its first positional argument (SUITE). This is important
+	// for derivatives which don't have their own sources, e.g. Linux Mint.
+	if definition.Source.Suite != "" {
+		args = append(args, definition.Source.Suite, rootfsDir)
 	} else {
 		args = append(args, definition.Image.Release, rootfsDir)
 	}
@@ -71,7 +66,7 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 	}
 
 	// If definition.Source.SameAs is set, create a symlink in /usr/share/debootstrap/scripts
-	// pointing release to definition.Source.Suite.
+	// pointing release to definition.Source.SameAs.
 	scriptPath := filepath.Join("/usr/share/debootstrap/scripts", definition.Image.Release)
 	if !lxd.PathExists(scriptPath) && definition.Source.SameAs != "" {
 		err := os.Symlink(definition.Source.SameAs, scriptPath)

@@ -447,10 +447,10 @@ func TestDefinitionSetValue(t *testing.T) {
 			Release:      "artful",
 		},
 		Source: DefinitionSource{
-			Downloader:    "debootstrap",
-			URL:           "https://ubuntu.com",
-			Keys:          []string{"0xCODE"},
-			IgnoreRelease: true,
+			Downloader:       "debootstrap",
+			URL:              "https://ubuntu.com",
+			Keys:             []string{"0xCODE"},
+			SkipVerification: true,
 		},
 		Packages: DefinitionPackages{
 			Manager: "apt",
@@ -483,9 +483,9 @@ func TestDefinitionSetValue(t *testing.T) {
 	err = d.SetValue("image", "[foo: bar]")
 	require.EqualError(t, err, "Unsupported type 'struct'")
 
-	err = d.SetValue("source.ignore_release", "true")
+	err = d.SetValue("source.skip_verification", "true")
 	require.NoError(t, err)
-	require.Equal(t, true, d.Source.IgnoreRelease)
+	require.Equal(t, true, d.Source.SkipVerification)
 }
 
 func TestDefinitionFilter(t *testing.T) {
