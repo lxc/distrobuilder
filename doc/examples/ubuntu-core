@@ -8,6 +8,7 @@ image:
 
 source:
   downloader: ubuntu-http
+  variant: core
   url: http://cdimage.ubuntu.com/ubuntu-core
   keys:
     - 0x46181433FBB75451
@@ -65,7 +66,7 @@ packages:
     update:
       cmd: true
     clean:
-      cmd: true 
+      cmd: true
     refresh:
       cmd: true
 
@@ -91,11 +92,10 @@ files:
       properties:
         default: |
           #cloud-config
-          {}	
+          {}
   - name: hostname
     path: /lxd/hostname
     generator: template
 
 mappings:
   architecture_map: debian
-  
