@@ -22,6 +22,7 @@ It needs to be one of
 
 * alpinelinux-http
 * alt-http
+* apertis-http
 * archlinux-http
 * centos-http
 * debootstrap
