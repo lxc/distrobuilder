@@ -4,8 +4,12 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
@@ -23,21 +27,34 @@ func NewOpenWrtHTTP() *OpenWrtHTTP {
 
 // Run downloads the tarball and unpacks it.
 func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	release := definition.Image.Release
+	var baseURL string
 
+	release := definition.Image.Release
+	releaseInFilename := strings.ToLower(release) + "-"
 	architecturePath := strings.Replace(definition.Image.ArchitectureMapped, "_", "/", 1)
 
-	baseURL := fmt.Sprintf("%s/releases/%s/targets/%s/",
-		definition.Source.URL, release, architecturePath)
+	// Figure out the correct release
 	if release == "snapshot" {
+		// Build a daily snapshot.
 		baseURL = fmt.Sprintf("%s/snapshots/targets/%s/",
 			definition.Source.URL, architecturePath)
-	}
-
-	releaseInFilename := strings.ToLower(release) + "-"
-
-	if release == "snapshot" {
 		releaseInFilename = ""
+	} else {
+		baseURL = fmt.Sprintf("%s/releases", definition.Source.URL)
+
+		matched, err := regexp.MatchString(`^\d+\.\d+$`, release)
+		if err != nil {
+			return err
+		}
+
+		if matched {
+			// A release of the form '18.06' has been provided. We need to find
+			// out the latest service release of the form '18.06.0'.
+			release = s.getLatestServiceRelease(baseURL, release)
+			releaseInFilename = strings.ToLower(release) + "-"
+		}
+
+		baseURL = fmt.Sprintf("%s/%s/targets/%s/", baseURL, release, architecturePath)
 	}
 
 	fname := fmt.Sprintf("openwrt-%s%s-generic-rootfs.tar.gz", releaseInFilename,
@@ -93,4 +110,28 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	}
 
 	return nil
+}
+
+func (s *OpenWrtHTTP) getLatestServiceRelease(baseURL, release string) string {
+	resp, err := http.Get(baseURL)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return ""
+	}
+
+	regex := regexp.MustCompile(fmt.Sprintf(">(%s\\.\\d+)<", release))
+	releases := regex.FindAllStringSubmatch(string(body), -1)
+
+	if len(releases) > 0 {
+		return releases[len(releases)-1][1]
+	}
+
+	return ""
 }
