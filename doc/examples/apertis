@@ -1,0 +1,63 @@
+image:
+  distribution: Apertis
+  description: Apertis {{ image.architecture }} {{ image.variant }} {{ image.release }} {{ image.serial }}
+  release: v2019pre
+  variant: minimal
+  serial: v2019pre.0
+  expiry: 30d
+  architecture: amd64
+
+source:
+  downloader: apertis-http
+  url: https://images.apertis.org
+  variant: release
+
+targets:
+  lxc:
+    create-message: |
+      You just created an {{ image.distribution }} container (release={{ image.release }}, arch={{ image.architecture }})
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/debian.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/debian.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_personality }}
+
+files:
+ - path: /etc/hostname
+   generator: hostname
+
+ - path: /etc/hosts
+   generator: hosts
+
+ - path: /etc/machine-id
+   generator: remove
+
+packages:
+  manager: apt
+  update: false
+  cleanup: false
+
+environment:
+  variables:
+    - key: TMPDIR
+      set: false
