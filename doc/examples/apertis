@@ -3,9 +3,8 @@ image:
   description: Apertis {{ image.architecture }} {{ image.variant }} {{ image.release }} {{ image.serial }}
   release: v2019pre
   variant: minimal
-  serial: v2019pre.0
   expiry: 30d
-  architecture: amd64
+  architecture: x86_64
 
 source:
   downloader: apertis-http
@@ -61,3 +60,6 @@ environment:
   variables:
     - key: TMPDIR
       set: false
+
+mappings:
+  architecture_map: debian
