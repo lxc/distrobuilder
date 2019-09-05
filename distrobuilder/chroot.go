@@ -69,11 +69,6 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		}
 	}
 
-	// TODO: Remove this once openSUSE builds properly without it. OpenSUSE 42.3 doesn't support this flag.
-	if def.Manager == "zypper" && release != "42.3" {
-		manager.SetInstallFlags("install", "--allow-downgrade")
-	}
-
 	var validSets []shared.DefinitionPackagesSet
 
 	for _, set := range def.Sets {
