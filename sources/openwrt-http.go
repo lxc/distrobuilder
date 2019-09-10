@@ -142,9 +142,22 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 		return fmt.Errorf("Failed to unpack SDK: %v", err)
 	}
 
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	defer os.Chdir(currentDir)
+
 	// Set environment used in the lxd-openwrt scripts
 	os.Setenv("OPENWRT_ROOTFS", filepath.Join(fpath, fname))
-	os.Setenv("OPENWRT_ROOTFS_DIR", rootfsDir)
+
+	// Always use an absolute path
+	if strings.HasPrefix(rootfsDir, "/") {
+		os.Setenv("OPENWRT_ROOTFS_DIR", rootfsDir)
+	} else {
+		os.Setenv("OPENWRT_ROOTFS_DIR", filepath.Join(currentDir, rootfsDir))
+	}
+
 	os.Setenv("OPENWRT_SDK", fmt.Sprintf("build_dir/%s", strings.TrimSuffix(sdk, ".tar.xz")))
 	os.Setenv("OPENWRT_ARCH", definition.Image.Architecture)
 	os.Setenv("OPENWRT_VERSION", release)
@@ -214,12 +227,6 @@ index b7ee533..e89379f 100755
 -pack
 -#pack_squashfs
 `
-
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	defer os.Chdir(currentDir)
 
 	err = os.Chdir(tempScriptsDir)
 	if err != nil {
