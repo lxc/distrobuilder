@@ -65,4 +65,4 @@ actions:
       rm -rf /usr/portage/
 
 mappings:
-  architecture_map: debian
+  architecture_map: gentoo
