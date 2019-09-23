@@ -356,3 +356,12 @@ func SetEnvVariables(env Environment) Environment {
 
 	return oldEnv
 }
+
+// GetTargetDir returns the path to which source files are downloaded.
+func GetTargetDir(def DefinitionImage) string {
+	targetDir := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s-%s", def.Distribution, def.Release, def.ArchitectureMapped))
+	targetDir = strings.Replace(targetDir, " ", "", -1)
+	targetDir = strings.ToLower(targetDir)
+
+	return targetDir
+}
