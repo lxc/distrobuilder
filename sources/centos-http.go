@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -44,13 +45,15 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		return fmt.Errorf("Couldn't get name of iso")
 	}
 
+	fpath := shared.GetTargetDir(definition.Image)
+
 	// Skip download if raw image exists and has already been decompressed.
 	if strings.HasSuffix(s.fname, ".raw.xz") {
-		imagePath := filepath.Join(os.TempDir(), filepath.Base(strings.TrimSuffix(s.fname, ".xz")))
+		imagePath := filepath.Join(fpath, filepath.Base(strings.TrimSuffix(s.fname, ".xz")))
 
 		stat, err := os.Stat(imagePath)
 		if err == nil && stat.Size() > 0 {
-			return s.unpackRaw(filepath.Join(os.TempDir(), strings.TrimSuffix(s.fname, ".xz")),
+			return s.unpackRaw(filepath.Join(fpath, strings.TrimSuffix(s.fname, ".xz")),
 				rootfsDir)
 		}
 	}
@@ -90,7 +93,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 	}
 
-	fpath, err := shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
+	_, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Error downloading CentOS image: %s", err)
 	}

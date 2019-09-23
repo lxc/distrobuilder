@@ -24,9 +24,7 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 		hash   string
 		err    error
 	)
-	targetDir := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s-%s", def.Distribution, def.Release, def.ArchitectureMapped))
-	targetDir = strings.Replace(targetDir, " ", "", -1)
-	targetDir = strings.ToLower(targetDir)
+	targetDir := GetTargetDir(def)
 
 	err = os.MkdirAll(targetDir, 0755)
 	if err != nil {
