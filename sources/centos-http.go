@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -118,8 +119,24 @@ func (s CentOSHTTP) unpackRaw(filePath, rootfsDir string) error {
 
 	rawFilePath := strings.TrimSuffix(filePath, ".xz")
 
+	// Figure out the offset
+	var buf bytes.Buffer
+
+	err := lxd.RunCommandWithFds(nil, &buf, "fdisk", "-l", "-o", "Start", rawFilePath)
+	if err != nil {
+		return err
+	}
+
+	output := strings.Split(buf.String(), "\n")
+	offsetStr := strings.TrimSpace(output[len(output)-2])
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		return err
+	}
+
 	// Mount the partition read-only since we don't want to accidently modify it.
-	err := shared.RunCommand("mount", "-o", "ro,loop,offset=1048576",
+	err = shared.RunCommand("mount", "-o", fmt.Sprintf("ro,loop,offset=%d", offset*512),
 		rawFilePath, roRootDir)
 	if err != nil {
 		return err
