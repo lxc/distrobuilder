@@ -125,3 +125,7 @@ $ lxc launch mycontainerimage c1
 Creating c1
 Starting c1
 ```
+
+### Examples
+
+Examples of yaml files for various distributions can be found in the [examples directory](./examples) and in the [lxc-ci repository](https://github.com/lxc/lxc-ci/tree/master/images).
