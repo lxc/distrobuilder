@@ -1,17 +1,18 @@
 image:
+  name: ubuntu-disco-x86_64
   distribution: ubuntu
-  release: cosmic
-  variant: default
-  description: Ubuntu {{ image.release }}
-  expiry: 30d
-  architecture: amd64
+  release: disco
+  description: |-
+    Ubuntu {{ image.release }}
+  architecture: x86_64
 
 source:
-  downloader: ubuntu-http
-  url: http://cdimage.ubuntu.com/ubuntu-base
+  downloader: debootstrap
+  same_as: gutsy
+  url: http://archive.ubuntu.com/ubuntu
+  keyserver: keyserver.ubuntu.com
   keys:
-    - 0x46181433FBB75451
-    - 0xD94AA3F0EFE21092
+    - 0x790BC7277767219C42C86F933B4FE6ACC0B21F32
 
   apt_sources: |-
     {% if image.architecture_mapped == "amd64" or image.architecture_mapped == "i386" %}deb http://archive.ubuntu.com/ubuntu {{ image.release }} main restricted universe multiverse
@@ -115,6 +116,26 @@ files:
    releases:
     - trusty
 
+ - name: meta-data
+   generator: cloud-init
+   variants:
+    - cloud
+
+ - name: network-config
+   generator: cloud-init
+   variants:
+    - cloud
+
+ - name: user-data
+   generator: cloud-init
+   variants:
+    - cloud
+
+ - name: vendor-data
+   generator: cloud-init
+   variants:
+    - cloud
+
 packages:
   manager: apt
   update: true
@@ -126,8 +147,13 @@ packages:
       - language-pack-en
       - openssh-client
       - vim
-      - systemd
       action: install
+
+    - packages:
+      - cloud-init
+      action: install
+      variants:
+       - cloud
 
 actions:
   - trigger: post-update
