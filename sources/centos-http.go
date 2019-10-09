@@ -14,10 +14,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
+
+	lxd "github.com/lxc/lxd/shared"
+	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
-	lxd "github.com/lxc/lxd/shared"
 )
 
 // CentOSHTTP represents the CentOS HTTP downloader.
@@ -199,7 +200,7 @@ func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
 	if err != nil {
 		return err
 	}
-	defer syscall.Unmount(isoDir, 0)
+	defer unix.Unmount(isoDir, 0)
 
 	var rootfsImage string
 	squashfsImage := filepath.Join(isoDir, "LiveOS", "squashfs.img")
@@ -210,18 +211,12 @@ func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
 		if err != nil {
 			return err
 		}
-		defer syscall.Unmount(squashfsDir, 0)
+		defer unix.Unmount(squashfsDir, 0)
 
 		rootfsImage = filepath.Join(squashfsDir, "LiveOS", "rootfs.img")
 	} else {
 		rootfsImage = filepath.Join(isoDir, "images", "install.img")
 	}
-
-	err = shared.RunCommand("mount", "-o", "ro", rootfsImage, roRootDir)
-	if err != nil {
-		return err
-	}
-	defer syscall.Unmount(roRootDir, 0)
 
 	// Remove rootfsDir otherwise rsync will copy the content into the directory
 	// itself
@@ -230,9 +225,7 @@ func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
 		return err
 	}
 
-	// Since roRootDir is read-only, we need to copy it to a temporary rootfs
-	// directory in order to create the minimal rootfs.
-	err = shared.RunCommand("rsync", "-qa", roRootDir+"/", tempRootDir)
+	err = s.unpackRootfsImage(rootfsImage, tempRootDir)
 	if err != nil {
 		return err
 	}
@@ -243,10 +236,28 @@ func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
 		return err
 	}
 
+	packagesDir := filepath.Join(isoDir, "Packages")
+	repodataDir := filepath.Join(isoDir, "repodata")
+
+	if !lxd.PathExists(packagesDir) {
+		packagesDir = filepath.Join(isoDir, "BaseOS", "Packages")
+	}
+	if !lxd.PathExists(repodataDir) {
+		repodataDir = filepath.Join(isoDir, "BaseOS", "repodata")
+	}
+
+	if !lxd.PathExists(packagesDir) {
+		return fmt.Errorf("Missing Packages directory")
+	}
+
+	if !lxd.PathExists(repodataDir) {
+		return fmt.Errorf("Missing repodata directory")
+	}
+
 	// Copy repo relevant files to the cdrom
 	err = shared.RunCommand("rsync", "-qa",
-		filepath.Join(isoDir, "Packages"),
-		filepath.Join(isoDir, "repodata"),
+		packagesDir,
+		repodataDir,
 		filepath.Join(tempRootDir, "mnt", "cdrom"))
 	if err != nil {
 		return err
@@ -304,7 +315,12 @@ enabled=0
 gpgcheck=1
 EOF
 
-echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
+if [ -n "${GPG_KEYS}" ]; then
+	echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
+	echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
+else
+	echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
+fi
 
 yum --disablerepo=* --enablerepo=cdrom -y reinstall yum
 
@@ -338,24 +354,70 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 		return ""
 	}
 
-	var re string
+	var re []string
 	if len(releaseFields) > 1 {
 		if arch == "armhfp" {
-			re = fmt.Sprintf("CentOS-Userland-%s.%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
-				releaseFields[0], releaseFields[1], variant)
+			re = append(re, fmt.Sprintf("CentOS-Userland-%s.%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
+				releaseFields[0], releaseFields[1], variant))
 		} else {
-			re = fmt.Sprintf("CentOS-%s.%s-%s-(?i:%s)(-\\d+)?.iso",
-				releaseFields[0], releaseFields[1], arch, variant)
+			re = append(re, fmt.Sprintf("CentOS-%s.%s-%s-(?i:%s)(-\\d+)?.iso",
+				releaseFields[0], releaseFields[1], arch, variant))
+			re = append(re, fmt.Sprintf("CentOS-%s-%s-%s-(?i:%s).iso",
+				releaseFields[0], arch, releaseFields[1], variant))
 		}
 	} else {
 		if arch == "armhfp" {
-			re = fmt.Sprintf("CentOS-Userland-%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
-				releaseFields[0], variant)
+			re = append(re, fmt.Sprintf("CentOS-Userland-%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
+				releaseFields[0], variant))
 		} else {
-			re = fmt.Sprintf("CentOS-%s(.\\d+)?-%s-(?i:%s)(-\\d+)?.iso",
-				releaseFields[0], arch, variant)
+			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)?-%s-(?i:%s)(-\\d+)?.iso",
+				releaseFields[0], arch, variant))
+			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)?-%s(-\\d+)?-(?i:%s).iso",
+				releaseFields[0], arch, variant))
 		}
 	}
 
-	return regexp.MustCompile(re).FindString(string(body))
+	for _, r := range re {
+		match := regexp.MustCompile(r).FindString(string(body))
+		if match != "" {
+			return match
+		}
+	}
+
+	return ""
+}
+
+func (s CentOSHTTP) unpackRootfsImage(imageFile string, target string) error {
+	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(installDir)
+
+	err = shared.RunCommand("mount", "-o", "ro", imageFile, installDir)
+	if err != nil {
+		return err
+	}
+	defer unix.Unmount(installDir, 0)
+
+	rootfsDir := installDir
+	rootfsFile := filepath.Join(installDir, "LiveOS", "rootfs.img")
+
+	if lxd.PathExists(rootfsFile) {
+		rootfsDir, err = ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(rootfsDir)
+
+		err = shared.RunCommand("mount", "-o", "ro", rootfsFile, rootfsDir)
+		if err != nil {
+			return err
+		}
+		defer unix.Unmount(rootfsFile, 0)
+	}
+
+	// Since rootfs is read-only, we need to copy it to a temporary rootfs
+	// directory in order to create the minimal rootfs.
+	return shared.RunCommand("rsync", "-qa", rootfsDir+"/", target)
 }
