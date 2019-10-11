@@ -75,7 +75,11 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 			if definition.Image.ArchitectureMapped == "armhfp" {
 				checksumFile = "sha256sum.txt"
 			} else {
-				checksumFile = "sha256sum.txt.asc"
+				if strings.HasPrefix(definition.Image.Release, "8") {
+					checksumFile = "CHECKSUM.asc"
+				} else {
+					checksumFile = "sha256sum.txt.asc"
+				}
 			}
 
 			fpath, err := shared.DownloadHash(definition.Image, baseURL+checksumFile, "", nil)
