@@ -96,6 +96,14 @@ total 121032
 multipass@dazzling-termite:~/ContainerImages/ubuntu$
 ```
 
+### Adding the container image to LXC
+
+To add the container image to a LXC installation, use the `lxc-create` command as follows.
+
+```bash
+$ lxc-create -n myContainerImage -t local -- --metadata meta.tar.xz --fstree rootfs.tar.xz
+```
+
 ### Adding the container image to LXD
 
 To add the container image to a LXD installation, use the `lxc image import` command as follows.
