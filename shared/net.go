@@ -1,7 +1,6 @@
 package shared
 
 import (
-	"bufio"
 	"fmt"
 	"hash"
 	"io"
@@ -9,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
@@ -135,13 +133,9 @@ func downloadChecksum(targetDir string, URL string, fname string, hashFunc hash.
 
 	tempFile.Seek(0, 0)
 
-	scanner := bufio.NewScanner(tempFile)
-	for scanner.Scan() {
-		s := strings.Split(scanner.Text(), " ")
-		matched, _ := regexp.MatchString(fmt.Sprintf(".*%s", filepath.Base(fname)), s[len(s)-1])
-		if matched && (hashLen == 0 || hashLen == len(strings.TrimSpace(s[0]))) {
-			return s[0], nil
-		}
+	checksum := getChecksum(filepath.Base(fname), hashLen, tempFile)
+	if checksum != "" {
+		return checksum, nil
 	}
 
 	return "", fmt.Errorf("Could not find checksum")
