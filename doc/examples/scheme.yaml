@@ -1,0 +1,176 @@
+# This example contains every possible key
+
+image:
+  description: |-
+    here goes the image description
+  distrobution: distro
+  release: release
+  architecture: x86_64
+  expiry: 30d
+  variant: default
+  name: distro-release-x86_64
+  serial: some-random-string
+
+source:
+  downloader: ubuntu-http
+  URL: http://archive.ubuntu.com
+  keys:
+    - 0xdeadbeaf
+  keyserver: http://keyserver.ubuntu.com
+  variant: default
+  suite: suite
+  same_as: xenial
+  apt_sources: |-
+     deb http://archive.ubuntu.com/ubuntu {{ image.release }}-updates main restricted universe multiverse
+  skip_verification: false
+  early_packages:
+    - gnupg
+
+targets:
+  lxc:
+    create-message: |-
+      You just created an {{ image.description }} container.
+
+      To enable SSH, run: apt install openssh-server
+      No default root or user password are set by LXC.
+
+    config:
+      - type: all
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.common.conf
+
+      - type: user
+        before: 5
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/ubuntu.userns.conf
+
+      - type: all
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/common.conf
+
+          # For Ubuntu 14.04
+          lxc.mount.entry = /sys/kernel/debug sys/kernel/debug none bind,optional 0 0
+          lxc.mount.entry = /sys/kernel/security sys/kernel/security none bind,optional 0 0
+          lxc.mount.entry = /sys/fs/pstore sys/fs/pstore none bind,optional 0 0
+          lxc.mount.entry = mqueue dev/mqueue mqueue rw,relatime,create=dir,optional 0 0
+
+      - type: user
+        after: 4
+        content: |-
+          lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
+
+          # For Ubuntu 14.04
+          lxc.mount.entry = /sys/firmware/efi/efivars sys/firmware/efi/efivars none bind,optional 0 0
+          lxc.mount.entry = /proc/sys/fs/binfmt_misc proc/sys/fs/binfmt_misc none bind,optional 0 0
+
+      - type: all
+        content: |-
+          lxc.arch = {{ image.architecture_personality }}
+
+files:
+  - generator: dump
+    path: /some/path
+    content: |-
+      here goes the content
+    name: name
+    template:
+      properties:
+        key: value
+      when:
+        - always
+    templated: true
+    releases:
+      - a
+      - b
+    architectures:
+      - x86_64
+    variants:
+      - default
+
+packages:
+  manager: apt
+  custom-manager:
+    clean:
+      cmd: mgr
+      flags:
+        - clean
+    install:
+      cmd: mgr
+      flags:
+        - install
+    remove:
+      cmd: mgr
+      flags:
+        - remove
+    refresh:
+      cmd: mgr
+      flags:
+        - refresh
+    update:
+      cmd: mgr
+      flags:
+        - update
+    flags:
+      --yes
+  update: true
+  cleanup: false
+  sets:
+    - packages:
+       - vim
+      action: install
+      releases:
+        - a
+        - b
+      architectures:
+        - x86_64
+      variants:
+        - default
+
+    - packages:
+        - grub
+      actionn: remove
+
+  repositories:
+    - name: reponame
+      url: http://example.com
+      type: type
+      key: 0xdeadbeaf
+      releases:
+        - a
+        - b
+      architectures:
+        - x86_64
+      variants:
+        - default
+
+    - packages:
+        - grub
+      actionn: remove
+
+actions:
+  - trigger: post-packages
+    action: |-
+      #!/bin/sh
+
+      echo do something
+
+    releases:
+      - a
+      - b
+    architectures:
+      - x86_64
+    variants:
+      - default
+
+mappings:
+  architectures:
+    a: b
+    c: d
+  architecture_map: debian
+
+environment:
+  clear_defaults: true
+  variables:
+    - FOO: bar
