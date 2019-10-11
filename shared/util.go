@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -364,4 +365,27 @@ func GetTargetDir(def DefinitionImage) string {
 	targetDir = strings.ToLower(targetDir)
 
 	return targetDir
+}
+
+func getChecksum(fname string, hashLen int, r io.Reader) string {
+	scanner := bufio.NewScanner(r)
+
+	for scanner.Scan() {
+		if !strings.Contains(scanner.Text(), fname) {
+			continue
+		}
+
+		for _, s := range strings.Split(scanner.Text(), " ") {
+			m, _ := regexp.MatchString("[[:xdigit:]]+", s)
+			if !m {
+				continue
+			}
+
+			if hashLen == 0 || hashLen == len(strings.TrimSpace(s)) {
+				return s
+			}
+		}
+	}
+
+	return ""
 }
