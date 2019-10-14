@@ -25,6 +25,7 @@ type DefinitionPackagesSet struct {
 	DefinitionFilter `yaml:",inline"`
 	Packages         []string `yaml:"packages"`
 	Action           string   `yaml:"action"`
+	Early            bool     `yaml:"early,omitempty"`
 }
 
 // A DefinitionPackagesRepository contains data of a specific repository
@@ -88,9 +89,7 @@ type DefinitionSource struct {
 	Variant          string   `yaml:"variant,omitempty"`
 	Suite            string   `yaml:"suite,omitempty"`
 	SameAs           string   `yaml:"same_as,omitempty"`
-	AptSources       string   `yaml:"apt_sources,omitempty"`
 	SkipVerification bool     `yaml:"skip_verification,omitempty"`
-	EarlyPackages    []string `yaml:"early_packages,omitempty"`
 }
 
 // A DefinitionTargetLXCConfig represents the config part of the metadata.
@@ -435,6 +434,33 @@ func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
 		}
 
 		out = append(out, action)
+	}
+
+	return out
+}
+
+// GetEarlyPackages returns a list of packages which are to be installed or removed earlier than the actual package handling.
+func (d *Definition) GetEarlyPackages(action string) []string {
+	var out []string
+
+	for _, set := range d.Packages.Sets {
+		if set.Action != action || !set.Early {
+			continue
+		}
+
+		if len(set.Releases) > 0 && !shared.StringInSlice(d.Image.Release, set.Releases) {
+			continue
+		}
+
+		if len(set.Architectures) > 0 && !shared.StringInSlice(d.Image.ArchitectureMapped, set.Architectures) {
+			continue
+		}
+
+		if len(set.Variants) > 0 && !shared.StringInSlice(d.Image.Variant, set.Variants) {
+			continue
+		}
+
+		out = append(out, set.Packages...)
 	}
 
 	return out

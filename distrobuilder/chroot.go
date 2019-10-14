@@ -42,6 +42,12 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 				continue
 			}
 
+			// Run template on repo.URL
+			repo.URL, err = shared.RenderTemplate(repo.URL, def)
+			if err != nil {
+				return err
+			}
+
 			err = manager.RepoHandler(repo)
 			if err != nil {
 				return fmt.Errorf("Error for repository %s: %s", repo.Name, err)

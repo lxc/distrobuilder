@@ -38,8 +38,15 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 		args = append(args, "--no-check-gpg")
 	}
 
-	if len(definition.Source.EarlyPackages) > 0 {
-		args = append(args, fmt.Sprintf("--include=%s", strings.Join(definition.Source.EarlyPackages, ",")))
+	earlyPackagesInstall := definition.GetEarlyPackages("install")
+	earlyPackagesRemove := definition.GetEarlyPackages("remove")
+
+	if len(earlyPackagesInstall) > 0 {
+		args = append(args, fmt.Sprintf("--include=%s", strings.Join(earlyPackagesInstall, ",")))
+	}
+
+	if len(earlyPackagesRemove) > 0 {
+		args = append(args, fmt.Sprintf("--exclude=%s", strings.Join(earlyPackagesRemove, ",")))
 	}
 
 	if len(definition.Source.Keys) > 0 {
@@ -77,32 +84,5 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 		defer os.Remove(scriptPath)
 	}
 
-	err := shared.RunCommand("debootstrap", args...)
-	if err != nil {
-		return err
-	}
-
-	if definition.Source.AptSources != "" {
-		// Run the template
-		out, err := shared.RenderTemplate(definition.Source.AptSources, definition)
-		if err != nil {
-			return err
-		}
-
-		// Append final new line if missing
-		if !strings.HasSuffix(out, "\n") {
-			out += "\n"
-		}
-
-		// Replace content of sources.list with the templated content.
-		file, err := os.Create(filepath.Join(rootfsDir, "etc", "apt", "sources.list"))
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		file.WriteString(out)
-	}
-
-	return nil
+	return shared.RunCommand("debootstrap", args...)
 }

@@ -48,34 +48,7 @@ func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
 }
 
 func (s *UbuntuHTTP) runDefaultVariant(definition shared.Definition, rootfsDir string) error {
-	err := s.unpack(filepath.Join(s.fpath, s.fname), rootfsDir)
-	if err != nil {
-		return err
-	}
-
-	if definition.Source.AptSources != "" {
-		// Run the template
-		out, err := shared.RenderTemplate(definition.Source.AptSources, definition)
-		if err != nil {
-			return err
-		}
-
-		// Append final new line if missing
-		if !strings.HasSuffix(out, "\n") {
-			out += "\n"
-		}
-
-		// Replace content of sources.list with the templated content.
-		file, err := os.Create(filepath.Join(rootfsDir, "etc", "apt", "sources.list"))
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		file.WriteString(out)
-	}
-
-	return nil
+	return s.unpack(filepath.Join(s.fpath, s.fname), rootfsDir)
 }
 
 func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir string) error {
