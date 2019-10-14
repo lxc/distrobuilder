@@ -13,18 +13,14 @@ image:
 
 source:
   downloader: ubuntu-http
-  URL: http://archive.ubuntu.com
+  url: http://archive.ubuntu.com
   keys:
     - 0xdeadbeaf
   keyserver: http://keyserver.ubuntu.com
   variant: default
   suite: suite
   same_as: xenial
-  apt_sources: |-
-     deb http://archive.ubuntu.com/ubuntu {{ image.release }}-updates main restricted universe multiverse
   skip_verification: false
-  early_packages:
-    - gnupg
 
 targets:
   lxc:
@@ -89,6 +85,34 @@ files:
     variants:
       - default
 
+  - generator: hostname
+    path: /etc/hostname
+
+  - generator: hosts
+    path: /etc/hosts
+
+  - generator: remove
+    path: /root/file
+
+  - generator: template
+    name: foo
+    content: |-
+      Here goes the content
+    template:
+      properties:
+        key: value
+      when:
+        - create
+        - copy
+
+  - generator: upstart-tty
+    path: /etc/init/lxc-tty.conf
+
+  - generator: cloud-init
+    name: user-data
+    content: |-
+      Here goes the user-data
+
 packages:
   manager: apt
   custom-manager:
@@ -118,7 +142,12 @@ packages:
   cleanup: false
   sets:
     - packages:
-       - vim
+        - gnupg
+      action: install
+      early: true
+
+    - packages:
+        - vim
       action: install
       releases:
         - a
@@ -130,11 +159,12 @@ packages:
 
     - packages:
         - grub
-      actionn: remove
+      action: remove
 
   repositories:
     - name: reponame
-      url: http://example.com
+      url: |-
+        deb http://archive.ubuntu.com/ubuntu {{ image.release }}-updates main restricted universe multiverse
       type: type
       key: 0xdeadbeaf
       releases:
@@ -145,16 +175,30 @@ packages:
       variants:
         - default
 
-    - packages:
-        - grub
-      actionn: remove
-
 actions:
+  - trigger: post-unpack
+    action: |-
+      #!/bin/sh
+
+      do something after the rootfs has been unpacked
+
+  - trigger: post-files
+    action: |-
+      #!/bin/sh
+
+      do something after the files section has been processed
+
+  - trigger: post-update
+    action: |-
+      #!/bin/sh
+
+      do something after packages have been processed
+
   - trigger: post-packages
     action: |-
       #!/bin/sh
 
-      echo do something
+      do something after the packages section has been processed
 
     releases:
       - a
