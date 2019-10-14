@@ -38,8 +38,15 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 		args = append(args, "--no-check-gpg")
 	}
 
-	if len(definition.Source.EarlyPackages) > 0 {
-		args = append(args, fmt.Sprintf("--include=%s", strings.Join(definition.Source.EarlyPackages, ",")))
+	earlyPackagesInstall := definition.GetEarlyPackages("install")
+	earlyPackagesRemove := definition.GetEarlyPackages("remove")
+
+	if len(earlyPackagesInstall) > 0 {
+		args = append(args, fmt.Sprintf("--include=%s", strings.Join(earlyPackagesInstall, ",")))
+	}
+
+	if len(earlyPackagesRemove) > 0 {
+		args = append(args, fmt.Sprintf("--exclude=%s", strings.Join(earlyPackagesRemove, ",")))
 	}
 
 	if len(definition.Source.Keys) > 0 {
