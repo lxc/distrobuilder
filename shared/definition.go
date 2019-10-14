@@ -89,7 +89,6 @@ type DefinitionSource struct {
 	Variant          string   `yaml:"variant,omitempty"`
 	Suite            string   `yaml:"suite,omitempty"`
 	SameAs           string   `yaml:"same_as,omitempty"`
-	AptSources       string   `yaml:"apt_sources,omitempty"`
 	SkipVerification bool     `yaml:"skip_verification,omitempty"`
 }
 
