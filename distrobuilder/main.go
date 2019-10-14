@@ -68,6 +68,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/shared"
+	"github.com/lxc/distrobuilder/shared/version"
 	"github.com/lxc/distrobuilder/sources"
 )
 
@@ -76,6 +77,7 @@ type cmdGlobal struct {
 	flagCacheDir string
 	flagOptions  []string
 	flagTimeout  uint
+	flagVersion  bool
 
 	definition *shared.Definition
 	sourceDir  string
@@ -119,6 +121,11 @@ func main() {
 		[]string{}, "Override options (list of key=value)"+"``")
 	app.PersistentFlags().UintVarP(&globalCmd.flagTimeout, "timeout", "t", 0,
 		"Timeout in seconds"+"``")
+	app.PersistentFlags().BoolVar(&globalCmd.flagVersion, "version", false, "Print version number")
+
+	// Version handling
+	app.SetVersionTemplate("{{.Version}}\n")
+	app.Version = version.Version
 
 	// LXC sub-commands
 	LXCCmd := cmdLXC{global: &globalCmd}
