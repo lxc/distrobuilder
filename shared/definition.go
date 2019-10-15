@@ -12,11 +12,33 @@ import (
 	lxdarch "github.com/lxc/lxd/shared/osarch"
 )
 
+// Filter represents a filter.
+type Filter interface {
+	GetReleases() []string
+	GetArchitectures() []string
+	GetVariants() []string
+}
+
 // A DefinitionFilter defines filters for various actions.
 type DefinitionFilter struct {
 	Releases      []string `yaml:"releases,omitempty"`
 	Architectures []string `yaml:"architectures,omitempty"`
 	Variants      []string `yaml:"variants,omitempty"`
+}
+
+// GetReleases returns a list of releases.
+func (d *DefinitionFilter) GetReleases() []string {
+	return d.Releases
+}
+
+// GetArchitectures returns a list of architectures.
+func (d *DefinitionFilter) GetArchitectures() []string {
+	return d.Architectures
+}
+
+// GetVariants returns a list of variants.
+func (d *DefinitionFilter) GetVariants() []string {
+	return d.Variants
 }
 
 // A DefinitionPackagesSet is a set of packages which are to be installed
@@ -30,11 +52,11 @@ type DefinitionPackagesSet struct {
 
 // A DefinitionPackagesRepository contains data of a specific repository
 type DefinitionPackagesRepository struct {
-	DefinitionFilter
-	Name string `yaml:"name"`           // Name of the repository
-	URL  string `yaml:"url"`            // URL (may differ based on manager)
-	Type string `yaml:"type,omitempty"` // For distros that have more than one repository manager
-	Key  string `yaml:"key,omitempty"`  // GPG armored keyring
+	DefinitionFilter `yaml:",inline"`
+	Name             string `yaml:"name"`           // Name of the repository
+	URL              string `yaml:"url"`            // URL (may differ based on manager)
+	Type             string `yaml:"type,omitempty"` // For distros that have more than one repository manager
+	Key              string `yaml:"key,omitempty"`  // GPG armored keyring
 }
 
 // CustomManagerCmd represents a command for a custom manager.
@@ -421,15 +443,7 @@ func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
 			continue
 		}
 
-		if len(action.Releases) > 0 && !shared.StringInSlice(d.Image.Release, action.Releases) {
-			continue
-		}
-
-		if len(action.Architectures) > 0 && !shared.StringInSlice(d.Image.ArchitectureMapped, action.Architectures) {
-			continue
-		}
-
-		if len(action.Variants) > 0 && !shared.StringInSlice(d.Image.Variant, action.Variants) {
+		if !ApplyFilter(&action, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant) {
 			continue
 		}
 
@@ -448,15 +462,7 @@ func (d *Definition) GetEarlyPackages(action string) []string {
 			continue
 		}
 
-		if len(set.Releases) > 0 && !shared.StringInSlice(d.Image.Release, set.Releases) {
-			continue
-		}
-
-		if len(set.Architectures) > 0 && !shared.StringInSlice(d.Image.ArchitectureMapped, set.Architectures) {
-			continue
-		}
-
-		if len(set.Variants) > 0 && !shared.StringInSlice(d.Image.Variant, set.Variants) {
+		if !ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant) {
 			continue
 		}
 
@@ -529,4 +535,21 @@ func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, 
 
 	// Return its value if it's a primitive type
 	return v, nil
+}
+
+// ApplyFilter returns true if the filter matches.
+func ApplyFilter(filter Filter, release string, architecture string, variant string) bool {
+	if len(filter.GetReleases()) > 0 && !shared.StringInSlice(release, filter.GetReleases()) {
+		return false
+	}
+
+	if len(filter.GetArchitectures()) > 0 && !shared.StringInSlice(architecture, filter.GetArchitectures()) {
+		return false
+	}
+
+	if len(filter.GetVariants()) > 0 && !shared.StringInSlice(variant, filter.GetVariants()) {
+		return false
+	}
+
+	return true
 }

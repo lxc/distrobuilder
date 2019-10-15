@@ -503,3 +503,14 @@ func TestDefinitionFilter(t *testing.T) {
 	require.Contains(t, def.Packages.Sets[0].Packages, "foo")
 	require.Contains(t, def.Packages.Sets[0].Architectures, "amd64")
 }
+
+func TestApplyFilter(t *testing.T) {
+	repo := DefinitionPackagesRepository{}
+
+	repo.Variants = []string{"default"}
+	repo.Architectures = []string{"amd64", "i386"}
+	repo.Releases = []string{"foo"}
+
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default"))
+	require.False(t, ApplyFilter(&repo, "", "arm64", "default"))
+}

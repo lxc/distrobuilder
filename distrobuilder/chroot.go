@@ -3,71 +3,58 @@ package main
 import (
 	"fmt"
 
-	lxd "github.com/lxc/lxd/shared"
-
 	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAction,
-	release string, architecture string, variant string) error {
+func manageRepositories(def *shared.Definition, manager *managers.Manager) error {
 	var err error
-	var manager *managers.Manager
 
-	if def.Manager != "" {
-		manager = managers.Get(def.Manager)
-		if manager == nil {
-			return fmt.Errorf("Couldn't get manager")
-		}
-	} else {
-		manager = managers.GetCustom(*def.CustomManager)
+	if def.Packages.Repositories == nil || len(def.Packages.Repositories) == 0 {
+		return nil
 	}
 
 	// Handle repositories actions
-	if def.Repositories != nil && len(def.Repositories) > 0 {
-		if manager.RepoHandler == nil {
-			return fmt.Errorf("No repository handler present")
+	if manager.RepoHandler == nil {
+		return fmt.Errorf("No repository handler present")
+	}
+
+	for _, repo := range def.Packages.Repositories {
+		if !shared.ApplyFilter(&repo, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant) {
+			continue
 		}
 
-		for _, repo := range def.Repositories {
-			if len(repo.Releases) > 0 && !lxd.StringInSlice(release, repo.Releases) {
-				continue
-			}
+		// Run template on repo.URL
+		repo.URL, err = shared.RenderTemplate(repo.URL, def)
+		if err != nil {
+			return err
+		}
 
-			if len(repo.Architectures) > 0 && !lxd.StringInSlice(architecture, repo.Architectures) {
-				continue
-			}
-
-			if len(repo.Variants) > 0 && !lxd.StringInSlice(variant, repo.Variants) {
-				continue
-			}
-
-			// Run template on repo.URL
-			repo.URL, err = shared.RenderTemplate(repo.URL, def)
-			if err != nil {
-				return err
-			}
-
-			err = manager.RepoHandler(repo)
-			if err != nil {
-				return fmt.Errorf("Error for repository %s: %s", repo.Name, err)
-			}
+		err = manager.RepoHandler(repo)
+		if err != nil {
+			return fmt.Errorf("Error for repository %s: %s", repo.Name, err)
 		}
 	}
+
+	return nil
+}
+
+func managePackages(def *shared.Definition, manager *managers.Manager) error {
+	var err error
 
 	err = manager.Refresh()
 	if err != nil {
 		return err
 	}
 
-	if def.Update {
+	if def.Packages.Update {
 		err = manager.Update()
 		if err != nil {
 			return err
 		}
 
 		// Run post update hook
-		for _, action := range actions {
+		for _, action := range def.GetRunnableActions("post-update") {
 			err = shared.RunScript(action.Action)
 			if err != nil {
 				return fmt.Errorf("Failed to run post-update: %s", err)
@@ -77,16 +64,8 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 
 	var validSets []shared.DefinitionPackagesSet
 
-	for _, set := range def.Sets {
-		if len(set.Releases) > 0 && !lxd.StringInSlice(release, set.Releases) {
-			continue
-		}
-
-		if len(set.Architectures) > 0 && !lxd.StringInSlice(architecture, set.Architectures) {
-			continue
-		}
-
-		if len(set.Variants) > 0 && !lxd.StringInSlice(variant, set.Variants) {
+	for _, set := range def.Packages.Sets {
+		if !shared.ApplyFilter(&set, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant) {
 			continue
 		}
 
@@ -104,7 +83,7 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		}
 	}
 
-	if def.Cleanup {
+	if def.Packages.Cleanup {
 		err = manager.Clean()
 		if err != nil {
 			return err
