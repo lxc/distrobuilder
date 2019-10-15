@@ -9,36 +9,35 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAction,
-	release string, architecture string, variant string) error {
+func managePackages(def *shared.Definition) error {
 	var err error
 	var manager *managers.Manager
 
-	if def.Manager != "" {
-		manager = managers.Get(def.Manager)
+	if def.Packages.Manager != "" {
+		manager = managers.Get(def.Packages.Manager)
 		if manager == nil {
 			return fmt.Errorf("Couldn't get manager")
 		}
 	} else {
-		manager = managers.GetCustom(*def.CustomManager)
+		manager = managers.GetCustom(*def.Packages.CustomManager)
 	}
 
 	// Handle repositories actions
-	if def.Repositories != nil && len(def.Repositories) > 0 {
+	if def.Packages.Repositories != nil && len(def.Packages.Repositories) > 0 {
 		if manager.RepoHandler == nil {
 			return fmt.Errorf("No repository handler present")
 		}
 
-		for _, repo := range def.Repositories {
-			if len(repo.Releases) > 0 && !lxd.StringInSlice(release, repo.Releases) {
+		for _, repo := range def.Packages.Repositories {
+			if len(repo.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, repo.Releases) {
 				continue
 			}
 
-			if len(repo.Architectures) > 0 && !lxd.StringInSlice(architecture, repo.Architectures) {
+			if len(repo.Architectures) > 0 && !lxd.StringInSlice(def.Image.ArchitectureMapped, repo.Architectures) {
 				continue
 			}
 
-			if len(repo.Variants) > 0 && !lxd.StringInSlice(variant, repo.Variants) {
+			if len(repo.Variants) > 0 && !lxd.StringInSlice(def.Image.Variant, repo.Variants) {
 				continue
 			}
 
@@ -60,14 +59,14 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		return err
 	}
 
-	if def.Update {
+	if def.Packages.Update {
 		err = manager.Update()
 		if err != nil {
 			return err
 		}
 
 		// Run post update hook
-		for _, action := range actions {
+		for _, action := range def.GetRunnableActions("post-update") {
 			err = shared.RunScript(action.Action)
 			if err != nil {
 				return fmt.Errorf("Failed to run post-update: %s", err)
@@ -77,16 +76,16 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 
 	var validSets []shared.DefinitionPackagesSet
 
-	for _, set := range def.Sets {
-		if len(set.Releases) > 0 && !lxd.StringInSlice(release, set.Releases) {
+	for _, set := range def.Packages.Sets {
+		if len(set.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, set.Releases) {
 			continue
 		}
 
-		if len(set.Architectures) > 0 && !lxd.StringInSlice(architecture, set.Architectures) {
+		if len(set.Architectures) > 0 && !lxd.StringInSlice(def.Image.ArchitectureMapped, set.Architectures) {
 			continue
 		}
 
-		if len(set.Variants) > 0 && !lxd.StringInSlice(variant, set.Variants) {
+		if len(set.Variants) > 0 && !lxd.StringInSlice(def.Image.Variant, set.Variants) {
 			continue
 		}
 
@@ -104,7 +103,7 @@ func managePackages(def shared.DefinitionPackages, actions []shared.DefinitionAc
 		}
 	}
 
-	if def.Cleanup {
+	if def.Packages.Cleanup {
 		err = manager.Clean()
 		if err != nil {
 			return err
