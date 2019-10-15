@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 
-	lxd "github.com/lxc/lxd/shared"
-
 	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -29,15 +27,7 @@ func managePackages(def *shared.Definition) error {
 		}
 
 		for _, repo := range def.Packages.Repositories {
-			if len(repo.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, repo.Releases) {
-				continue
-			}
-
-			if len(repo.Architectures) > 0 && !lxd.StringInSlice(def.Image.ArchitectureMapped, repo.Architectures) {
-				continue
-			}
-
-			if len(repo.Variants) > 0 && !lxd.StringInSlice(def.Image.Variant, repo.Variants) {
+			if !shared.ApplyFilter(&repo, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant) {
 				continue
 			}
 
@@ -77,15 +67,7 @@ func managePackages(def *shared.Definition) error {
 	var validSets []shared.DefinitionPackagesSet
 
 	for _, set := range def.Packages.Sets {
-		if len(set.Releases) > 0 && !lxd.StringInSlice(def.Image.Release, set.Releases) {
-			continue
-		}
-
-		if len(set.Architectures) > 0 && !lxd.StringInSlice(def.Image.ArchitectureMapped, set.Architectures) {
-			continue
-		}
-
-		if len(set.Variants) > 0 && !lxd.StringInSlice(def.Image.Variant, set.Variants) {
+		if !shared.ApplyFilter(&set, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant) {
 			continue
 		}
 

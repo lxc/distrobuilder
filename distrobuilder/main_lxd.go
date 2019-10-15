@@ -68,12 +68,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 		c.global.flagCacheDir, *c.global.definition)
 
 	for _, file := range c.global.definition.Files {
-		if len(file.Releases) > 0 && !lxd.StringInSlice(c.global.definition.Image.Release,
-			file.Releases) {
-			continue
-		}
-
-		if len(file.Variants) > 0 && !lxd.StringInSlice(c.global.definition.Image.Variant, file.Variants) {
+		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant) {
 			continue
 		}
 

@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	lxd "github.com/lxc/lxd/shared"
 	"github.com/spf13/cobra"
 
 	"github.com/lxc/distrobuilder/generators"
+	"github.com/lxc/distrobuilder/shared"
 )
 
 type cmdBuildDir struct {
@@ -28,18 +28,7 @@ func (c *cmdBuildDir) command() *cobra.Command {
 					return fmt.Errorf("Unknown generator '%s'", file.Generator)
 				}
 
-				if len(file.Releases) > 0 && !lxd.StringInSlice(
-					c.global.definition.Image.Release, file.Releases) {
-					continue
-				}
-
-				if len(file.Architectures) > 0 && !lxd.StringInSlice(
-					c.global.definition.Image.ArchitectureMapped, file.Architectures) {
-					continue
-				}
-
-				if len(file.Variants) > 0 && !lxd.StringInSlice(
-					c.global.definition.Image.Variant, file.Variants) {
+				if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant) {
 					continue
 				}
 
