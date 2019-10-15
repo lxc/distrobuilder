@@ -7,42 +7,40 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func managePackages(def *shared.Definition) error {
+func manageRepositories(def *shared.Definition, manager *managers.Manager) error {
 	var err error
-	var manager *managers.Manager
 
-	if def.Packages.Manager != "" {
-		manager = managers.Get(def.Packages.Manager)
-		if manager == nil {
-			return fmt.Errorf("Couldn't get manager")
-		}
-	} else {
-		manager = managers.GetCustom(*def.Packages.CustomManager)
+	if def.Packages.Repositories == nil || len(def.Packages.Repositories) == 0 {
+		return nil
 	}
 
 	// Handle repositories actions
-	if def.Packages.Repositories != nil && len(def.Packages.Repositories) > 0 {
-		if manager.RepoHandler == nil {
-			return fmt.Errorf("No repository handler present")
+	if manager.RepoHandler == nil {
+		return fmt.Errorf("No repository handler present")
+	}
+
+	for _, repo := range def.Packages.Repositories {
+		if !shared.ApplyFilter(&repo, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant) {
+			continue
 		}
 
-		for _, repo := range def.Packages.Repositories {
-			if !shared.ApplyFilter(&repo, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant) {
-				continue
-			}
+		// Run template on repo.URL
+		repo.URL, err = shared.RenderTemplate(repo.URL, def)
+		if err != nil {
+			return err
+		}
 
-			// Run template on repo.URL
-			repo.URL, err = shared.RenderTemplate(repo.URL, def)
-			if err != nil {
-				return err
-			}
-
-			err = manager.RepoHandler(repo)
-			if err != nil {
-				return fmt.Errorf("Error for repository %s: %s", repo.Name, err)
-			}
+		err = manager.RepoHandler(repo)
+		if err != nil {
+			return fmt.Errorf("Error for repository %s: %s", repo.Name, err)
 		}
 	}
+
+	return nil
+}
+
+func managePackages(def *shared.Definition, manager *managers.Manager) error {
+	var err error
 
 	err = manager.Refresh()
 	if err != nil {

@@ -67,6 +67,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
+	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
 	"github.com/lxc/distrobuilder/shared/version"
 	"github.com/lxc/distrobuilder/sources"
@@ -249,6 +250,22 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// Unmount everything and exit the chroot
 	defer exitChroot()
 
+	var manager *managers.Manager
+
+	if c.definition.Packages.Manager != "" {
+		manager = managers.Get(c.definition.Packages.Manager)
+		if manager == nil {
+			return fmt.Errorf("Couldn't get manager")
+		}
+	} else {
+		manager = managers.GetCustom(*c.definition.Packages.CustomManager)
+	}
+
+	err = manageRepositories(c.definition, manager)
+	if err != nil {
+		return fmt.Errorf("Failed to manage repositories: %s", err)
+	}
+
 	// Run post unpack hook
 	for _, hook := range c.definition.GetRunnableActions("post-unpack") {
 		err := shared.RunScript(hook.Action)
@@ -258,7 +275,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Install/remove/update packages
-	err = managePackages(c.definition)
+	err = managePackages(c.definition, manager)
 	if err != nil {
 		return fmt.Errorf("Failed to manage packages: %s", err)
 	}
