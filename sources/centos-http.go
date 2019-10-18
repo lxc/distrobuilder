@@ -234,11 +234,7 @@ func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
 		return err
 	}
 
-	// Create cdrom repo for yum
-	err = os.MkdirAll(filepath.Join(tempRootDir, "mnt", "cdrom"), 0755)
-	if err != nil {
-		return err
-	}
+	gpgKeysPath := ""
 
 	packagesDir := filepath.Join(isoDir, "Packages")
 	repodataDir := filepath.Join(isoDir, "repodata")
@@ -250,42 +246,41 @@ func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
 		repodataDir = filepath.Join(isoDir, "BaseOS", "repodata")
 	}
 
-	if !lxd.PathExists(packagesDir) {
-		return fmt.Errorf("Missing Packages directory")
-	}
-
-	if !lxd.PathExists(repodataDir) {
-		return fmt.Errorf("Missing repodata directory")
-	}
-
-	// Copy repo relevant files to the cdrom
-	err = shared.RunCommand("rsync", "-qa",
-		packagesDir,
-		repodataDir,
-		filepath.Join(tempRootDir, "mnt", "cdrom"))
-	if err != nil {
-		return err
-	}
-
-	// Find all relevant GPG keys
-	gpgKeys, err := filepath.Glob(filepath.Join(isoDir, "RPM-GPG-KEY-*"))
-	if err != nil {
-		return err
-	}
-
-	// Copy the keys to the cdrom
-	gpgKeysPath := ""
-	for _, key := range gpgKeys {
-		fmt.Printf("key=%v\n", key)
-		if len(gpgKeysPath) > 0 {
-			gpgKeysPath += " "
+	if lxd.PathExists(packagesDir) && lxd.PathExists(repodataDir) {
+		// Create cdrom repo for yum
+		err = os.MkdirAll(filepath.Join(tempRootDir, "mnt", "cdrom"), 0755)
+		if err != nil {
+			return err
 		}
-		gpgKeysPath += fmt.Sprintf("file:///mnt/cdrom/%s", filepath.Base(key))
 
-		err = shared.RunCommand("rsync", "-qa", key,
+		// Copy repo relevant files to the cdrom
+		err = shared.RunCommand("rsync", "-qa",
+			packagesDir,
+			repodataDir,
 			filepath.Join(tempRootDir, "mnt", "cdrom"))
 		if err != nil {
 			return err
+		}
+
+		// Find all relevant GPG keys
+		gpgKeys, err := filepath.Glob(filepath.Join(isoDir, "RPM-GPG-KEY-*"))
+		if err != nil {
+			return err
+		}
+
+		// Copy the keys to the cdrom
+		for _, key := range gpgKeys {
+			fmt.Printf("key=%v\n", key)
+			if len(gpgKeysPath) > 0 {
+				gpgKeysPath += " "
+			}
+			gpgKeysPath += fmt.Sprintf("file:///mnt/cdrom/%s", filepath.Base(key))
+
+			err = shared.RunCommand("rsync", "-qa", key,
+				filepath.Join(tempRootDir, "mnt", "cdrom"))
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -304,33 +299,49 @@ GPG_KEYS="%s"
 # Create required files
 touch /etc/mtab /etc/fstab
 
-# Install initial package set
-cd /mnt/cdrom/Packages
-rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
-rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
-
-# Add cdrom repo
+yum_args=""
 mkdir -p /etc/yum.repos.d
-cat <<- EOF > /etc/yum.repos.d/cdrom.repo
+
+if [ -d /mnt/cdrom ]; then
+	# Install initial package set
+	cd /mnt/cdrom/Packages
+	rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
+	rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
+
+	# Add cdrom repo
+	cat <<- EOF > /etc/yum.repos.d/cdrom.repo
 [cdrom]
 name=Install CD-ROM
 baseurl=file:///mnt/cdrom
 enabled=0
-gpgcheck=1
 EOF
 
-if [ -n "${GPG_KEYS}" ]; then
-	echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
-	echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
-else
-	echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
-fi
+	if [ -n "${GPG_KEYS}" ]; then
+		echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
+		echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
+	else
+		echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
+	fi
 
-yum --disablerepo=* --enablerepo=cdrom -y reinstall yum
+	yum_args="--disablerepo=* --enablerepo=cdrom"
+	yum ${yum_args} -y reinstall yum
+else
+	cat <<- "EOF" > /etc/yum.repos.d/CentOS-Base.repo
+[BaseOS]
+name=CentOS-$releasever - Base
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=BaseOS&infra=$infra
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+EOF
+
+	# Use dnf in the boot iso since yum isn't available
+	alias yum=dnf
+fi
 
 # Create a minimal rootfs
 mkdir /rootfs
-yum --installroot=/rootfs --disablerepo=* --enablerepo=cdrom -y --releasever=%s install basesystem centos-release yum
+yum ${yum_args} --installroot=/rootfs -y --releasever=%s install basesystem centos-release yum
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
