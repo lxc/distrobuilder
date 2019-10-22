@@ -40,10 +40,17 @@ Use "distrobuilder [command] --help" for more information about a command.
 
 In the following, we see how to create a container image for LXD.
 
-### Installation
+## Installing from package
 
-Currently, there are no binary packages of `distrobuilder`. Therefore, you will need to compile it from source.
-To do so, first install the Go programming language, and some other dependencies.
+`distrobuilder` is available from the snapstore.
+
+```
+snap install distrobuilder --classic
+```
+
+## Installing from source
+
+To compile `distrobuilder` from source, first install the Go programming language, and some other dependencies.
 
 ```
 sudo apt update
