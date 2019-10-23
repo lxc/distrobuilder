@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	lxd "github.com/lxc/lxd/shared"
+	"golang.org/x/sys/unix"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -63,7 +64,7 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 	if err != nil {
 		return err
 	}
-	defer syscall.Unmount(isoDir, 0)
+	defer unix.Unmount(isoDir, 0)
 
 	var rootfsImage string
 	squashfsImage := filepath.Join(isoDir, "LiveOS", "squashfs.img")
@@ -75,7 +76,7 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 		if err != nil {
 			return err
 		}
-		defer syscall.Unmount(squashfsDir, 0)
+		defer unix.Unmount(squashfsDir, 0)
 
 		rootfsImage = filepath.Join(squashfsDir, "LiveOS", "rootfs.img")
 	} else {
@@ -133,53 +134,47 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 		}
 	}
 
-	if rpmPkg == "" {
-		return fmt.Errorf("Couldn't determine RPM package")
-	}
+	if rpmPkg != "" && yumPkg != "" {
+		rpmFileName := filepath.Join(tempRootDir, filepath.Base(rpmPkg))
+		yumFileName := filepath.Join(tempRootDir, filepath.Base(yumPkg))
+		gpgFileName := filepath.Join(tempRootDir, "RPM-GPG-KEY-oracle")
 
-	if yumPkg == "" {
-		return fmt.Errorf("Couldn't determine YUM package")
-	}
+		rpmFile, err := os.Create(rpmFileName)
+		if err != nil {
+			return err
+		}
+		defer rpmFile.Close()
 
-	rpmFileName := filepath.Join(tempRootDir, filepath.Base(rpmPkg))
-	yumFileName := filepath.Join(tempRootDir, filepath.Base(yumPkg))
-	gpgFileName := filepath.Join(tempRootDir, "RPM-GPG-KEY-oracle")
+		yumFile, err := os.Create(yumFileName)
+		if err != nil {
+			return err
+		}
+		defer yumFile.Close()
 
-	rpmFile, err := os.Create(rpmFileName)
-	if err != nil {
-		return err
-	}
-	defer rpmFile.Close()
+		gpgFile, err := os.Create(gpgFileName)
+		if err != nil {
+			return err
+		}
+		defer gpgFile.Close()
 
-	yumFile, err := os.Create(yumFileName)
-	if err != nil {
-		return err
-	}
-	defer yumFile.Close()
+		_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, rpmFileName, fmt.Sprintf("%s/%s", baseURL, rpmPkg), "", nil, rpmFile)
+		if err != nil {
+			return err
+		}
+		rpmFile.Close()
 
-	gpgFile, err := os.Create(gpgFileName)
-	if err != nil {
-		return err
-	}
-	defer gpgFile.Close()
+		_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, yumFileName, fmt.Sprintf("%s/%s", baseURL, yumPkg), "", nil, yumFile)
+		if err != nil {
+			return err
+		}
+		yumFile.Close()
 
-	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, rpmFileName, fmt.Sprintf("%s/%s", baseURL, rpmPkg), "", nil, rpmFile)
-	if err != nil {
-		return err
+		_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, gpgFileName, "https://oss.oracle.com/ol6/RPM-GPG-KEY-oracle", "", nil, gpgFile)
+		if err != nil {
+			return err
+		}
+		gpgFile.Close()
 	}
-	rpmFile.Close()
-
-	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, yumFileName, fmt.Sprintf("%s/%s", baseURL, yumPkg), "", nil, yumFile)
-	if err != nil {
-		return err
-	}
-	yumFile.Close()
-
-	_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, gpgFileName, "https://oss.oracle.com/ol6/RPM-GPG-KEY-oracle", "", nil, gpgFile)
-	if err != nil {
-		return err
-	}
-	gpgFile.Close()
 
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{})
@@ -198,39 +193,57 @@ arch="%s"
 # Create required files
 touch /etc/mtab /etc/fstab
 
-# Fetch and install rpm and yum from the Oracle repo
-_rpm=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}/index.html | grep -Eo '>rpm-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
-_yum=$(curl -s https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}/index.html | grep -Eo '>yum-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
+mkdir -p /etc/yum.repos.d /rootfs
 
-rpm -ivh --nodeps "${_rpm}" "${_yum}"
-rpm --import RPM-GPG-KEY-oracle
+if which dnf; then
+	alias yum=dnf
+	baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/baseos/latest/${arch}/
+	gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
+else
+	baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}
+	gpgkey=file:///RPM-GPG-KEY-oracle
+
+	# Fetch and install rpm and yum from the Oracle repo
+	_rpm=$(curl -s ${baseurl}/index.html | grep -Eo '>rpm-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
+	_yum=$(curl -s ${baseurl}/index.html | grep -Eo '>yum-[[:digit:]][^ ]+\.rpm<' | tail -1 | sed 's|[<>]||g')
+
+	rpm -ivh --nodeps "${_rpm}" "${_yum}"
+	rpm --import RPM-GPG-KEY-oracle
+fi
 
 # Add repo
-mkdir -p /etc/yum.repos.d
 cat <<- EOF > /etc/yum.repos.d/base.repo
 [base]
 name=Oracle Linux
-baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}
+baseurl=${baseurl}
 enabled=1
 gpgcheck=1
-gpgkey=file:///RPM-GPG-KEY-oracle
+gpgkey=${gpgkey}
 EOF
 
-mkdir /rootfs
-yum --installroot=/rootfs -y --releasever=${version} install basesystem oraclelinux-release yum
+rm -rf /var/rootfs/*
+
+yum install --releasever=${version} --installroot=/rootfs -y basesystem oraclelinux-release yum
 rm -rf /rootfs/var/cache/yum
 
-cp RPM-GPG-KEY-oracle /rootfs
-
 mkdir -p /rootfs/etc/yum.repos.d
+cp /etc/yum.repos.d/base.repo /rootfs/etc/yum.repos.d/
+
+if [ -f RPM-GPG-KEY-oracle ] && ! [ -f /rootfs/etc/pki/rpm-gpg/RPM-GPG-KEY-oracle ]; then
+	mkdir -p /rootfs/etc/pki/rpm-gpg/
+	cp RPM-GPG-KEY-oracle /rootfs/etc/pki/rpm-gpg/
+fi
+
+
 cat <<- EOF > /rootfs/etc/yum.repos.d/base.repo
 [base]
 name=Oracle Linux
-baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}
+baseurl=${baseurl}
 enabled=1
 gpgcheck=1
-gpgkey=file:///RPM-GPG-KEY-oracle
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 EOF
+
 `, s.majorVersion, latestUpdate, s.architecture))
 	if err != nil {
 		exitChroot()
