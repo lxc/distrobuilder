@@ -2,12 +2,12 @@ package sources
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 
 	lxd "github.com/lxc/lxd/shared"
 	"golang.org/x/sys/unix"
@@ -84,12 +84,6 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 
 	}
 
-	err = shared.RunCommand("mount", "-o", "ro", rootfsImage, roRootDir)
-	if err != nil {
-		return err
-	}
-	defer syscall.Unmount(roRootDir, 0)
-
 	// Remove rootfsDir otherwise rsync will copy the content into the directory
 	// itself
 	err = os.RemoveAll(rootfsDir)
@@ -97,9 +91,7 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 		return err
 	}
 
-	// Since roRootDir is read-only, we need to copy it to a temporary rootfs
-	// directory in order to create the minimal rootfs.
-	err = shared.RunCommand("rsync", "-qa", roRootDir+"/", tempRootDir)
+	err = s.unpackRootfsImage(rootfsImage, tempRootDir)
 	if err != nil {
 		return err
 	}
@@ -276,4 +268,39 @@ func (s *OracleLinuxHTTP) getLatestUpdate(URL string) (string, error) {
 	}
 
 	return strings.TrimSuffix(latestUpdate, "/"), nil
+}
+
+func (s OracleLinuxHTTP) unpackRootfsImage(imageFile string, target string) error {
+	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(installDir)
+
+	err = shared.RunCommand("mount", "-o", "ro", imageFile, installDir)
+	if err != nil {
+		return err
+	}
+	defer unix.Unmount(installDir, 0)
+
+	rootfsDir := installDir
+	rootfsFile := filepath.Join(installDir, "LiveOS", "rootfs.img")
+
+	if lxd.PathExists(rootfsFile) {
+		rootfsDir, err = ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(rootfsDir)
+
+		err = shared.RunCommand("mount", "-o", "ro", rootfsFile, rootfsDir)
+		if err != nil {
+			return err
+		}
+		defer unix.Unmount(rootfsFile, 0)
+	}
+
+	// Since rootfs is read-only, we need to copy it to a temporary rootfs
+	// directory in order to create the minimal rootfs.
+	return shared.RunCommand("rsync", "-qa", rootfsDir+"/", target)
 }
