@@ -30,5 +30,6 @@ func NewDnf() *Manager {
 				"clean", "all",
 			},
 		},
+		RepoHandler: yumRepoHandler,
 	}
 }
