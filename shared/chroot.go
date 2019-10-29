@@ -12,19 +12,20 @@ import (
 	lxd "github.com/lxc/lxd/shared"
 )
 
-type chrootMount struct {
-	source string
-	target string
-	fstype string
-	flags  uintptr
-	data   string
-	isDir  bool
+// ChrootMount defines mount args.
+type ChrootMount struct {
+	Source string
+	Target string
+	FSType string
+	Flags  uintptr
+	Data   string
+	IsDir  bool
 }
 
 // ActiveChroots is a map of all active chroots and their exit functions
 var ActiveChroots = make(map[string]func() error)
 
-func setupMounts(rootfs string, mounts []chrootMount) error {
+func setupMounts(rootfs string, mounts []ChrootMount) error {
 	// Create a temporary mount path
 	err := os.MkdirAll(filepath.Join(rootfs, ".distrobuilder"), 0700)
 	if err != nil {
@@ -36,7 +37,7 @@ func setupMounts(rootfs string, mounts []chrootMount) error {
 		tmpTarget := filepath.Join(rootfs, ".distrobuilder", fmt.Sprintf("%d", i))
 
 		// Create the target mountpoint
-		if mount.isDir {
+		if mount.IsDir {
 			err := os.MkdirAll(tmpTarget, 0755)
 			if err != nil {
 				return err
@@ -49,22 +50,22 @@ func setupMounts(rootfs string, mounts []chrootMount) error {
 		}
 
 		// Mount to the temporary path
-		err := syscall.Mount(mount.source, tmpTarget, mount.fstype, mount.flags, mount.data)
+		err := syscall.Mount(mount.Source, tmpTarget, mount.FSType, mount.Flags, mount.Data)
 		if err != nil {
-			return fmt.Errorf("Failed to mount '%s': %s", mount.source, err)
+			return fmt.Errorf("Failed to mount '%s': %s", mount.Source, err)
 		}
 	}
 
 	return nil
 }
 
-func moveMounts(mounts []chrootMount) error {
+func moveMounts(mounts []ChrootMount) error {
 	for i, mount := range mounts {
 		// Source path
 		tmpSource := filepath.Join("/", ".distrobuilder", fmt.Sprintf("%d", i))
 
 		// Resolve symlinks
-		target := mount.target
+		target := mount.Target
 		for {
 			// Get information on current target
 			fi, err := os.Lstat(target)
@@ -93,7 +94,7 @@ func moveMounts(mounts []chrootMount) error {
 		}
 
 		// Create target path
-		if mount.isDir {
+		if mount.IsDir {
 			err = os.MkdirAll(target, 0755)
 			if err != nil {
 				return err
@@ -108,7 +109,7 @@ func moveMounts(mounts []chrootMount) error {
 		// Move the mount to its destination
 		err = syscall.Mount(tmpSource, target, "", syscall.MS_MOVE, "")
 		if err != nil {
-			return fmt.Errorf("Failed to mount '%s': %s", mount.source, err)
+			return fmt.Errorf("Failed to mount '%s': %s", mount.Source, err)
 		}
 	}
 
@@ -159,7 +160,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv) (func() error, error) {
 	}
 
 	// Setup all other needed mounts
-	mounts := []chrootMount{
+	mounts := []ChrootMount{
 		{"none", "/proc", "proc", 0, "", true},
 		{"none", "/sys", "sysfs", 0, "", true},
 		{"/dev", "/dev", "", syscall.MS_BIND, "", true},
