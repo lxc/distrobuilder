@@ -53,7 +53,7 @@ func TestCloudInitGeneratorRunLXC(t *testing.T) {
 	}
 
 	// Disable cloud-init
-	generator.RunLXC(cacheDir, rootfsDir, nil, shared.DefinitionFile{})
+	generator.RunLXC(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXC{}, shared.DefinitionFile{})
 
 	// Check whether the generator has altered the rootfs
 	for _, f := range []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"} {
@@ -160,7 +160,7 @@ config:
 	for i, tt := range tests {
 		log.Printf("Running test #%d: %s", i, tt.name)
 
-		err := generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionFile{
+		err := generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{}, shared.DefinitionFile{
 			Generator: "cloud-init",
 			Name:      tt.name,
 		})

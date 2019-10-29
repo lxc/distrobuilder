@@ -13,13 +13,13 @@ type RemoveGenerator struct{}
 
 // RunLXC removes a path.
 func (g RemoveGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
 	return g.Run(cacheDir, sourceDir, defFile)
 }
 
 // RunLXD removes a path.
 func (g RemoveGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
 	return g.Run(cacheDir, sourceDir, defFile)
 }
 

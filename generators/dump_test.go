@@ -22,7 +22,7 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 	generator := Get("dump")
 	require.Equal(t, DumpGenerator{}, generator)
 
-	err := generator.RunLXC(cacheDir, rootfsDir, nil,
+	err := generator.RunLXC(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXC{},
 		shared.DefinitionFile{
 			Path:    "/hello/world",
 			Content: "hello world",
@@ -51,7 +51,7 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	generator := Get("dump")
 	require.Equal(t, DumpGenerator{}, generator)
 
-	err := generator.RunLXD(cacheDir, rootfsDir, nil,
+	err := generator.RunLXD(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXD{},
 		shared.DefinitionFile{
 			Path:    "/hello/world",
 			Content: "hello world",

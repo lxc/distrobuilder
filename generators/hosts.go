@@ -17,7 +17,7 @@ type HostsGenerator struct{}
 
 // RunLXC creates a LXC specific entry in the hosts file.
 func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
 
 	// Skip if the file doesn't exist
 	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
@@ -62,7 +62,7 @@ func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 
 // RunLXD creates a hosts template.
 func (g HostsGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
 
 	// Skip if the file doesn't exist
 	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {

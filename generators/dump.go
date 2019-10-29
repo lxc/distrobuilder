@@ -14,7 +14,7 @@ type DumpGenerator struct{}
 
 // RunLXC dumps content to a file.
 func (g DumpGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
 	err := g.Run(cacheDir, sourceDir, defFile)
 	if err != nil {
 		return err
@@ -29,7 +29,7 @@ func (g DumpGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 
 // RunLXD dumps content to a file.
 func (g DumpGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
 	return g.Run(cacheDir, sourceDir, defFile)
 }
 

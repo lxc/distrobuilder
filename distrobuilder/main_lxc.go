@@ -127,7 +127,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		}
 
 		err := generator.RunLXC(c.global.flagCacheDir, overlayDir, img,
-			file)
+			c.global.definition.Targets.LXC, file)
 		if err != nil {
 			return err
 		}

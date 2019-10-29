@@ -35,7 +35,7 @@ func TestHostnameGeneratorRunLXC(t *testing.T) {
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "hostname")
 
-	err = generator.RunLXC(cacheDir, rootfsDir, image,
+	err = generator.RunLXC(cacheDir, rootfsDir, image, shared.DefinitionTargetLXC{},
 		shared.DefinitionFile{Path: "/etc/hostname"})
 	require.NoError(t, err)
 
@@ -72,7 +72,7 @@ func TestHostnameGeneratorRunLXD(t *testing.T) {
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "hostname")
 
-	err = generator.RunLXD(cacheDir, rootfsDir, image,
+	err = generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{},
 		shared.DefinitionFile{Path: "/etc/hostname"})
 	require.NoError(t, err)
 

@@ -151,7 +151,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		}
 
 		err := generator.RunLXD(c.global.flagCacheDir, overlayDir,
-			img, file)
+			img, c.global.definition.Targets.LXD, file)
 		if err != nil {
 			return fmt.Errorf("Failed to create LXD data: %s", err)
 		}
