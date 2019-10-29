@@ -169,7 +169,7 @@ func (s CentOSHTTP) unpackRaw(filePath, rootfsDir string) error {
 	}
 
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{})
+	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}
@@ -296,7 +296,7 @@ func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
 	}
 
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{})
+	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}

@@ -98,7 +98,7 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 	// Handle edge builds
 	if definition.Image.Release == "edge" {
 		// Upgrade to edge
-		exitChroot, err := shared.SetupChroot(rootfsDir, definition.Environment)
+		exitChroot, err := shared.SetupChroot(rootfsDir, definition.Environment, nil)
 		if err != nil {
 			return err
 		}

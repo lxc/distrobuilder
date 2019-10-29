@@ -85,7 +85,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 	}
 
 	exitChroot, err := shared.SetupChroot(c.global.sourceDir,
-		c.global.definition.Environment)
+		c.global.definition.Environment, nil)
 	if err != nil {
 		return err
 	}

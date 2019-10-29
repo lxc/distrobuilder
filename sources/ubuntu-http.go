@@ -150,7 +150,7 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 		return err
 	}
 
-	exitChroot, err := shared.SetupChroot(baseImageDir, shared.DefinitionEnv{})
+	exitChroot, err := shared.SetupChroot(baseImageDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
 		return err
 	}

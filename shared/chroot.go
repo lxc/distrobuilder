@@ -152,7 +152,7 @@ func killChrootProcesses(rootfs string) error {
 }
 
 // SetupChroot sets up mount and files, a reverter and then chroots for you
-func SetupChroot(rootfs string, envs DefinitionEnv) (func() error, error) {
+func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() error, error) {
 	// Mount the rootfs
 	err := syscall.Mount(rootfs, rootfs, "", syscall.MS_BIND, "")
 	if err != nil {
@@ -181,7 +181,11 @@ func SetupChroot(rootfs string, envs DefinitionEnv) (func() error, error) {
 	}
 
 	// Setup all needed mounts in a temporary location
-	err = setupMounts(rootfs, mounts)
+	if m != nil && len(m) > 0 {
+		err = setupMounts(rootfs, append(mounts, m...))
+	} else {
+		err = setupMounts(rootfs, mounts)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("Failed to mount filesystems: %v", err)
 	}
@@ -199,7 +203,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv) (func() error, error) {
 	}
 
 	// Move all the mounts into place
-	err = moveMounts(mounts)
+	err = moveMounts(append(mounts, m...))
 	if err != nil {
 		return nil, err
 	}
