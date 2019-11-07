@@ -14,15 +14,6 @@ source:
   keys:
     - 0x790BC7277767219C42C86F933B4FE6ACC0B21F32
 
-  apt_sources: |-
-    {% if image.architecture_mapped == "amd64" or image.architecture_mapped == "i386" %}deb http://archive.ubuntu.com/ubuntu {{ image.release }} main restricted universe multiverse
-    deb http://archive.ubuntu.com/ubuntu {{ image.release }}-updates main restricted universe multiverse
-    deb http://security.ubuntu.com/ubuntu {{ image.release }}-security main restricted universe multiverse
-    {% else %}deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }} main restricted universe multiverse
-    deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-updates main restricted universe multiverse
-    deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-security main restricted universe multiverse
-    {% endif %}
-
 targets:
   lxc:
     create-message: |-
@@ -140,6 +131,28 @@ packages:
   manager: apt
   update: true
   cleanup: true
+
+  repositories:
+    - name: sources.list
+      url: |-
+        deb http://archive.ubuntu.com/ubuntu {{ image.release }} main restricted universe multiverse
+        deb http://archive.ubuntu.com/ubuntu {{ image.release }}-updates main restricted universe multiverse
+        deb http://security.ubuntu.com/ubuntu {{ image.release }}-security main restricted universe multiverse
+      architectures:
+        - amd64
+        - i386
+
+    - name: sources.list
+      url: |-
+        deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }} main restricted universe multiverse
+        deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-updates main restricted universe multiverse
+        deb http://ports.ubuntu.com/ubuntu-ports {{ image.release }}-security main restricted universe multiverse
+      architectures:
+        - armhf
+        - arm64
+        - powerpc
+        - powerpc64
+        - ppc64el
 
   sets:
     - packages:
