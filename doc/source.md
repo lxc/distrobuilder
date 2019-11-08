@@ -12,7 +12,6 @@ source:
     variant: <string>
     suite: <string>
     same_as: <boolean>
-    apt_sources: <string>
     skip_verification: <boolean>
     early_packages: <array>
 ```
