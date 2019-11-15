@@ -1,7 +1,7 @@
 package sources
 
 import (
-	"bytes"
+	"bufio"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -162,78 +162,82 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	os.Setenv("OPENWRT_ARCH", definition.Image.Architecture)
 	os.Setenv("OPENWRT_VERSION", release)
 
-	diff := `diff --git a/build.sh b/build.sh
-index 2347d05..eebb515 100755
---- a/build.sh
-+++ b/build.sh
-@@ -2,8 +2,8 @@
-
- set -e
-
--arch_lxd=x86_64
--ver=18.06.4
-+arch_lxd=${OPENWRT_ARCH}
-+ver=${OPENWRT_VERSION}
- dist=openwrt
- type=lxd
- super=fakeroot
-@@ -13,6 +13,9 @@ packages=iptables-mod-checksum
- # Workaround for Debian/Ubuntu systems which use C.UTF-8 which is nsupported by OpenWrt
- export LC_ALL=C
-
-+readonly rootfs=${OPENWRT_ROOTFS}
-+readonly sdk=${OPENWRT_SDK}
-+
- usage() {
-	 echo "Usage: $0 [-a|--arch x86_64|i686|aarch64] [-v|--version version>] [-p|--packages <packages>] [-f|--files] [-t|--type lxd|lain] [-s|--super fakeroot|sudo] [--help]"
-	 exit 1
-@@ -289,8 +292,6 @@ EOF
- #     template: hostname.tpl
- }
-
--download_rootfs
--download_sdk
- if need_procd; then
-	 download_procd
-	 build_procd
-diff --git a/scripts/build_rootfs.sh b/scripts/build_rootfs.sh
-index b7ee533..e89379f 100755
---- a/scripts/build_rootfs.sh
-+++ b/scripts/build_rootfs.sh
-@@ -52,9 +52,9 @@ fi
-
- src_tar=$1
- base=` + "`basename $src_tar`" + `
--dir=/tmp/build.$$
-+dir=/tmp/distrobuilder
- files_dir=files/
--instroot=$dir/rootfs
-+instroot=${OPENWRT_ROOTFS_DIR}
- cache=dl/packages/$arch/$subarch
-
- test -e $cache || mkdir -p $cache
-@@ -158,7 +158,6 @@ create_manifest() {
-	 $OPKG list-installed > $instroot/etc/openwrt_manifest
- }
-
--unpack
- disable_root
- if test -n "$metadata"; then
-	 add_file $metadata $metadata_dir $dir
-@@ -175,5 +174,3 @@ if test -n "$files"; then
-	 add_files $files $instroot
- fi
- create_manifest
--pack
--#pack_squashfs
-`
-
 	err = os.Chdir(tempScriptsDir)
 	if err != nil {
 		return err
 	}
 
-	err = lxd.RunCommandWithFds(bytes.NewBufferString(diff), os.Stdout, "patch", "-p1")
+	f, err := os.Open("build.sh")
+	if err != nil {
+		return err
+	}
+
+	var newContent strings.Builder
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		if strings.HasPrefix(scanner.Text(), "arch_lxd=") {
+			newContent.WriteString("arch_lxd=${OPENWRT_ARCH}\n")
+			continue
+		}
+
+		if strings.HasPrefix(scanner.Text(), "ver=") {
+			newContent.WriteString("ver=${OPENWRT_VERSION}\nreadonly rootfs=${OPENWRT_ROOTFS}\nreadonly sdk=${OPENWRT_SDK}\n")
+			continue
+		}
+
+		if scanner.Text() == "download_rootfs" {
+			continue
+		}
+
+		if scanner.Text() == "download_sdk" {
+			continue
+		}
+
+		newContent.WriteString(scanner.Text() + "\n")
+	}
+
+	f.Close()
+
+	err = ioutil.WriteFile("build.sh", []byte(newContent.String()), 0755)
+	if err != nil {
+		return err
+	}
+
+	f, err = os.Open("scripts/build_rootfs.sh")
+	if err != nil {
+		return err
+	}
+
+	newContent.Reset()
+
+	scanner = bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		if strings.HasPrefix(scanner.Text(), "dir=") {
+			newContent.WriteString("dir=/tmp/distrobuilder\n")
+			continue
+		}
+
+		if strings.HasPrefix(scanner.Text(), "instroot=") {
+			newContent.WriteString("instroot=${OPENWRT_ROOTFS_DIR}\n")
+			continue
+		}
+
+		if scanner.Text() == "unpack" {
+			continue
+		}
+
+		if scanner.Text() == "pack" {
+			continue
+		}
+
+		newContent.WriteString(scanner.Text() + "\n")
+	}
+
+	f.Close()
+
+	err = ioutil.WriteFile("scripts/build_build.sh", []byte(newContent.String()), 0755)
 	if err != nil {
 		return err
 	}

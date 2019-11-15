@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -11,19 +12,19 @@ func TestOpenWrtHTTP_getLatestServiceRelease(t *testing.T) {
 
 	tests := []struct {
 		release string
-		want    string
+		want    *regexp.Regexp
 	}{
 		{
 			"17.01",
-			"17.01.7",
+			regexp.MustCompile(`17\.01\.\d+`),
 		},
 		{
 			"18.06",
-			"18.06.4",
+			regexp.MustCompile(`18\.06\.\d+`),
 		},
 	}
 	for _, tt := range tests {
 		baseURL := "https://downloads.openwrt.org/releases/"
-		require.Equal(t, tt.want, s.getLatestServiceRelease(baseURL, tt.release))
+		require.Regexp(t, tt.want, s.getLatestServiceRelease(baseURL, tt.release))
 	}
 }
