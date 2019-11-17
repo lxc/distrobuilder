@@ -50,21 +50,21 @@ This is useful if the desired package manager is not supported by distrobuilder.
 packages:
     custom-manager: # required
         clean: # required
-            command: <string>
+            cmd: <string>
             flags: <array>
         install: # required
-            command: <string>
+            cmd: <string>
             flags: <array>
         remove: # required
-            command: <string>
+            cmd: <string>
             flags: <array>
         refresh: # required
-            command: <string>
+            cmd: <string>
             flags: <array>
         update: # required
-            command: <string>
+            cmd: <string>
             flags: <array>
-    flags: <array>
+        flags: <array> # global flags for all commands
     ...
 ```
 

@@ -137,7 +137,7 @@ packages:
       flags:
         - update
     flags:
-      --yes
+      - --yes
   update: true
   cleanup: false
   sets:
