@@ -30,6 +30,12 @@ func manageRepositories(def *shared.Definition, manager *managers.Manager) error
 			return err
 		}
 
+		// Run template on repo.Key
+		repo.Key, err = shared.RenderTemplate(repo.Key, def)
+		if err != nil {
+			return err
+		}
+
 		err = manager.RepoHandler(repo)
 		if err != nil {
 			return fmt.Errorf("Error for repository %s: %s", repo.Name, err)
