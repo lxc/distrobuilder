@@ -236,6 +236,14 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Unsupported source downloader: %s", c.definition.Source.Downloader)
 	}
 
+	// Run template on source keys
+	for i, key := range c.definition.Source.Keys {
+		c.definition.Source.Keys[i], err = shared.RenderTemplate(key, c.definition)
+		if err != nil {
+			return fmt.Errorf("Failed to render source keys: %s", err)
+		}
+	}
+
 	// Download the root filesystem
 	err = downloader.Run(*c.definition, c.sourceDir)
 	if err != nil {
