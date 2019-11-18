@@ -237,7 +237,7 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 
 	f.Close()
 
-	err = ioutil.WriteFile("scripts/build_build.sh", []byte(newContent.String()), 0755)
+	err = ioutil.WriteFile("scripts/build_rootfs.sh", []byte(newContent.String()), 0755)
 	if err != nil {
 		return err
 	}
