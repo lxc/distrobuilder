@@ -454,23 +454,24 @@ func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
 	return out
 }
 
-// GetEarlyPackages returns a list of packages which are to be installed or removed earlier than the actual package handling.
+// GetEarlyPackages returns a list of packages which are to be installed or removed earlier than the actual package handling
+// Also removes them from the package set so they aren't attempted to be re-installed again as normal packages
 func (d *Definition) GetEarlyPackages(action string) []string {
-	var out []string
+	var early []string
+
+	normal := []DefinitionPackagesSet{}
 
 	for _, set := range d.Packages.Sets {
-		if set.Action != action || !set.Early {
-			continue
+		if set.Early && set.Action == action && ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant) {
+			early = append(early, set.Packages...)
+		} else {
+			normal = append(normal, set)
 		}
-
-		if !ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant) {
-			continue
-		}
-
-		out = append(out, set.Packages...)
 	}
 
-	return out
+	d.Packages.Sets = normal
+
+	return early
 }
 
 func (d *Definition) getMappedArchitecture() (string, error) {
