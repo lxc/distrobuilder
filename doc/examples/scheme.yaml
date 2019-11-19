@@ -158,6 +158,12 @@ packages:
         - default
 
     - packages:
+        - lightdm
+      action: install
+      flags:
+        - --no-install-recommends
+
+    - packages:
         - grub
       action: remove
 

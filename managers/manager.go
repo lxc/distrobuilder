@@ -86,24 +86,26 @@ func GetCustom(def shared.DefinitionPackagesCustomManager) *Manager {
 }
 
 // Install installs packages to the rootfs.
-func (m Manager) Install(pkgs []string) error {
+func (m Manager) Install(pkgs, flags []string) error {
 	if len(m.flags.install) == 0 || pkgs == nil || len(pkgs) == 0 {
 		return nil
 	}
 
 	args := append(m.flags.global, m.flags.install...)
+	args = append(args, flags...)
 	args = append(args, pkgs...)
 
 	return shared.RunCommand(m.commands.install, args...)
 }
 
 // Remove removes packages from the rootfs.
-func (m Manager) Remove(pkgs []string) error {
+func (m Manager) Remove(pkgs, flags []string) error {
 	if len(m.flags.remove) == 0 || pkgs == nil || len(pkgs) == 0 {
 		return nil
 	}
 
 	args := append(m.flags.global, m.flags.remove...)
+	args = append(args, flags...)
 	args = append(args, pkgs...)
 
 	return shared.RunCommand(m.commands.remove, args...)

@@ -15,6 +15,7 @@ packages:
           architectures: <array> # filter
           releases: <array> # filter
           variants: <array> # filter
+          flags: <array> # install/remove flags for just this set
         - ...
     repositories:
         - name: <string>
@@ -75,7 +76,11 @@ This depends on the package manager though and is not supported by all.
 
 A set contains a list of `packages`, an `action`, and optional filters.
 Here, `packages` is a list of packages which are to be installed or removed.
-The value of `action` must be either `install` or `remove`.
+The value of `action` must be either `install` or `remove`. If `flags` is
+specified for a package set, they are appended to the command specific
+flags, along with any global flags, when calling the `install` or `remove`
+command.  For example, you can define a package set that should be installed
+with `--no-install-recommends`.
 
 `repositories` contains a list of additional repositories which are to be added.
 The `type` field is only needed if the package manager supports more than one repository manager.

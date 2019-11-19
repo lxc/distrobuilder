@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
@@ -80,9 +81,9 @@ func managePackages(def *shared.Definition, manager *managers.Manager) error {
 
 	for _, set := range optimizePackageSets(validSets) {
 		if set.Action == "install" {
-			err = manager.Install(set.Packages)
+			err = manager.Install(set.Packages, set.Flags)
 		} else if set.Action == "remove" {
-			err = manager.Remove(set.Packages)
+			err = manager.Remove(set.Packages, set.Flags)
 		}
 		if err != nil {
 			return err
@@ -111,24 +112,28 @@ func optimizePackageSets(sets []shared.DefinitionPackagesSet) []shared.Definitio
 
 	action := sets[0].Action
 	packages := sets[0].Packages
+	flags := sets[0].Flags
 
 	for i := 1; i < len(sets); i++ {
-		if sets[i].Action == sets[i-1].Action {
+		if sets[i].Action == sets[i-1].Action && strings.Join(sets[i].Flags, " ") == strings.Join(sets[i-1].Flags, " ") {
 			packages = append(packages, sets[i].Packages...)
 		} else {
 			newSets = append(newSets, shared.DefinitionPackagesSet{
 				Action:   action,
 				Packages: packages,
+				Flags:    flags,
 			})
 
 			action = sets[i].Action
 			packages = sets[i].Packages
+			flags = sets[i].Flags
 		}
 	}
 
 	newSets = append(newSets, shared.DefinitionPackagesSet{
 		Action:   action,
 		Packages: packages,
+		Flags:    flags,
 	})
 
 	return newSets

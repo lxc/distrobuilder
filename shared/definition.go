@@ -48,6 +48,7 @@ type DefinitionPackagesSet struct {
 	Packages         []string `yaml:"packages"`
 	Action           string   `yaml:"action"`
 	Early            bool     `yaml:"early,omitempty"`
+	Flags            []string `yaml:"flags,omitempty"`
 }
 
 // A DefinitionPackagesRepository contains data of a specific repository
