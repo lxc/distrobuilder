@@ -13,7 +13,6 @@ source:
     suite: <string>
     same_as: <boolean>
     skip_verification: <boolean>
-    early_packages: <array>
 ```
 
 The `downloader` field defines a downloader which pulls a rootfs image which will be used as a starting point.
@@ -64,5 +63,6 @@ This can be used if you want to run `debootstrap foo` but `foo` is missing due t
 
 If `skip_verification` is true, the source tarball is not verified.
 
-`early_packages` is a list of packages which is to be installed while the source is being downloaded.
-This is only used by the `debootstrap` downloader.
+If a package set has the `early` flag enabled, that list of packages will be installed
+while the source is being downloaded. (Note that `early` packages are only supported by
+the `debootstrap` downloader.)
