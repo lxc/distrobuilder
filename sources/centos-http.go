@@ -34,7 +34,11 @@ func NewCentOSHTTP() *CentOSHTTP {
 
 // Run downloads the tarball and unpacks it.
 func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	s.majorVersion = strings.Split(definition.Image.Release, ".")[0]
+	if strings.HasSuffix(definition.Image.Release, "-Stream") {
+		s.majorVersion = strings.ToLower(definition.Image.Release)
+	} else {
+		s.majorVersion = strings.Split(definition.Image.Release, ".")[0]
+	}
 
 	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL,
 		s.majorVersion,
@@ -76,7 +80,11 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 				checksumFile = "sha256sum.txt"
 			} else {
 				if strings.HasPrefix(definition.Image.Release, "8") {
-					checksumFile = "CHECKSUM.asc"
+					if strings.HasSuffix(definition.Image.Release, "-Stream") {
+						checksumFile = "CHECKSUM"
+					} else {
+						checksumFile = "CHECKSUM.asc"
+					}
 				} else {
 					checksumFile = "sha256sum.txt.asc"
 				}
@@ -87,13 +95,16 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 				return err
 			}
 
-			valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
-				definition.Source.Keys, definition.Source.Keyserver)
-			if err != nil {
-				return err
-			}
-			if !valid {
-				return errors.New("Failed to verify tarball")
+			// Only verify file if possible.
+			if strings.HasSuffix(checksumFile, ".asc") {
+				valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
+					definition.Source.Keys, definition.Source.Keyserver)
+				if err != nil {
+					return err
+				}
+				if !valid {
+					return errors.New("Failed to verify tarball")
+				}
 			}
 		}
 	}
@@ -356,7 +367,8 @@ rm -rf /rootfs/var/cache/yum
 
 func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 	releaseFields := strings.Split(release, ".")
-	resp, err := http.Get(URL + path.Join("/", releaseFields[0], "isos", arch))
+
+	resp, err := http.Get(URL + path.Join("/", strings.ToLower(releaseFields[0]), "isos", arch))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return ""
@@ -367,6 +379,12 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return ""
+	}
+
+	if strings.HasSuffix(releaseFields[0], "-Stream") {
+		fields := strings.Split(releaseFields[0], "-")
+		// Convert <version>-Stream to Stream-<version>
+		releaseFields[0] = fmt.Sprintf("%s-%s", fields[1], fields[0])
 	}
 
 	var re []string
