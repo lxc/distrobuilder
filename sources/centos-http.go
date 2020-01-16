@@ -403,9 +403,9 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 			re = append(re, fmt.Sprintf("CentOS-Userland-%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
 				releaseFields[0], variant))
 		} else {
-			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)?-%s-(?i:%s)(-\\d+)?.iso",
+			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)*-%s-(?i:%s)(-\\d+)?.iso",
 				releaseFields[0], arch, variant))
-			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)?-%s(-\\d+)?-(?i:%s).iso",
+			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)*-%s(-\\d+)?-(?i:%s).iso",
 				releaseFields[0], arch, variant))
 		}
 	}
