@@ -83,7 +83,7 @@ cd $HOME/ContainerImages/ubuntu/
 Then, copy one of the example yaml configuration files for container images into this directory. In this example, we are creating an Ubuntu container image.
 
 ```
-cp $HOME/go/src/github.com/lxc/distrobuilder/doc/examples/ubuntu ubuntu.yaml
+cp $HOME/go/src/github.com/lxc/distrobuilder/doc/examples/ubuntu.yaml ubuntu.yaml
 ```
 
 Finally, run `distrobuilder` to create the container image. We are using the `build-lxd` option to create a container image for LXD.
