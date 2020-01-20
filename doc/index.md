@@ -86,6 +86,8 @@ Then, copy one of the example yaml configuration files for container images into
 cp $HOME/go/src/github.com/lxc/distrobuilder/doc/examples/ubuntu.yaml ubuntu.yaml
 ```
 
+### Build the container image for LXD
+
 Finally, run `distrobuilder` to create the container image. We are using the `build-lxd` option to create a container image for LXD.
 
 ```
@@ -95,20 +97,12 @@ sudo $HOME/go/bin/distrobuilder build-lxd ubuntu.yaml
 If the command is successful, you will get an output similar to the following. The `lxd.tar.xz` file is the description of the container image. The `rootfs.squasfs` file is the root filesystem (rootfs) of the container image. The set of these two files is the _container image_.
 
 ```bash
-multipass@dazzling-termite:~/ContainerImages/ubuntu$ ls -l
+$ ls -l
 total 121032
 -rw-r--r-- 1 root      root            560 Oct  3 13:28 lxd.tar.xz
 -rw-r--r-- 1 root      root      123928576 Oct  3 13:28 rootfs.squashfs
 -rw-rw-r-- 1 multipass multipass      3317 Oct  3 13:19 ubuntu.yaml
-multipass@dazzling-termite:~/ContainerImages/ubuntu$
-```
-
-### Adding the container image to LXC
-
-To add the container image to a LXC installation, use the `lxc-create` command as follows.
-
-```bash
-$ lxc-create -n myContainerImage -t local -- --metadata meta.tar.xz --fstree rootfs.tar.xz
+$
 ```
 
 ### Adding the container image to LXD
@@ -116,7 +110,7 @@ $ lxc-create -n myContainerImage -t local -- --metadata meta.tar.xz --fstree roo
 To add the container image to a LXD installation, use the `lxc image import` command as follows.
 
 ```bash
-multipass@dazzling-termite:~/ContainerImages/ubuntu$ lxc image import lxd.tar.xz rootfs.squashfs --alias mycontainerimage
+$ lxc image import lxd.tar.xz rootfs.squashfs --alias mycontainerimage 
 Image imported with fingerprint: ae81c04327b5b115383a4f90b969c97f5ef417e02d4210d40cbb17a038729a27
 ```
 
@@ -131,14 +125,44 @@ $ lxc image list mycontainerimage
 +------------------+--------------+--------+---------------+--------+----------+------------------------------+
 ```
 
-### Launching a container from the container image
+### Launching a LXD container from the container image
 
 To launch a container from the freshly created container image, use `lxc launch` as follows. Note that you do not specify a repository of container images (like `ubuntu:` or `images:`) because the image is located locally.
 
-```
+```bash
 $ lxc launch mycontainerimage c1
 Creating c1
 Starting c1
+```
+
+### Build a LXC container image
+
+Using LXC containers instead of LXD may require the installation of `lxc-utils`.
+Having both LXC and LXD installed on the same system will probably cause confusion.
+Use of raw LXC is generally discouraged due to the lack of automatic Apparmor
+protection.
+
+For LXC, instead use:
+```bash
+$ sudo $HOME/go/bin/distrobuilder build-lxc ubuntu.yaml
+$ ls -l
+total 87340
+-rw-r--r-- 1 root root      740 Jan 19 03:15 meta.tar.xz
+-rw-r--r-- 1 root root 89421136 Jan 19 03:15 rootfs.tar.xz
+-rw-r--r-- 1 root root     4798 Jan 19 02:42 ubuntu.yaml
+```
+
+### Adding the container image to LXC
+
+To add the container image to a LXC installation, use the `lxc-create` command as follows.
+
+```bash
+lxc-create -n myContainerImage -t local -- --metadata meta.tar.xz --fstree rootfs.tar.xz
+```
+
+Then start the container with
+```bash
+lxc-start -n myContainerImage
 ```
 
 ### Examples
