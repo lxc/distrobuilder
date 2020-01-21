@@ -37,8 +37,8 @@ func (s *VoidLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	}
 
 	tarball := fmt.Sprintf("%s/%s", baseURL, fname)
-	digests := fmt.Sprintf("%s/sha256sums.txt", baseURL)
-	signatures := fmt.Sprintf("%s/sha256sums.txt.sig", baseURL)
+	digests := fmt.Sprintf("%s/sha256.txt", baseURL)
+	signatures := fmt.Sprintf("%s/sha256.sig", baseURL)
 
 	url, err := url.Parse(tarball)
 	if err != nil {
@@ -66,8 +66,8 @@ func (s *VoidLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		shared.DownloadHash(definition.Image, digests, "", nil)
 		shared.DownloadHash(definition.Image, signatures, "", nil)
 		valid, err := shared.VerifyFile(
-			filepath.Join(fpath, "sha256sums.txt"),
-			filepath.Join(fpath, "sha256sums.txt.sig"),
+			filepath.Join(fpath, "sha256.txt"),
+			filepath.Join(fpath, "sha256.sig"),
 			definition.Source.Keys,
 			definition.Source.Keyserver)
 		if err != nil {
