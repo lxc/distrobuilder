@@ -17,6 +17,7 @@ type Filter interface {
 	GetReleases() []string
 	GetArchitectures() []string
 	GetVariants() []string
+	GetTypes() []string
 }
 
 // A DefinitionFilter defines filters for various actions.
@@ -24,6 +25,7 @@ type DefinitionFilter struct {
 	Releases      []string `yaml:"releases,omitempty"`
 	Architectures []string `yaml:"architectures,omitempty"`
 	Variants      []string `yaml:"variants,omitempty"`
+	Types         []string `yaml:"types,omitempty"`
 }
 
 // GetReleases returns a list of releases.
@@ -39,6 +41,11 @@ func (d *DefinitionFilter) GetArchitectures() []string {
 // GetVariants returns a list of variants.
 func (d *DefinitionFilter) GetVariants() []string {
 	return d.Variants
+}
+
+// GetTypes returns a list of types.
+func (d *DefinitionFilter) GetTypes() []string {
+	return d.Types
 }
 
 // A DefinitionPackagesSet is a set of packages which are to be installed
