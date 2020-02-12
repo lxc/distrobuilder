@@ -1,7 +1,6 @@
 # Targets
 
 The target section is for target dependent files.
-Currently, the only supported target is LXC.
 
 ```yaml
 targets:
@@ -13,7 +12,13 @@ targets:
               after: <uint>
               content: <string>
             - ...
+    lxd:
+        vm:
+            size: <uint>
+            filesystem: <string>
 ```
+
+## LXC
 
 The `create-message` field is a string which is displayed after new LXC container has been created.
 This string is rendered using pongo2 and can include various fields from the definition file, e.g. `{{ image.description }}`.
@@ -26,3 +31,10 @@ Currently, the maximum value for compatability is 5.
 If your desired compatability level is 3 for example, you would use `before: 4` and `after: 2`.
 
 `content` describes the config which is to be written to the config file.
+
+## LXD
+
+Valid keys are `size` and `filesystem`.
+The former specifies the VM image size in bytes.
+The latter specifies the root partition filesystem.
+It currently supports `ext4` and `btrfs`.

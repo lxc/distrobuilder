@@ -64,6 +64,10 @@ targets:
       - type: all
         content: |-
           lxc.arch = {{ image.architecture_personality }}
+  lxd:
+    vm:
+      size: 2147483648
+      filesystem: ext4
 
 files:
   - generator: dump
