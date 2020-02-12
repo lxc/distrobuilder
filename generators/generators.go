@@ -42,6 +42,8 @@ func Get(generator string) Generator {
 		return CloudInitGenerator{}
 	case "lxd-agent":
 		return LXDAgentGenerator{}
+	case "fstab":
+		return FstabGenerator{}
 	}
 
 	return nil

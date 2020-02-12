@@ -390,6 +390,7 @@ func (d *Definition) Validate() error {
 		"upstart-tty",
 		"cloud-init",
 		"lxd-agent",
+		"fstab",
 	}
 
 	for _, file := range d.Files {
