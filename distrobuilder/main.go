@@ -184,6 +184,8 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// if an error is returned, disable the usage message
 	cmd.SilenceUsage = true
 
+	isRunningBuildDir := cmd.CalledAs() == "build-dir"
+
 	// Clean up cache directory before doing anything
 	os.RemoveAll(c.flagCacheDir)
 	os.Mkdir(c.flagCacheDir, 0755)
@@ -203,8 +205,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 			return err
 		}
 	}
-
-	if cmd.CalledAs() == "build-dir" {
+	if isRunningBuildDir {
 		c.sourceDir = c.targetDir
 	} else {
 		c.sourceDir = filepath.Join(c.flagCacheDir, "rootfs")
@@ -223,7 +224,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create cache directory if we also plan on creating LXC or LXD images
-	if cmd.CalledAs() != "build-dir" {
+	if !isRunningBuildDir {
 		err = os.MkdirAll(c.flagCacheDir, 0755)
 		if err != nil {
 			return err
@@ -263,8 +264,20 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	imageTargets := shared.ImageTargetAll
 
 	// If we call build-lxc or build-lxd, also process container-only sections.
-	if cmd.CalledAs() != "build-dir" {
+	switch cmd.CalledAs() {
+	case "build-lxc":
 		imageTargets |= shared.ImageTargetContainer
+	case "build-lxd":
+		ok, err := cmd.Flags().GetBool("vm")
+		if err != nil {
+			return err
+		}
+
+		if ok {
+			imageTargets |= shared.ImageTargetVM
+		} else {
+			imageTargets |= shared.ImageTargetContainer
+		}
 	}
 
 	var manager *managers.Manager
@@ -310,6 +323,9 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	var err error
+
+	// if an error is returned, disable the usage message
+	cmd.SilenceUsage = true
 
 	// Clean up cache directory before doing anything
 	os.RemoveAll(c.flagCacheDir)

@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/pkg/errors"
@@ -20,6 +23,7 @@ type cmdLXD struct {
 
 	flagType        string
 	flagCompression string
+	flagVM          bool
 }
 
 func (c *cmdLXD) commandBuild() *cobra.Command {
@@ -32,6 +36,14 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 				return errors.New("--type needs to be one of ['split', 'unified']")
 			}
 
+			// Check dependencies
+			if c.flagVM {
+				_, err := exec.LookPath("qemu-img")
+				if err != nil {
+					return fmt.Errorf("Required tool 'qemu-img' is missing")
+				}
+			}
+
 			return c.global.preRunBuild(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -41,12 +53,17 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 			}
 			defer cleanup()
 
+			if c.flagVM {
+				c.global.definition.Targets.Type = "vm"
+			}
+
 			return c.run(cmd, args, overlayDir)
 		},
 	}
 
 	c.cmdBuild.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create"+"``")
 	c.cmdBuild.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use"+"``")
+	c.cmdBuild.Flags().BoolVar(&c.flagVM, "vm", false, "Create a qcow2 image for VMs"+"``")
 
 	return c.cmdBuild
 }
@@ -61,6 +78,14 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 				return errors.New("--type needs to be one of ['split', 'unified']")
 			}
 
+			// Check dependencies
+			if c.flagVM {
+				_, err := exec.LookPath("qemu-img")
+				if err != nil {
+					return fmt.Errorf("Required tool 'qemu-img' is missing")
+				}
+			}
+
 			return c.global.preRunPack(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -69,6 +94,10 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 				return errors.Wrap(err, "Failed to create overlay")
 			}
 			defer cleanup()
+
+			if c.flagVM {
+				c.global.definition.Targets.Type = "vm"
+			}
 
 			err = c.runPack(cmd, args, overlayDir)
 			if err != nil {
@@ -81,6 +110,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 
 	c.cmdPack.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create")
 	c.cmdPack.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use")
+	c.cmdPack.Flags().BoolVar(&c.flagVM, "vm", false, "Create a qcow2 image for VMs"+"``")
 
 	return c.cmdPack
 }
@@ -95,7 +125,13 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	defer exitChroot()
 
 	var manager *managers.Manager
-	imageTargets := shared.ImageTargetContainer
+	var imageTargets shared.ImageTarget
+
+	if c.flagVM {
+		imageTargets = shared.ImageTargetVM
+	} else {
+		imageTargets = shared.ImageTargetContainer
+	}
 
 	if c.global.definition.Packages.Manager != "" {
 		manager = managers.Get(c.global.definition.Packages.Manager)
@@ -140,8 +176,16 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	img := image.NewLXDImage(overlayDir, c.global.targetDir,
 		c.global.flagCacheDir, *c.global.definition)
 
+	imageTargets := shared.ImageTargetAll
+
+	if c.flagVM {
+		imageTargets |= shared.ImageTargetVM
+	} else {
+		imageTargets |= shared.ImageTargetContainer
+	}
+
 	for _, file := range c.global.definition.Files {
-		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, shared.ImageTargetAll|shared.ImageTargetContainer) {
+		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, imageTargets) {
 			continue
 		}
 
@@ -153,18 +197,99 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		err := generator.RunLXD(c.global.flagCacheDir, overlayDir,
 			img, c.global.definition.Targets.LXD, file)
 		if err != nil {
-			return fmt.Errorf("Failed to create LXD data: %s", err)
+			return errors.Wrap(err, "Failed to create LXD data")
 		}
 	}
 
-	exitChroot, err := shared.SetupChroot(overlayDir,
-		c.global.definition.Environment, nil)
+	rootfsDir := overlayDir
+	var mounts []shared.ChrootMount
+
+	if c.flagVM {
+		vmDir := filepath.Join(c.global.flagCacheDir, "vm")
+
+		err := os.Mkdir(vmDir, 0755)
+		if err != nil {
+			return err
+		}
+
+		imgFilename, err := shared.RenderTemplate(fmt.Sprintf("%s.raw", c.global.definition.Image.Name), c.global.definition)
+		if err != nil {
+			return err
+		}
+
+		imgFile := filepath.Join(c.global.flagCacheDir, imgFilename)
+
+		vm, err := newVM(imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
+		if err != nil {
+			return errors.Wrap(err, "Failed to instanciate VM")
+		}
+
+		err = vm.createEmptyDiskImage()
+		if err != nil {
+			return errors.Wrap(err, "Failed to create disk image")
+		}
+
+		err = vm.createPartitions()
+		if err != nil {
+			return errors.Wrap(err, "Failed to create partitions")
+		}
+
+		err = vm.mountImage()
+		if err != nil {
+			return errors.Wrap(err, "Failed to mount image")
+		}
+		defer vm.umountImage()
+
+		err = vm.createRootFS()
+		if err != nil {
+			return errors.Wrap(err, "Failed to create root filesystem")
+		}
+
+		err = vm.mountRootPartition()
+		if err != nil {
+			return errors.Wrap(err, "failed to mount root partion")
+		}
+
+		err = vm.createUEFIFS()
+		if err != nil {
+			return errors.Wrap(err, "Failed to create UEFI filesystem")
+		}
+		defer lxd.RunCommand("umount", "-R", vmDir)
+
+		err = vm.mountUEFIPartition()
+		if err != nil {
+			return errors.Wrap(err, "Failed to mount UEFI partition")
+		}
+
+		// We cannot use LXD's rsync package as that uses the --delete flag which
+		// causes an issue due to the boot/efi directory being present.
+		err = shared.RunCommand("rsync", "-a", "-HA", "--sparse", "--devices", "--checksum", "--numeric-ids", overlayDir+"/", vmDir)
+		if err != nil {
+			return errors.Wrap(err, "Failed to copy rootfs")
+		}
+
+		rootfsDir = vmDir
+
+		mounts = []shared.ChrootMount{
+			{
+				Source: vm.getUEFIDevFile(),
+				Target: "/boot/efi",
+				FSType: "vfat",
+				Flags:  0,
+				Data:   "",
+				IsDir:  true,
+			},
+		}
+	}
+
+	exitChroot, err := shared.SetupChroot(rootfsDir,
+		c.global.definition.Environment, mounts)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to chroot")
 	}
 
 	// Run post files hook
-	for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetAll|shared.ImageTargetContainer) {
+	for _, action := range c.global.definition.GetRunnableActions("post-files", imageTargets) {
 		err := shared.RunScript(action.Action)
 		if err != nil {
 			exitChroot()
@@ -174,7 +299,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	exitChroot()
 
-	err = img.Build(c.flagType == "unified", c.flagCompression)
+	err = img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
 		return fmt.Errorf("Failed to create LXD image: %s", err)
 	}

@@ -76,7 +76,7 @@ func TestLXDBuild(t *testing.T) {
 
 func testLXDBuildSplitImage(t *testing.T, image *LXDImage) {
 	// Create split tarball and squashfs.
-	err := image.Build(false, "xz")
+	err := image.Build(false, "xz", false)
 	require.NoError(t, err)
 	defer func() {
 		os.Remove("lxd.tar.xz")
@@ -89,7 +89,7 @@ func testLXDBuildSplitImage(t *testing.T, image *LXDImage) {
 
 func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 	// Create unified tarball with custom name.
-	err := image.Build(true, "xz")
+	err := image.Build(true, "xz", false)
 	require.NoError(t, err)
 	defer os.Remove("ubuntu-17.10-x86_64-testing.tar.xz")
 
@@ -97,7 +97,7 @@ func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 
 	// Create unified tarball with default name.
 	image.definition.Image.Name = ""
-	err = image.Build(true, "xz")
+	err = image.Build(true, "xz", false)
 	require.NoError(t, err)
 	defer os.Remove("lxd.tar.xz")
 
