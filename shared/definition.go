@@ -142,8 +142,9 @@ type DefinitionTargetLXD struct {
 
 // A DefinitionTarget specifies target dependent files.
 type DefinitionTarget struct {
-	LXC DefinitionTargetLXC `yaml:"lxc,omitempty"`
-	LXD DefinitionTargetLXD `yaml:"lxd,omitempty"`
+	LXC  DefinitionTargetLXC `yaml:"lxc,omitempty"`
+	LXD  DefinitionTargetLXD `yaml:"lxd,omitempty"`
+	Type string              // This field is internal only and used only for simplicity.
 }
 
 // A DefinitionFile represents a file which is to be created inside to chroot.
@@ -278,6 +279,9 @@ func (d *Definition) SetDefaults() {
 	if d.Image.Description == "" {
 		d.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.architecture_mapped }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
 	}
+
+	// Set default target type. This will only be overriden if building VMs for LXD.
+	d.Targets.Type = "container"
 }
 
 // Validate validates the Definition.
