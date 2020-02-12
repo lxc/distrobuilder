@@ -48,7 +48,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("Unknown generator '%s'", file.Generator)
 		}
 
-		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant) {
+		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, shared.ImageTargetAll|shared.ImageTargetContainer) {
 			continue
 		}
 
@@ -66,7 +66,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run post files hook
-	for _, action := range c.global.definition.GetRunnableActions("post-files") {
+	for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetAll|shared.ImageTargetContainer) {
 		err := shared.RunScript(action.Action)
 		if err != nil {
 			exitChroot()

@@ -8,7 +8,7 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func manageRepositories(def *shared.Definition, manager *managers.Manager) error {
+func manageRepositories(def *shared.Definition, manager *managers.Manager, imageTarget shared.ImageTarget) error {
 	var err error
 
 	if def.Packages.Repositories == nil || len(def.Packages.Repositories) == 0 {
@@ -21,7 +21,7 @@ func manageRepositories(def *shared.Definition, manager *managers.Manager) error
 	}
 
 	for _, repo := range def.Packages.Repositories {
-		if !shared.ApplyFilter(&repo, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant) {
+		if !shared.ApplyFilter(&repo, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant, def.Targets.Type, imageTarget) {
 			continue
 		}
 
@@ -46,7 +46,7 @@ func manageRepositories(def *shared.Definition, manager *managers.Manager) error
 	return nil
 }
 
-func managePackages(def *shared.Definition, manager *managers.Manager) error {
+func managePackages(def *shared.Definition, manager *managers.Manager, imageTarget shared.ImageTarget) error {
 	var err error
 
 	err = manager.Refresh()
@@ -61,7 +61,7 @@ func managePackages(def *shared.Definition, manager *managers.Manager) error {
 		}
 
 		// Run post update hook
-		for _, action := range def.GetRunnableActions("post-update") {
+		for _, action := range def.GetRunnableActions("post-update", imageTarget) {
 			err = shared.RunScript(action.Action)
 			if err != nil {
 				return fmt.Errorf("Failed to run post-update: %s", err)
@@ -72,7 +72,7 @@ func managePackages(def *shared.Definition, manager *managers.Manager) error {
 	var validSets []shared.DefinitionPackagesSet
 
 	for _, set := range def.Packages.Sets {
-		if !shared.ApplyFilter(&set, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant) {
+		if !shared.ApplyFilter(&set, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant, def.Targets.Type, imageTarget) {
 			continue
 		}
 

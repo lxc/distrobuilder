@@ -12,6 +12,20 @@ import (
 	lxdarch "github.com/lxc/lxd/shared/osarch"
 )
 
+// ImageTarget represents the image target.
+type ImageTarget int
+
+const (
+	// ImageTargetAll is used for all targets.
+	ImageTargetAll ImageTarget = 1
+
+	// ImageTargetContainer is used for container targets.
+	ImageTargetContainer ImageTarget = 1 << 1
+
+	// ImageTargetVM is used for VM targets.
+	ImageTargetVM ImageTarget = 1 << 2
+)
+
 // Filter represents a filter.
 type Filter interface {
 	GetReleases() []string
@@ -459,7 +473,7 @@ func (d *Definition) Validate() error {
 
 // GetRunnableActions returns a list of actions depending on the trigger
 // and releases.
-func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
+func (d *Definition) GetRunnableActions(trigger string, imageTarget ImageTarget) []DefinitionAction {
 	out := []DefinitionAction{}
 
 	for _, action := range d.Actions {
@@ -467,7 +481,7 @@ func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
 			continue
 		}
 
-		if !ApplyFilter(&action, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant) {
+		if !ApplyFilter(&action, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant, d.Targets.Type, imageTarget) {
 			continue
 		}
 
@@ -485,7 +499,7 @@ func (d *Definition) GetEarlyPackages(action string) []string {
 	normal := []DefinitionPackagesSet{}
 
 	for _, set := range d.Packages.Sets {
-		if set.Early && set.Action == action && ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant) {
+		if set.Early && set.Action == action && ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant, d.Targets.Type, ImageTargetAll) {
 			early = append(early, set.Packages...)
 		} else {
 			normal = append(normal, set)
@@ -563,7 +577,7 @@ func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, 
 }
 
 // ApplyFilter returns true if the filter matches.
-func ApplyFilter(filter Filter, release string, architecture string, variant string) bool {
+func ApplyFilter(filter Filter, release string, architecture string, variant string, targetType string, acceptedImageTargets ImageTarget) bool {
 	if len(filter.GetReleases()) > 0 && !shared.StringInSlice(release, filter.GetReleases()) {
 		return false
 	}
@@ -576,5 +590,25 @@ func ApplyFilter(filter Filter, release string, architecture string, variant str
 		return false
 	}
 
-	return true
+	types := filter.GetTypes()
+
+	if acceptedImageTargets&ImageTargetAll > 0 {
+		if len(types) == 0 || len(types) == 2 && shared.StringInSlice(targetType, types) {
+			return true
+		}
+	}
+
+	if acceptedImageTargets&ImageTargetContainer > 0 {
+		if targetType == "container" && len(types) == 1 && types[0] == targetType {
+			return true
+		}
+	}
+
+	if acceptedImageTargets&ImageTargetVM > 0 {
+		if targetType == "vm" && len(types) == 1 && types[0] == targetType {
+			return true
+		}
+	}
+
+	return false
 }
