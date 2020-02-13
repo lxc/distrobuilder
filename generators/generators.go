@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"errors"
 	"os"
 	p "path"
 	"path/filepath"
@@ -11,6 +12,9 @@ import (
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
 )
+
+// ErrNotSupported returns a "Not supported" error
+var ErrNotSupported = errors.New("Not supported")
 
 // Generator interface.
 type Generator interface {
@@ -36,6 +40,8 @@ func Get(generator string) Generator {
 		return UpstartTTYGenerator{}
 	case "cloud-init":
 		return CloudInitGenerator{}
+	case "lxd-agent":
+		return LXDAgentGenerator{}
 	}
 
 	return nil

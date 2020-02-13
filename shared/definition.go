@@ -352,6 +352,7 @@ func (d *Definition) Validate() error {
 		"remove",
 		"upstart-tty",
 		"cloud-init",
+		"lxd-agent",
 	}
 
 	for _, file := range d.Files {
