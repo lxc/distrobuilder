@@ -1,14 +1,15 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/lxc/distrobuilder/generators"
 	"github.com/lxc/distrobuilder/image"
+	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
 )
 
@@ -33,7 +34,15 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 
 			return c.global.preRunBuild(cmd, args)
 		},
-		RunE: c.run,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cleanup, overlayDir, err := getOverlay(c.global.flagCacheDir, c.global.sourceDir)
+			if err != nil {
+				return errors.Wrap(err, "Failed to create overlay")
+			}
+			defer cleanup()
+
+			return c.run(cmd, args, overlayDir)
+		},
 	}
 
 	c.cmdBuild.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create"+"``")
@@ -54,7 +63,20 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 
 			return c.global.preRunPack(cmd, args)
 		},
-		RunE: c.run,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cleanup, overlayDir, err := getOverlay(c.global.flagCacheDir, c.global.sourceDir)
+			if err != nil {
+				return errors.Wrap(err, "Failed to create overlay")
+			}
+			defer cleanup()
+
+			err = c.runPack(cmd, args, overlayDir)
+			if err != nil {
+				return err
+			}
+
+			return c.run(cmd, args, overlayDir)
+		},
 	}
 
 	c.cmdPack.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create")
@@ -63,8 +85,59 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 	return c.cmdPack
 }
 
-func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
-	img := image.NewLXDImage(c.global.sourceDir, c.global.targetDir,
+func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) error {
+	// Setup the mounts and chroot into the rootfs
+	exitChroot, err := shared.SetupChroot(overlayDir, c.global.definition.Environment, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to setup chroot: %s", err)
+	}
+	// Unmount everything and exit the chroot
+	defer exitChroot()
+
+	var manager *managers.Manager
+	imageTargets := shared.ImageTargetContainer
+
+	if c.global.definition.Packages.Manager != "" {
+		manager = managers.Get(c.global.definition.Packages.Manager)
+		if manager == nil {
+			return fmt.Errorf("Couldn't get manager")
+		}
+	} else {
+		manager = managers.GetCustom(*c.global.definition.Packages.CustomManager)
+	}
+
+	err = manageRepositories(c.global.definition, manager, imageTargets)
+	if err != nil {
+		return fmt.Errorf("Failed to manage repositories: %s", err)
+	}
+
+	// Run post unpack hook
+	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
+		err := shared.RunScript(hook.Action)
+		if err != nil {
+			return fmt.Errorf("Failed to run post-unpack: %s", err)
+		}
+	}
+
+	// Install/remove/update packages
+	err = managePackages(c.global.definition, manager, imageTargets)
+	if err != nil {
+		return fmt.Errorf("Failed to manage packages: %s", err)
+	}
+
+	// Run post packages hook
+	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {
+		err := shared.RunScript(hook.Action)
+		if err != nil {
+			return fmt.Errorf("Failed to run post-packages: %s", err)
+		}
+	}
+
+	return nil
+}
+
+func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error {
+	img := image.NewLXDImage(overlayDir, c.global.targetDir,
 		c.global.flagCacheDir, *c.global.definition)
 
 	for _, file := range c.global.definition.Files {
@@ -77,14 +150,14 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("Unknown generator '%s'", file.Generator)
 		}
 
-		err := generator.RunLXD(c.global.flagCacheDir, c.global.sourceDir,
+		err := generator.RunLXD(c.global.flagCacheDir, overlayDir,
 			img, file)
 		if err != nil {
 			return fmt.Errorf("Failed to create LXD data: %s", err)
 		}
 	}
 
-	exitChroot, err := shared.SetupChroot(c.global.sourceDir,
+	exitChroot, err := shared.SetupChroot(overlayDir,
 		c.global.definition.Environment, nil)
 	if err != nil {
 		return err

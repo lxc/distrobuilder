@@ -2,7 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/pkg/errors"
+	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
@@ -137,4 +142,56 @@ func optimizePackageSets(sets []shared.DefinitionPackagesSet) []shared.Definitio
 	})
 
 	return newSets
+}
+
+func getOverlay(cacheDir, sourceDir string) (func(), string, error) {
+	upperDir := filepath.Join(cacheDir, "upper")
+	overlayDir := filepath.Join(cacheDir, "overlay")
+	workDir := filepath.Join(cacheDir, "work")
+
+	err := os.Mkdir(upperDir, 0755)
+	if err != nil {
+		return nil, "", err
+	}
+
+	err = os.Mkdir(overlayDir, 0755)
+	if err != nil {
+		return nil, "", err
+	}
+
+	err = os.Mkdir(workDir, 0755)
+	if err != nil {
+		return nil, "", err
+	}
+
+	opts := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", sourceDir, upperDir, workDir)
+
+	err = unix.Mount("overlay", overlayDir, "overlay", 0, opts)
+	if err != nil {
+		return nil, "", err
+	}
+
+	cleanup := func() {
+		err := unix.Unmount(overlayDir, 0)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, errors.Wrap(err, "Failed to unmount overlay"))
+		}
+
+		err = os.RemoveAll(upperDir)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, errors.Wrap(err, "Failed to remove upper directory"))
+		}
+
+		err = os.RemoveAll(workDir)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, errors.Wrap(err, "Failed to remove work directory"))
+		}
+
+		err = os.Remove(overlayDir)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, errors.Wrap(err, "Failed to remove overlay directory"))
+		}
+	}
+
+	return cleanup, overlayDir, nil
 }
