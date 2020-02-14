@@ -10,6 +10,7 @@ Available generators are
 * [remove](#remove)
 * [template](#template)
 * [upstart_tty](#upstart_tty)
+* [lxd-agent](#lxd-agent)
 
 In the image definition yaml, they are listed under `files`.
 
@@ -82,3 +83,7 @@ See [LXD image format](https://lxd.readthedocs.io/en/latest/image-handling/#imag
 
 This generator creates an upstart job which prevents certain TTYs from starting.
 The job script is written to `path`.
+
+## lxd-agent
+
+This generator creates the systemd unit files which are needed to start the lxd-agent in LXD VMs.
