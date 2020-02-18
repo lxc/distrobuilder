@@ -19,7 +19,7 @@ type CloudInitGenerator struct{}
 
 // RunLXC disables cloud-init.
 func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
 	// With OpenRC:
 	// Remove all symlinks to /etc/init.d/cloud-{init-local,config,init,final} in /etc/runlevels/*
 	fullPath := filepath.Join(sourceDir, "etc", "runlevels")
@@ -101,7 +101,7 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 
 // RunLXD creates cloud-init template files.
 func (g CloudInitGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
 	templateDir := filepath.Join(cacheDir, "templates")
 
 	err := os.MkdirAll(templateDir, 0755)

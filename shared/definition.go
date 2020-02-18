@@ -12,11 +12,26 @@ import (
 	lxdarch "github.com/lxc/lxd/shared/osarch"
 )
 
+// ImageTarget represents the image target.
+type ImageTarget int
+
+const (
+	// ImageTargetAll is used for all targets.
+	ImageTargetAll ImageTarget = 1
+
+	// ImageTargetContainer is used for container targets.
+	ImageTargetContainer ImageTarget = 1 << 1
+
+	// ImageTargetVM is used for VM targets.
+	ImageTargetVM ImageTarget = 1 << 2
+)
+
 // Filter represents a filter.
 type Filter interface {
 	GetReleases() []string
 	GetArchitectures() []string
 	GetVariants() []string
+	GetTypes() []string
 }
 
 // A DefinitionFilter defines filters for various actions.
@@ -24,6 +39,7 @@ type DefinitionFilter struct {
 	Releases      []string `yaml:"releases,omitempty"`
 	Architectures []string `yaml:"architectures,omitempty"`
 	Variants      []string `yaml:"variants,omitempty"`
+	Types         []string `yaml:"types,omitempty"`
 }
 
 // GetReleases returns a list of releases.
@@ -39,6 +55,11 @@ func (d *DefinitionFilter) GetArchitectures() []string {
 // GetVariants returns a list of variants.
 func (d *DefinitionFilter) GetVariants() []string {
 	return d.Variants
+}
+
+// GetTypes returns a list of types.
+func (d *DefinitionFilter) GetTypes() []string {
+	return d.Types
 }
 
 // A DefinitionPackagesSet is a set of packages which are to be installed
@@ -129,9 +150,22 @@ type DefinitionTargetLXC struct {
 	Config        []DefinitionTargetLXCConfig `yaml:"config,omitempty"`
 }
 
+// DefinitionTargetLXDVM represents LXD VM specific options.
+type DefinitionTargetLXDVM struct {
+	Size       uint   `yaml:"size,omitempty"`
+	Filesystem string `yaml:"filesystem,omitempty"`
+}
+
+// DefinitionTargetLXD represents LXD specific options.
+type DefinitionTargetLXD struct {
+	VM DefinitionTargetLXDVM `yaml:"vm,omitempty"`
+}
+
 // A DefinitionTarget specifies target dependent files.
 type DefinitionTarget struct {
-	LXC DefinitionTargetLXC `yaml:"lxc,omitempty"`
+	LXC  DefinitionTargetLXC `yaml:"lxc,omitempty"`
+	LXD  DefinitionTargetLXD `yaml:"lxd,omitempty"`
+	Type string              // This field is internal only and used only for simplicity.
 }
 
 // A DefinitionFile represents a file which is to be created inside to chroot.
@@ -266,6 +300,9 @@ func (d *Definition) SetDefaults() {
 	if d.Image.Description == "" {
 		d.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.architecture_mapped }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
 	}
+
+	// Set default target type. This will only be overriden if building VMs for LXD.
+	d.Targets.Type = "container"
 }
 
 // Validate validates the Definition.
@@ -437,7 +474,7 @@ func (d *Definition) Validate() error {
 
 // GetRunnableActions returns a list of actions depending on the trigger
 // and releases.
-func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
+func (d *Definition) GetRunnableActions(trigger string, imageTarget ImageTarget) []DefinitionAction {
 	out := []DefinitionAction{}
 
 	for _, action := range d.Actions {
@@ -445,7 +482,7 @@ func (d *Definition) GetRunnableActions(trigger string) []DefinitionAction {
 			continue
 		}
 
-		if !ApplyFilter(&action, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant) {
+		if !ApplyFilter(&action, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant, d.Targets.Type, imageTarget) {
 			continue
 		}
 
@@ -463,7 +500,7 @@ func (d *Definition) GetEarlyPackages(action string) []string {
 	normal := []DefinitionPackagesSet{}
 
 	for _, set := range d.Packages.Sets {
-		if set.Early && set.Action == action && ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant) {
+		if set.Early && set.Action == action && ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant, d.Targets.Type, ImageTargetAll) {
 			early = append(early, set.Packages...)
 		} else {
 			normal = append(normal, set)
@@ -541,7 +578,7 @@ func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, 
 }
 
 // ApplyFilter returns true if the filter matches.
-func ApplyFilter(filter Filter, release string, architecture string, variant string) bool {
+func ApplyFilter(filter Filter, release string, architecture string, variant string, targetType string, acceptedImageTargets ImageTarget) bool {
 	if len(filter.GetReleases()) > 0 && !shared.StringInSlice(release, filter.GetReleases()) {
 		return false
 	}
@@ -554,5 +591,25 @@ func ApplyFilter(filter Filter, release string, architecture string, variant str
 		return false
 	}
 
-	return true
+	types := filter.GetTypes()
+
+	if acceptedImageTargets&ImageTargetAll > 0 {
+		if len(types) == 0 || len(types) == 2 && shared.StringInSlice(targetType, types) {
+			return true
+		}
+	}
+
+	if acceptedImageTargets&ImageTargetContainer > 0 {
+		if targetType == "container" && len(types) == 1 && types[0] == targetType {
+			return true
+		}
+	}
+
+	if acceptedImageTargets&ImageTargetVM > 0 {
+		if targetType == "vm" && len(types) == 1 && types[0] == targetType {
+			return true
+		}
+	}
+
+	return false
 }

@@ -510,7 +510,30 @@ func TestApplyFilter(t *testing.T) {
 	repo.Variants = []string{"default"}
 	repo.Architectures = []string{"amd64", "i386"}
 	repo.Releases = []string{"foo"}
+	repo.Types = []string{"vm"}
 
-	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default"))
-	require.False(t, ApplyFilter(&repo, "", "arm64", "default"))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetVM))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "", "arm64", "default", "vm", ImageTargetAll))
+
+	repo.Types = []string{"container"}
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetVM))
+
+	repo.Types = []string{"container", "vm"}
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
+
+	repo.Types = []string{}
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
 }

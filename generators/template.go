@@ -17,14 +17,14 @@ type TemplateGenerator struct{}
 
 // RunLXC dumps content to a file.
 func (g TemplateGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
 	// no template support for LXC, ignoring generator
 	return nil
 }
 
 // RunLXD dumps content to a file.
 func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
 	templateDir := filepath.Join(cacheDir, "templates")
 
 	err := os.MkdirAll(templateDir, 0755)

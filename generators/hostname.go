@@ -17,7 +17,7 @@ type HostnameGenerator struct{}
 
 // RunLXC creates a hostname template.
 func (g HostnameGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
 
 	// Skip if the file doesn't exist
 	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
@@ -49,7 +49,7 @@ func (g HostnameGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImag
 
 // RunLXD creates a hostname template.
 func (g HostnameGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
 
 	// Skip if the file doesn't exist
 	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {

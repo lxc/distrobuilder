@@ -251,12 +251,21 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(c.sourceDir, c.definition.Environment)
+	exitChroot, err := shared.SetupChroot(c.sourceDir, c.definition.Environment, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}
 	// Unmount everything and exit the chroot
 	defer exitChroot()
+
+	// If we're running build-dir, only process sections which are meant for both
+	// containers and VMs.
+	imageTargets := shared.ImageTargetAll
+
+	// If we call build-lxc or build-lxd, also process container-only sections.
+	if cmd.CalledAs() != "build-dir" {
+		imageTargets |= shared.ImageTargetContainer
+	}
 
 	var manager *managers.Manager
 
@@ -269,13 +278,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		manager = managers.GetCustom(*c.definition.Packages.CustomManager)
 	}
 
-	err = manageRepositories(c.definition, manager)
+	err = manageRepositories(c.definition, manager, imageTargets)
 	if err != nil {
 		return fmt.Errorf("Failed to manage repositories: %s", err)
 	}
 
 	// Run post unpack hook
-	for _, hook := range c.definition.GetRunnableActions("post-unpack") {
+	for _, hook := range c.definition.GetRunnableActions("post-unpack", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %s", err)
@@ -283,13 +292,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Install/remove/update packages
-	err = managePackages(c.definition, manager)
+	err = managePackages(c.definition, manager, imageTargets)
 	if err != nil {
 		return fmt.Errorf("Failed to manage packages: %s", err)
 	}
 
 	// Run post packages hook
-	for _, hook := range c.definition.GetRunnableActions("post-packages") {
+	for _, hook := range c.definition.GetRunnableActions("post-packages", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %s", err)

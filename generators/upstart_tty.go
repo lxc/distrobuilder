@@ -51,7 +51,7 @@ type UpstartTTYGenerator struct{}
 
 // RunLXC creates a hostname template.
 func (g UpstartTTYGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
 
 	// Skip if the file exists
 	if lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
@@ -83,7 +83,7 @@ func (g UpstartTTYGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIm
 
 // RunLXD creates a hostname template.
 func (g UpstartTTYGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	defFile shared.DefinitionFile) error {
+	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
 
 	// Skip if the file exists
 	if lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {

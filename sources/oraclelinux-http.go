@@ -169,7 +169,7 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 	}
 
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{})
+	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %s", err)
 	}

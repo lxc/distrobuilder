@@ -36,7 +36,7 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 
-	err = generator.RunLXC(cacheDir, rootfsDir, image,
+	err = generator.RunLXC(cacheDir, rootfsDir, image, shared.DefinitionTargetLXC{},
 		shared.DefinitionFile{Path: "/etc/hosts"})
 	require.NoError(t, err)
 
@@ -77,7 +77,7 @@ func TestHostsGeneratorRunLXD(t *testing.T) {
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 
-	err = generator.RunLXD(cacheDir, rootfsDir, image,
+	err = generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{},
 		shared.DefinitionFile{Path: "/etc/hosts"})
 	require.NoError(t, err)
 

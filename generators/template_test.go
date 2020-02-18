@@ -35,12 +35,13 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "root", "template"), "--test--")
 
-	err = generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionFile{
-		Generator: "template",
-		Name:      "template",
-		Content:   "==test==",
-		Path:      "/root/template",
-	})
+	err = generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{},
+		shared.DefinitionFile{
+			Generator: "template",
+			Name:      "template",
+			Content:   "==test==",
+			Path:      "/root/template",
+		})
 	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "templates", "template.tpl"), "==test==\n")
@@ -66,23 +67,25 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 
 	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
 
-	err := generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionFile{
-		Generator: "template",
-		Name:      "test-default-when",
-		Content:   "==test==",
-		Path:      "test-default-when",
-	})
+	err := generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{},
+		shared.DefinitionFile{
+			Generator: "template",
+			Name:      "test-default-when",
+			Content:   "==test==",
+			Path:      "test-default-when",
+		})
 	require.NoError(t, err)
 
-	err = generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionFile{
-		Generator: "template",
-		Name:      "test-when",
-		Content:   "==test==",
-		Path:      "test-when",
-		Template: shared.DefinitionFileTemplate{
-			When: []string{"create"},
-		},
-	})
+	err = generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{},
+		shared.DefinitionFile{
+			Generator: "template",
+			Name:      "test-when",
+			Content:   "==test==",
+			Path:      "test-when",
+			Template: shared.DefinitionFileTemplate{
+				When: []string{"create"},
+			},
+		})
 	require.NoError(t, err)
 
 	testvalue := []string{"create", "copy"}
