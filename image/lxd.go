@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lxc/lxd/shared/api"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -37,15 +38,15 @@ func NewLXDImage(sourceDir, targetDir, cacheDir string,
 }
 
 // Build creates a LXD image.
-func (l *LXDImage) Build(unified bool, compression string) error {
+func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 	err := l.createMetadata()
 	if err != nil {
-		return nil
+		return errors.Wrap(err, "Failed to create metadata")
 	}
 
 	file, err := os.Create(filepath.Join(l.cacheDir, "metadata.yaml"))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to create metadata.yaml")
 	}
 	defer file.Close()
 
@@ -56,7 +57,7 @@ func (l *LXDImage) Build(unified bool, compression string) error {
 
 	_, err = file.Write(data)
 	if err != nil {
-		return fmt.Errorf("Failed to write metadata: %s", err)
+		return errors.Wrap(err, "Failed to write metadata")
 	}
 
 	paths := []string{"metadata.yaml"}
@@ -67,43 +68,79 @@ func (l *LXDImage) Build(unified bool, compression string) error {
 		paths = append(paths, "templates")
 	}
 
-	if unified {
-		var fname string
-		if l.definition.Image.Name != "" {
-			// Use a custom name for the unified tarball.
-			fname, _ = shared.RenderTemplate(l.definition.Image.Name, l.definition)
-		} else {
-			// Default name for the unified tarball.
-			fname = "lxd"
-		}
+	var fname string
+	if l.definition.Image.Name != "" {
+		// Use a custom name for the unified tarball.
+		fname, _ = shared.RenderTemplate(l.definition.Image.Name, l.definition)
+	} else {
+		// Default name for the unified tarball.
+		fname = "lxd"
+	}
 
-		// Add the rootfs to the tarball, prefix all files with "rootfs"
-		err = shared.Pack(filepath.Join(l.targetDir, fmt.Sprintf("%s.tar", fname)),
-			"", l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
+	rawImage := filepath.Join(l.cacheDir, fmt.Sprintf("%s.raw", fname))
+	qcowImage := filepath.Join(l.cacheDir, fmt.Sprintf("%s.img", fname))
+
+	if vm {
+		// Create compressed qcow2 image.
+		err = shared.RunCommand("qemu-img", "convert", "-c", "-O", "qcow2", "-o", "compat=0.10",
+			rawImage,
+			qcowImage)
 		if err != nil {
 			return err
 		}
+		defer func() {
+			os.RemoveAll(rawImage)
+		}()
+	}
+
+	if unified {
+		targetTarball := filepath.Join(l.targetDir, fmt.Sprintf("%s.tar", fname))
+
+		if vm {
+			// Rename image to rootfs.img
+			err = os.Rename(qcowImage, filepath.Join(filepath.Dir(qcowImage), "rootfs.img"))
+			if err != nil {
+				return err
+			}
+
+			err = shared.Pack(targetTarball, "", l.cacheDir, "rootfs.img")
+		} else {
+			// Add the rootfs to the tarball, prefix all files with "rootfs"
+			err = shared.Pack(targetTarball,
+				"", l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
+		}
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if vm {
+				os.RemoveAll(qcowImage)
+			}
+		}()
 
 		// Add the metadata to the tarball which is located in the cache directory
-		err = shared.PackUpdate(filepath.Join(l.targetDir, fmt.Sprintf("%s.tar", fname)),
-			compression, l.cacheDir, paths...)
+		err = shared.PackUpdate(targetTarball, compression, l.cacheDir, paths...)
 		if err != nil {
 			return err
 		}
 	} else {
-		// Create rootfs as squashfs.
-		err = shared.RunCommand("mksquashfs", l.sourceDir,
-			filepath.Join(l.targetDir, "rootfs.squashfs"), "-noappend", "-comp",
-			"xz", "-b", "1M", "-no-progress", "-no-recovery")
+		if vm {
+			err = shared.Copy(qcowImage, filepath.Join(l.targetDir, filepath.Base(qcowImage)))
+		} else {
+			// Create rootfs as squashfs.
+			err = shared.RunCommand("mksquashfs", l.sourceDir,
+				filepath.Join(l.targetDir, "rootfs.squashfs"), "-noappend", "-comp",
+				"xz", "-b", "1M", "-no-progress", "-no-recovery")
+		}
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to create squashfs or copy image")
 		}
 
 		// Create metadata tarball.
 		err = shared.Pack(filepath.Join(l.targetDir, "lxd.tar"), compression,
 			l.cacheDir, paths...)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to create metadata tarball")
 		}
 	}
 

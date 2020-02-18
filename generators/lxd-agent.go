@@ -17,12 +17,12 @@ import (
 type LXDAgentGenerator struct{}
 
 // RunLXC is not supported.
-func (g LXDAgentGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage, defFile shared.DefinitionFile) error {
+func (g LXDAgentGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage, target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
 	return ErrNotSupported
 }
 
 // RunLXD creates systemd unit files for the lxd-agent.
-func (g LXDAgentGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage, defFile shared.DefinitionFile) error {
+func (g LXDAgentGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage, target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
 	initFile := filepath.Join(sourceDir, "sbin", "init")
 
 	fi, err := os.Lstat(initFile)
