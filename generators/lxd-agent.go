@@ -79,7 +79,7 @@ ExecStart=/run/lxd_config/9p/lxd-agent
 WantedBy=multi-user.target
 `
 
-	err := ioutil.WriteFile(filepath.Join(sourceDir, "/lib/systemd/lxd-agent.service"), []byte(lxdAgentServiceUnit), 0400)
+	err := ioutil.WriteFile(filepath.Join(sourceDir, "/lib/systemd/system/lxd-agent.service"), []byte(lxdAgentServiceUnit), 0644)
 	if err != nil {
 		return err
 	}
@@ -106,7 +106,7 @@ ExecStart=/bin/mount -t 9p config /run/lxd_config/9p -o access=0
 WantedBy=multi-user.target
 `
 
-	err = ioutil.WriteFile(filepath.Join(sourceDir, "/lib/systemd/lxd-agent-9p.service"), []byte(lxdConfigShareMountUnit), 0400)
+	err = ioutil.WriteFile(filepath.Join(sourceDir, "/lib/systemd/system/lxd-agent-9p.service"), []byte(lxdConfigShareMountUnit), 0644)
 	if err != nil {
 		return err
 	}
