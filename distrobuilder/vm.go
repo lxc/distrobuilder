@@ -18,10 +18,10 @@ type vm struct {
 	loopDevice string
 	rootFS     string
 	rootfsDir  string
-	size       uint
+	size       uint64
 }
 
-func newVM(imageFile, rootfsDir, fs string, size uint) (*vm, error) {
+func newVM(imageFile, rootfsDir, fs string, size uint64) (*vm, error) {
 	if fs == "" {
 		fs = "ext4"
 	}
