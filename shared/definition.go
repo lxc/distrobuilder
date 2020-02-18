@@ -152,7 +152,7 @@ type DefinitionTargetLXC struct {
 
 // DefinitionTargetLXDVM represents LXD VM specific options.
 type DefinitionTargetLXDVM struct {
-	Size       uint   `yaml:"size,omitempty"`
+	Size       uint64 `yaml:"size,omitempty"`
 	Filesystem string `yaml:"filesystem,omitempty"`
 }
 
