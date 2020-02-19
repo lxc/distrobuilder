@@ -155,11 +155,5 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		return errors.Wrap(err, "Failed to create LXC image")
 	}
 
-	// Clean up the chroot by restoring the orginal files.
-	err = generators.RestoreFiles(c.global.flagCacheDir, overlayDir)
-	if err != nil {
-		return errors.Wrap(err, "Failed to restore cached files")
-	}
-
 	return nil
 }

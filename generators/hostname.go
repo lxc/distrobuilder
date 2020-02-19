@@ -24,12 +24,6 @@ func (g HostnameGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImag
 		return nil
 	}
 
-	// Store original file
-	err := StoreFile(cacheDir, sourceDir, defFile.Path)
-	if err != nil {
-		return err
-	}
-
 	// Create new hostname file
 	file, err := os.Create(filepath.Join(sourceDir, defFile.Path))
 	if err != nil {
