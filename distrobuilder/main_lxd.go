@@ -203,9 +203,11 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	rootfsDir := overlayDir
 	var mounts []shared.ChrootMount
+	var vmDir string
+	var vm *vm
 
 	if c.flagVM {
-		vmDir := filepath.Join(c.global.flagCacheDir, "vm")
+		vmDir = filepath.Join(c.global.flagCacheDir, "vm")
 
 		err := os.Mkdir(vmDir, 0755)
 		if err != nil {
@@ -219,7 +221,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		imgFile := filepath.Join(c.global.flagCacheDir, imgFilename)
 
-		vm, err := newVM(imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
+		vm, err = newVM(imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
 		if err != nil {
 			return errors.Wrap(err, "Failed to instanciate VM")
 		}
@@ -249,12 +251,12 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		if err != nil {
 			return errors.Wrap(err, "failed to mount root partion")
 		}
+		defer lxd.RunCommand("umount", "-R", vmDir)
 
 		err = vm.createUEFIFS()
 		if err != nil {
 			return errors.Wrap(err, "Failed to create UEFI filesystem")
 		}
-		defer lxd.RunCommand("umount", "-R", vmDir)
 
 		err = vm.mountUEFIPartition()
 		if err != nil {
@@ -298,6 +300,19 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	}
 
 	exitChroot()
+
+	// Unmount VM directory and loop device before creating the image.
+	if c.flagVM {
+		_, err := lxd.RunCommand("umount", "-R", vmDir)
+		if err != nil {
+			return err
+		}
+
+		err = vm.umountImage()
+		if err != nil {
+			return err
+		}
+	}
 
 	err = img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
