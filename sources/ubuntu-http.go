@@ -2,7 +2,6 @@ package sources
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/gobuffalo/packr/v2"
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -142,7 +142,7 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 
 	_, err = shared.DownloadHash(definition.Image, coreImage, "", sha256.New())
 	if err != nil {
-		return fmt.Errorf("Error downloading base Ubuntu image: %s", err)
+		return errors.Wrap(err, "Error downloading base Ubuntu image")
 	}
 
 	err = s.unpack(filepath.Join(s.fpath, "rootfs.tar.xz"), baseImageDir)
@@ -347,7 +347,7 @@ func (s *UbuntuHTTP) downloadImage(definition shared.Definition) error {
 
 	s.fpath, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
-		return fmt.Errorf("Error downloading Ubuntu image: %s", err)
+		return errors.Wrap(err, "Error downloading Ubuntu image")
 	}
 
 	return nil
@@ -359,7 +359,7 @@ func (s UbuntuHTTP) unpack(filePath, rootDir string) error {
 
 	err := lxd.Unpack(filePath, rootDir, false, false, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to unpack tarball: %s", err)
+		return errors.Wrap(err, "Failed to unpack tarball")
 	}
 
 	return nil

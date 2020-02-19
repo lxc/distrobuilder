@@ -30,12 +30,6 @@ func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 		return err
 	}
 
-	// Store original file
-	err = StoreFile(cacheDir, sourceDir, defFile.Path)
-	if err != nil {
-		return err
-	}
-
 	// Replace hostname with placeholder
 	content = []byte(strings.Replace(string(content), "distrobuilder", "LXC_NAME", -1))
 

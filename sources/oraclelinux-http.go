@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 	"gopkg.in/antchfx/htmlquery.v1"
 
@@ -42,7 +43,7 @@ func (s *OracleLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 	fpath, err := shared.DownloadHash(definition.Image, fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname),
 		"", nil)
 	if err != nil {
-		return fmt.Errorf("Error downloading Oracle Linux image: %s", err)
+		return errors.Wrap(err, "Error downloading Oracle Linux image")
 	}
 
 	return s.unpackISO(latestUpdate[1:], filepath.Join(fpath, fname), rootfsDir)
@@ -171,7 +172,7 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to setup chroot: %s", err)
+		return errors.Wrap(err, "Failed to setup chroot")
 	}
 
 	err = shared.RunScript(fmt.Sprintf(`

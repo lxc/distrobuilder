@@ -40,16 +40,8 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 		shared.DefinitionFile{Path: "/etc/hosts"})
 	require.NoError(t, err)
 
-	validateTestFile(t, filepath.Join(cacheDir, "tmp", "etc", "hosts"),
-		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tLXC_NAME\n")
-
-	err = RestoreFiles(cacheDir, rootfsDir)
-	require.NoError(t, err)
-
-	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
-		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 }
 
 func TestHostsGeneratorRunLXD(t *testing.T) {

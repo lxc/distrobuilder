@@ -8,6 +8,7 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -53,7 +54,7 @@ func (l *LXCImage) AddTemplate(path string) error {
 
 	_, err = file.WriteString(fmt.Sprintf("%v\n", path))
 	if err != nil {
-		return fmt.Errorf("Failed to write to template file: %s", err)
+		return errors.Wrap(err, "Failed to write to template file")
 	}
 
 	return nil
@@ -128,14 +129,14 @@ func (l *LXCImage) createMetadata() error {
 	err := l.writeMetadata(filepath.Join(metaDir, "create-message"),
 		l.definition.Targets.LXC.CreateMessage, false)
 	if err != nil {
-		return fmt.Errorf("Error writing 'create-message': %s", err)
+		return errors.Wrap(err, "Error writing 'create-message'")
 	}
 
 	err = l.writeMetadata(filepath.Join(metaDir, "expiry"),
 		fmt.Sprint(shared.GetExpiryDate(time.Now(), l.definition.Image.Expiry).Unix()),
 		false)
 	if err != nil {
-		return fmt.Errorf("Error writing 'expiry': %s", err)
+		return errors.Wrap(err, "Error writing 'expiry'")
 	}
 
 	var excludesUser string
@@ -155,13 +156,13 @@ func (l *LXCImage) createMetadata() error {
 				return nil
 			})
 		if err != nil {
-			return fmt.Errorf("Error while walking /dev: %s", err)
+			return errors.Wrap(err, "Error while walking /dev")
 		}
 	}
 
 	err = l.writeMetadata(filepath.Join(metaDir, "excludes-user"), excludesUser, false)
 	if err != nil {
-		return fmt.Errorf("Error writing 'excludes-user': %s", err)
+		return errors.Wrap(err, "Error writing 'excludes-user'")
 	}
 
 	return nil
@@ -187,7 +188,7 @@ func (l *LXCImage) packMetadata() error {
 	err = shared.Pack(filepath.Join(l.targetDir, "meta.tar"), "xz",
 		filepath.Join(l.cacheDir, "metadata"), files...)
 	if err != nil {
-		return fmt.Errorf("Failed to create metadata: %s", err)
+		return errors.Wrap(err, "Failed to create metadata")
 	}
 
 	return nil
@@ -236,7 +237,7 @@ func (l *LXCImage) writeConfig(compatLevel uint, filename, content string) error
 	}
 	err := l.writeMetadata(filename, content, true)
 	if err != nil {
-		return fmt.Errorf("Error writing '%s': %s", filepath.Base(filename), err)
+		return errors.Wrapf(err, "Error writing '%s'", filepath.Base(filename))
 	}
 
 	return nil

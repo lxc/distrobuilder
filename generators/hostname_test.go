@@ -39,13 +39,7 @@ func TestHostnameGeneratorRunLXC(t *testing.T) {
 		shared.DefinitionFile{Path: "/etc/hostname"})
 	require.NoError(t, err)
 
-	validateTestFile(t, filepath.Join(cacheDir, "tmp", "etc", "hostname"), "hostname")
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "LXC_NAME\n")
-
-	err = RestoreFiles(cacheDir, rootfsDir)
-	require.NoError(t, err)
-
-	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "hostname")
 }
 
 func TestHostnameGeneratorRunLXD(t *testing.T) {

@@ -71,27 +71,6 @@ func TestCloudInitGeneratorRunLXC(t *testing.T) {
 	}
 
 	require.FileExists(t, filepath.Join(rootfsDir, "etc", "cloud", "cloud-init.disabled"))
-
-	err = RestoreFiles(cacheDir, rootfsDir)
-	require.NoError(t, err)
-
-	// Check whether the files have been restored
-	for _, f := range []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"} {
-		fullPath := filepath.Join(rootfsDir, "etc", "runlevels", f)
-		require.FileExists(t, fullPath)
-	}
-
-	for i := 0; i <= 6; i++ {
-		dir := filepath.Join(rootfsDir, "etc", "rc.d", fmt.Sprintf("rc%d.d", i))
-
-		for _, f := range []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"} {
-			fullPath := filepath.Join(dir, fmt.Sprintf("S99%s", f))
-			require.FileExists(t, fullPath)
-		}
-	}
-
-	fullPath := filepath.Join(rootfsDir, "etc", "cloud", "cloud-init.disabled")
-	require.Falsef(t, lxd.PathExists(fullPath), "File '%s' exists but shouldn't", fullPath)
 }
 
 func TestCloudInitGeneratorRunLXD(t *testing.T) {

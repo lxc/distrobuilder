@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/lxc/lxd/shared/api"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -47,7 +48,7 @@ func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 
 	_, err = file.WriteString(defFile.Content)
 	if err != nil {
-		return fmt.Errorf("Failed to write to content to %s template: %s", defFile.Name, err)
+		return errors.Wrapf(err, "Failed to write to content to %s template", defFile.Name)
 	}
 
 	// Add to LXD templates

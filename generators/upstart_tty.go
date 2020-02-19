@@ -1,12 +1,12 @@
 package generators
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -58,12 +58,6 @@ func (g UpstartTTYGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIm
 		return nil
 	}
 
-	// Store original file
-	err := StoreFile(cacheDir, sourceDir, defFile.Path)
-	if err != nil {
-		return err
-	}
-
 	// Create new hostname file
 	file, err := os.Create(filepath.Join(sourceDir, defFile.Path))
 	if err != nil {
@@ -74,7 +68,7 @@ func (g UpstartTTYGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIm
 	// Write LXC specific string to the hostname file
 	_, err = file.WriteString(upstartTTYJob)
 	if err != nil {
-		return fmt.Errorf("Failed to write to upstart job file: %s", err)
+		return errors.Wrap(err, "Failed to write to upstart job file")
 	}
 
 	// Add hostname path to LXC's templates file
@@ -105,7 +99,7 @@ func (g UpstartTTYGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDIm
 
 	_, err = file.WriteString(upstartTTYJob)
 	if err != nil {
-		return fmt.Errorf("Failed to write to upstart job file: %s", err)
+		return errors.Wrap(err, "Failed to write to upstart job file")
 	}
 
 	// Add to LXD templates

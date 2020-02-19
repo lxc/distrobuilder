@@ -9,6 +9,7 @@ import (
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -31,7 +32,7 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 			}
 
 			if lxd.StringInSlice(info.Name(), []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"}) {
-				err := StoreFile(cacheDir, sourceDir, strings.TrimPrefix(path, sourceDir))
+				err := os.Remove(path)
 				if err != nil {
 					return err
 				}
@@ -61,7 +62,7 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 			}
 
 			if re.MatchString(info.Name()) {
-				err := StoreFile(cacheDir, sourceDir, strings.TrimPrefix(path, sourceDir))
+				err := os.Remove(path)
 				if err != nil {
 					return err
 				}
@@ -73,20 +74,10 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 
 	// With systemd:
 	if !lxd.PathExists(filepath.Join(sourceDir, "/etc/cloud")) {
-		err := StoreFile(cacheDir, sourceDir, "/etc/cloud")
+		err := os.MkdirAll(filepath.Join(sourceDir, "/etc/cloud"), 0755)
 		if err != nil {
 			return err
 		}
-
-		err = os.MkdirAll(filepath.Join(sourceDir, "/etc/cloud"), 0755)
-		if err != nil {
-			return err
-		}
-	}
-
-	err := StoreFile(cacheDir, sourceDir, "/etc/cloud/cloud-init.disabled")
-	if err != nil {
-		return err
 	}
 
 	// Create file /etc/cloud/cloud-init.disabled
@@ -161,7 +152,7 @@ config:
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		return fmt.Errorf("Failed to write to content to %s template: %s", defFile.Name, err)
+		return errors.Wrapf(err, "Failed to write to content to %s template", defFile.Name)
 	}
 
 	if len(defFile.Template.Properties) > 0 {
