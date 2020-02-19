@@ -8,10 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -196,8 +196,8 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 			func(l LXCImage) *LXCImage {
 				// Create /dev and device file.
 				os.MkdirAll(filepath.Join(lxcCacheDir(), "rootfs", "dev"), 0755)
-				syscall.Mknod(filepath.Join(lxcCacheDir(), "rootfs", "dev", "null"),
-					syscall.S_IFCHR, 0)
+				unix.Mknod(filepath.Join(lxcCacheDir(), "rootfs", "dev", "null"),
+					unix.S_IFCHR, 0)
 				return &l
 			},
 		},

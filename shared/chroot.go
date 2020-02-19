@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"syscall"
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/pkg/errors"
@@ -52,7 +51,7 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 		}
 
 		// Mount to the temporary path
-		err := syscall.Mount(mount.Source, tmpTarget, mount.FSType, mount.Flags, mount.Data)
+		err := unix.Mount(mount.Source, tmpTarget, mount.FSType, mount.Flags, mount.Data)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to mount '%s'", mount.Source)
 		}
@@ -109,7 +108,7 @@ func moveMounts(mounts []ChrootMount) error {
 		}
 
 		// Move the mount to its destination
-		err = syscall.Mount(tmpSource, target, "", syscall.MS_MOVE, "")
+		err = unix.Mount(tmpSource, target, "", unix.MS_MOVE, "")
 		if err != nil {
 			return errors.Wrapf(err, "Failed to mount '%s'", mount.Source)
 		}
@@ -145,7 +144,7 @@ func killChrootProcesses(rootfs string) error {
 			link, _ := os.Readlink(filepath.Join(rootfs, "proc", dir, "root"))
 			if link == rootfs {
 				pid, _ := strconv.Atoi(dir)
-				syscall.Kill(pid, syscall.SIGKILL)
+				unix.Kill(pid, unix.SIGKILL)
 			}
 		}
 	}
@@ -156,7 +155,7 @@ func killChrootProcesses(rootfs string) error {
 // SetupChroot sets up mount and files, a reverter and then chroots for you
 func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() error, error) {
 	// Mount the rootfs
-	err := syscall.Mount(rootfs, rootfs, "", syscall.MS_BIND, "")
+	err := unix.Mount(rootfs, rootfs, "", unix.MS_BIND, "")
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to mount '%s'", rootfs)
 	}
@@ -165,10 +164,10 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	mounts := []ChrootMount{
 		{"none", "/proc", "proc", 0, "", true},
 		{"none", "/sys", "sysfs", 0, "", true},
-		{"/dev", "/dev", "", syscall.MS_BIND, "", true},
+		{"/dev", "/dev", "", unix.MS_BIND, "", true},
 		{"none", "/run", "tmpfs", 0, "", true},
 		{"none", "/tmp", "tmpfs", 0, "", true},
-		{"/etc/resolv.conf", "/etc/resolv.conf", "", syscall.MS_BIND, "", false},
+		{"/etc/resolv.conf", "/etc/resolv.conf", "", unix.MS_BIND, "", false},
 	}
 
 	// Keep a reference to the host rootfs and cwd
@@ -286,12 +285,12 @@ exit 101
 			return err
 		}
 
-		err = syscall.Chroot(".")
+		err = unix.Chroot(".")
 		if err != nil {
 			return err
 		}
 
-		err = syscall.Chdir(cwd)
+		err = unix.Chdir(cwd)
 		if err != nil {
 			return err
 		}
@@ -301,7 +300,7 @@ exit 101
 		killChrootProcesses(rootfs)
 
 		// And now unmount the entire tree
-		unix.Unmount(rootfs, syscall.MNT_DETACH)
+		unix.Unmount(rootfs, unix.MNT_DETACH)
 
 		devPath := filepath.Join(rootfs, "dev")
 
