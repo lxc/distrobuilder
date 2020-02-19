@@ -10,6 +10,8 @@ import (
 	"syscall"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
+	"golang.org/x/sys/unix"
 )
 
 // ChrootMount defines mount args.
@@ -52,7 +54,7 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 		// Mount to the temporary path
 		err := syscall.Mount(mount.Source, tmpTarget, mount.FSType, mount.Flags, mount.Data)
 		if err != nil {
-			return fmt.Errorf("Failed to mount '%s': %s", mount.Source, err)
+			return errors.Wrapf(err, "Failed to mount '%s'", mount.Source)
 		}
 	}
 
@@ -109,7 +111,7 @@ func moveMounts(mounts []ChrootMount) error {
 		// Move the mount to its destination
 		err = syscall.Mount(tmpSource, target, "", syscall.MS_MOVE, "")
 		if err != nil {
-			return fmt.Errorf("Failed to mount '%s': %s", mount.Source, err)
+			return errors.Wrapf(err, "Failed to mount '%s'", mount.Source)
 		}
 	}
 
@@ -156,7 +158,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	// Mount the rootfs
 	err := syscall.Mount(rootfs, rootfs, "", syscall.MS_BIND, "")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to mount '%s': %s", rootfs, err)
+		return nil, errors.Wrapf(err, "Failed to mount '%s'", rootfs)
 	}
 
 	// Setup all other needed mounts
@@ -187,17 +189,17 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 		err = setupMounts(rootfs, mounts)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("Failed to mount filesystems: %v", err)
+		return nil, errors.Wrap(err, "Failed to mount filesystems")
 	}
 
 	// Chroot into the container's rootfs
-	err = syscall.Chroot(rootfs)
+	err = unix.Chroot(rootfs)
 	if err != nil {
 		root.Close()
 		return nil, err
 	}
 
-	err = syscall.Chdir("/")
+	err = unix.Chdir("/")
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +301,7 @@ exit 101
 		killChrootProcesses(rootfs)
 
 		// And now unmount the entire tree
-		syscall.Unmount(rootfs, syscall.MNT_DETACH)
+		unix.Unmount(rootfs, syscall.MNT_DETACH)
 
 		devPath := filepath.Join(rootfs, "dev")
 

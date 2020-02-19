@@ -293,7 +293,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		err := shared.RunScript(action.Action)
 		if err != nil {
 			exitChroot()
-			return fmt.Errorf("Failed to run post-files: %s", err)
+			return errors.Wrap(err, "Failed to run post-files")
 		}
 	}
 
@@ -301,7 +301,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	err = img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
-		return fmt.Errorf("Failed to create LXD image: %s", err)
+		return errors.Wrap(err, "Failed to create LXD image")
 	}
 
 	return nil

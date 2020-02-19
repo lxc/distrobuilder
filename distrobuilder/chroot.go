@@ -44,7 +44,7 @@ func manageRepositories(def *shared.Definition, manager *managers.Manager, image
 
 		err = manager.RepoHandler(repo)
 		if err != nil {
-			return fmt.Errorf("Error for repository %s: %s", repo.Name, err)
+			return errors.Wrapf(err, "Error for repository %s", repo.Name)
 		}
 	}
 
@@ -69,7 +69,7 @@ func managePackages(def *shared.Definition, manager *managers.Manager, imageTarg
 		for _, action := range def.GetRunnableActions("post-update", imageTarget) {
 			err = shared.RunScript(action.Action)
 			if err != nil {
-				return fmt.Errorf("Failed to run post-update: %s", err)
+				return errors.Wrap(err, "Failed to run post-update")
 			}
 		}
 	}

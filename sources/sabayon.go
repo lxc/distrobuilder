@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -31,7 +32,7 @@ func (s *SabayonHTTP) Run(definition shared.Definition, rootfsDir string) error 
 
 	resp, err := http.Head(tarballPath)
 	if err != nil {
-		return fmt.Errorf("Couldn't resolve URL: %v", err)
+		return errors.Wrap(err, "Couldn't resolve URL")
 	}
 
 	baseURL, fname = path.Split(resp.Request.URL.String())

@@ -9,6 +9,7 @@ import (
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -161,7 +162,7 @@ config:
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		return fmt.Errorf("Failed to write to content to %s template: %s", defFile.Name, err)
+		return errors.Wrapf(err, "Failed to write to content to %s template", defFile.Name)
 	}
 
 	if len(defFile.Template.Properties) > 0 {

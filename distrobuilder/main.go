@@ -54,7 +54,6 @@ import "C"
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -64,6 +63,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 
@@ -241,20 +241,20 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	for i, key := range c.definition.Source.Keys {
 		c.definition.Source.Keys[i], err = shared.RenderTemplate(key, c.definition)
 		if err != nil {
-			return fmt.Errorf("Failed to render source keys: %s", err)
+			return errors.Wrap(err, "Failed to render source keys")
 		}
 	}
 
 	// Download the root filesystem
 	err = downloader.Run(*c.definition, c.sourceDir)
 	if err != nil {
-		return fmt.Errorf("Error while downloading source: %s", err)
+		return errors.Wrap(err, "Error while downloading source")
 	}
 
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(c.sourceDir, c.definition.Environment, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to setup chroot: %s", err)
+		return errors.Wrap(err, "Failed to setup chroot")
 	}
 	// Unmount everything and exit the chroot
 	defer exitChroot()
@@ -293,28 +293,28 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	err = manageRepositories(c.definition, manager, imageTargets)
 	if err != nil {
-		return fmt.Errorf("Failed to manage repositories: %s", err)
+		return errors.Wrap(err, "Failed to manage repositories")
 	}
 
 	// Run post unpack hook
 	for _, hook := range c.definition.GetRunnableActions("post-unpack", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return fmt.Errorf("Failed to run post-unpack: %s", err)
+			return errors.Wrap(err, "Failed to run post-unpack")
 		}
 	}
 
 	// Install/remove/update packages
 	err = managePackages(c.definition, manager, imageTargets)
 	if err != nil {
-		return fmt.Errorf("Failed to manage packages: %s", err)
+		return errors.Wrap(err, "Failed to manage packages")
 	}
 
 	// Run post packages hook
 	for _, hook := range c.definition.GetRunnableActions("post-packages", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return fmt.Errorf("Failed to run post-packages: %s", err)
+			return errors.Wrap(err, "Failed to run post-packages")
 		}
 	}
 
@@ -397,7 +397,7 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 
 		err := def.SetValue(parts[0], parts[1])
 		if err != nil {
-			return nil, fmt.Errorf("Failed to set option %s: %s", o, err)
+			return nil, errors.Wrapf(err, "Failed to set option %s", o)
 		}
 	}
 

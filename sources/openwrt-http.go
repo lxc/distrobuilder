@@ -3,7 +3,6 @@ package sources
 import (
 	"bufio"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,6 +13,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -134,12 +134,12 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 
 	err = lxd.Unpack(filepath.Join(fpath, "master.tar.gz"), filepath.Join(os.TempDir(), "distrobuilder", "fixes"), false, false, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to unpack scripts: %v", err)
+		return errors.Wrap(err, "Failed to unpack scripts")
 	}
 
 	err = lxd.Unpack(filepath.Join(fpath, sdk), tempSDKDir, false, false, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to unpack SDK: %v", err)
+		return errors.Wrap(err, "Failed to unpack SDK")
 	}
 
 	currentDir, err := os.Getwd()

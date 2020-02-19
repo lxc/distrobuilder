@@ -1,12 +1,12 @@
 package managers
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -71,7 +71,7 @@ func pacmanSetupTrustedKeys() error {
 
 	err = shared.RunCommand("pacman-key", "--init")
 	if err != nil {
-		return fmt.Errorf("Error initializing with pacman-key: %s", err)
+		return errors.Wrap(err, "Error initializing with pacman-key")
 	}
 
 	var keyring string
@@ -84,7 +84,7 @@ func pacmanSetupTrustedKeys() error {
 
 	err = shared.RunCommand("pacman-key", "--populate", keyring)
 	if err != nil {
-		return fmt.Errorf("Error populating with pacman-key: %s", err)
+		return errors.Wrap(err, "Error populating with pacman-key")
 	}
 
 	return nil

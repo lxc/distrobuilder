@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -29,7 +30,7 @@ func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 
 	release, err := strconv.Atoi(releaseStr)
 	if err != nil {
-		return fmt.Errorf("Failed to determine release: %v", err)
+		return errors.Wrap(err, "Failed to determine release")
 	}
 
 	u, err := url.Parse(definition.Source.URL)
@@ -55,7 +56,7 @@ func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 
 		pkgDir, err = s.downloadFiles(definition.Image, u.String(), ignoredPkgs)
 		if err != nil {
-			return fmt.Errorf("Failed to download packages: %v", err)
+			return errors.Wrap(err, "Failed to download packages")
 		}
 	}
 

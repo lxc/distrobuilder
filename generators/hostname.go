@@ -1,12 +1,12 @@
 package generators
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -40,7 +40,7 @@ func (g HostnameGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImag
 	// Write LXC specific string to the hostname file
 	_, err = file.WriteString("LXC_NAME\n")
 	if err != nil {
-		return fmt.Errorf("Failed to write to hostname file: %s", err)
+		return errors.Wrap(err, "Failed to write to hostname file")
 	}
 
 	// Add hostname path to LXC's templates file
@@ -71,7 +71,7 @@ func (g HostnameGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 
 	_, err = file.WriteString("{{ container.name }}\n")
 	if err != nil {
-		return fmt.Errorf("Failed to write to hostname file: %s", err)
+		return errors.Wrap(err, "Failed to write to hostname file")
 	}
 
 	// Add to LXD templates

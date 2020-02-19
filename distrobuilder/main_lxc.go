@@ -144,7 +144,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		err := shared.RunScript(action.Action)
 		if err != nil {
 			exitChroot()
-			return fmt.Errorf("Failed to run post-files: %s", err)
+			return errors.Wrap(err, "Failed to run post-files")
 		}
 	}
 
@@ -152,13 +152,13 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	err = img.Build()
 	if err != nil {
-		return fmt.Errorf("Failed to create LXC image: %s", err)
+		return errors.Wrap(err, "Failed to create LXC image")
 	}
 
 	// Clean up the chroot by restoring the orginal files.
 	err = generators.RestoreFiles(c.global.flagCacheDir, overlayDir)
 	if err != nil {
-		return fmt.Errorf("Failed to restore cached files: %s", err)
+		return errors.Wrap(err, "Failed to restore cached files")
 	}
 
 	return nil

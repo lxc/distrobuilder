@@ -3,7 +3,6 @@ package sources
 import (
 	"bytes"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,6 +15,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -111,7 +111,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 
 	_, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
-		return fmt.Errorf("Error downloading CentOS image: %s", err)
+		return errors.Wrap(err, "Error downloading CentOS image")
 	}
 
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {

@@ -2,7 +2,6 @@ package sources
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -49,7 +49,7 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 
 	resp, err := http.Head(tarballPath)
 	if err != nil {
-		return fmt.Errorf("Couldn't resolve URL: %v", err)
+		return errors.Wrap(err, "Couldn't resolve URL")
 	}
 
 	baseURL, fname = path.Split(resp.Request.URL.String())
@@ -61,7 +61,7 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 
 	fpath, err := shared.DownloadHash(definition.Image, url.String(), "", nil)
 	if err != nil {
-		return fmt.Errorf("Error downloading openSUSE image: %s", err)
+		return errors.Wrap(err, "Error downloading openSUSE image")
 	}
 
 	if definition.Source.SkipVerification {
@@ -86,21 +86,21 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 	checksum, err := shared.GetSignedContent(filepath.Join(fpath, checksumFile),
 		definition.Source.Keys, definition.Source.Keyserver)
 	if err != nil {
-		return fmt.Errorf("Failed to read signed file: %v", err)
+		return errors.Wrap(err, "Failed to read signed file")
 	}
 
 	imagePath := filepath.Join(fpath, fname)
 
 	image, err := os.Open(imagePath)
 	if err != nil {
-		return fmt.Errorf("Failed to verify image: %v", err)
+		return errors.Wrap(err, "Failed to verify image")
 	}
 
 	hash := sha256.New()
 	_, err = io.Copy(hash, image)
 	if err != nil {
 		image.Close()
-		return fmt.Errorf("Failed to verify image: %v", err)
+		return errors.Wrap(err, "Failed to verify image")
 	}
 
 	image.Close()

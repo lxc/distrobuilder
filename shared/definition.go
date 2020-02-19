@@ -1,7 +1,6 @@
 package shared
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/lxc/lxd/shared"
 	lxdarch "github.com/lxc/lxd/shared/osarch"
+	"github.com/pkg/errors"
 )
 
 // ImageTarget represents the image target.
@@ -521,7 +521,7 @@ func (d *Definition) getMappedArchitecture() (string, error) {
 		var err error
 		arch, err = GetArch(d.Mappings.ArchitectureMap, d.Image.Architecture)
 		if err != nil {
-			return "", fmt.Errorf("Failed to translate the architecture name: %s", err)
+			return "", errors.Wrap(err, "Failed to translate the architecture name")
 		}
 	} else if len(d.Mappings.Architectures) > 0 {
 		// Translate the architecture using a user specified mapping
