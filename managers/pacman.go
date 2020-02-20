@@ -1,6 +1,7 @@
 package managers
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -55,7 +56,28 @@ func NewPacman() *Manager {
 		},
 		hooks: ManagerHooks{
 			clean: func() error {
-				return os.RemoveAll("/var/cache/pacman/pkg")
+				path := "/var/cache/pacman/pkg"
+
+				// List all entries.
+				entries, err := ioutil.ReadDir(path)
+				if err != nil {
+					if os.IsNotExist(err) {
+						return nil
+					}
+
+					return errors.Wrapf(err, "Failed to list directory '%s'", path)
+				}
+
+				// Individually wipe all entries.
+				for _, entry := range entries {
+					entryPath := filepath.Join(path, entry.Name())
+					err := os.RemoveAll(entryPath)
+					if err != nil && !os.IsNotExist(err) {
+						return errors.Wrapf(err, "Failed to remove '%s'", entryPath)
+					}
+				}
+
+				return nil
 			},
 		},
 	}
