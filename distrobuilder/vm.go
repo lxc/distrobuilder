@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
+	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -103,6 +104,58 @@ func (v *vm) mountImage() error {
 
 	v.loopDevice = strings.TrimSpace(stdout)
 
+	// Ensure the partitions are accessible. This part is usually only needed
+	// if building inside of a container.
+
+	out, err := lxd.RunCommand("lsblk", "--raw", "--output", "MAJ:MIN", "--noheadings", v.loopDevice)
+	if err != nil {
+		return err
+	}
+
+	deviceNumbers := strings.Split(out, "\n")
+
+	if !lxd.PathExists(v.getUEFIDevFile()) {
+		fields := strings.Split(deviceNumbers[1], ":")
+
+		major, err := strconv.Atoi(fields[0])
+		if err != nil {
+			return err
+		}
+
+		minor, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return err
+		}
+
+		dev := unix.Mkdev(uint32(major), uint32(minor))
+
+		err = unix.Mknod(v.getUEFIDevFile(), unix.S_IFBLK|0644, int(dev))
+		if err != nil {
+			return err
+		}
+	}
+
+	if !lxd.PathExists(v.getRootfsDevFile()) {
+		fields := strings.Split(deviceNumbers[2], ":")
+
+		major, err := strconv.Atoi(fields[0])
+		if err != nil {
+			return err
+		}
+
+		minor, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return err
+		}
+
+		dev := unix.Mkdev(uint32(major), uint32(minor))
+
+		err = unix.Mknod(v.getRootfsDevFile(), unix.S_IFBLK|0644, int(dev))
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -115,6 +168,21 @@ func (v *vm) umountImage() error {
 	err := shared.RunCommand("losetup", "-d", v.loopDevice)
 	if err != nil {
 		return err
+	}
+
+	// Make sure that p1 and p2 are also removed.
+	if lxd.PathExists(v.getUEFIDevFile()) {
+		err := os.Remove(v.getUEFIDevFile())
+		if err != nil {
+			return err
+		}
+	}
+
+	if lxd.PathExists(v.getRootfsDevFile()) {
+		err := os.Remove(v.getRootfsDevFile())
+		if err != nil {
+			return err
+		}
 	}
 
 	v.loopDevice = ""
