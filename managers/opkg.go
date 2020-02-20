@@ -1,5 +1,7 @@
 package managers
 
+import "os"
+
 // NewOpkg creates a new Manager instance.
 func NewOpkg() *Manager {
 	return &Manager{
@@ -26,6 +28,11 @@ func NewOpkg() *Manager {
 			},
 			update: []string{
 				"Not supported",
+			},
+		},
+		hooks: ManagerHooks{
+			preRefresh: func() error {
+				return os.MkdirAll("/var/lock", 0755)
 			},
 		},
 	}
