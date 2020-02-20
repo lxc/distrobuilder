@@ -119,7 +119,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(overlayDir, c.global.definition.Environment, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to setup chroot: %s", err)
+		return errors.Wrapf(err, "Failed to setup chroot")
 	}
 	// Unmount everything and exit the chroot
 	defer exitChroot()
@@ -144,28 +144,28 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	err = manageRepositories(c.global.definition, manager, imageTargets)
 	if err != nil {
-		return fmt.Errorf("Failed to manage repositories: %s", err)
+		return errors.Wrap(err, "Failed to manage repositories")
 	}
 
 	// Run post unpack hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return fmt.Errorf("Failed to run post-unpack: %s", err)
+			return errors.Wrap(err, "Failed to run post-unpack")
 		}
 	}
 
 	// Install/remove/update packages
 	err = managePackages(c.global.definition, manager, imageTargets)
 	if err != nil {
-		return fmt.Errorf("Failed to manage packages: %s", err)
+		return errors.Wrap(err, "Failed to manage packages")
 	}
 
 	// Run post packages hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return fmt.Errorf("Failed to run post-packages: %s", err)
+			return errors.Wrap(err, "Failed to run post-packages")
 		}
 	}
 
