@@ -164,7 +164,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	mounts := []ChrootMount{
 		{"none", "/proc", "proc", 0, "", true},
 		{"none", "/sys", "sysfs", 0, "", true},
-		{"/dev", "/dev", "", unix.MS_BIND, "", true},
+		{"/dev", "/dev", "", unix.MS_BIND | unix.MS_REC, "", true},
 		{"none", "/run", "tmpfs", 0, "", true},
 		{"none", "/tmp", "tmpfs", 0, "", true},
 		{"/etc/resolv.conf", "/etc/resolv.conf", "", unix.MS_BIND, "", false},
