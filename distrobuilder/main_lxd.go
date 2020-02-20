@@ -38,9 +38,9 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 
 			// Check dependencies
 			if c.flagVM {
-				_, err := exec.LookPath("qemu-img")
+				err := c.checkVMDependencies()
 				if err != nil {
-					return fmt.Errorf("Required tool 'qemu-img' is missing")
+					return err
 				}
 			}
 
@@ -80,9 +80,9 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 
 			// Check dependencies
 			if c.flagVM {
-				_, err := exec.LookPath("qemu-img")
+				err := c.checkVMDependencies()
 				if err != nil {
-					return fmt.Errorf("Required tool 'qemu-img' is missing")
+					return err
 				}
 			}
 
@@ -317,6 +317,19 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	err = img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create LXD image")
+	}
+
+	return nil
+}
+
+func (c *cmdLXD) checkVMDependencies() error {
+	dependencies := []string{"btrfs", "qemu-img", "rsync", "sgdisk"}
+
+	for _, dep := range dependencies {
+		_, err := exec.LookPath(dep)
+		if err != nil {
+			return fmt.Errorf("Required tool %q is missing", dep)
+		}
 	}
 
 	return nil
