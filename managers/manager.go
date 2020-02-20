@@ -14,7 +14,8 @@ type ManagerFlags struct {
 
 // ManagerHooks represents custom hooks.
 type ManagerHooks struct {
-	clean func() error
+	clean      func() error
+	preRefresh func() error
 }
 
 // ManagerCommands represents all commands.
@@ -137,6 +138,13 @@ func (m Manager) Clean() error {
 func (m Manager) Refresh() error {
 	if len(m.flags.refresh) == 0 {
 		return nil
+	}
+
+	if m.hooks.preRefresh != nil {
+		err := m.hooks.preRefresh()
+		if err != nil {
+			return err
+		}
 	}
 
 	args := append(m.flags.global, m.flags.refresh...)
