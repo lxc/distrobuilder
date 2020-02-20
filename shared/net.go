@@ -12,6 +12,7 @@ import (
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/ioprogress"
+	"github.com/pkg/errors"
 )
 
 // DownloadHash downloads a file. If a checksum file is provided, it will try and
@@ -41,7 +42,7 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 
 		hash, err = downloadChecksum(targetDir, checksum, file, hashFunc, hashLen)
 		if err != nil {
-			return "", fmt.Errorf("Error while downloading checksum: %s", err)
+			return "", errors.Wrap(err, "Error while downloading checksum")
 		}
 	}
 

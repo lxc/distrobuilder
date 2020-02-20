@@ -16,6 +16,7 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 	"gopkg.in/flosch/pongo2.v3"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -92,7 +93,7 @@ func GetSignedContent(signedFile string, keys []string, keyserver string) ([]byt
 	out, err := exec.Command("gpg", "--homedir", gpgDir, "--keyring", keyring,
 		"--decrypt", signedFile).Output()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get file content: %v", err)
+		return nil, errors.Wrapf(err, "Failed to get file content: %s", out)
 	}
 
 	return out, nil
@@ -111,13 +112,13 @@ func VerifyFile(signedFile, signatureFile string, keys []string, keyserver strin
 		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
 			"--verify", signatureFile, signedFile)
 		if err != nil {
-			return false, fmt.Errorf("Failed to verify: %s", out)
+			return false, errors.Wrapf(err, "Failed to verify: %s", out)
 		}
 	} else {
 		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
 			"--verify", signedFile)
 		if err != nil {
-			return false, fmt.Errorf("Failed to verify: %s", out)
+			return false, errors.Wrapf(err, "Failed to verify: %s", out)
 		}
 	}
 
@@ -196,7 +197,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 	gpgDir, err := ioutil.TempDir(os.TempDir(), "distrobuilder.")
 	if err != nil {
-		return "", fmt.Errorf("Failed to create gpg directory: %s", err)
+		return "", errors.Wrap(err, "Failed to create gpg directory")
 	}
 
 	err = os.MkdirAll(gpgDir, 0700)
@@ -224,7 +225,7 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 		filepath.Join(gpgDir, "distrobuilder.gpg"))
 	if err != nil {
 		os.RemoveAll(gpgDir)
-		return "", fmt.Errorf("Failed to export keyring: %s", out)
+		return "", errors.Wrapf(err, "Failed to export keyring: %s", out)
 	}
 
 	return filepath.Join(gpgDir, "distrobuilder.gpg"), nil
