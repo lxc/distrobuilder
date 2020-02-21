@@ -323,7 +323,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 }
 
 func (c *cmdLXD) checkVMDependencies() error {
-	dependencies := []string{"btrfs", "qemu-img", "rsync", "sgdisk"}
+	dependencies := []string{"btrfs", "mkfs.ext4", "mkfs.vfat", "qemu-img", "rsync", "sgdisk"}
 
 	for _, dep := range dependencies {
 		_, err := exec.LookPath(dep)
