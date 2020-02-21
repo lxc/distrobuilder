@@ -125,7 +125,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 		}
 	} else {
 		if vm {
-			err = shared.Copy(qcowImage, filepath.Join(l.targetDir, filepath.Base(qcowImage)))
+			err = shared.Copy(qcowImage, filepath.Join(l.targetDir, "disk.qcow2"))
 		} else {
 			// Create rootfs as squashfs.
 			err = shared.RunCommand("mksquashfs", l.sourceDir,
