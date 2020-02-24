@@ -57,6 +57,14 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 		}
 	}
 
+	// Make sure /dev/fuse is read-only
+	if lxd.PathExists("/dev/fuse") {
+		err = unix.Mount("", "/dev/fuse", "", unix.MS_REMOUNT|unix.MS_BIND|unix.MS_RDONLY, "")
+		if err != nil {
+			return errors.Wrap(err, "Failed to mount '/dev/fuse' read-only")
+		}
+	}
+
 	return nil
 }
 
