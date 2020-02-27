@@ -44,10 +44,11 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 				return err
 			}
 		} else {
-			_, err = os.Create(tmpTarget)
+			f, err := os.Create(tmpTarget)
 			if err != nil {
 				return err
 			}
+			f.Close()
 		}
 
 		// Mount to the temporary path
@@ -109,10 +110,11 @@ func moveMounts(mounts []ChrootMount) error {
 				return err
 			}
 		} else {
-			_, err = os.Create(target)
+			f, err := os.Create(target)
 			if err != nil {
 				return err
 			}
+			f.Close()
 		}
 
 		// Move the mount to its destination
