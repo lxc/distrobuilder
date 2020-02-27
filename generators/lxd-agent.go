@@ -79,12 +79,18 @@ ExecStart=/run/lxd_config/9p/lxd-agent
 WantedBy=multi-user.target
 `
 
-	err := ioutil.WriteFile(filepath.Join(sourceDir, "/lib/systemd/system/lxd-agent.service"), []byte(lxdAgentServiceUnit), 0644)
+	systemdPath := filepath.Join("/", "lib", "systemd", "system")
+
+	if !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, systemdPath))) {
+		systemdPath = filepath.Join("/", "usr", "lib", "systemd", "system")
+	}
+
+	err := ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "lxd-agent.service"), []byte(lxdAgentServiceUnit), 0644)
 	if err != nil {
 		return err
 	}
 
-	err = os.Symlink("/lib/systemd/system/lxd-agent.service", filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"))
+	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "lxd-agent.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"))
 	if err != nil {
 		return err
 	}
@@ -106,12 +112,12 @@ ExecStart=/bin/mount -t 9p config /run/lxd_config/9p -o access=0
 WantedBy=multi-user.target
 `
 
-	err = ioutil.WriteFile(filepath.Join(sourceDir, "/lib/systemd/system/lxd-agent-9p.service"), []byte(lxdConfigShareMountUnit), 0644)
+	err = ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "lxd-agent-9p.service"), []byte(lxdConfigShareMountUnit), 0644)
 	if err != nil {
 		return err
 	}
 
-	err = os.Symlink("/lib/systemd/system/lxd-agent-9p.service", filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent-9p.service"))
+	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "lxd-agent-9p.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent-9p.service"))
 	if err != nil {
 		return err
 	}
