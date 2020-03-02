@@ -53,10 +53,6 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 			}
 			defer cleanup()
 
-			if c.flagVM {
-				c.global.definition.Targets.Type = "vm"
-			}
-
 			return c.run(cmd, args, overlayDir)
 		},
 	}

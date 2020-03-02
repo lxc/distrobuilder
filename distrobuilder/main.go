@@ -275,6 +275,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 		if ok {
 			imageTargets |= shared.ImageTargetVM
+			c.definition.Targets.Type = "vm"
 		} else {
 			imageTargets |= shared.ImageTargetContainer
 		}
