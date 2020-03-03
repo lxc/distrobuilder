@@ -174,9 +174,9 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	mounts := []ChrootMount{
 		{"none", "/proc", "proc", 0, "", true},
 		{"none", "/sys", "sysfs", 0, "", true},
-		{"/dev", "/dev", "", unix.MS_BIND | unix.MS_REC, "", true},
 		{"none", "/run", "tmpfs", 0, "", true},
 		{"none", "/tmp", "tmpfs", 0, "", true},
+		{"none", "/dev", "tmpfs", 0, "", true},
 		{"/etc/resolv.conf", "/etc/resolv.conf", "", unix.MS_BIND, "", false},
 	}
 
@@ -217,6 +217,12 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	err = moveMounts(append(mounts, m...))
 	if err != nil {
 		return nil, err
+	}
+
+	// Populate /dev directory instead of bind mounting it from the host
+	err = populateDev()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to populate /dev")
 	}
 
 	var env Environment
@@ -328,4 +334,53 @@ exit 101
 	ActiveChroots[rootfs] = exitFunc
 
 	return exitFunc, nil
+}
+
+func populateDev() error {
+	devs := []struct {
+		Path  string
+		Major uint32
+		Minor uint32
+		Mode  uint32
+	}{
+		{"/dev/console", 5, 1, unix.S_IFCHR | 0640},
+		{"/dev/full", 1, 7, unix.S_IFCHR | 0666},
+		{"/dev/null", 1, 3, unix.S_IFCHR | 0666},
+		{"/dev/random", 1, 8, unix.S_IFCHR | 0666},
+		{"/dev/tty", 5, 0, unix.S_IFCHR | 0666},
+		{"/dev/urandom", 1, 9, unix.S_IFCHR | 0666},
+		{"/dev/zero", 1, 5, unix.S_IFCHR | 0666},
+	}
+
+	for _, d := range devs {
+		if lxd.PathExists(d.Path) {
+			continue
+		}
+
+		dev := unix.Mkdev(d.Major, d.Minor)
+
+		err := unix.Mknod(d.Path, d.Mode, int(dev))
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create %q", d.Path)
+		}
+	}
+
+	symlinks := []struct {
+		Symlink string
+		Target  string
+	}{
+		{"/dev/fd", "/proc/self/fd"},
+		{"/dev/stdin", "/proc/self/fd/0"},
+		{"/dev/stdout", "/proc/self/fd/1"},
+		{"/dev/stderr", "/proc/self/fd/2"},
+	}
+
+	for _, l := range symlinks {
+		err := os.Symlink(l.Target, l.Symlink)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create link %q -> %q", l.Symlink, l.Target)
+		}
+	}
+
+	return nil
 }

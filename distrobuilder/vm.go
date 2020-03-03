@@ -38,6 +38,10 @@ func newVM(imageFile, rootfsDir, fs string, size uint64) (*vm, error) {
 	return &vm{imageFile: imageFile, rootfsDir: rootfsDir, rootFS: fs, size: size}, nil
 }
 
+func (v *vm) getLoopDev() string {
+	return v.loopDevice
+}
+
 func (v *vm) getRootfsDevFile() string {
 	if v.loopDevice == "" {
 		return ""

@@ -9,6 +9,7 @@ import (
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/generators"
 	"github.com/lxc/distrobuilder/image"
@@ -269,6 +270,21 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		rootfsDir = vmDir
 
 		mounts = []shared.ChrootMount{
+			{
+				Source: vm.getLoopDev(),
+				Target: filepath.Join("/", "dev", filepath.Base(vm.getLoopDev())),
+				Flags:  unix.MS_BIND,
+			},
+			{
+				Source: vm.getRootfsDevFile(),
+				Target: filepath.Join("/", "dev", filepath.Base(vm.getRootfsDevFile())),
+				Flags:  unix.MS_BIND,
+			},
+			{
+				Source: vm.getUEFIDevFile(),
+				Target: filepath.Join("/", "dev", filepath.Base(vm.getUEFIDevFile())),
+				Flags:  unix.MS_BIND,
+			},
 			{
 				Source: vm.getUEFIDevFile(),
 				Target: "/boot/efi",
