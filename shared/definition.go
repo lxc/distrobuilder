@@ -594,20 +594,24 @@ func ApplyFilter(filter Filter, release string, architecture string, variant str
 
 	types := filter.GetTypes()
 
+	if acceptedImageTargets == 0 && len(types) == 0 {
+		return true
+	}
+
 	if acceptedImageTargets&ImageTargetAll > 0 {
-		if len(types) == 0 || len(types) == 2 && shared.StringInSlice(targetType, types) {
+		if len(types) == 2 && shared.StringInSlice(targetType, types) {
 			return true
 		}
 	}
 
 	if acceptedImageTargets&ImageTargetContainer > 0 {
-		if targetType == "container" && len(types) == 1 && types[0] == targetType {
+		if targetType == "container" && shared.StringInSlice(targetType, types) {
 			return true
 		}
 	}
 
 	if acceptedImageTargets&ImageTargetVM > 0 {
-		if targetType == "vm" && len(types) == 1 && types[0] == targetType {
+		if targetType == "vm" && shared.StringInSlice(targetType, types) {
 			return true
 		}
 	}
