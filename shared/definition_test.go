@@ -507,33 +507,55 @@ func TestDefinitionFilter(t *testing.T) {
 func TestApplyFilter(t *testing.T) {
 	repo := DefinitionPackagesRepository{}
 
+	// Variants
 	repo.Variants = []string{"default"}
-	repo.Architectures = []string{"amd64", "i386"}
-	repo.Releases = []string{"foo"}
-	repo.Types = []string{"vm"}
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "cloud", "vm", 0))
 
-	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll))
+	// Architectures
+	repo.Architectures = []string{"amd64", "i386"}
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
+	require.True(t, ApplyFilter(&repo, "foo", "i386", "default", "vm", 0))
+	require.False(t, ApplyFilter(&repo, "foo", "s390", "default", "vm", 0))
+
+	// Releases
+	repo.Releases = []string{"foo"}
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
+	require.False(t, ApplyFilter(&repo, "bar", "amd64", "default", "vm", 0))
+
+	// Targets
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", 0))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
+
+	repo.Types = []string{"vm"}
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetVM))
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetVM))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
-	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
-	require.False(t, ApplyFilter(&repo, "", "arm64", "default", "vm", ImageTargetAll))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", 0))
 
 	repo.Types = []string{"container"}
-	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
-	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll))
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer))
-	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetVM))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetContainer))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
 
 	repo.Types = []string{"container", "vm"}
-	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll))
-	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll))
-	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
-	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
-
-	repo.Types = []string{}
-	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll))
-	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll))
-	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
 }

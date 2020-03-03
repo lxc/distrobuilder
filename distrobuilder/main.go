@@ -259,15 +259,23 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// Unmount everything and exit the chroot
 	defer exitChroot()
 
-	// If we're running build-dir, only process sections which are meant for both
-	// containers and VMs.
-	imageTargets := shared.ImageTargetAll
+	var imageTargets shared.ImageTarget
 
-	// If we call build-lxc or build-lxd, also process container-only sections.
+	// If we're running either build-lxc or build-lxd, include types which are
+	// meant for all.
+	// If we're running build-dir, only process section which DO NOT specify
+	// a types filter.
+	if !isRunningBuildDir {
+		imageTargets = shared.ImageTargetAll
+	}
+
 	switch cmd.CalledAs() {
 	case "build-lxc":
+		// If we're running build-lxc, also process container-only sections.
 		imageTargets |= shared.ImageTargetContainer
 	case "build-lxd":
+		// Include either container-specific or vm-specific sections when
+		// running build-lxd.
 		ok, err := cmd.Flags().GetBool("vm")
 		if err != nil {
 			return err

@@ -71,7 +71,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	defer exitChroot()
 
 	var manager *managers.Manager
-	imageTargets := shared.ImageTargetContainer
+	imageTargets := shared.ImageTargetAll | shared.ImageTargetContainer
 
 	if c.global.definition.Packages.Manager != "" {
 		manager = managers.Get(c.global.definition.Packages.Manager)

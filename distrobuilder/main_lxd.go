@@ -121,7 +121,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	defer exitChroot()
 
 	var manager *managers.Manager
-	var imageTargets shared.ImageTarget
+	imageTargets := shared.ImageTargetAll
 
 	if c.flagVM {
 		imageTargets = shared.ImageTargetVM
