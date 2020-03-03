@@ -58,14 +58,6 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 		}
 	}
 
-	// Make sure /dev/fuse is read-only
-	if lxd.PathExists("/dev/fuse") {
-		err = unix.Mount("", "/dev/fuse", "", unix.MS_REMOUNT|unix.MS_BIND|unix.MS_RDONLY, "")
-		if err != nil {
-			return errors.Wrap(err, "Failed to mount '/dev/fuse' read-only")
-		}
-	}
-
 	return nil
 }
 
@@ -128,6 +120,14 @@ func moveMounts(mounts []ChrootMount) error {
 	err := os.RemoveAll(filepath.Join("/", ".distrobuilder"))
 	if err != nil {
 		return err
+	}
+
+	// Make sure /dev/fuse is unmounted
+	if lxd.PathExists("/dev/fuse") {
+		err = unix.Unmount("/dev/fuse", 0)
+		if err != nil {
+			return errors.Wrap(err, "Failed to unmount /dev/fuse")
+		}
 	}
 
 	return nil
