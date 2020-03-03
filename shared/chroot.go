@@ -363,6 +363,13 @@ func populateDev() error {
 		if err != nil {
 			return errors.Wrapf(err, "Failed to create %q", d.Path)
 		}
+
+		// For some odd reason, unix.Mknod will not set the mode correctly.
+		// This fixes that.
+		err = unix.Chmod(d.Path, d.Mode)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to chmod %q", d.Path)
+		}
 	}
 
 	symlinks := []struct {
