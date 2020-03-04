@@ -106,7 +106,7 @@ RemainAfterExit=yes
 ExecStartPre=-/sbin/modprobe 9pnet_virtio
 ExecStartPre=/bin/mkdir -p /run/lxd_config/9p
 ExecStartPre=/bin/chmod 0700 /run/lxd_config/
-ExecStart=/bin/mount -t 9p config /run/lxd_config/9p -o access=0
+ExecStart=/bin/mount -t 9p config /run/lxd_config/9p -o access=0,trans=virtio
 
 [Install]
 WantedBy=multi-user.target
@@ -152,7 +152,7 @@ depend() {
 
 description="LXD - agent - 9p mount"
 command=/bin/mount
-command_args="-t 9p config /run/lxd_config/9p -o access=0"
+command_args="-t 9p config /run/lxd_config/9p -o access=0,trans=virtio"
 required_files=/dev/virtio-ports/org.linuxcontainers.lxd
 
 start_pre() {
@@ -208,7 +208,7 @@ end script
 
 task
 
-exec mount -t 9p config /run/lxd_config/9p -o access=0
+exec mount -t 9p config /run/lxd_config/9p -o access=0,trans=virtio
 `
 
 	err = ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
