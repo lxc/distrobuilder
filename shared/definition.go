@@ -501,7 +501,7 @@ func (d *Definition) GetEarlyPackages(action string) []string {
 	normal := []DefinitionPackagesSet{}
 
 	for _, set := range d.Packages.Sets {
-		if set.Early && set.Action == action && ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant, d.Targets.Type, ImageTargetAll) {
+		if set.Early && set.Action == action && ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant, d.Targets.Type, 0) {
 			early = append(early, set.Packages...)
 		} else {
 			normal = append(normal, set)
