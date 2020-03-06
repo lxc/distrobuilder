@@ -122,14 +122,6 @@ func moveMounts(mounts []ChrootMount) error {
 		return err
 	}
 
-	// Make sure /dev/fuse is unmounted
-	if lxd.PathExists("/dev/fuse") {
-		err = unix.Unmount("/dev/fuse", 0)
-		if err != nil {
-			return errors.Wrap(err, "Failed to unmount /dev/fuse")
-		}
-	}
-
 	return nil
 
 }
