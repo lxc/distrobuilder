@@ -52,9 +52,23 @@ func manageRepositories(def *shared.Definition, manager *managers.Manager, image
 }
 
 func managePackages(def *shared.Definition, manager *managers.Manager, imageTarget shared.ImageTarget) error {
-	var err error
+	var validSets []shared.DefinitionPackagesSet
 
-	err = manager.Refresh()
+	for _, set := range def.Packages.Sets {
+		if !shared.ApplyFilter(&set, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant, def.Targets.Type, imageTarget) {
+			continue
+		}
+
+		validSets = append(validSets, set)
+	}
+
+	// If there's nothing to install or remove, and no updates need to be performed,
+	// we can exit here.
+	if len(validSets) == 0 && !def.Packages.Update {
+		return nil
+	}
+
+	err := manager.Refresh()
 	if err != nil {
 		return err
 	}
@@ -72,16 +86,6 @@ func managePackages(def *shared.Definition, manager *managers.Manager, imageTarg
 				return errors.Wrap(err, "Failed to run post-update")
 			}
 		}
-	}
-
-	var validSets []shared.DefinitionPackagesSet
-
-	for _, set := range def.Packages.Sets {
-		if !shared.ApplyFilter(&set, def.Image.Release, def.Image.ArchitectureMapped, def.Image.Variant, def.Targets.Type, imageTarget) {
-			continue
-		}
-
-		validSets = append(validSets, set)
 	}
 
 	for _, set := range optimizePackageSets(validSets) {
