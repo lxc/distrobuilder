@@ -173,7 +173,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	img := image.NewLXDImage(overlayDir, c.global.targetDir,
 		c.global.flagCacheDir, *c.global.definition)
 
-	imageTargets := shared.ImageTargetAll
+	imageTargets := shared.ImageTargetUndefined | shared.ImageTargetAll
 
 	if c.flagVM {
 		imageTargets |= shared.ImageTargetVM
@@ -182,8 +182,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	}
 
 	for _, file := range c.global.definition.Files {
-		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, 0) &&
-			!shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, imageTargets) {
+		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, imageTargets) {
 			continue
 		}
 

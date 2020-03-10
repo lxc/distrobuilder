@@ -122,8 +122,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 			return fmt.Errorf("Unknown generator '%s'", file.Generator)
 		}
 
-		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, 0) &&
-			!shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, shared.ImageTargetAll|shared.ImageTargetContainer) {
+		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, shared.ImageTargetUndefined|shared.ImageTargetAll|shared.ImageTargetContainer) {
 			continue
 		}
 
