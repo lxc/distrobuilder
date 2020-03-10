@@ -259,14 +259,14 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// Unmount everything and exit the chroot
 	defer exitChroot()
 
-	var imageTargets shared.ImageTarget
+	// Always include sections which have no type filter. If running build-dir,
+	// only these sections will be processed.
+	imageTargets := shared.ImageTargetUndefined
 
 	// If we're running either build-lxc or build-lxd, include types which are
 	// meant for all.
-	// If we're running build-dir, only process section which DO NOT specify
-	// a types filter.
 	if !isRunningBuildDir {
-		imageTargets = shared.ImageTargetAll
+		imageTargets |= shared.ImageTargetAll
 	}
 
 	switch cmd.CalledAs() {

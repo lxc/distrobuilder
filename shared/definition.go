@@ -24,6 +24,9 @@ const (
 
 	// ImageTargetVM is used for VM targets.
 	ImageTargetVM ImageTarget = 1 << 2
+
+	// ImageTargetUndefined is used when no type has been specified.
+	ImageTargetUndefined ImageTarget = 1 << 3
 )
 
 // Filter represents a filter.
@@ -594,7 +597,7 @@ func ApplyFilter(filter Filter, release string, architecture string, variant str
 
 	types := filter.GetTypes()
 
-	if acceptedImageTargets == 0 && len(types) == 0 {
+	if (acceptedImageTargets == 0 || acceptedImageTargets&ImageTargetUndefined > 0) && len(types) == 0 {
 		return true
 	}
 

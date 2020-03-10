@@ -526,6 +526,8 @@ func TestApplyFilter(t *testing.T) {
 	// Targets
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", 0))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetUndefined))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetUndefined))
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetVM))
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetVM))
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
