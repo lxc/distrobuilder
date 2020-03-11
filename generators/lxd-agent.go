@@ -130,7 +130,10 @@ func (g LXDAgentGenerator) handleOpenRC(sourceDir string) error {
 
 description="LXD - agent"
 command=/run/lxd_config/9p/lxd-agent
-required_files=/dev/virtio-ports/org.linuxcontainers.lxd
+command_background=true
+pidfile=/run/lxd-agent.pid
+start_stop_daemon_args="--chdir /run/lxd_config/9p"
+required_dirs=/run/lxd_config/9p
 
 depend() {
 	need lxd-agent-9p
