@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -54,56 +55,50 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 
 	baseURL, fname = path.Split(resp.Request.URL.String())
 
-	url, err := url.Parse(fmt.Sprintf("%s/%s", baseURL, fname))
+	url, err := url.Parse(fmt.Sprintf("%s%s", baseURL, fname))
 	if err != nil {
 		return err
 	}
 
 	fpath, err := shared.DownloadHash(definition.Image, url.String(), "", nil)
 	if err != nil {
-		return errors.Wrap(err, "Error downloading openSUSE image")
+		return errors.Wrap(err, "Failed to download image tarball")
 	}
 
-	if definition.Source.SkipVerification {
-		// Unpack
-		return lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
-	}
-
-	checksumPath := fmt.Sprintf("%s/%s.sha256", baseURL, fname)
-	checksumFile := path.Base(checksumPath)
-
-	shared.DownloadHash(definition.Image, checksumPath, "", nil)
-	valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
-		definition.Source.Keys, definition.Source.Keyserver)
+	_, err = shared.DownloadHash(definition.Image, url.String()+".sha256", "", nil)
 	if err != nil {
-		return err
-	}
-	if !valid {
-		return errors.New("Failed to verify tarball")
+		return errors.Wrap(err, "Failed to download checksum file")
 	}
 
-	// Manually verify the checksum
-	checksum, err := shared.GetSignedContent(filepath.Join(fpath, checksumFile),
-		definition.Source.Keys, definition.Source.Keyserver)
+	err = s.verifyTarball(filepath.Join(fpath, fname))
 	if err != nil {
-		return errors.Wrap(err, "Failed to read signed file")
+		return errors.Wrap(err, "Failed to verify image")
 	}
 
-	imagePath := filepath.Join(fpath, fname)
+	// Unpack
+	return lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
+}
+
+func (s *OpenSUSEHTTP) verifyTarball(imagePath string) error {
+	checksumPath := imagePath + ".sha256"
+
+	checksum, err := ioutil.ReadFile(checksumPath)
+	if err != nil {
+		return errors.Wrap(err, "Failed to read checksum file")
+	}
 
 	image, err := os.Open(imagePath)
 	if err != nil {
-		return errors.Wrap(err, "Failed to verify image")
+		return errors.Wrap(err, "Failed to open image tarball")
 	}
+	defer image.Close()
 
 	hash := sha256.New()
+
 	_, err = io.Copy(hash, image)
 	if err != nil {
-		image.Close()
-		return errors.Wrap(err, "Failed to verify image")
+		return errors.Wrap(err, "Failed to copy tarball content")
 	}
-
-	image.Close()
 
 	result := fmt.Sprintf("%x", hash.Sum(nil))
 	checksumStr := strings.TrimSpace(strings.Split(string(checksum), " ")[0])
@@ -112,8 +107,7 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 		return fmt.Errorf("Hash mismatch for %s: %s != %s", imagePath, result, checksumStr)
 	}
 
-	// Unpack
-	return lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
+	return nil
 }
 
 func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch string) string {
