@@ -70,19 +70,29 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 		return errors.Wrap(err, "Failed to download checksum file")
 	}
 
-	err = s.verifyTarball(filepath.Join(fpath, fname))
-	if err != nil {
-		return errors.Wrap(err, "Failed to verify image")
+	if !definition.Source.SkipVerification {
+		err = s.verifyTarball(filepath.Join(fpath, fname), definition)
+		if err != nil {
+			return errors.Wrap(err, "Failed to verify image")
+		}
 	}
 
 	// Unpack
 	return lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
 }
 
-func (s *OpenSUSEHTTP) verifyTarball(imagePath string) error {
+func (s *OpenSUSEHTTP) verifyTarball(imagePath string, definition shared.Definition) error {
+	var err error
+	var checksum []byte
+
 	checksumPath := imagePath + ".sha256"
 
-	checksum, err := ioutil.ReadFile(checksumPath)
+	valid, err := shared.VerifyFile(checksumPath, "", definition.Source.Keys, definition.Source.Keyserver)
+	if err == nil && valid {
+		checksum, err = shared.GetSignedContent(checksumPath, definition.Source.Keys, definition.Source.Keyserver)
+	} else {
+		checksum, err = ioutil.ReadFile(checksumPath)
+	}
 	if err != nil {
 		return errors.Wrap(err, "Failed to read checksum file")
 	}
