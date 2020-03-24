@@ -49,6 +49,9 @@ if [ ! -e "/initrd/scripts/" ]; then
     (/bin/cpio -t; lzcat | /bin/cpio -id) < /mnt/initrd.img >/dev/null 2>&1 || true
 fi
 if [ ! -e "/initrd/scripts/" ]; then
+    (/bin/cpio -t; /bin/cpio -t; lzcat | /bin/cpio -id) < /mnt/initrd.img >/dev/null 2>&1 || true
+fi
+if [ ! -e "/initrd/scripts/" ]; then
     (/bin/cpio -t; /bin/cpio -id) < /mnt/initrd.img >/dev/null 2>&1 || true
 fi
 if [ ! -e "/initrd/scripts/" ]; then
