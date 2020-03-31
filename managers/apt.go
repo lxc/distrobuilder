@@ -1,7 +1,9 @@
 package managers
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -100,6 +102,42 @@ func NewApt() *Manager {
 			// Append final new line if missing
 			if !strings.HasSuffix(repoAction.URL, "\n") {
 				_, err = f.WriteString("\n")
+				if err != nil {
+					return err
+				}
+			}
+
+			if repoAction.Key != "" {
+				var reader io.Reader
+
+				if strings.HasPrefix(repoAction.Key, "-----BEGIN PGP PUBLIC KEY BLOCK-----") {
+					reader = strings.NewReader(repoAction.Key)
+				} else {
+					// If only key ID is provided, we need gpg to be installed early.
+					_, err := lxd.RunCommand("gpg", "--recv-keys", repoAction.Key)
+					if err != nil {
+						return err
+					}
+
+					var buf bytes.Buffer
+
+					err = lxd.RunCommandWithFds(nil, &buf, "gpg", "--export", "--armor", repoAction.Key)
+					if err != nil {
+						return err
+					}
+
+					reader = &buf
+				}
+
+				signatureFilePath := filepath.Join("/etc/apt/trusted.gpg.d", fmt.Sprintf("%s.asc", repoAction.Name))
+
+				f, err := os.Create(signatureFilePath)
+				if err != nil {
+					return err
+				}
+				defer f.Close()
+
+				_, err = io.Copy(f, reader)
 				if err != nil {
 					return err
 				}
