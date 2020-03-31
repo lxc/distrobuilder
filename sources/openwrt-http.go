@@ -58,8 +58,15 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 		baseURL = fmt.Sprintf("%s/%s/targets/%s/", baseURL, release, architecturePath)
 	}
 
-	fname := fmt.Sprintf("openwrt-%s%s-generic-rootfs.tar.gz", releaseInFilename,
-		strings.Replace(definition.Image.ArchitectureMapped, "_", "-", 1))
+	var fname string
+
+	if release == "snapshot" {
+		fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
+			strings.Replace(definition.Image.ArchitectureMapped, "_", "-", 1))
+	} else {
+		fname = fmt.Sprintf("openwrt-%s%s-generic-rootfs.tar.gz", releaseInFilename,
+			strings.Replace(definition.Image.ArchitectureMapped, "_", "-", 1))
+	}
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
