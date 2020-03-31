@@ -169,6 +169,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 		{"none", "/run", "tmpfs", 0, "", true},
 		{"none", "/tmp", "tmpfs", 0, "", true},
 		{"none", "/dev", "tmpfs", 0, "", true},
+		{"none", "/dev/shm", "tmpfs", 0, "", true},
 		{"/etc/resolv.conf", "/etc/resolv.conf", "", unix.MS_BIND, "", false},
 	}
 
@@ -215,6 +216,12 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	err = populateDev()
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to populate /dev")
+	}
+
+	// Change permission for /dev/shm
+	err = unix.Chmod("/dev/shm", 1777)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to chmod /dev/shm")
 	}
 
 	var env Environment
