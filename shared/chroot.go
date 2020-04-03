@@ -219,7 +219,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	}
 
 	// Change permission for /dev/shm
-	err = unix.Chmod("/dev/shm", 1777)
+	err = unix.Chmod("/dev/shm", 01777)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to chmod /dev/shm")
 	}
