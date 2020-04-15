@@ -228,6 +228,22 @@ func Test_getChecksum(t *testing.T) {
 		want string
 	}{
 		{
+			"stage3-ppc64le-20200414T103003Z.tar.xz",
+			args{
+				"stage3-ppc64le-20200414T103003Z.tar.xz",
+				128,
+				bytes.NewBufferString(`# BLAKE2 (b2sum) HASH
+2c5dc7ce04e4d72204a513e4bfa4bd0129e61a060747537ca748538ea8ed6016656f84c35b4cf2049df91a164977d1d0e506e722443fdb48874e9a0b90c00f7a  /var/tmp/catalyst/builds/default/stage3-ppc64le-20200414T103003Z.tar.xz
+# SHA512 HASH
+e4b9cb10146502310cbedf14197afa9e94b75f7d59c1c6977bff23bac529e9114e3fddb155cfcad9119e466a39f0fcd8d75354e5237da79c9289fe76ee77693d  stage3-ppc64le-20200414T103003Z.tar.xz
+# BLAKE2 (b2sum) HASH
+7e1a1985a41b61ac24c4fdefe7a09237161dc7ff20150f3e02c73115b74778f96c45042ced08e38c931ad6e316dfef80ac3a4c956fcd16528819dd506a320726  /var/tmp/catalyst/builds/default/stage3-ppc64le-20200414T103003Z.tar.xz.CONTENTS
+# SHA512 HASH
+1047f97cbb209fb22d372dffe4461722b5eaf936fc73546a8f036dc52a5d20433921d367288b28b3de5154cad1253b40d32233104c2be45732ebfa413bd9b09b  stage3-ppc64le-20200414T103003Z.tar.xz.CONTENTS`),
+			},
+			"e4b9cb10146502310cbedf14197afa9e94b75f7d59c1c6977bff23bac529e9114e3fddb155cfcad9119e466a39f0fcd8d75354e5237da79c9289fe76ee77693d",
+		},
+		{
 			"CentOS-8-x86_64-1905-dvd1.iso",
 			args{
 				"CentOS-8-x86_64-1905-dvd1.iso",
