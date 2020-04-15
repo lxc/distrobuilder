@@ -372,11 +372,15 @@ func getChecksum(fname string, hashLen int, r io.Reader) string {
 	scanner := bufio.NewScanner(r)
 
 	for scanner.Scan() {
-		if !strings.Contains(scanner.Text(), fname) {
+		fields := strings.Split(scanner.Text(), " ")
+
+		// We need to special case CentOS, as they don't use the common
+		// "<hash> <filename>" syntax.
+		if strings.TrimSpace(fields[len(fields)-1]) != fname && !strings.Contains(scanner.Text(), fmt.Sprintf("(%s)", fname)) {
 			continue
 		}
 
-		for _, s := range strings.Split(scanner.Text(), " ") {
+		for _, s := range fields {
 			m, _ := regexp.MatchString("[[:xdigit:]]+", s)
 			if !m {
 				continue
