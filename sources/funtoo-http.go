@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -32,10 +36,17 @@ func (s *FuntooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		topLevelArch = "arm-64bit"
 	}
 
-	fname := "stage3-latest.tar.xz"
-	tarball := fmt.Sprintf("%s/%s-release-std/%s/%s/%s",
+	baseURL := fmt.Sprintf("%s/%s-release-std/%s/%s",
 		definition.Source.URL, definition.Image.Release,
-		topLevelArch, definition.Image.ArchitectureMapped, fname)
+		topLevelArch, definition.Image.ArchitectureMapped)
+
+	releaseDate, err := s.getReleaseDate(baseURL)
+	if err != nil {
+		return err
+	}
+
+	fname := fmt.Sprintf("stage3-%s-%s-release-std-%s.tar.xz", definition.Image.ArchitectureMapped, definition.Image.Release, releaseDate)
+	tarball := fmt.Sprintf("%s/%s/%s", baseURL, releaseDate, fname)
 
 	url, err := url.Parse(tarball)
 	if err != nil {
@@ -77,4 +88,30 @@ func (s *FuntooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	return nil
+}
+
+func (s *FuntooHTTP) getReleaseDate(URL string) (string, error) {
+	doc, err := htmlquery.LoadURL(URL)
+	if err != nil {
+		return "", err
+	}
+
+	re := regexp.MustCompile(`^\d{4}\-\d{2}\-\d{2}/?$`)
+
+	var dirs []string
+
+	for _, node := range htmlquery.Find(doc, `//a[@href]/text()`) {
+		if re.MatchString(node.Data) {
+			dirs = append(dirs, strings.TrimSuffix(node.Data, "/"))
+		}
+	}
+
+	if len(dirs) == 0 {
+		return "", fmt.Errorf("Failed to get release date")
+	}
+
+	// Sort dirs in case they're out-of-order
+	sort.Strings(dirs)
+
+	return dirs[len(dirs)-1], nil
 }
