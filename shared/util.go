@@ -371,16 +371,46 @@ func GetTargetDir(def DefinitionImage) string {
 func getChecksum(fname string, hashLen int, r io.Reader) string {
 	scanner := bufio.NewScanner(r)
 
-	for scanner.Scan() {
-		fields := strings.Split(scanner.Text(), " ")
+	var matches []string
 
-		// We need to special case CentOS, as they don't use the common
-		// "<hash> <filename>" syntax.
-		if strings.TrimSpace(fields[len(fields)-1]) != fname && !strings.Contains(scanner.Text(), fmt.Sprintf("(%s)", fname)) {
+	for scanner.Scan() {
+		if !strings.Contains(scanner.Text(), fname) {
 			continue
 		}
 
-		for _, s := range fields {
+		for _, s := range strings.Split(scanner.Text(), " ") {
+			m, _ := regexp.MatchString("[[:xdigit:]]+", s)
+			if !m {
+				continue
+			}
+
+			if hashLen == 0 || hashLen == len(strings.TrimSpace(s)) {
+				matches = append(matches, scanner.Text())
+			}
+		}
+	}
+
+	// Check common checksum file (pattern: "<hash> <filename>") with the exact filename
+	for _, m := range matches {
+		fields := strings.Split(m, " ")
+
+		if strings.TrimSpace(fields[len(fields)-1]) == fname {
+			return strings.TrimSpace(fields[0])
+		}
+	}
+
+	// Check common checksum file (pattern: "<hash> <filename>") which contains the filename
+	for _, m := range matches {
+		fields := strings.Split(m, " ")
+
+		if strings.Contains(strings.TrimSpace(fields[len(fields)-1]), fname) {
+			return strings.TrimSpace(fields[0])
+		}
+	}
+
+	// Special case: CentOS
+	for _, m := range matches {
+		for _, s := range strings.Split(m, " ") {
 			m, _ := regexp.MatchString("[[:xdigit:]]+", s)
 			if !m {
 				continue
