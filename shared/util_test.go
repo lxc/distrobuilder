@@ -228,6 +228,24 @@ func Test_getChecksum(t *testing.T) {
 		want string
 	}{
 		{
+			"openwrt-x86-64-rootfs.tar.gz",
+			args{
+				"openwrt-x86-64-rootfs.tar.gz",
+				64,
+				bytes.NewBufferString(`8b194c619b65d675da15d190fe7c7d2ce6125debc98452e30890c16212aa7b1c *openwrt-imagebuilder-x86-64.Linux-x86_64.tar.xz
+d99669ef301129e6ba59417ff41814dd02b4bdbe7254e2c8535de5eae35801ad *openwrt-sdk-x86-64_gcc-8.4.0_musl.Linux-x86_64.tar.xz
+84be5c09beb3791c574a35b9e73dcb7b7637482f83ed61fbe07cd0af68987cf8 *openwrt-x86-64-generic-ext4-combined-efi.img.gz
+23d9ac551d0cd9c85458d4032ae030f33f5f6b44158866130c3065f2a121b641 *openwrt-x86-64-generic-ext4-combined.img.gz
+4462e51e9b325e107b57a3b44aef176837fcee0ae8ccc01c1e239e343c9666e0 *openwrt-x86-64-generic-ext4-rootfs.img.gz
+643ff73b119f3ecb36497a0c71213f9dd0129b64e803fa87d7e75b39c730e7fa *openwrt-x86-64-generic-kernel.bin
+770fa5a3e47ed12f46114aca6dca16a1a4ba2b6e89e53d5966839ffc5581dc53 *openwrt-x86-64-generic-squashfs-combined-efi.img.gz
+1a19c82c0614ad043fa0b854249bf6cc804550359ec453816ffbd426c31ab4a2 *openwrt-x86-64-generic-squashfs-combined.img.gz
+3b961a97e3105e02e07c1aba7671186efe559ce0ac078c370d5082a7a6999dbe *openwrt-x86-64-generic-squashfs-rootfs.img.gz
+76cc26429a61a516d348735a8d62bf3885d9d37489f20789a77c879dcf8a1025 *openwrt-x86-64-rootfs.tar.gz`),
+			},
+			"76cc26429a61a516d348735a8d62bf3885d9d37489f20789a77c879dcf8a1025",
+		},
+		{
 			"stage3-ppc64le-20200414T103003Z.tar.xz",
 			args{
 				"stage3-ppc64le-20200414T103003Z.tar.xz",
