@@ -75,6 +75,9 @@ files:
     content: |-
       here goes the content
     name: name
+    mode: 0644
+    gid: 1000
+    uid: 1000
     template:
       properties:
         key: value
