@@ -180,6 +180,9 @@ type DefinitionFile struct {
 	Name             string                 `yaml:"name,omitempty"`
 	Template         DefinitionFileTemplate `yaml:"template,omitempty"`
 	Templated        bool                   `yaml:"templated,omitempty"`
+	Mode             string                 `yaml:"mode,omitempty"`
+	GID              string                 `yaml:"gid,omitempty"`
+	UID              string                 `yaml:"uid,omitempty"`
 }
 
 // A DefinitionFileTemplate represents the settings used by generators
