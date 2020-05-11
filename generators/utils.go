@@ -37,7 +37,7 @@ func updateFileAccess(file *os.File, defFile shared.DefinitionFile) error {
 	}
 
 	// Change uid if needed
-	if defFile.Mode != "" {
+	if defFile.UID != "" {
 		uid, err := strconv.Atoi(defFile.UID)
 		if err != nil {
 			return errors.Wrap(err, "Failed to parse UID")
