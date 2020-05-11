@@ -24,6 +24,9 @@ files:
           properties: <map>
           when: <array>
       templated: <boolean>
+      mode: <string>
+      gid: <string>
+      uid: <string>
       architectures: <array> # filter
       releases: <array> # filter
       variants: <array> # filter
@@ -45,6 +48,7 @@ Setting `path`, `content` or `template.properties` will override the default val
 ## dump
 
 The `dump` generator writes the provided `content` to a file set in `path`.
+If provided, it will set the `mode` (octal format), `gid` (integer) and/or `uid` (integer).
 
 ## hostname
 
