@@ -20,6 +20,7 @@ import (
 func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash) (string, error) {
 	var (
 		client http.Client
+		hashes []string
 		hash   string
 		err    error
 	)
@@ -40,7 +41,7 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 			hashLen = hashFunc.Size() * 2
 		}
 
-		hash, err = downloadChecksum(targetDir, checksum, file, hashFunc, hashLen)
+		hashes, err = downloadChecksum(targetDir, checksum, file, hashFunc, hashLen)
 		if err != nil {
 			return "", errors.Wrap(err, "Error while downloading checksum")
 		}
@@ -67,8 +68,16 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 			}
 
 			result := fmt.Sprintf("%x", hashFunc.Sum(nil))
-			if result != hash {
-				return "", fmt.Errorf("Hash mismatch for %s: %s != %s", imagePath, result, hash)
+
+			for _, h := range hashes {
+				if result == h {
+					hash = h
+					break
+				}
+			}
+
+			if hash == "" {
+				return "", fmt.Errorf("Hash mismatch for %s: %s != %v", imagePath, result, hashes)
 			}
 		}
 
@@ -103,7 +112,7 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 
 // downloadChecksum downloads or opens URL, and matches fname against the
 // checksums inside of the downloaded or opened file.
-func downloadChecksum(targetDir string, URL string, fname string, hashFunc hash.Hash, hashLen int) (string, error) {
+func downloadChecksum(targetDir string, URL string, fname string, hashFunc hash.Hash, hashLen int) ([]string, error) {
 	var (
 		client   http.Client
 		tempFile *os.File
@@ -115,29 +124,29 @@ func downloadChecksum(targetDir string, URL string, fname string, hashFunc hash.
 	if err == nil && !fi.IsDir() {
 		tempFile, err = os.Open(filepath.Join(targetDir, URL))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		defer os.Remove(tempFile.Name())
 	} else {
 		tempFile, err = ioutil.TempFile(targetDir, "hash.")
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		defer os.Remove(tempFile.Name())
 
 		_, err = lxd.DownloadFileHash(&client, "", nil, nil, "", URL, "", hashFunc, tempFile)
 		// ignore hash mismatch
 		if err != nil && !strings.HasPrefix(err.Error(), "Hash mismatch") {
-			return "", err
+			return nil, err
 		}
 	}
 
 	tempFile.Seek(0, 0)
 
 	checksum := getChecksum(filepath.Base(fname), hashLen, tempFile)
-	if checksum != "" {
+	if checksum != nil {
 		return checksum, nil
 	}
 
-	return "", fmt.Errorf("Could not find checksum")
+	return nil, fmt.Errorf("Could not find checksum")
 }
