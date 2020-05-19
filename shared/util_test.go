@@ -225,7 +225,7 @@ func Test_getChecksum(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want []string
 	}{
 		{
 			"openwrt-x86-64-rootfs.tar.gz",
@@ -243,7 +243,7 @@ d99669ef301129e6ba59417ff41814dd02b4bdbe7254e2c8535de5eae35801ad *openwrt-sdk-x8
 3b961a97e3105e02e07c1aba7671186efe559ce0ac078c370d5082a7a6999dbe *openwrt-x86-64-generic-squashfs-rootfs.img.gz
 76cc26429a61a516d348735a8d62bf3885d9d37489f20789a77c879dcf8a1025 *openwrt-x86-64-rootfs.tar.gz`),
 			},
-			"76cc26429a61a516d348735a8d62bf3885d9d37489f20789a77c879dcf8a1025",
+			[]string{"76cc26429a61a516d348735a8d62bf3885d9d37489f20789a77c879dcf8a1025"},
 		},
 		{
 			"stage3-ppc64le-20200414T103003Z.tar.xz",
@@ -259,7 +259,7 @@ e4b9cb10146502310cbedf14197afa9e94b75f7d59c1c6977bff23bac529e9114e3fddb155cfcad9
 # SHA512 HASH
 1047f97cbb209fb22d372dffe4461722b5eaf936fc73546a8f036dc52a5d20433921d367288b28b3de5154cad1253b40d32233104c2be45732ebfa413bd9b09b  stage3-ppc64le-20200414T103003Z.tar.xz.CONTENTS`),
 			},
-			"e4b9cb10146502310cbedf14197afa9e94b75f7d59c1c6977bff23bac529e9114e3fddb155cfcad9119e466a39f0fcd8d75354e5237da79c9289fe76ee77693d",
+			[]string{"e4b9cb10146502310cbedf14197afa9e94b75f7d59c1c6977bff23bac529e9114e3fddb155cfcad9119e466a39f0fcd8d75354e5237da79c9289fe76ee77693d"},
 		},
 		{
 			"CentOS-8-x86_64-1905-dvd1.iso",
@@ -291,7 +291,7 @@ RP3G/3Z1T3c=
 =HgZm
 -----END PGP SIGNATURE-----`),
 			},
-			"ea17ef71e0df3f6bf1d4bf1fc25bec1a76d1f211c115d39618fe688be34503e8",
+			[]string{"ea17ef71e0df3f6bf1d4bf1fc25bec1a76d1f211c115d39618fe688be34503e8"},
 		},
 
 		{
@@ -326,7 +326,26 @@ Z4iksZrx82g=
 =L746
 -----END PGP SIGNATURE-----`),
 			},
-			"9a2c47d97b9975452f7d582264e9fc16d108ed8252ac6816239a3b58cef5c53d",
+			[]string{"9a2c47d97b9975452f7d582264e9fc16d108ed8252ac6816239a3b58cef5c53d"},
+		},
+		{
+			"stage3-ppc-20200518T100528Z.tar.xz",
+			args{
+				"stage3-ppc-20200518T100528Z.tar.xz",
+				128,
+				bytes.NewBufferString(`# BLAKE2B HASH
+				6298bdc913c83190f6aa5f7399f05f2f1a20b1997479f033a261fa2e8347fd7cee67900a761c47b7c1c8370127e58016dd90d58f2f37b7f0d5e16722ba0650d2  stage3-ppc-20200518T100528Z.tar.xz
+				# SHA512 HASH
+				2d0183b8151e4560c317c2903c330f9fbfe2cc37c02ee100a60c9f42253e3ac3ef6db341c177a5e7594131bdcbdebfabe73217c0d4dc86e4dc4d1ce59ad5fbe7  stage3-ppc-20200518T100528Z.tar.xz
+				# BLAKE2B HASH
+				f8aeda7504be4a1374cbd837703138880baf70f8b256ee9f1f2f90cea0b669de62b14112afd2302ff03b6b410cd84f7434a79af3cb197c896a8279ca3068cdfe  stage3-ppc-20200518T100528Z.tar.xz.CONTENTS.gz
+				# SHA512 HASH
+				3a7dede7bcb68a0a32310d1bfbdd8806a17a1720be30907a17673f5f303dee340f5ad9c99d25738fb6f65b5ec224786b7d6b3ecbd5f37185469fbf33ea4c8c92  stage3-ppc-20200518T100528Z.tar.xz.CONTENTS.gz`),
+			},
+			[]string{
+				"6298bdc913c83190f6aa5f7399f05f2f1a20b1997479f033a261fa2e8347fd7cee67900a761c47b7c1c8370127e58016dd90d58f2f37b7f0d5e16722ba0650d2",
+				"2d0183b8151e4560c317c2903c330f9fbfe2cc37c02ee100a60c9f42253e3ac3ef6db341c177a5e7594131bdcbdebfabe73217c0d4dc86e4dc4d1ce59ad5fbe7",
+			},
 		},
 	}
 
