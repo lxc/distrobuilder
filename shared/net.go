@@ -21,7 +21,6 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 	var (
 		client http.Client
 		hashes []string
-		hash   string
 		err    error
 	)
 	targetDir := GetTargetDir(def)
@@ -69,6 +68,8 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 
 			result := fmt.Sprintf("%x", hashFunc.Sum(nil))
 
+			var hash string
+
 			for _, h := range hashes {
 				if result == h {
 					hash = h
@@ -94,15 +95,27 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 		fmt.Printf("%s\r", progress.Text)
 	}
 
-	if hashFunc != nil {
-		hashFunc.Reset()
-	}
-	_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, hash, hashFunc, image)
-	if err != nil {
-		if checksum == "" && strings.HasPrefix(err.Error(), "Hash mismatch") {
-			return targetDir, nil
+	if checksum == "" {
+		_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, "", nil, image)
+		if err != nil && !strings.HasPrefix(err.Error(), "Hash mismatch") {
+			return "", err
 		}
-		return "", err
+	} else {
+		// Check all file hashes in case multiple have been provided.
+		for _, h := range hashes {
+			if hashFunc != nil {
+				hashFunc.Reset()
+			}
+
+			_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, h, hashFunc, image)
+			if err == nil {
+				break
+			}
+		}
+
+		if err != nil {
+			return "", err
+		}
 	}
 
 	fmt.Println("")
