@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/flosch/pongo2"
 	"github.com/lxc/lxd/shared/api"
 	"github.com/pkg/errors"
 
@@ -41,12 +42,26 @@ func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 
 	defer file.Close()
 
+	content := defFile.Content
+
 	// Append final new line if missing
-	if !strings.HasSuffix(defFile.Content, "\n") {
-		defFile.Content += "\n"
+	if !strings.HasSuffix(content, "\n") {
+		content += "\n"
 	}
 
-	_, err = file.WriteString(defFile.Content)
+	if defFile.Pongo {
+		tpl, err := pongo2.FromString(content)
+		if err != nil {
+			return err
+		}
+
+		content, err = tpl.Execute(pongo2.Context{"lxd": target})
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = file.WriteString(content)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to write to content to %s template", defFile.Name)
 	}

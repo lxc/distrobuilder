@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/flosch/pongo2"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
 	"github.com/pkg/errors"
@@ -148,6 +149,18 @@ config:
 	// Append final new line if missing
 	if !strings.HasSuffix(content, "\n") {
 		content += "\n"
+	}
+
+	if defFile.Pongo {
+		tpl, err := pongo2.FromString(content)
+		if err != nil {
+			return err
+		}
+
+		content, err = tpl.Execute(pongo2.Context{"lxd": target})
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err = file.WriteString(content)
