@@ -22,10 +22,13 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 	generator := Get("dump")
 	require.Equal(t, DumpGenerator{}, generator)
 
-	err := generator.RunLXC(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXC{},
+	err := generator.RunLXC(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXC{
+		CreateMessage: "message",
+	},
 		shared.DefinitionFile{
 			Path:    "/hello/world",
-			Content: "hello world",
+			Content: "hello {{ lxc.CreateMessage }}",
+			Pongo:   true,
 		})
 	require.NoError(t, err)
 
@@ -38,7 +41,27 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 
 	io.Copy(&buffer, file)
 
-	require.Equal(t, "hello world\n", buffer.String())
+	require.Equal(t, "hello message\n", buffer.String())
+
+	err = generator.RunLXC(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXC{
+		CreateMessage: "message",
+	},
+		shared.DefinitionFile{
+			Path:    "/hello/world",
+			Content: "hello {{ lxc.CreateMessage }}",
+		})
+	require.NoError(t, err)
+
+	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world"))
+
+	file, err = os.Open(filepath.Join(rootfsDir, "hello", "world"))
+	require.NoError(t, err)
+	defer file.Close()
+
+	buffer.Reset()
+	io.Copy(&buffer, file)
+
+	require.Equal(t, "hello {{ lxc.CreateMessage }}\n", buffer.String())
 }
 
 func TestDumpGeneratorRunLXD(t *testing.T) {
@@ -51,10 +74,15 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	generator := Get("dump")
 	require.Equal(t, DumpGenerator{}, generator)
 
-	err := generator.RunLXD(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXD{},
+	err := generator.RunLXD(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXD{
+		VM: shared.DefinitionTargetLXDVM{
+			Filesystem: "ext4",
+		},
+	},
 		shared.DefinitionFile{
 			Path:    "/hello/world",
-			Content: "hello world",
+			Content: "hello {{ lxd.VM.Filesystem }}",
+			Pongo:   true,
 		})
 	require.NoError(t, err)
 
@@ -67,5 +95,29 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 
 	io.Copy(&buffer, file)
 
-	require.Equal(t, "hello world\n", buffer.String())
+	require.Equal(t, "hello ext4\n", buffer.String())
+
+	file.Close()
+
+	err = generator.RunLXD(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXD{
+		VM: shared.DefinitionTargetLXDVM{
+			Filesystem: "ext4",
+		},
+	},
+		shared.DefinitionFile{
+			Path:    "/hello/world",
+			Content: "hello {{ lxd.VM.Filesystem }}",
+		})
+	require.NoError(t, err)
+
+	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world"))
+
+	file, err = os.Open(filepath.Join(rootfsDir, "hello", "world"))
+	require.NoError(t, err)
+	defer file.Close()
+
+	buffer.Reset()
+	io.Copy(&buffer, file)
+
+	require.Equal(t, "hello {{ lxd.VM.Filesystem }}\n", buffer.String())
 }
