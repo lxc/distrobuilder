@@ -183,6 +183,7 @@ type DefinitionFile struct {
 	Mode             string                 `yaml:"mode,omitempty"`
 	GID              string                 `yaml:"gid,omitempty"`
 	UID              string                 `yaml:"uid,omitempty"`
+	Pongo            bool                   `yaml:"pongo,omitempty"`
 }
 
 // A DefinitionFileTemplate represents the settings used by generators
