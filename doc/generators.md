@@ -11,6 +11,7 @@ Available generators are
 * [template](#template)
 * [upstart_tty](#upstart_tty)
 * [lxd-agent](#lxd-agent)
+* [fstab](#fstab)
 
 In the image definition yaml, they are listed under `files`.
 
@@ -101,3 +102,17 @@ The job script is written to `path`.
 ## lxd-agent
 
 This generator creates the systemd unit files which are needed to start the lxd-agent in LXD VMs.
+
+## fstab
+
+This generator creates an /etc/fstab file which is used for VMs.
+Its content is:
+
+```
+LABEL=rootfs  /         <fs>  <options>  0 0
+LABEL=UEFI    /boot/efi vfat  defaults   0 0
+```
+
+The filesystem is taken from the LXD target (see [targets](targets.md)) which defaults to `ext4`.
+The options are generated depending on the filesystem.
+They cannot be overriden.
