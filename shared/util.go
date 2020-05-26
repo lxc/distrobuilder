@@ -154,7 +154,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 
 	args = append(args, append([]string{"--recv-keys"}, fingerprints...)...)
 
-	_, out, err := lxd.RunCommandSplit(nil, "gpg", args...)
+	_, out, err := lxd.RunCommandSplit(nil, nil, "gpg", args...)
 	if err != nil {
 		return false, err
 	}
