@@ -1,4 +1,5 @@
 language: go
+dist: bionic
 
 os:
   - linux
