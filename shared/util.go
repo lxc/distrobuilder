@@ -233,7 +233,7 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 
 // Pack creates an uncompressed tarball.
 func Pack(filename, compression, path string, args ...string) error {
-	err := RunCommand("tar", append([]string{"-cf", filename, "-C", path}, args...)...)
+	err := RunCommand("tar", append([]string{"--xattrs", "-cf", filename, "-C", path}, args...)...)
 	if err != nil {
 		// Clean up incomplete tarball
 		os.Remove(filename)
@@ -245,7 +245,7 @@ func Pack(filename, compression, path string, args ...string) error {
 
 // PackUpdate updates an existing tarball.
 func PackUpdate(filename, compression, path string, args ...string) error {
-	err := RunCommand("tar", append([]string{"-uf", filename, "-C", path}, args...)...)
+	err := RunCommand("tar", append([]string{"--xattrs", "-uf", filename, "-C", path}, args...)...)
 	if err != nil {
 		return err
 	}
