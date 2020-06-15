@@ -179,6 +179,11 @@ func (s *OpenSUSEHTTP) getTarballName(u *url.URL, release, arch string) string {
 		return ""
 	}
 
+	// Translate x86 architectures.
+	if strings.HasSuffix(arch, "86") {
+		arch = "ix86"
+	}
+
 	nodes := htmlquery.Find(doc, `//a/@href`)
 	re := regexp.MustCompile(fmt.Sprintf("^opensuse-%s-image.*%s.*\\.tar.xz$", release, arch))
 
