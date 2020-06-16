@@ -80,11 +80,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 				checksumFile = "sha256sum.txt"
 			} else {
 				if strings.HasPrefix(definition.Image.Release, "8") {
-					if strings.HasSuffix(definition.Image.Release, "-Stream") {
-						checksumFile = "CHECKSUM"
-					} else {
-						checksumFile = "CHECKSUM.asc"
-					}
+					checksumFile = "CHECKSUM"
 				} else {
 					checksumFile = "sha256sum.txt.asc"
 				}
