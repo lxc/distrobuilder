@@ -89,8 +89,27 @@ func moveMounts(mounts []ChrootMount) error {
 			target = newTarget
 		}
 
+		// If the target's parent directory is a symlink, we need to resolve that as well.
+		targetDir := filepath.Dir(target)
+
+		// Get information on current target
+		fi, err := os.Lstat(targetDir)
+		if err != nil {
+			return err
+		}
+
+		// If a symlink, resolve it
+		if fi.Mode()&os.ModeSymlink != 0 {
+			newTarget, err := os.Readlink(targetDir)
+			if err != nil {
+				return err
+			}
+
+			targetDir = newTarget
+		}
+
 		// Create parent paths if missing
-		err := os.MkdirAll(filepath.Dir(target), 0755)
+		err = os.MkdirAll(targetDir, 0755)
 		if err != nil {
 			return err
 		}
