@@ -142,9 +142,16 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 	for _, f := range publicKeys {
 		args := append(args, "--import")
 
-		err := lxd.RunCommandWithFds(strings.NewReader(f), nil, "gpg", args...)
+		cmd := exec.Command("gpg", args...)
+		cmd.Stdin = strings.NewReader(f)
+		cmd.Env = append(os.Environ(), "LANG=C.UTF-8")
+
+		var buffer bytes.Buffer
+		cmd.Stderr = &buffer
+
+		err := cmd.Run()
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
 		}
 	}
 
@@ -154,7 +161,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 
 	args = append(args, append([]string{"--recv-keys"}, fingerprints...)...)
 
-	_, out, err := lxd.RunCommandSplit(nil, nil, "gpg", args...)
+	_, out, err := lxd.RunCommandSplit(append(os.Environ(), "LANG=C.UTF-8"), nil, "gpg", args...)
 	if err != nil {
 		return false, err
 	}
