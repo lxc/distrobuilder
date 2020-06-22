@@ -85,7 +85,6 @@ WantedBy=multi-user.target
 `
 
 	systemdPath := filepath.Join("/", "lib", "systemd", "system")
-
 	if !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, systemdPath))) {
 		systemdPath = filepath.Join("/", "usr", "lib", "systemd", "system")
 	}
@@ -125,6 +124,17 @@ WantedBy=multi-user.target
 	}
 
 	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "lxd-agent-9p.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent-9p.service"))
+	if err != nil {
+		return err
+	}
+
+	udevPath := filepath.Join("/", "lib", "udev", "rules.d")
+	if !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, udevPath))) {
+		udevPath = filepath.Join("/", "usr", "lib", "udev", "rules.d")
+	}
+
+	lxdAgentRules := `ACTION=="add", SYMLINK=="virtio-ports/org.linuxcontainers.lxd", TAG+="systemd", ACTION=="add", RUN+="/bin/systemctl start lxd-agent.service"`
+	err = ioutil.WriteFile(filepath.Join(sourceDir, udevPath, "99-lxd-agent.rules"), []byte(lxdAgentRules), 0400)
 	if err != nil {
 		return err
 	}
