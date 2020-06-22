@@ -35,9 +35,27 @@ func (s *OracleLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 	fname := fmt.Sprintf("%s-boot.iso", s.architecture)
 	baseURL := fmt.Sprintf("%s/OL%s", definition.Source.URL, definition.Image.Release)
 
-	latestUpdate, err := s.getLatestUpdate(baseURL)
+	updates, err := s.getUpdates(baseURL)
 	if err != nil {
 		return err
+	}
+
+	var latestUpdate string
+
+	// Only consider updates providing a boot image since we're not interested in the
+	// DVD ISO.
+	for i := len(updates) - 1; i > 0; i-- {
+		fullURL := fmt.Sprintf("%s/%s/%s/%s", baseURL, updates[i], s.architecture, fname)
+
+		resp, err := http.Head(fullURL)
+		if err != nil {
+			continue
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			latestUpdate = updates[i]
+			break
+		}
 	}
 
 	fpath, err := shared.DownloadHash(definition.Image, fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname),
@@ -248,27 +266,27 @@ EOF
 	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 }
 
-func (s *OracleLinuxHTTP) getLatestUpdate(URL string) (string, error) {
+func (s *OracleLinuxHTTP) getUpdates(URL string) ([]string, error) {
 	re := regexp.MustCompile(`^[uU]\d+/$`)
 
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var latestUpdate string
+	var updates []string
 
 	for _, a := range htmlquery.Find(doc, "//a/@href") {
 		if re.MatchString(a.FirstChild.Data) {
-			latestUpdate = a.FirstChild.Data
+			updates = append(updates, strings.TrimSuffix(a.FirstChild.Data, "/"))
 		}
 	}
 
-	if latestUpdate == "" {
-		return "", fmt.Errorf("No update found")
+	if len(updates) == 0 {
+		return nil, fmt.Errorf("No updates found")
 	}
 
-	return strings.TrimSuffix(latestUpdate, "/"), nil
+	return updates, nil
 }
 
 func (s OracleLinuxHTTP) unpackRootfsImage(imageFile string, target string) error {
