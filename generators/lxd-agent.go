@@ -129,7 +129,13 @@ WantedBy=multi-user.target
 	}
 
 	udevPath := filepath.Join("/", "lib", "udev", "rules.d")
-	if !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, udevPath))) {
+
+	stat, err := os.Lstat(filepath.Join(sourceDir, "lib", "udev"))
+	if err != nil {
+		return err
+	}
+
+	if stat.Mode()&os.ModeSymlink != 0 || !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, udevPath))) {
 		udevPath = filepath.Join("/", "usr", "lib", "udev", "rules.d")
 	}
 
