@@ -1,6 +1,8 @@
 package managers
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +15,20 @@ import (
 
 // NewYum creates a new Manager instance.
 func NewYum() *Manager {
+	var buf bytes.Buffer
+	globalFlags := []string{"-y"}
+
+	lxd.RunCommandWithFds(nil, &buf, "yum", "--help")
+
+	scanner := bufio.NewScanner(&buf)
+
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "--allowerasing") {
+			globalFlags = append(globalFlags, "--allowerasing")
+			break
+		}
+	}
+
 	return &Manager{
 		commands: ManagerCommands{
 			clean:   "yum",
@@ -25,9 +41,7 @@ func NewYum() *Manager {
 			clean: []string{
 				"clean", "all",
 			},
-			global: []string{
-				"-y",
-			},
+			global: globalFlags,
 			install: []string{
 				"install",
 			},
