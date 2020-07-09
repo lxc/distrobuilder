@@ -27,7 +27,6 @@ func NewYum() *Manager {
 			},
 			global: []string{
 				"-y",
-				"--allowerasing",
 			},
 			install: []string{
 				"install",
