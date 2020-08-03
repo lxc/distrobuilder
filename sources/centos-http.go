@@ -407,9 +407,9 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 	}
 
 	for _, r := range re {
-		match := regexp.MustCompile(r).FindString(string(body))
-		if match != "" {
-			return match
+		matches := regexp.MustCompile(r).FindAllString(string(body), -1)
+		if len(matches) > 0 {
+			return matches[len(matches)-1]
 		}
 	}
 
