@@ -5,7 +5,8 @@ os:
   - linux
 
 go:
-  - 1.11
+  - 1.13
+  - 1.14
 
 before_install:
   - "sudo apt-get -qq update"
