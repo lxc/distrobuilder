@@ -26,10 +26,6 @@ func TestApertisHTTP_getLatestRelease(t *testing.T) {
 			"18.12",
 			"18.12.0",
 		},
-		{
-			"v2019pre",
-			"v2019pre.0",
-		},
 	}
 	for _, tt := range tests {
 		baseURL := fmt.Sprintf("https://images.apertis.org/release/%s", tt.release)
