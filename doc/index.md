@@ -52,10 +52,16 @@ snap install distrobuilder --classic
 
 To compile `distrobuilder` from source, first install the Go programming language, and some other dependencies.
 
-```
-sudo apt update
-sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git
-```
+- Debian-based:
+    ```
+    sudo apt update
+    sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git
+    ```
+- ArchLinux-based:
+    ```
+    sudo pacman -Syu
+    sudo pacman -S go debootstrap rsync gnupg squashfs-tools git --needed
+    ```
 
 Second, download the source code of the `distrobuilder` repository (this repository). The source will be placed in `$HOME/go/src/github.com/lxc/distrobuilder/`
 
