@@ -15,14 +15,6 @@ func TestApertisHTTP_getLatestRelease(t *testing.T) {
 		want    string
 	}{
 		{
-			"17.12",
-			"17.12.1",
-		},
-		{
-			"18.03",
-			"18.03.0",
-		},
-		{
 			"18.12",
 			"18.12.0",
 		},
