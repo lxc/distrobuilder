@@ -69,6 +69,7 @@ Flags:
       --compression   Type of compression to use (default "xz")
   -h, --help          help for build-lxd
       --type          Type of tarball to create (default "split")
+      --vm            Create a qcow2 image for VMs
 
 Global Flags:
       --cache-dir   Cache directory
@@ -78,8 +79,10 @@ Global Flags:
 ```
 
 Running the `build-lxd` subcommand creates a LXD image.
-If `--type=split`, it outputs two files `lxd.tar.xz` and `rootfs.squashfs`.
-This is the default.
+If `--type=split`, it outputs two files.
+The metadata tarball will always be named `lxd.tar.xz`.
+When creating a container image, the second file will be `rootfs.squashfs`.
+When creating a VM image, the second file will be `disk.qcow2`.
 If `--type=unified`, a unified tarball named `<image.name>.tar.xz` is created.
 See the [image section](image.md) for more on the image name.
 
