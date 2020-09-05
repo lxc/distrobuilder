@@ -66,7 +66,7 @@ func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 	if release < 7 {
 		pkgTool = "hdsetup"
 	} else {
-		pkgTool = "pkgtools"
+		pkgTool = "pkgtools7"
 	}
 
 	matches, err := filepath.Glob(filepath.Join(pkgDir, fmt.Sprintf("%s-*.txz", pkgTool)))
@@ -101,6 +101,12 @@ ROOTFS_DIR="%s"
 export PATH="${PKG_DIR}/sbin:${PATH}"
 export LC_ALL="C"
 export LANG="C"
+
+# Fix name of installer directory
+if [ -d "${PKG_DIR}/sbin/installer_new" ]; then
+    [ -d "${PKG_DIR}/sbin/installer" ] && rm -r "${PKG_DIR}/sbin/installer"
+    mv "${PKG_DIR}/sbin/installer_new" "${PKG_DIR}/sbin/installer"
+fi
 
 # Don't call ldconfig
 sed -i "/ldconfig/!s@/sbin@${PKG_DIR}&@g" ${PKG_DIR}/sbin/installpkg*
