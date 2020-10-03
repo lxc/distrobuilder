@@ -112,10 +112,10 @@ If the command is successful, you will get an output similar to the following. T
 
 ```bash
 $ ls -l
-total 121032
--rw-r--r-- 1 root      root            560 Oct  3 13:28 lxd.tar.xz
--rw-r--r-- 1 root      root      123928576 Oct  3 13:28 rootfs.squashfs
--rw-rw-r-- 1 multipass multipass      3317 Oct  3 13:19 ubuntu.yaml
+total 100960
+-rw-r--r-- 1 root   root         676 Oct  3 16:15 lxd.tar.xz
+-rw-r--r-- 1 root   root   103370752 Oct  3 16:15 rootfs.squashfs
+-rw-r--r-- 1 ubuntu ubuntu      7449 Oct  3 16:03 ubuntu.yaml
 $
 ```
 
@@ -125,18 +125,18 @@ To add the container image to a LXD installation, use the `lxc image import` com
 
 ```bash
 $ lxc image import lxd.tar.xz rootfs.squashfs --alias mycontainerimage 
-Image imported with fingerprint: ae81c04327b5b115383a4f90b969c97f5ef417e02d4210d40cbb17a038729a27
+Image imported with fingerprint: 009349195858651a0f883de804e64eb82e0ac8c0bc51880
 ```
 
-Let's see the container image in LXD. The `ubuntu.yaml` had a setting to create an Ubuntu 17.10 (`artful`) image. The size is 118MB.
+Let's see the container image in LXD. The `ubuntu.yaml` had a setting to create an Ubuntu 20.04 (`focal`) image. The size is 98.58MB.
 
 ```bash
 $ lxc image list mycontainerimage
-+------------------+--------------+--------+---------------+--------+----------+------------------------------+
-|      ALIAS       | FINGERPRINT  | PUBLIC |  DESCRIPTION  |  ARCH  |   SIZE   |         UPLOAD DATE          |
-+------------------+--------------+--------+---------------+--------+----------+------------------------------+
-| mycontainerimage | ae81c04327b5 | no     | Ubuntu artful | x86_64 | 118.19MB | Oct 3, 2018 at 12:09pm (UTC) |
-+------------------+--------------+--------+---------------+--------+----------+------------------------------+
++------------------+--------------+--------+--------------+--------+---------+-----------------------------+
+|      ALIAS       | FINGERPRINT  | PUBLIC | DESCRIPTION  |  ARCH  |  SIZE   |         UPLOAD DATE         |
++------------------+--------------+--------+--------------+--------+---------+-----------------------------+
+| mycontainerimage | 009349195858 | no     | Ubuntu focal | x86_64 | 98.58MB | Oct 3, 2020 at 5:10pm (UTC) |
++------------------+--------------+--------+--------------+--------+---------+-----------------------------+
 ```
 
 ### Launching a LXD container from the container image
@@ -182,3 +182,17 @@ lxc-start -n myContainerImage
 ### Examples
 
 Examples of yaml files for various distributions can be found in the [examples directory](./doc/examples) and in the [lxc-ci repository](https://github.com/lxc/lxc-ci/tree/master/images).
+
+### Troubleshooting
+
+#### Error "Cannot install into target '/var/cache/distrobuilder.123456789/rootfs' mounted with noexec or nodev"
+
+You have installed `distrobuilder` into a LXD container and you are trying to run it. `distrobuilder` does not run in a LXD container. Run `distrobuilder` on the host, or in a VM.
+
+##### Error "error: This revision of snap "distrobuilder" was published using classic confinement"
+
+You are trying to install the `distrobuilder` snap package. The `distrobuilder` snap package has been configured to use the `classic` confinement. Therefore, when you install it, you have to add the flag `--classic` as shown above in the instructions. 
+
+##### Error "You must be root to run this tool"
+
+You must be _root_ in order to run the `distrobuilder` tool. The tool runs commands such as `mknod` that require administrative privileges. Prepend `sudo` when running `distrobuilder`.
