@@ -32,6 +32,8 @@ Flags:
       --cleanup     Clean up cache directory (default true)
   -h, --help        help for distrobuilder
   -o, --options     Override options (list of key=value)
+  -t, --timeout     Timeout in seconds
+      --version     Print version number
 
 Use "distrobuilder [command] --help" for more information about a command.
 ```
@@ -45,7 +47,7 @@ In the following, we see how to create a container image for LXD.
 `distrobuilder` is available from the snapstore.
 
 ```
-snap install distrobuilder --classic
+sudo snap install distrobuilder --classic
 ```
 
 ## Installing from source
@@ -75,6 +77,12 @@ Third, enter the directory with the source code of `distrobuilder` and run `make
 cd $HOME/go/src/github.com/lxc/distrobuilder
 make
 cd
+```
+
+Finally, you can run `distrobuilder` as follows. You may also add to your $PATH the directory `$HOME/go/bin/` so that you do not need to run the command with the full path. 
+
+```
+$HOME/go/bin/distrobuilder
 ```
 
 ### Creating a container image
