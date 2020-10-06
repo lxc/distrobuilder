@@ -348,7 +348,7 @@ fi
 
 # Create a minimal rootfs
 mkdir /rootfs
-yum ${yum_args} --installroot=/rootfs -y --releasever=%s install basesystem centos-release yum
+yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install basesystem centos-release yum
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
