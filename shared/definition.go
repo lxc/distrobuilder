@@ -153,10 +153,20 @@ type DefinitionTargetLXC struct {
 	Config        []DefinitionTargetLXCConfig `yaml:"config,omitempty"`
 }
 
+// DefinitionTargetLXDVMUUID represents the old partition UUIDs which are to be replaced by the newly generated ones.
+type DefinitionTargetLXDVMUUID struct {
+	EFI  string `yaml:"efi,omitempty"`
+	Data string `yaml:"data,omitempty"`
+	Disk string `yaml:"disk,omitempty"`
+}
+
 // DefinitionTargetLXDVM represents LXD VM specific options.
 type DefinitionTargetLXDVM struct {
-	Size       uint64 `yaml:"size,omitempty"`
-	Filesystem string `yaml:"filesystem,omitempty"`
+	Size       uint64                    `yaml:"size,omitempty"`
+	Filesystem string                    `yaml:"filesystem,omitempty"`
+	BCD        string                    `yaml:"bcd,omitempty"`
+	MSR        string                    `yaml:"msr,omitempty"`
+	UUID       DefinitionTargetLXDVMUUID `yaml:"uuid,omitempty"`
 }
 
 // DefinitionTargetLXD represents LXD specific options.
