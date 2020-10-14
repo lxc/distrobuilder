@@ -44,6 +44,8 @@ func Get(name string) Downloader {
 		return NewVoidLinuxHTTP()
 	case "funtoo-http":
 		return NewFuntooHTTP()
+	case "windows":
+		return NewWindows()
 	}
 
 	return nil
