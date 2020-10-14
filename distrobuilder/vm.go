@@ -194,41 +194,6 @@ func (v *vm) umountImage() error {
 	return nil
 }
 
-func (v *vm) createRootFS() error {
-	if v.loopDevice == "" {
-		return fmt.Errorf("Disk image not mounted")
-	}
-
-	switch v.rootFS {
-	case "btrfs":
-		err := shared.RunCommand("mkfs.btrfs", "-f", "-L", "rootfs", v.getRootfsDevFile())
-		if err != nil {
-			return err
-		}
-
-		// Create the root subvolume as well
-		err = shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir)
-		if err != nil {
-			return err
-		}
-		defer shared.RunCommand("umount", v.rootfsDir)
-
-		return shared.RunCommand("btrfs", "subvolume", "create", fmt.Sprintf("%s/@", v.rootfsDir))
-	case "ext4":
-		return shared.RunCommand("mkfs.ext4", "-F", "-b", "4096", "-i 8192", "-m", "0", "-L", "rootfs", "-E", "resize=536870912", v.getRootfsDevFile())
-	}
-
-	return nil
-}
-
-func (v *vm) createUEFIFS() error {
-	if v.loopDevice == "" {
-		return fmt.Errorf("Disk image not mounted")
-	}
-
-	return shared.RunCommand("mkfs.vfat", "-F", "32", "-n", "UEFI", v.getUEFIDevFile())
-}
-
 func (v *vm) getRootfsPartitionUUID() (string, error) {
 	if v.loopDevice == "" {
 		return "", fmt.Errorf("Disk image not mounted")
@@ -255,23 +220,58 @@ func (v *vm) getUEFIPartitionUUID() (string, error) {
 	return strings.TrimSpace(stdout), nil
 }
 
-func (v *vm) mountRootPartition() error {
+func (v *vm) createFilesystems() error {
 	if v.loopDevice == "" {
 		return fmt.Errorf("Disk image not mounted")
 	}
 
+	var err error
+
+	// Create root filesystem
 	switch v.rootFS {
 	case "btrfs":
-		return shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "defaults,subvol=/@")
-	case "ext4":
-		return shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir)
+		err := shared.RunCommand("mkfs.btrfs", "-f", "-L", "rootfs", v.getRootfsDevFile())
+		if err != nil {
+			return err
+		}
 
+		// Create the root subvolume as well
+		err = shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir)
+		if err != nil {
+			return err
+		}
+		defer shared.RunCommand("umount", v.rootfsDir)
+
+		err = shared.RunCommand("btrfs", "subvolume", "create", fmt.Sprintf("%s/@", v.rootfsDir))
+	case "ext4":
+		err = shared.RunCommand("mkfs.ext4", "-F", "-b", "4096", "-i 8192", "-m", "0", "-L", "rootfs", "-E", "resize=536870912", v.getRootfsDevFile())
+	}
+	if err != nil {
+		return err
 	}
 
-	return nil
+	// Create UEFI filesystem
+	return shared.RunCommand("mkfs.vfat", "-F", "32", "-n", "UEFI", v.getUEFIDevFile())
 }
 
-func (v *vm) mountUEFIPartition() error {
+func (v *vm) mountRootFilesystem() error {
+	if v.loopDevice == "" {
+		return fmt.Errorf("Disk image not mounted")
+	}
+
+	var err error
+
+	switch v.rootFS {
+	case "btrfs":
+		err = shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "defaults,subvol=/@")
+	case "ext4":
+		err = shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir)
+	}
+
+	return err
+}
+
+func (v *vm) mountUEFIFilesystem() error {
 	if v.loopDevice == "" {
 		return fmt.Errorf("Disk image not mounted")
 	}

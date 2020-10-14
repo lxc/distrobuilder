@@ -239,25 +239,20 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		}
 		defer vm.umountImage()
 
-		err = vm.createRootFS()
+		err = vm.createFilesystems()
 		if err != nil {
-			return errors.Wrap(err, "Failed to create root filesystem")
+			return errors.Wrap(err, "Failed to create filesystems")
 		}
 
-		err = vm.mountRootPartition()
+		err = vm.mountRootFilesystem()
 		if err != nil {
-			return errors.Wrap(err, "failed to mount root partion")
+			return errors.Wrap(err, "Failed to mount root filesystem")
 		}
 		defer lxd.RunCommand("umount", "-R", vmDir)
 
-		err = vm.createUEFIFS()
+		err = vm.mountUEFIFilesystem()
 		if err != nil {
-			return errors.Wrap(err, "Failed to create UEFI filesystem")
-		}
-
-		err = vm.mountUEFIPartition()
-		if err != nil {
-			return errors.Wrap(err, "Failed to mount UEFI partition")
+			return errors.Wrap(err, "Failed to mount UEFI filesystem")
 		}
 
 		// We cannot use LXD's rsync package as that uses the --delete flag which
