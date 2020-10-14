@@ -308,3 +308,16 @@ func (v *vm) mountUEFIFilesystem() error {
 
 	return shared.RunCommand("mount", v.getUEFIDevFile(), mountpoint)
 }
+
+func (v *vm) getDiskUUID() (string, error) {
+	if v.loopDevice == "" {
+		return "", fmt.Errorf("Disk image not mounted")
+	}
+
+	stdout, err := lxd.RunCommand("blkid", "-s", "PTUUID", "-o", "value", v.loopDevice)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(stdout), nil
+}
