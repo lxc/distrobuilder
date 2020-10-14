@@ -14,6 +14,16 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
+// OS represents the operating system.
+type OS int
+
+const (
+	// OSLinux represents the Linux operating system.
+	OSLinux OS = iota
+	// OSWindows represents the Windows operating system.
+	OSWindows
+)
+
 type vm struct {
 	imageFile  string
 	loopDevice string
