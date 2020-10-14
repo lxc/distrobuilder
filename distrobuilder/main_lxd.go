@@ -202,6 +202,13 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	var mounts []shared.ChrootMount
 	var vmDir string
 	var vm *vm
+	var targetOS OS
+
+	if c.global.definition.Source.Downloader == "windows" {
+		targetOS = OSWindows
+	} else {
+		targetOS = OSLinux
+	}
 
 	if c.flagVM {
 		vmDir = filepath.Join(c.global.flagCacheDir, "vm")
@@ -218,7 +225,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		imgFile := filepath.Join(c.global.flagCacheDir, imgFilename)
 
-		vm, err = newVM(imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
+		vm, err = newVM(imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size, targetOS)
 		if err != nil {
 			return errors.Wrap(err, "Failed to instanciate VM")
 		}

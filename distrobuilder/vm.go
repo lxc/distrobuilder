@@ -30,14 +30,27 @@ type vm struct {
 	rootFS     string
 	rootfsDir  string
 	size       uint64
+	os         OS
 }
 
-func newVM(imageFile, rootfsDir, fs string, size uint64) (*vm, error) {
+func newVM(imageFile, rootfsDir, fs string, size uint64, os OS) (*vm, error) {
 	if fs == "" {
-		fs = "ext4"
+		if os == OSLinux {
+			fs = "ext4"
+		} else {
+			fs = "ntfs"
+		}
 	}
 
-	if !lxd.StringInSlice(fs, []string{"btrfs", "ext4"}) {
+	var supportedFs []string
+
+	if os == OSLinux {
+		supportedFs = []string{"btrfs", "ext4"}
+	} else {
+		supportedFs = []string{"ntfs"}
+	}
+
+	if !lxd.StringInSlice(fs, supportedFs) {
 		return nil, fmt.Errorf("Unsupported fs: %s", fs)
 	}
 
@@ -45,7 +58,7 @@ func newVM(imageFile, rootfsDir, fs string, size uint64) (*vm, error) {
 		size = 4294967296
 	}
 
-	return &vm{imageFile: imageFile, rootfsDir: rootfsDir, rootFS: fs, size: size}, nil
+	return &vm{imageFile: imageFile, rootfsDir: rootfsDir, rootFS: fs, size: size, os: os}, nil
 }
 
 func (v *vm) getLoopDev() string {
