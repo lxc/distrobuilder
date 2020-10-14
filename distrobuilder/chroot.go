@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
@@ -198,4 +201,27 @@ func getOverlay(cacheDir, sourceDir string) (func(), string, error) {
 	}
 
 	return cleanup, overlayDir, nil
+}
+
+func replaceUUID(path string, old uuid.UUID, new uuid.UUID) error {
+	f := func(u uuid.UUID) []byte {
+		b, err := u.MarshalBinary()
+		if err != nil {
+			return nil
+		}
+
+		out := []byte{b[3], b[2], b[1], b[0], b[5], b[4], b[7], b[6]}
+		out = append(out, b[8:]...)
+
+		return out
+	}
+
+	read, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	write := bytes.ReplaceAll(read, f(old), f(new))
+
+	return ioutil.WriteFile(path, write, 0644)
 }
