@@ -70,7 +70,15 @@ func (v *vm) getRootfsDevFile() string {
 		return ""
 	}
 
-	return fmt.Sprintf("%sp2", v.loopDevice)
+	var partNum int
+
+	if v.os == OSLinux {
+		partNum = 2
+	} else {
+		partNum = 3
+	}
+
+	return fmt.Sprintf("%sp%d", v.loopDevice, partNum)
 }
 
 func (v *vm) getUEFIDevFile() string {
@@ -79,6 +87,18 @@ func (v *vm) getUEFIDevFile() string {
 	}
 
 	return fmt.Sprintf("%sp1", v.loopDevice)
+}
+
+func (v *vm) getMSRDevFile() string {
+	if v.loopDevice == "" {
+		return ""
+	}
+
+	if v.os != OSWindows {
+		return ""
+	}
+
+	return fmt.Sprintf("%sp2", v.loopDevice)
 }
 
 func (v *vm) createEmptyDiskImage() error {
@@ -104,8 +124,20 @@ func (v *vm) createEmptyDiskImage() error {
 func (v *vm) createPartitions() error {
 	args := [][]string{
 		{"--zap-all"},
-		{"--new=1::+100M", "-t 1:EF00"},
-		{"--new=2::", "-t 2:8300"},
+		// EFI system partition (ESP)
+		{"--new=1::+100M", "-t 1:C12A7328-F81F-11D2-BA4B-00A0C93EC93B"},
+	}
+
+	if v.os == OSLinux {
+		// Linux partition
+		args = append(args, []string{"--new=2::", "-t 2:0FC63DAF-8483-4772-8E79-3D69D8477DE4"})
+	} else {
+		args = append(args,
+			// Microsoft Reserved Partition (MSR)
+			[]string{"--new=2::+128M", "-t 2:E3C9E316-0B5C-4DB8-817D-F92DF00215AE"},
+			/// Microsoft basic data partition
+			[]string{"--new=3::", "-t 3:EBD0A0A2-B9E5-4433-87C0-68B6B72699C7"},
+		)
 	}
 
 	for _, cmd := range args {
@@ -163,7 +195,15 @@ func (v *vm) mountImage() error {
 	}
 
 	if !lxd.PathExists(v.getRootfsDevFile()) {
-		fields := strings.Split(deviceNumbers[2], ":")
+		var idx int
+
+		if v.os == OSLinux {
+			idx = 2
+		} else {
+			idx = 3
+		}
+
+		fields := strings.Split(deviceNumbers[idx], ":")
 
 		major, err := strconv.Atoi(fields[0])
 		if err != nil {
@@ -197,18 +237,15 @@ func (v *vm) umountImage() error {
 		return err
 	}
 
-	// Make sure that p1 and p2 are also removed.
-	if lxd.PathExists(v.getUEFIDevFile()) {
-		err := os.Remove(v.getUEFIDevFile())
-		if err != nil {
-			return err
-		}
-	}
+	// Make sure that all partitions are removed.
+	for i := 1; i <= 3; i++ {
+		partition := fmt.Sprintf("%sp%d", v.loopDevice, i)
 
-	if lxd.PathExists(v.getRootfsDevFile()) {
-		err := os.Remove(v.getRootfsDevFile())
-		if err != nil {
-			return err
+		if lxd.PathExists(partition) {
+			err := os.Remove(partition)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -268,6 +305,8 @@ func (v *vm) createFilesystems() error {
 		err = shared.RunCommand("btrfs", "subvolume", "create", fmt.Sprintf("%s/@", v.rootfsDir))
 	case "ext4":
 		err = shared.RunCommand("mkfs.ext4", "-F", "-b", "4096", "-i 8192", "-m", "0", "-L", "rootfs", "-E", "resize=536870912", v.getRootfsDevFile())
+	case "ntfs":
+		err = shared.RunCommand("mkfs.ntfs", "-f", "-L", "rootfs", v.getRootfsDevFile())
 	}
 	if err != nil {
 		return err
@@ -288,6 +327,7 @@ func (v *vm) mountRootFilesystem() error {
 	case "btrfs":
 		err = shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "defaults,subvol=/@")
 	case "ext4":
+	case "ntfs":
 		err = shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir)
 	}
 

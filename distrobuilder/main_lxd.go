@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -113,6 +115,11 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 }
 
 func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) error {
+	// Return here as we cannot use chroot in Windows.
+	if c.global.definition.Source.Downloader == "windows" {
+		return nil
+	}
+
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(overlayDir, c.global.definition.Environment, nil)
 	if err != nil {
@@ -255,11 +262,108 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		if err != nil {
 			return errors.Wrap(err, "Failed to mount root filesystem")
 		}
-		defer lxd.RunCommand("umount", "-R", vmDir)
+		defer shared.RunCommand("umount", "-R", vmDir)
 
 		err = vm.mountUEFIFilesystem()
 		if err != nil {
 			return errors.Wrap(err, "Failed to mount UEFI filesystem")
+		}
+
+		// Copy EFI files and BCD to EFI partition, and populate MSR partition.
+		if targetOS == OSWindows {
+			// This is just a temporary mountpoint which will be removed later.
+			targetEFIDir := filepath.Join(vmDir, "boot", "efi")
+			targetEFIMicrosoftBootDir := filepath.Join(targetEFIDir, "EFI", "Microsoft", "Boot")
+			targetEFIBootDir := filepath.Join(targetEFIDir, "EFI", "Boot")
+
+			err = os.MkdirAll(targetEFIMicrosoftBootDir, 0755)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to create %s", targetEFIMicrosoftBootDir)
+			}
+
+			err = os.MkdirAll(targetEFIBootDir, 0755)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to create %s", targetEFIBootDir)
+			}
+
+			// Copy EFI directory to boot partition
+			err = shared.RunCommand("rsync", "-a", "-HA", "--sparse", "--devices", "--checksum", "--numeric-ids", filepath.Join(overlayDir, "Windows", "Boot", "EFI")+"/", targetEFIMicrosoftBootDir)
+			if err != nil {
+				return errors.Wrap(err, "Failed to copy EFI data")
+			}
+
+			// Copy bootx64.efi file
+			err = shared.RunCommand("rsync", "-a", "-HA", "--sparse", "--devices", "--checksum", "--numeric-ids", filepath.Join(targetEFIMicrosoftBootDir, "bootmgfw.efi"), filepath.Join(targetEFIBootDir, "bootx64.efi"))
+			if err != nil {
+				return errors.Wrap(err, "Failed to copy bootx64.efi")
+			}
+
+			// Copy BCD file
+			bcdFile, err := url.Parse(c.global.definition.Targets.LXD.VM.BCD)
+			if err != nil {
+				return errors.Wrap(err, "Failed to get BCD file")
+			}
+
+			if bcdFile.Scheme == "file" {
+				err = shared.RunCommand("rsync", "-a", "-HA", "--sparse", "--devices", "--checksum", "--numeric-ids", bcdFile.Path, filepath.Join(targetEFIMicrosoftBootDir, "BCD"))
+				if err != nil {
+					return errors.Wrap(err, "Failed to copy BCD file")
+				}
+			}
+
+			// Fix UUIDs in the BCD file
+			efiPartUUID, err := vm.getUEFIPartitionUUID()
+			if err != nil {
+				return errors.Wrap(err, "Failed to get part UUID of EFI partition")
+			}
+
+			dataPartUUID, err := vm.getRootfsPartitionUUID()
+			if err != nil {
+				return errors.Wrap(err, "Failed to get part UUID of rootfs partition")
+			}
+
+			diskUUID, err := vm.getDiskUUID()
+			if err != nil {
+				return errors.Wrap(err, "Failed to get disk UUID")
+			}
+
+			err = replaceUUID(filepath.Join(targetEFIMicrosoftBootDir, "BCD"), uuid.MustParse(c.global.definition.Targets.LXD.VM.UUID.EFI), uuid.MustParse(efiPartUUID))
+			if err != nil {
+				return errors.Wrap(err, "Failed to replace EFI part UUID")
+			}
+
+			err = replaceUUID(filepath.Join(targetEFIMicrosoftBootDir, "BCD"), uuid.MustParse(c.global.definition.Targets.LXD.VM.UUID.Data), uuid.MustParse(dataPartUUID))
+			if err != nil {
+				return errors.Wrap(err, "Failed to replace rootfs part UUID")
+			}
+
+			err = replaceUUID(filepath.Join(targetEFIMicrosoftBootDir, "BCD"), uuid.MustParse(c.global.definition.Targets.LXD.VM.UUID.Disk), uuid.MustParse(diskUUID))
+			if err != nil {
+				return errors.Wrap(err, "Failed to replace rootfs part UUID")
+			}
+
+			err = shared.RunCommand("umount", "-R", targetEFIDir)
+			if err != nil {
+				return errors.Wrap(err, "Failed to unmount UEFI filesystem")
+			}
+
+			err = os.Remove(targetEFIDir)
+			if err != nil {
+				return errors.Wrap(err, "Failed to remove EFI mountpoint")
+			}
+
+			// Copy MSR (Microsoft Reserved Partition)
+			msrFile, err := url.Parse(c.global.definition.Targets.LXD.VM.MSR)
+			if err != nil {
+				return errors.Wrap(err, "Failed to get MSR file")
+			}
+
+			if msrFile.Scheme == "file" {
+				err = shared.RunCommand("dd", fmt.Sprintf("if=%s", msrFile.Path), fmt.Sprintf("of=%s", vm.getMSRDevFile()))
+				if err != nil {
+					return errors.Wrap(err, "Failed to copy MSR")
+				}
+			}
 		}
 
 		// We cannot use LXD's rsync package as that uses the --delete flag which
@@ -298,26 +402,28 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		}
 	}
 
-	exitChroot, err := shared.SetupChroot(rootfsDir,
-		c.global.definition.Environment, mounts)
-	if err != nil {
-		return errors.Wrap(err, "Failed to chroot")
-	}
-
-	// Run post files hook
-	for _, action := range c.global.definition.GetRunnableActions("post-files", imageTargets) {
-		err := shared.RunScript(action.Action)
+	if targetOS == OSLinux {
+		exitChroot, err := shared.SetupChroot(rootfsDir,
+			c.global.definition.Environment, mounts)
 		if err != nil {
-			exitChroot()
-			return errors.Wrap(err, "Failed to run post-files")
+			return errors.Wrap(err, "Failed to chroot")
 		}
-	}
 
-	exitChroot()
+		// Run post files hook
+		for _, action := range c.global.definition.GetRunnableActions("post-files", imageTargets) {
+			err := shared.RunScript(action.Action)
+			if err != nil {
+				exitChroot()
+				return errors.Wrap(err, "Failed to run post-files")
+			}
+		}
+
+		exitChroot()
+	}
 
 	// Unmount VM directory and loop device before creating the image.
 	if c.flagVM {
-		_, err := lxd.RunCommand("umount", "-R", vmDir)
+		err := shared.RunCommand("umount", "-R", vmDir)
 		if err != nil {
 			return err
 		}
@@ -328,7 +434,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		}
 	}
 
-	err = img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
+	err := img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create LXD image")
 	}
@@ -337,7 +443,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 }
 
 func (c *cmdLXD) checkVMDependencies() error {
-	dependencies := []string{"btrfs", "mkfs.ext4", "mkfs.vfat", "qemu-img", "rsync", "sgdisk"}
+	dependencies := []string{"btrfs", "mkfs.ext4", "mkfs.ntfs", "mkfs.vfat", "qemu-img", "rsync", "sgdisk"}
 
 	for _, dep := range dependencies {
 		_, err := exec.LookPath(dep)

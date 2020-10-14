@@ -223,6 +223,28 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Sanity checks for Windows VMs.
+	if c.definition.Source.Downloader == "windows" {
+		subcommand := cmd.CalledAs()
+
+		if strings.Contains(subcommand, "lxc") {
+			return fmt.Errorf("Windows is not supported by LXC")
+		}
+
+		if subcommand == "build-lxd" || subcommand == "pack-lxd" {
+			ok, err := cmd.Flags().GetBool("vm")
+			if err != nil {
+				return err
+			}
+
+			if !ok {
+				return fmt.Errorf("LXD only supports Windows VMs")
+			}
+
+			c.definition.Targets.Type = "vm"
+		}
+	}
+
 	// Create cache directory if we also plan on creating LXC or LXD images
 	if !isRunningBuildDir {
 		err = os.MkdirAll(c.flagCacheDir, 0755)
@@ -249,6 +271,11 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	err = downloader.Run(*c.definition, c.sourceDir)
 	if err != nil {
 		return errors.Wrap(err, "Error while downloading source")
+	}
+
+	// Return here as we cannot use chroot for Windows.
+	if c.definition.Source.Downloader == "windows" {
+		return nil
 	}
 
 	// Setup the mounts and chroot into the rootfs
