@@ -342,51 +342,53 @@ func (d *Definition) Validate() error {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
 	}
 
-	if d.Packages.Manager != "" {
-		validManagers := []string{
-			"apk",
-			"apt",
-			"dnf",
-			"egoportage",
-			"opkg",
-			"pacman",
-			"portage",
-			"yum",
-			"equo",
-			"xbps",
-			"zypper",
-			"luet",
-		}
-		if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
-			return fmt.Errorf("packages.manager must be one of %v", validManagers)
-		}
+	if d.Source.Downloader != "windows" {
+		if d.Packages.Manager != "" {
+			validManagers := []string{
+				"apk",
+				"apt",
+				"dnf",
+				"egoportage",
+				"opkg",
+				"pacman",
+				"portage",
+				"yum",
+				"equo",
+				"xbps",
+				"zypper",
+				"luet",
+			}
+			if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
+				return fmt.Errorf("packages.manager must be one of %v", validManagers)
+			}
 
-		if d.Packages.CustomManager != nil {
-			return fmt.Errorf("cannot have both packages.manager and packages.custom-manager set")
-		}
-	} else {
-		if d.Packages.CustomManager == nil {
-			return fmt.Errorf("packages.manager or packages.custom-manager needs to be set")
-		}
+			if d.Packages.CustomManager != nil {
+				return fmt.Errorf("cannot have both packages.manager and packages.custom-manager set")
+			}
+		} else {
+			if d.Packages.CustomManager == nil {
+				return fmt.Errorf("packages.manager or packages.custom-manager needs to be set")
+			}
 
-		if d.Packages.CustomManager.Clean.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires a clean command")
-		}
+			if d.Packages.CustomManager.Clean.Command == "" {
+				return fmt.Errorf("packages.custom-manager requires a clean command")
+			}
 
-		if d.Packages.CustomManager.Install.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires an install command")
-		}
+			if d.Packages.CustomManager.Install.Command == "" {
+				return fmt.Errorf("packages.custom-manager requires an install command")
+			}
 
-		if d.Packages.CustomManager.Remove.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires a remove command")
-		}
+			if d.Packages.CustomManager.Remove.Command == "" {
+				return fmt.Errorf("packages.custom-manager requires a remove command")
+			}
 
-		if d.Packages.CustomManager.Refresh.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires a refresh command")
-		}
+			if d.Packages.CustomManager.Refresh.Command == "" {
+				return fmt.Errorf("packages.custom-manager requires a refresh command")
+			}
 
-		if d.Packages.CustomManager.Update.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires an update command")
+			if d.Packages.CustomManager.Update.Command == "" {
+				return fmt.Errorf("packages.custom-manager requires an update command")
+			}
 		}
 	}
 
