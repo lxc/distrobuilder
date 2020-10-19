@@ -25,7 +25,7 @@ func luetRepoCaller(repo shared.DefinitionPackagesRepository) error {
 	if strings.HasSuffix(repo.Name, ".yml") {
 		targetFile = filepath.Join("/etc/luet/repos.conf.d", repo.Name)
 	} else {
-		targetFile = filepath.Join("/etc/luet/repos.conf.d", repo.Name + ".yml")
+		targetFile = filepath.Join("/etc/luet/repos.conf.d", repo.Name+".yml")
 	}
 
 	if !lxd.PathExists(filepath.Dir(targetFile)) {
@@ -46,7 +46,7 @@ func luetRepoCaller(repo shared.DefinitionPackagesRepository) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
