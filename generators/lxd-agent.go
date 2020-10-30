@@ -66,15 +66,18 @@ func (g LXDAgentGenerator) handleSystemd(sourceDir string) error {
 Description=LXD - agent
 Documentation=https://linuxcontainers.org/lxd
 ConditionPathExists=/dev/virtio-ports/org.linuxcontainers.lxd
-Requires=lxd-agent-9p.service
+Wants=lxd-agent-virtiofs.service
+After=lxd-agent-virtiofs.service
+Wants=lxd-agent-9p.service
 After=lxd-agent-9p.service
+
 Before=cloud-init.target cloud-init.service cloud-init-local.service
 DefaultDependencies=no
 
 [Service]
 Type=notify
-WorkingDirectory=/run/lxd_config/9p
-ExecStart=/run/lxd_config/9p/lxd-agent
+WorkingDirectory=/run/lxd_config/drive
+ExecStart=/run/lxd_config/drive/lxd-agent
 Restart=on-failure
 RestartSec=5s
 StartLimitInterval=60
@@ -103,16 +106,17 @@ WantedBy=multi-user.target
 Description=LXD - agent - 9p mount
 Documentation=https://linuxcontainers.org/lxd
 ConditionPathExists=/dev/virtio-ports/org.linuxcontainers.lxd
-After=local-fs.target
+After=local-fs.target lxd-agent-virtiofs.service
 DefaultDependencies=no
+ConditionPathIsMountPoint=!/run/lxd_config/drive
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStartPre=-/sbin/modprobe 9pnet_virtio
-ExecStartPre=/bin/mkdir -p /run/lxd_config/9p
+ExecStartPre=/bin/mkdir -p /run/lxd_config/drive
 ExecStartPre=/bin/chmod 0700 /run/lxd_config/
-ExecStart=/bin/mount -t 9p config /run/lxd_config/9p -o access=0,trans=virtio
+ExecStart=/bin/mount -t 9p config /run/lxd_config/drive -o access=0,trans=virtio
 
 [Install]
 WantedBy=multi-user.target
@@ -124,6 +128,36 @@ WantedBy=multi-user.target
 	}
 
 	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "lxd-agent-9p.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent-9p.service"))
+	if err != nil {
+		return err
+	}
+
+	lxdConfigShareMountVirtioFSUnit := `[Unit]
+Description=LXD - agent - virtio-fs mount
+Documentation=https://linuxcontainers.org/lxd
+ConditionPathExists=/dev/virtio-ports/org.linuxcontainers.lxd
+After=local-fs.target
+Before=lxd-agent-9p.service
+DefaultDependencies=no
+ConditionPathIsMountPoint=!/run/lxd_config/drive
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=/bin/mkdir -p /run/lxd_config/drive
+ExecStartPre=/bin/chmod 0700 /run/lxd_config/
+ExecStart=/bin/mount -t virtiofs config /run/lxd_config/drive
+
+[Install]
+WantedBy=multi-user.target
+`
+
+	err = ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "lxd-agent-virtiofs.service"), []byte(lxdConfigShareMountVirtioFSUnit), 0644)
+	if err != nil {
+		return err
+	}
+
+	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "lxd-agent-virtiofs.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent-virtiofs.service"))
 	if err != nil {
 		return err
 	}
@@ -148,14 +182,16 @@ func (g LXDAgentGenerator) handleOpenRC(sourceDir string) error {
 	lxdAgentScript := `#!/sbin/openrc-run
 
 description="LXD - agent"
-command=/run/lxd_config/9p/lxd-agent
+command=/run/lxd_config/drive/lxd-agent
 command_background=true
 pidfile=/run/lxd-agent.pid
-start_stop_daemon_args="--chdir /run/lxd_config/9p"
-required_dirs=/run/lxd_config/9p
+start_stop_daemon_args="--chdir /run/lxd_config/drive"
+required_dirs=/run/lxd_config/drive
 
 depend() {
-	need lxd-agent-9p
+	want lxd-agent-virtiofs
+	after lxd-agent-virtiofs
+	want lxd-agent-9p
 	after lxd-agent-9p
 	before cloud-init
 	before cloud-init-local
@@ -176,13 +212,15 @@ depend() {
 
 description="LXD - agent - 9p mount"
 command=/bin/mount
-command_args="-t 9p config /run/lxd_config/9p -o access=0,trans=virtio"
+command_args="-t 9p config /run/lxd_config/drive -o access=0,trans=virtio"
 required_files=/dev/virtio-ports/org.linuxcontainers.lxd
 
 start_pre() {
 	/sbin/modprobe 9pnet_virtio || true
+	# Don't proceed if the config drive is mounted already
+	mount | grep -q /run/lxd_config/drive && false
 	checkpath -d /run/lxd_config -m 0700
-	checkpath -d /run/lxd_config/9p
+	checkpath -d /run/lxd_config/drive
 }
 `
 
@@ -192,6 +230,31 @@ start_pre() {
 	}
 
 	err = os.Symlink("/etc/init.d/lxd-agent-9p", filepath.Join(sourceDir, "/etc/runlevels/default/lxd-agent-9p"))
+	if err != nil {
+		return err
+	}
+
+	lxdConfigShareMountVirtioFSScript := `#!/sbin/openrc-run
+
+	description="LXD - agent - virtio-fs mount"
+	command=/bin/mount
+	command_args="-t virtiofs config /run/lxd_config/drive"
+	required_files=/dev/virtio-ports/org.linuxcontainers.lxd
+
+	start_pre() {
+		# Don't proceed if the config drive is mounted already
+		mount | grep -q /run/lxd_config/drive && false
+		checkpath -d /run/lxd_config -m 0700
+		checkpath -d /run/lxd_config/drive
+	}
+	`
+
+	err = ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init.d/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
+	if err != nil {
+		return err
+	}
+
+	err = os.Symlink("/etc/init.d/lxd-agent-virtiofs", filepath.Join(sourceDir, "/etc/runlevels/default/lxd-agent-virtiofs"))
 	if err != nil {
 		return err
 	}
@@ -218,24 +281,53 @@ exec lxd-agent
 
 	lxdConfigShareMountScript := `Description "LXD agent 9p mount"
 
-start on runlevel filesystem
+start on stopped lxd-agent-virtiofs
 
 pre-start script
+	if mount | grep -q /run/lxd_config/drive; then
+		stop
+		exit 0
+	fi
+
 	if ! modprobe 9pnet_virtio; then
 		stop
 		exit 0
 	fi
 
-	mkdir -p /run/lxd_config/9p
+	mkdir -p /run/lxd_config/drive
 	chmod 0700 /run/lxd_config
 end script
 
 task
 
-exec mount -t 9p config /run/lxd_config/9p -o access=0,trans=virtio
+exec mount -t 9p config /run/lxd_config/drive -o access=0,trans=virtio
 `
 
 	err = ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
+	if err != nil {
+		return err
+	}
+
+	lxdConfigShareMountVirtioFSScript := `Description "LXD agent virtio-fs mount"
+
+start on runlevel filesystem
+
+pre-start script
+	if mount | grep -q /run/lxd_config/drive; then
+		stop
+		exit 0
+	fi
+
+	mkdir -p /run/lxd_config/drive
+	chmod 0700 /run/lxd_config
+end script
+
+task
+
+exec mount -t virtiofs config /run/lxd_config/drive
+`
+
+	err = ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
 	if err != nil {
 		return err
 	}
