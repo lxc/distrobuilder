@@ -58,6 +58,24 @@ If provided, it will set the `mode` (octal format), `gid` (integer) and/or `uid`
 If `pongo` is true, the content will be processed using pongo2, and the context will be set appropriately (`{{ lxc.<variable> }}` or `{{ lxd.<variable> }}`).
 See  [targets](targets.md).
 
+## copy
+
+The `copy` generator copies the file(s) from `source` to the destination `path`.
+`path` can be left empty and in that case the data will be placed in the same `source` path but inside the container.
+If provided, the destination `path` will set the `mode` (octal format), `gid` (integer) and/or `uid` (integer).
+Copying will be done according to the following rules:
+
+* If `source` is a directory, the entire contents of the directory are copied. Only symlinks and regular files are supported.
+	- Note 1: The directory itself is not copied, just its contents.
+	- Note 2: For files copied, only regular unix permissions are kept.
+* If `source` is a symlink or a regular file, it is copied individually along with its metadata.
+In this case, if `path` ends with a trailing slash `/`, it will be considered a directory and the contents of `source` will be written at `path`/base(`source`).
+* If `path` does not end with a trailing slash, it will be considered a regular file and the contents of `source` will be written at `path`.
+* If `path` does not exist, it is created along with all missing directories in its path.
+* Multiple `source` resources can be specified using golang `filepath.Match` regexps.
+For simplicity they are only allowed in the basename and not in the directory hierarchy.
+If more than one match is found, `path` will be automatically interpreted as a directory.
+
 ## hostname
 
 For LXC images, the hostname generator writes the LXC specific string `LXC_NAME` to the hostname file set in `path`.

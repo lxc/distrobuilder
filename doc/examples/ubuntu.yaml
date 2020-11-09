@@ -73,6 +73,10 @@ files:
 - path: /etc/machine-id
   generator: dump
 
+- path: /etc/user/profile
+  generator: copy
+  source: /etc/profile
+
 - path: /var/lib/dbus/machine-id
   generator: remove
 
