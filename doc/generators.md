@@ -5,6 +5,7 @@ Available generators are
 
 * [cloud-init](#cloud-init)
 * [dump](#dump)
+* [copy](#copy)
 * [hostname](#hostname)
 * [hosts](#hosts)
 * [remove](#remove)
