@@ -70,11 +70,16 @@ func (g HostnameGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 
 	// Add to LXD templates
 	img.Metadata.Templates[defFile.Path] = &api.ImageMetadataTemplate{
-		Template: "hostname.tpl",
-		When: []string{
+		Template:   "hostname.tpl",
+		Properties: defFile.Template.Properties,
+		When:       defFile.Template.When,
+	}
+
+	if len(defFile.Template.When) == 0 {
+		img.Metadata.Templates[defFile.Path].When = []string{
 			"create",
 			"copy",
-		},
+		}
 	}
 
 	return err
