@@ -218,7 +218,7 @@ required_files=/dev/virtio-ports/org.linuxcontainers.lxd
 start_pre() {
 	/sbin/modprobe 9pnet_virtio || true
 	# Don't proceed if the config drive is mounted already
-	mount | grep -q /run/lxd_config/drive && false
+	mount | grep -q /run/lxd_config/drive && return 1
 	checkpath -d /run/lxd_config -m 0700
 	checkpath -d /run/lxd_config/drive
 }
@@ -243,7 +243,7 @@ start_pre() {
 
 	start_pre() {
 		# Don't proceed if the config drive is mounted already
-		mount | grep -q /run/lxd_config/drive && false
+		mount | grep -q /run/lxd_config/drive && return 1
 		checkpath -d /run/lxd_config -m 0700
 		checkpath -d /run/lxd_config/drive
 	}
