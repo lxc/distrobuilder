@@ -68,6 +68,18 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 			strings.Replace(definition.Image.ArchitectureMapped, "_", "-", 1))
 	}
 
+	resp, err := http.Head(baseURL)
+	if err != nil {
+		return err
+	}
+
+	// Use fallback image "generic"
+	if resp.StatusCode == http.StatusNotFound && definition.Image.ArchitectureMapped == "x86_64" {
+		baseURL = strings.ReplaceAll(baseURL, "x86/64", "x86/generic")
+		baseURL = strings.ReplaceAll(baseURL, "x86-64", "x86-generic")
+		fname = strings.ReplaceAll(fname, "x86-64", "x86-generic")
+	}
+
 	url, err := url.Parse(baseURL)
 	if err != nil {
 		return err
