@@ -26,7 +26,9 @@ func (d *DockerHTTP) Run(definition shared.Definition, rootfsDir string) error {
 
 	// If DOCKER_REGISTRY_BASE is not set it's used default https://registry-1.docker.io
 	return dcapi.DownloadAndUnpackImage(definition.Source.URL, absRootfsDir, &dcapi.DownloadOpts{
-		RegistryBase: os.Getenv("DOCKER_REGISTRY_BASE"),
-		KeepLayers:   false,
+		RegistryBase:     os.Getenv("DOCKER_REGISTRY_BASE"),
+		RegistryUsername: os.Getenv("DOCKER_REGISTRY_BASE_USER"),
+		RegistryPassword: os.Getenv("DOCKER_REGISTRY_BASE_PASS"),
+		KeepLayers:       false,
 	})
 }
