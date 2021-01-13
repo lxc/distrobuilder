@@ -14,4 +14,5 @@ var Drivers = map[string]DriverInfo{
 	"NetKVM":   driverNetKVM,
 	"vioinput": driverVioinput,
 	"viorng":   driverViorng,
+	"vioscsi":  driverVioscsi,
 }
