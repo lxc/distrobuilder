@@ -10,9 +10,10 @@ type DriverInfo struct {
 
 // Drivers contains all supported drivers.
 var Drivers = map[string]DriverInfo{
-	"Balloon":  driverBalloon,
-	"NetKVM":   driverNetKVM,
-	"vioinput": driverVioinput,
-	"viorng":   driverViorng,
-	"vioscsi":  driverVioscsi,
+	"Balloon":   driverBalloon,
+	"NetKVM":    driverNetKVM,
+	"vioinput":  driverVioinput,
+	"viorng":    driverViorng,
+	"vioscsi":   driverVioscsi,
+	"vioserial": driverVioserial,
 }
