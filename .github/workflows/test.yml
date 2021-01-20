@@ -1,0 +1,36 @@
+name: CI tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-18.04]
+        go: [1.15, 1.14, 1.13]
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Set up go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Install dependencies
+      run: |-
+        sudo apt-get -qq update
+        sudo apt-get install -y squashfs-tools
+
+    - name: Test
+      run: |-
+        mkdir -p /home/runner/go/src/github.com/lxc
+        rsync -az ${GITHUB_WORKSPACE}/ /home/runner/go/src/github.com/lxc/distrobuilder/
+        cd /home/runner/go/src/github.com/lxc/distrobuilder
+        make check
