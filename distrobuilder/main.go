@@ -142,6 +142,10 @@ func main() {
 	buildDirCmd := cmdBuildDir{global: &globalCmd}
 	app.AddCommand(buildDirCmd.command())
 
+	// repack-windows sub-command
+	repackWindowsCmd := cmdRepackWindows{global: &globalCmd}
+	app.AddCommand(repackWindowsCmd.command())
+
 	// Timeout handler
 	go func() {
 		// No timeout set

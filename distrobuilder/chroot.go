@@ -176,6 +176,8 @@ func getOverlay(cacheDir, sourceDir string) (func(), string, error) {
 	}
 
 	cleanup := func() {
+		unix.Sync()
+
 		err := unix.Unmount(overlayDir, 0)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, errors.Wrap(err, "Failed to unmount overlay"))
