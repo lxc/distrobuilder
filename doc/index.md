@@ -4,7 +4,7 @@ System container image builder for LXC and LXD
 ## Status
 Type            | Service               | Status
 ---             | ---                   | ---
-CI              | Jenkins               | [![Build Status](https://travis-ci.org/lxc/distrobuilder.svg?branch=master)](https://travis-ci.org/lxc/distrobuilder)
+CI              | GitHub                | [![Build Status](https://github.com/lxc/distrobuilder/workflows/CI%20tests/badge.svg)](https://github.com/lxc/distrobuilder/actions)
 Project status  | CII Best Practices    | [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1728/badge)](https://bestpractices.coreinfrastructure.org/projects/1728)
 
 
@@ -79,7 +79,7 @@ make
 cd
 ```
 
-Finally, you can run `distrobuilder` as follows. You may also add to your $PATH the directory `$HOME/go/bin/` so that you do not need to run the command with the full path. 
+Finally, you can run `distrobuilder` as follows. You may also add to your $PATH the directory `$HOME/go/bin/` so that you do not need to run the command with the full path.
 
 ```
 $HOME/go/bin/distrobuilder
@@ -124,7 +124,7 @@ $
 To add the container image to a LXD installation, use the `lxc image import` command as follows.
 
 ```bash
-$ lxc image import lxd.tar.xz rootfs.squashfs --alias mycontainerimage 
+$ lxc image import lxd.tar.xz rootfs.squashfs --alias mycontainerimage
 Image imported with fingerprint: 009349195858651a0f883de804e64eb82e0ac8c0bc51880
 ```
 
@@ -191,7 +191,7 @@ You have installed `distrobuilder` into a LXD container and you are trying to ru
 
 ##### Error "error: This revision of snap "distrobuilder" was published using classic confinement"
 
-You are trying to install the `distrobuilder` snap package. The `distrobuilder` snap package has been configured to use the `classic` confinement. Therefore, when you install it, you have to add the flag `--classic` as shown above in the instructions. 
+You are trying to install the `distrobuilder` snap package. The `distrobuilder` snap package has been configured to use the `classic` confinement. Therefore, when you install it, you have to add the flag `--classic` as shown above in the instructions.
 
 ##### Error "You must be root to run this tool"
 
