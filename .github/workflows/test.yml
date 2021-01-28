@@ -1,36 +1,40 @@
 name: CI tests
-
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+  - push
+  - pull_request
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04]
-        go: [1.15, 1.14, 1.13]
-
+        go:
+          - 1.13.x
+          - 1.14.x
+          - 1.15.x
+        os:
+          - ubuntu-18.04
+          - ubuntu-20.04
+    runs-on: ${{ matrix.os }}
     steps:
-    - name: Check out repository
-      uses: actions/checkout@v2
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
 
-    - name: Set up go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go }}
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Install dependencies
-      run: |-
-        sudo apt-get -qq update
-        sudo apt-get install -y squashfs-tools
+      - name: Get Go dependencies
+        run: |
+          go mod init github.com/lxc/distrobuilder
+          go get github.com/mudler/docker-companion/api@master
+          go get -t -d ./...
 
-    - name: Test
-      run: |-
-        mkdir -p /home/runner/go/src/github.com/lxc
-        rsync -az ${GITHUB_WORKSPACE}/ /home/runner/go/src/github.com/lxc/distrobuilder/
-        cd /home/runner/go/src/github.com/lxc/distrobuilder
-        make check
+      - name: Install dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get install -y squashfs-tools
+
+      - name: Test
+        run: make check
