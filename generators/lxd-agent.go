@@ -62,22 +62,23 @@ func (g LXDAgentGenerator) Run(cacheDir, sourceDir string,
 }
 
 func (g LXDAgentGenerator) handleSystemd(sourceDir string) error {
+	systemdPath := filepath.Join("/", "lib", "systemd")
+	if !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, systemdPath))) {
+		systemdPath = filepath.Join("/", "usr", "lib", "systemd")
+	}
+
 	lxdAgentServiceUnit := `[Unit]
 Description=LXD - agent
 Documentation=https://linuxcontainers.org/lxd
 ConditionPathExists=/dev/virtio-ports/org.linuxcontainers.lxd
-Wants=lxd-agent-virtiofs.service
-After=lxd-agent-virtiofs.service
-Wants=lxd-agent-9p.service
-After=lxd-agent-9p.service
-
 Before=cloud-init.target cloud-init.service cloud-init-local.service
 DefaultDependencies=no
 
 [Service]
 Type=notify
-WorkingDirectory=/run/lxd_config/drive
-ExecStart=/run/lxd_config/drive/lxd-agent
+WorkingDirectory=-/run/lxd_agent
+ExecStartPre=/lib/systemd/lxd-agent-setup
+ExecStart=/run/lxd_agent/lxd-agent
 Restart=on-failure
 RestartSec=5s
 StartLimitInterval=60
@@ -87,83 +88,63 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 `
 
-	systemdPath := filepath.Join("/", "lib", "systemd", "system")
-	if !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, systemdPath))) {
-		systemdPath = filepath.Join("/", "usr", "lib", "systemd", "system")
-	}
-
-	err := ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "lxd-agent.service"), []byte(lxdAgentServiceUnit), 0644)
+	err := ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "system", "lxd-agent.service"), []byte(lxdAgentServiceUnit), 0644)
 	if err != nil {
 		return err
 	}
 
-	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "lxd-agent.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"))
+	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "system", "lxd-agent.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"))
 	if err != nil {
 		return err
 	}
 
-	lxdConfigShareMountUnit := `[Unit]
-Description=LXD - agent - 9p mount
-Documentation=https://linuxcontainers.org/lxd
-ConditionPathExists=/dev/virtio-ports/org.linuxcontainers.lxd
-After=local-fs.target lxd-agent-virtiofs.service
-DefaultDependencies=no
-ConditionPathIsMountPoint=!/run/lxd_config/drive
+	lxdAgentSetupScript := `#!/bin/sh
+set -eu
+PREFIX="/run/lxd_agent"
 
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStartPre=-/sbin/modprobe 9pnet_virtio
-ExecStartPre=/bin/mkdir -p /run/lxd_config/drive
-ExecStartPre=/bin/chmod 0700 /run/lxd_config/
-ExecStart=/bin/mount -t 9p config /run/lxd_config/drive -o access=0,trans=virtio
+# Functions.
+mount_virtiofs() {
+    mount -t virtiofs config "${PREFIX}/.mnt" >/dev/null 2>&1
+}
 
-[Install]
-WantedBy=multi-user.target
+mount_9p() {
+    /sbin/modprobe 9pnet_virtio >/dev/null 2>&1 || true
+    /bin/mount -t 9p config "${PREFIX}/.mnt" -o access=0,trans=virtio >/dev/null 2>&1
+}
+
+fail() {
+    umount -l "${PREFIX}" >/dev/null 2>&1 || true
+    rmdir "${PREFIX}" >/dev/null 2>&1 || true
+    echo "${1}"
+    exit 1
+}
+
+# Setup the mount target.
+umount -l "${PREFIX}" >/dev/null 2>&1 || true
+mkdir -p "${PREFIX}"
+mount -t tmpfs tmpfs "${PREFIX}" -o mode=0700,size=50M
+mkdir -p "${PREFIX}/.mnt"
+
+# Try virtiofs first.
+mount_virtiofs || mount_9p || fail "Couldn't mount virtiofs or 9p, failing."
+
+# Copy the data.
+cp -Ra "${PREFIX}/.mnt/"* "${PREFIX}"
+
+# Unmount the temporary mount.
+umount "${PREFIX}/.mnt"
+rmdir "${PREFIX}/.mnt"
+
+# Fix up permissions.
+chown -R root:root "${PREFIX}"
 `
 
-	err = ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "lxd-agent-9p.service"), []byte(lxdConfigShareMountUnit), 0644)
-	if err != nil {
-		return err
-	}
-
-	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "lxd-agent-9p.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent-9p.service"))
-	if err != nil {
-		return err
-	}
-
-	lxdConfigShareMountVirtioFSUnit := `[Unit]
-Description=LXD - agent - virtio-fs mount
-Documentation=https://linuxcontainers.org/lxd
-ConditionPathExists=/dev/virtio-ports/org.linuxcontainers.lxd
-After=local-fs.target
-Before=lxd-agent-9p.service
-DefaultDependencies=no
-ConditionPathIsMountPoint=!/run/lxd_config/drive
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStartPre=/bin/mkdir -p /run/lxd_config/drive
-ExecStartPre=/bin/chmod 0700 /run/lxd_config/
-ExecStart=/bin/mount -t virtiofs config /run/lxd_config/drive
-
-[Install]
-WantedBy=multi-user.target
-`
-
-	err = ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "lxd-agent-virtiofs.service"), []byte(lxdConfigShareMountVirtioFSUnit), 0644)
-	if err != nil {
-		return err
-	}
-
-	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "lxd-agent-virtiofs.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent-virtiofs.service"))
+	err = ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "lxd-agent-setup"), []byte(lxdAgentSetupScript), 0755)
 	if err != nil {
 		return err
 	}
 
 	udevPath := filepath.Join("/", "lib", "udev", "rules.d")
-
 	stat, err := os.Lstat(filepath.Join(sourceDir, "lib", "udev"))
 	if err == nil && stat.Mode()&os.ModeSymlink != 0 || !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, udevPath))) {
 		udevPath = filepath.Join("/", "usr", "lib", "udev", "rules.d")
