@@ -270,7 +270,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 }
 
 func (c *cmdRepackWindows) checkDependencies() error {
-	dependencies := []string{"hivexregedit", "rsync", "wimlib-imagex"}
+	dependencies := []string{"genisoimage", "hivexregedit", "rsync", "wimlib-imagex"}
 
 	for _, dep := range dependencies {
 		_, err := exec.LookPath(dep)
