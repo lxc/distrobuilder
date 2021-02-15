@@ -63,7 +63,7 @@ func (g LXDAgentGenerator) Run(cacheDir, sourceDir string,
 
 func (g LXDAgentGenerator) handleSystemd(sourceDir string) error {
 	systemdPath := filepath.Join("/", "lib", "systemd")
-	if !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, systemdPath))) {
+	if !lxd.PathExists(filepath.Join(sourceDir, systemdPath)) {
 		systemdPath = filepath.Join("/", "usr", "lib", "systemd")
 	}
 
