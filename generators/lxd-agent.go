@@ -3,6 +3,7 @@ package generators
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -63,11 +64,11 @@ func (g LXDAgentGenerator) Run(cacheDir, sourceDir string,
 
 func (g LXDAgentGenerator) handleSystemd(sourceDir string) error {
 	systemdPath := filepath.Join("/", "lib", "systemd")
-	if !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, systemdPath))) {
+	if !lxd.PathExists(filepath.Join(sourceDir, systemdPath)) {
 		systemdPath = filepath.Join("/", "usr", "lib", "systemd")
 	}
 
-	lxdAgentServiceUnit := `[Unit]
+	lxdAgentServiceUnit := fmt.Sprintf(`[Unit]
 Description=LXD - agent
 Documentation=https://linuxcontainers.org/lxd
 ConditionPathExists=/dev/virtio-ports/org.linuxcontainers.lxd
@@ -77,7 +78,7 @@ DefaultDependencies=no
 [Service]
 Type=notify
 WorkingDirectory=-/run/lxd_agent
-ExecStartPre=/lib/systemd/lxd-agent-setup
+ExecStartPre=%s/lxd-agent-setup
 ExecStart=/run/lxd_agent/lxd-agent
 Restart=on-failure
 RestartSec=5s
@@ -86,7 +87,7 @@ StartLimitBurst=10
 
 [Install]
 WantedBy=multi-user.target
-`
+`, systemdPath)
 
 	err := ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "system", "lxd-agent.service"), []byte(lxdAgentServiceUnit), 0644)
 	if err != nil {
