@@ -84,7 +84,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 		c.flagVersion = detectedVersion
 	} else {
-		supportedVersions := []string{"w10", "2k19", "2k12"}
+		supportedVersions := []string{"w10", "2k19", "2k12", "2k16"}
 
 		if !lxd.StringInSlice(c.flagVersion, supportedVersions) {
 			return fmt.Errorf("Version must be one of %v", supportedVersions)
@@ -436,6 +436,7 @@ func detectWindowsVersion(fileName string) string {
 		"w10":  {"w10", "win10", "windows.?10"},
 		"2k19": {"2k19", "w2k19", "win2k19", "windows.?server.?2019"},
 		"2k12": {"2k12", "w2k12", "win2k12", "windows.?server.?2012"},
+		"2k16": {"2k16", "w2k16", "win2k16", "windows.?server.?2016"},
 	}
 
 	for k, v := range aliases {
