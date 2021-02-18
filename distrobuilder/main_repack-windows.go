@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -252,10 +253,31 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 		return errors.Wrapf(err, "Failed to mount %q", filepath.Base(wimFile))
 	}
 
+	dirs, err := c.getWindowsDirectories(wimPath)
+	if err != nil {
+		return errors.Wrap(err, "Failed to get required windows directories")
+	}
+
+	if dirs["filerepository"] == "" {
+		return fmt.Errorf("Failed to determine windows/system32/driverstore/filerepository path")
+	}
+
+	if dirs["inf"] == "" {
+		return fmt.Errorf("Failed to determine windows/inf path")
+	}
+
+	if dirs["config"] == "" {
+		return fmt.Errorf("Failed to determine windows/system32/config path")
+	}
+
+	if dirs["drivers"] == "" {
+		return fmt.Errorf("Failed to determine windows/system32/drivers path")
+	}
+
 	log.Printf("Injecting drivers into %s (index %d)...\n", filepath.Base(path), index)
 
 	// Create registry entries and copy files
-	err = c.injectDrivers(wimPath)
+	err = c.injectDrivers(dirs)
 	if err != nil {
 		lxd.RunCommand("wimlib-imagex", "unmount", wimPath)
 		return errors.Wrap(err, "Failed to inject drivers")
@@ -282,7 +304,102 @@ func (c *cmdRepackWindows) checkDependencies() error {
 	return nil
 }
 
-func (c *cmdRepackWindows) injectDrivers(wimPath string) error {
+func (c *cmdRepackWindows) getWindowsDirectories(wimPath string) (map[string]string, error) {
+	windowsPath := ""
+	system32Path := ""
+	driverStorePath := ""
+	dirs := make(map[string]string)
+
+	entries, err := ioutil.ReadDir(wimPath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get windows directory
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		if regexp.MustCompile(`^(?i)windows$`).MatchString(entry.Name()) {
+			windowsPath = filepath.Join(wimPath, entry.Name())
+			break
+		}
+	}
+
+	entries, err = ioutil.ReadDir(windowsPath)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if dirs["inf"] != "" && system32Path != "" {
+			break
+		}
+
+		if !entry.IsDir() {
+			continue
+		}
+
+		if regexp.MustCompile(`^(?i)inf$`).MatchString(entry.Name()) {
+			dirs["inf"] = filepath.Join(windowsPath, entry.Name())
+			continue
+		}
+
+		if regexp.MustCompile(`^(?i)system32$`).MatchString(entry.Name()) {
+			system32Path = filepath.Join(windowsPath, entry.Name())
+		}
+	}
+
+	entries, err = ioutil.ReadDir(system32Path)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if dirs["config"] != "" && dirs["drivers"] != "" && driverStorePath != "" {
+			break
+		}
+
+		if !entry.IsDir() {
+			continue
+		}
+
+		if regexp.MustCompile(`^(?i)config$`).MatchString(entry.Name()) {
+			dirs["config"] = filepath.Join(system32Path, entry.Name())
+			continue
+		}
+
+		if regexp.MustCompile(`^(?i)drivers$`).MatchString(entry.Name()) {
+			dirs["drivers"] = filepath.Join(system32Path, entry.Name())
+			continue
+		}
+
+		if regexp.MustCompile(`^(?i)driverstore$`).MatchString(entry.Name()) {
+			driverStorePath = filepath.Join(system32Path, entry.Name())
+		}
+	}
+
+	entries, err = ioutil.ReadDir(driverStorePath)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		if regexp.MustCompile(`^(?i)filerepository$`).MatchString(entry.Name()) {
+			dirs["filerepository"] = filepath.Join(driverStorePath, entry.Name())
+			break
+		}
+	}
+
+	return dirs, nil
+}
+
+func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 	driverPath := filepath.Join(c.global.flagCacheDir, "drivers")
 	i := 0
 
@@ -294,7 +411,7 @@ func (c *cmdRepackWindows) injectDrivers(wimPath string) error {
 		}
 
 		sourceDir := filepath.Join(driverPath, driver, c.flagVersion, "amd64")
-		targetBasePath := filepath.Join(wimPath, "Windows/System32/DriverStore/FileRepository", info.PackageName)
+		targetBasePath := filepath.Join(dirs["filerepository"], info.PackageName)
 
 		if !lxd.PathExists(targetBasePath) {
 			err := os.MkdirAll(targetBasePath, 0755)
@@ -317,13 +434,7 @@ func (c *cmdRepackWindows) injectDrivers(wimPath string) error {
 
 			// Copy .inf file
 			if ext == ".inf" {
-				infPath := filepath.Join(wimPath, "Windows/INF")
-
-				if !lxd.PathExists(infPath) {
-					infPath = filepath.Join(wimPath, "Windows/Inf")
-				}
-
-				target := filepath.Join(infPath, ctx["infFile"].(string))
+				target := filepath.Join(dirs["inf"], ctx["infFile"].(string))
 
 				err = shared.Copy(path, target)
 				if err != nil {
@@ -357,7 +468,7 @@ func (c *cmdRepackWindows) injectDrivers(wimPath string) error {
 
 			// Copy .sys and .dll files
 			if ext == ".dll" || ext == ".sys" {
-				target := filepath.Join(wimPath, "Windows/System32/drivers", filepath.Base(path))
+				target := filepath.Join(dirs["drivers"], filepath.Base(path))
 
 				err = shared.Copy(path, target)
 				if err != nil {
@@ -383,7 +494,7 @@ func (c *cmdRepackWindows) injectDrivers(wimPath string) error {
 				return errors.Wrapf(err, "Failed to render template for driver %q", driver)
 			}
 
-			err = lxd.RunCommandWithFds(strings.NewReader(out), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(wimPath, "/Windows/System32/config/DRIVERS"))
+			err = lxd.RunCommandWithFds(strings.NewReader(out), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(dirs["config"], "DRIVERS"))
 			if err != nil {
 				return errors.Wrapf(err, "Failed to edit Windows DRIVERS registry for driver %q", driver)
 			}
@@ -401,7 +512,7 @@ func (c *cmdRepackWindows) injectDrivers(wimPath string) error {
 				return errors.Wrapf(err, "Failed to render template for driver %q", driver)
 			}
 
-			err = lxd.RunCommandWithFds(strings.NewReader(out), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(wimPath, "/Windows/System32/config/SYSTEM"))
+			err = lxd.RunCommandWithFds(strings.NewReader(out), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(dirs["config"], "SYSTEM"))
 			if err != nil {
 				return errors.Wrapf(err, "Failed to edit Windows SYSTEM registry for driver %q", driver)
 			}
@@ -419,7 +530,7 @@ func (c *cmdRepackWindows) injectDrivers(wimPath string) error {
 				return errors.Wrapf(err, "Failed to render template for driver %q", driver)
 			}
 
-			err = lxd.RunCommandWithFds(strings.NewReader(out), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(wimPath, "/Windows/System32/config/SOFTWARE"))
+			err = lxd.RunCommandWithFds(strings.NewReader(out), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(dirs["config"], "SOFTWARE"))
 			if err != nil {
 				return errors.Wrapf(err, "Failed to edit Windows SOFTWARE registry for driver %q", driver)
 			}
