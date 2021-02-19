@@ -17,6 +17,7 @@ import (
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/pkg/errors"
+	"golang.org/x/sys/unix"
 	"gopkg.in/flosch/pongo2.v3"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -71,13 +72,20 @@ func RunCommand(name string, arg ...string) error {
 // and redirecting the process's stdout and stderr to the real stdout and stderr
 // respectively.
 func RunScript(content string) error {
-	cmd := exec.Command("sh")
+	fd, err := unix.MemfdCreate("tmp", 0)
+	if err != nil {
+		return err
+	}
+	defer unix.Close(fd)
 
-	cmd.Stdin = bytes.NewBufferString(content)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	_, err = unix.Write(int(fd), []byte(content))
+	if err != nil {
+		return err
+	}
 
-	return cmd.Run()
+	fdPath := fmt.Sprintf("/proc/self/fd/%d", fd)
+
+	return RunCommand(fdPath)
 }
 
 // GetSignedContent verifies the provided file, and returns its decrypted (plain) content.
