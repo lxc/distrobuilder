@@ -170,8 +170,7 @@ func (s CentOSHTTP) unpackRaw(filePath, rootfsDir string) error {
 		return errors.Wrap(err, "Failed to setup chroot")
 	}
 
-	err = shared.RunScript(fmt.Sprintf(`
-#!/bin/sh
+	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
 set -eux
 
 # Create required files
@@ -297,8 +296,7 @@ func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
 		return errors.Wrap(err, "Failed to setup chroot")
 	}
 
-	err = shared.RunScript(fmt.Sprintf(`
-#!/bin/sh
+	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
 set -eux
 
 GPG_KEYS="%s"

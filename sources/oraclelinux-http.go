@@ -193,8 +193,7 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 		return errors.Wrap(err, "Failed to setup chroot")
 	}
 
-	err = shared.RunScript(fmt.Sprintf(`
-#!/bin/sh
+	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
 set -eux
 
 version="%s"
