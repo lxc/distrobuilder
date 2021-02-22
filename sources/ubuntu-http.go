@@ -155,8 +155,7 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 		return err
 	}
 
-	err = shared.RunScript(`
-	#!/bin/sh
+	err = shared.RunScript(`#!/bin/sh
 	apt-get update
 	apt-get install -y busybox-static fuse util-linux squashfuse
 	`)
