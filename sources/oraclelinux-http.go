@@ -193,6 +193,13 @@ func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) er
 		return errors.Wrap(err, "Failed to setup chroot")
 	}
 
+	if !lxd.PathExists("/bin") && lxd.PathExists("/usr/bin") {
+		err = os.Symlink("/usr/bin", "/bin")
+		if err != nil {
+			return errors.Wrap(err, "Failed to create /bin symlink")
+		}
+	}
+
 	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
 set -eux
 
