@@ -111,6 +111,9 @@ fi
 # Don't call ldconfig
 sed -i "/ldconfig/!s@/sbin@${PKG_DIR}&@g" ${PKG_DIR}/sbin/installpkg*
 
+# Don't override PATH
+sed -i "/^export PATH/d" ${PKG_DIR}/sbin/installpkg*
+
 # Install all packages
 for pkg in $(ls -cr ${PKG_DIR}/*.t?z); do
     installpkg -root ${ROOTFS_DIR} -priority ADD ${pkg}
