@@ -2,16 +2,12 @@ package windows
 
 var driverVioscsi = DriverInfo{
 	PackageName: "vioscsi.inf_amd64_78d23e29bdcf3e06",
-	SoftwareRegistry: `Windows Registry Editor Version 5.00
-
-[\Microsoft\Windows\CurrentVersion\Setup\PnpLockdownFiles\%SystemRoot%/System32/drivers/vioscsi.sys]
+	SoftwareRegistry: `[\Microsoft\Windows\CurrentVersion\Setup\PnpLockdownFiles\%SystemRoot%/System32/drivers/vioscsi.sys]
 "Class"=dword:00000005
 "Owners"=hex(7):{{ infFile|toHex }},00,00,00,00
 "Source"=hex(2):25,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,25,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,44,00,72,00,69,00,76,00,65,00,72,00,53,00,74,00,6f,00,72,00,65,00,5c,00,46,00,69,00,6c,00,65,00,52,00,65,00,70,00,6f,00,73,00,69,00,74,00,6f,00,72,00,79,00,5c,00,76,00,69,00,6f,00,73,00,63,00,73,00,69,00,2e,00,69,00,6e,00,66,00,5f,00,61,00,6d,00,64,00,36,00,34,00,5f,00,37,00,38,00,64,00,32,00,33,00,65,00,32,00,39,00,62,00,64,00,63,00,66,00,33,00,65,00,30,00,36,00,5c,00,76,00,69,00,6f,00,73,00,63,00,73,00,69,00,2e,00,73,00,79,00,73,00,00,00
 `,
-	SystemRegistry: `Windows Registry Editor Version 5.00
-
-[\DriverDatabase]
+	SystemRegistry: `[\DriverDatabase]
 "OemInfMap"=hex(3):e0
 
 [\DriverDatabase\DeviceIds\{{ classGuid|lower }}]

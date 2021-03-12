@@ -2,9 +2,7 @@ package windows
 
 var driverViorng = DriverInfo{
 	PackageName: "viorng.inf_amd64_7a2fd1621d2572b5",
-	SoftwareRegistry: `Windows Registry Editor Version 5.00
-
-[\Microsoft\Windows\CurrentVersion\Setup\PnpLockdownFiles\%SystemRoot%/System32/drivers/viorng.sys]
+	SoftwareRegistry: `[\Microsoft\Windows\CurrentVersion\Setup\PnpLockdownFiles\%SystemRoot%/System32/drivers/viorng.sys]
 "Class"=dword:00000004
 "Owners"=hex(7):{{ infFile|toHex }},00,00,00,00
 "Source"=hex(2):25,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,25,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,44,00,72,00,69,00,76,00,65,00,72,00,53,00,74,00,6f,00,72,00,65,00,5c,00,46,00,69,00,6c,00,65,00,52,00,65,00,70,00,6f,00,73,00,69,00,74,00,6f,00,72,00,79,00,5c,00,{{ packageName|toHex }},5c,00,76,00,69,00,6f,00,72,00,6e,00,67,00,2e,00,73,00,79,00,73,00,00,00
@@ -19,9 +17,7 @@ var driverViorng = DriverInfo{
 "Owners"=hex(7):{{ infFile|toHex }},00,00,00,00
 "Source"=hex(2):25,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,25,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,44,00,72,00,69,00,76,00,65,00,72,00,53,00,74,00,6f,00,72,00,65,00,5c,00,46,00,69,00,6c,00,65,00,52,00,65,00,70,00,6f,00,73,00,69,00,74,00,6f,00,72,00,79,00,5c,00,{{ packageName|toHex }},5c,00,76,00,69,00,6f,00,72,00,6e,00,67,00,75,00,6d,00,2e,00,64,00,6c,00,6c,00,00,00
 `,
-	SystemRegistry: `Windows Registry Editor Version 5.00
-
-[\ControlSet001\Services\VirtRng]
+	SystemRegistry: `[\ControlSet001\Services\VirtRng]
 "DisplayName"=hex(1):40,00,{{ infFile|toHex }},2c,00,25,00,56,00,69,00,72,00,74,00,52,00,6e,00,67,00,2e,00,53,00,65,00,72,00,76,00,69,00,63,00,65,00,25,00,3b,00,56,00,69,00,72,00,74,00,49,00,4f,00,20,00,52,00,4e,00,47,00,20,00,53,00,65,00,72,00,76,00,69,00,63,00,65,00,00,00
 "ErrorControl"=dword:00000001
 "Group"=hex(1):45,00,78,00,74,00,65,00,6e,00,64,00,65,00,64,00,20,00,42,00,61,00,73,00,65,00,00,00

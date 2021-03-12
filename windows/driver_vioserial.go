@@ -2,16 +2,12 @@ package windows
 
 var driverVioserial = DriverInfo{
 	PackageName: "vioser.inf_amd64_6af78671192591e1",
-	SoftwareRegistry: `Windows Registry Editor Version 5.00
-
-[\Microsoft\Windows\CurrentVersion\Setup\PnpLockdownFiles\%SystemRoot%/System32/drivers/vioser.sys]
+	SoftwareRegistry: `[\Microsoft\Windows\CurrentVersion\Setup\PnpLockdownFiles\%SystemRoot%/System32/drivers/vioser.sys]
 "Class"=dword:00000004
 "Owners"=hex(7):{{ infFile|toHex }},00,00,00,00
 "Source"=hex(2):25,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,25,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,44,00,72,00,69,00,76,00,65,00,72,00,53,00,74,00,6f,00,72,00,65,00,5c,00,46,00,69,00,6c,00,65,00,52,00,65,00,70,00,6f,00,73,00,69,00,74,00,6f,00,72,00,79,00,5c,00,{{ packageName|toHex }},5c,00,76,00,69,00,6f,00,73,00,65,00,72,00,2e,00,73,00,79,00,73,00,00,00
 `,
-	SystemRegistry: `Windows Registry Editor Version 5.00
-
-[\ControlSet001\Services\VirtioSerial]
+	SystemRegistry: `[\ControlSet001\Services\VirtioSerial]
 "DisplayName"=hex(1):40,00,{{ infFile|toHex }},2c,00,25,00,56,00,69,00,72,00,74,00,69,00,6f,00,53,00,65,00,72,00,69,00,61,00,6c,00,2e,00,53,00,65,00,72,00,76,00,69,00,63,00,65,00,44,00,65,00,73,00,63,00,25,00,3b,00,56,00,69,00,72,00,74,00,49,00,4f,00,20,00,53,00,65,00,72,00,69,00,61,00,6c,00,20,00,53,00,65,00,72,00,76,00,69,00,63,00,65,00,00,00
 "ErrorControl"=dword:00000001
 "ImagePath"=hex(2):5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,64,00,72,00,69,00,76,00,65,00,72,00,73,00,5c,00,76,00,69,00,6f,00,73,00,65,00,72,00,2e,00,73,00,79,00,73,00,00,00

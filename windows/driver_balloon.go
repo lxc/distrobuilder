@@ -2,16 +2,12 @@ package windows
 
 var driverBalloon = DriverInfo{
 	PackageName: "balloon.inf_amd64_c6bc3e0b232c3c2d",
-	SoftwareRegistry: `Windows Registry Editor Version 5.00
-
-[\Microsoft\Windows\CurrentVersion\Setup\PnpLockdownFiles\%SystemRoot%/System32/drivers/balloon.sys]
+	SoftwareRegistry: `[\Microsoft\Windows\CurrentVersion\Setup\PnpLockdownFiles\%SystemRoot%/System32/drivers/balloon.sys]
 "Class"=dword:00000004
 "Owners"=hex(7):{{ infName }},00,00,00,00
 "Source"=hex(2):25,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,25,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,44,00,72,00,69,00,76,00,65,00,72,00,53,00,74,00,6f,00,72,00,65,00,5c,00,46,00,69,00,6c,00,65,00,52,00,65,00,70,00,6f,00,73,00,69,00,74,00,6f,00,72,00,79,00,5c,00,{{ packageName|toHex }},5c,00,62,00,61,00,6c,00,6c,00,6f,00,6f,00,6e,00,2e,00,73,00,79,00,73,00,00,00
 `,
-	SystemRegistry: `Windows Registry Editor Version 5.00
-
-[\ControlSet001\Services\BALLOON]
+	SystemRegistry: `[\ControlSet001\Services\BALLOON]
 "DisplayName"=hex(1):40,00,{{ infName|toHex }},2c,00,25,00,42,00,41,00,4c,00,4c,00,4f,00,4f,00,4e,00,2e,00,53,00,56,00,43,00,44,00,45,00,53,00,43,00,25,00,3b,00,56,00,69,00,72,00,74,00,49,00,4f,00,20,00,42,00,61,00,6c,00,6c,00,6f,00,6f,00,6e,00,20,00,53,00,65,00,72,00,76,00,69,00,63,00,65,00,00,00
 "ErrorControl"=dword:00000001
 "ImagePath"=hex(2):5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,64,00,72,00,69,00,76,00,65,00,72,00,73,00,5c,00,62,00,61,00,6c,00,6c,00,6f,00,6f,00,6e,00,2e,00,73,00,79,00,73,00,00,00
