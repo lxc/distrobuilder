@@ -403,6 +403,10 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 	driverPath := filepath.Join(c.global.flagCacheDir, "drivers")
 	i := 0
 
+	driversRegistry := "Windows Registry Editor Version 5.00"
+	systemRegistry := "Windows Registry Editor Version 5.00"
+	softwareRegistry := "Windows Registry Editor Version 5.00"
+
 	for driver, info := range windows.Drivers {
 		ctx := pongo2.Context{
 			"infFile":     fmt.Sprintf("oem%d.inf", i),
@@ -494,10 +498,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 				return errors.Wrapf(err, "Failed to render template for driver %q", driver)
 			}
 
-			err = lxd.RunCommandWithFds(strings.NewReader(out), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(dirs["config"], "DRIVERS"))
-			if err != nil {
-				return errors.Wrapf(err, "Failed to edit Windows DRIVERS registry for driver %q", driver)
-			}
+			driversRegistry = fmt.Sprintf("%s\n\n%s", driversRegistry, out)
 		}
 
 		// Update Windows SYSTEM registry
@@ -512,10 +513,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 				return errors.Wrapf(err, "Failed to render template for driver %q", driver)
 			}
 
-			err = lxd.RunCommandWithFds(strings.NewReader(out), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(dirs["config"], "SYSTEM"))
-			if err != nil {
-				return errors.Wrapf(err, "Failed to edit Windows SYSTEM registry for driver %q", driver)
-			}
+			systemRegistry = fmt.Sprintf("%s\n\n%s", systemRegistry, out)
 		}
 
 		// Update Windows SOFTWARE registry
@@ -530,13 +528,25 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 				return errors.Wrapf(err, "Failed to render template for driver %q", driver)
 			}
 
-			err = lxd.RunCommandWithFds(strings.NewReader(out), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(dirs["config"], "SOFTWARE"))
-			if err != nil {
-				return errors.Wrapf(err, "Failed to edit Windows SOFTWARE registry for driver %q", driver)
-			}
+			softwareRegistry = fmt.Sprintf("%s\n\n%s", softwareRegistry, out)
 		}
 
 		i++
+	}
+
+	err := lxd.RunCommandWithFds(strings.NewReader(driversRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(dirs["config"], "DRIVERS"))
+	if err != nil {
+		return errors.Wrap(err, "Failed to edit Windows DRIVERS registry")
+	}
+
+	err = lxd.RunCommandWithFds(strings.NewReader(systemRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(dirs["config"], "SYSTEM"))
+	if err != nil {
+		return errors.Wrap(err, "Failed to edit Windows SYSTEM registry")
+	}
+
+	err = lxd.RunCommandWithFds(strings.NewReader(softwareRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(dirs["config"], "SOFTWARE"))
+	if err != nil {
+		return errors.Wrap(err, "Failed to edit Windows SOFTWARE registry")
 	}
 
 	return nil

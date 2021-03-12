@@ -2,9 +2,7 @@ package windows
 
 var driverNetKVM = DriverInfo{
 	PackageName: "netkvm.inf_amd64_805ee20efb26a964",
-	DriversRegistry: `Windows Registry Editor Version 5.00
-
-[\DriverDatabase\DeviceIds\pci\VEN_1AF4&DEV_1000]
+	DriversRegistry: `[\DriverDatabase\DeviceIds\pci\VEN_1AF4&DEV_1000]
 "{{ infFile }}"=hex(3):02,ff,00,00
 
 [\DriverDatabase\DeviceIds\pci\VEN_1AF4&DEV_1000&SUBSYS_00011AF4&REV_00]
