@@ -65,6 +65,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/managers"
@@ -76,6 +77,7 @@ import (
 type cmdGlobal struct {
 	flagCleanup  bool
 	flagCacheDir string
+	flagDebug    bool
 	flagOptions  []string
 	flagTimeout  uint
 	flagVersion  bool
@@ -84,6 +86,7 @@ type cmdGlobal struct {
 	sourceDir  string
 	targetDir  string
 	interrupt  chan os.Signal
+	logger     *zap.SugaredLogger
 }
 
 func main() {
@@ -110,6 +113,14 @@ func main() {
 
 				globalCmd.flagCacheDir = dir
 			}
+
+			var err error
+
+			globalCmd.logger, err = shared.GetLogger(globalCmd.flagDebug)
+			if err != nil {
+				fmt.Println(errors.Wrap(err, "Failed to get logger"))
+				os.Exit(1)
+			}
 		},
 		PersistentPostRunE: globalCmd.postRun,
 	}
@@ -123,6 +134,7 @@ func main() {
 	app.PersistentFlags().UintVarP(&globalCmd.flagTimeout, "timeout", "t", 0,
 		"Timeout in seconds"+"``")
 	app.PersistentFlags().BoolVar(&globalCmd.flagVersion, "version", false, "Print version number")
+	app.PersistentFlags().BoolVar(&globalCmd.flagDebug, "debug", false, "Enable debug output")
 
 	// Version handling
 	app.SetVersionTemplate("{{.Version}}\n")
@@ -365,6 +377,8 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 }
 
 func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
+	defer c.logger.Sync()
+
 	// Clean up cache directory
 	if c.flagCleanup {
 		return os.RemoveAll(c.flagCacheDir)
