@@ -48,7 +48,9 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 			return c.global.preRunBuild(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cleanup, overlayDir, err := getOverlay(c.global.flagCacheDir, c.global.sourceDir)
+			logger := c.global.logger
+
+			cleanup, overlayDir, err := getOverlay(logger, c.global.flagCacheDir, c.global.sourceDir)
 			if err != nil {
 				return errors.Wrap(err, "Failed to create overlay")
 			}
@@ -86,7 +88,9 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 			return c.global.preRunPack(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cleanup, overlayDir, err := getOverlay(c.global.flagCacheDir, c.global.sourceDir)
+			logger := c.global.logger
+
+			cleanup, overlayDir, err := getOverlay(logger, c.global.flagCacheDir, c.global.sourceDir)
 			if err != nil {
 				return errors.Wrap(err, "Failed to create overlay")
 			}

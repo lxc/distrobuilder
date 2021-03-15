@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/managers"
@@ -148,7 +149,7 @@ func optimizePackageSets(sets []shared.DefinitionPackagesSet) []shared.Definitio
 	return newSets
 }
 
-func getOverlay(cacheDir, sourceDir string) (func(), string, error) {
+func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), string, error) {
 	upperDir := filepath.Join(cacheDir, "upper")
 	overlayDir := filepath.Join(cacheDir, "overlay")
 	workDir := filepath.Join(cacheDir, "work")
@@ -180,22 +181,23 @@ func getOverlay(cacheDir, sourceDir string) (func(), string, error) {
 
 		err := unix.Unmount(overlayDir, 0)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, errors.Wrap(err, "Failed to unmount overlay"))
+			logger.Warnw("Failed to unmount overlay", "err", err, "dir", overlayDir)
 		}
 
 		err = os.RemoveAll(upperDir)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, errors.Wrap(err, "Failed to remove upper directory"))
+			logger.Warnw("Failed to remove upper directory", "err", err, "dir", upperDir)
+
 		}
 
 		err = os.RemoveAll(workDir)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, errors.Wrap(err, "Failed to remove work directory"))
+			logger.Warnw("Failed to remove work directory", "err", err, "dir", workDir)
 		}
 
 		err = os.Remove(overlayDir)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, errors.Wrap(err, "Failed to remove overlay directory"))
+			logger.Warnw("Failed to remove overlay directory", "err", err, "dir", overlayDir)
 		}
 	}
 

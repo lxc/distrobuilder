@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -45,11 +44,12 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 		Args:    cobra.ExactArgs(2),
 		PreRunE: c.preRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger := c.global.logger
 			defer unix.Unmount(c.global.sourceDir, 0)
 
-			cleanup, overlayDir, err := getOverlay(c.global.flagCacheDir, c.global.sourceDir)
+			cleanup, overlayDir, err := getOverlay(logger, c.global.flagCacheDir, c.global.sourceDir)
 			if err != nil {
-				log.Println("OverlayFS not supported. Unpacking ISO ...")
+				logger.Info("OverlayFS not supported. Unpacking ISO")
 
 				overlayDir = filepath.Join(c.global.flagCacheDir, "overlay")
 
@@ -76,6 +76,8 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 
 // Create rw rootfs in preRun. Point global.sourceDir to the rw rootfs.
 func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
+	logger := c.global.logger
+
 	if c.flagVersion == "" {
 		detectedVersion := detectWindowsVersion(filepath.Base(args[0]))
 
@@ -120,7 +122,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	log.Println("Mounting Windows ISO ...")
+	logger.Info("Mounting Windows ISO")
 
 	// Mount ISO
 	_, err = lxd.RunCommand("mount", "-o", "loop", args[0], c.global.sourceDir)
@@ -132,6 +134,8 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 }
 
 func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir string) error {
+	logger := c.global.logger
+
 	defer unix.Unmount(c.global.sourceDir, 0)
 
 	driverPath := filepath.Join(c.global.flagCacheDir, "drivers")
@@ -157,7 +161,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 			var client http.Client
 
-			log.Println("Downloading drivers ISO ...")
+			logger.Info("Downloading drivers ISO")
 
 			_, err = lxd.DownloadFileHash(&client, "", nil, nil, "virtio-win.iso", virtioURL, "", nil, f)
 			if err != nil {
@@ -175,7 +179,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		}
 	}
 
-	log.Println("Mounting driver ISO ...")
+	logger.Info("Mounting driver ISO")
 
 	// Mount driver ISO
 	_, err := lxd.RunCommand("mount", "-o", "loop", virtioISOPath, driverPath)
@@ -226,7 +230,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		}
 	}
 
-	log.Println("Generating new ISO ...")
+	logger.Info("Generating new ISO")
 
 	_, err = lxd.RunCommand("genisoimage", "--allow-limited-size", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
 	if err != nil {
@@ -237,6 +241,8 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 }
 
 func (c *cmdRepackWindows) modifyWim(path string, index int) error {
+	logger := c.global.logger
+
 	// Mount VIM file
 	wimFile := filepath.Join(path)
 	wimPath := filepath.Join(c.global.flagCacheDir, "wim")
@@ -274,7 +280,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 		return fmt.Errorf("Failed to determine windows/system32/drivers path")
 	}
 
-	log.Printf("Injecting drivers into %s (index %d)...\n", filepath.Base(path), index)
+	logger.Infow("Modifying WIM file", "file", filepath.Base(path), "index", index)
 
 	// Create registry entries and copy files
 	err = c.injectDrivers(dirs)
@@ -400,6 +406,8 @@ func (c *cmdRepackWindows) getWindowsDirectories(wimPath string) (map[string]str
 }
 
 func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
+	logger := c.global.logger
+
 	driverPath := filepath.Join(c.global.flagCacheDir, "drivers")
 	i := 0
 
@@ -408,6 +416,8 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 	softwareRegistry := "Windows Registry Editor Version 5.00"
 
 	for driver, info := range windows.Drivers {
+		logger.Debugw("Injecting driver", "driver", driver)
+
 		ctx := pongo2.Context{
 			"infFile":     fmt.Sprintf("oem%d.inf", i),
 			"packageName": info.PackageName,
@@ -430,6 +440,8 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 			// Copy driver files
 			if lxd.StringInSlice(ext, []string{".cat", ".dll", ".inf", ".sys"}) {
+				logger.Debugw("Copying file", "src", path, "dest", targetPath)
+
 				err := shared.Copy(path, targetPath)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to copy %q to %q", filepath.Base(path), targetPath)
@@ -439,6 +451,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 			// Copy .inf file
 			if ext == ".inf" {
 				target := filepath.Join(dirs["inf"], ctx["infFile"].(string))
+				logger.Debugw("Copying file", "src", path, "dest", target)
 
 				err = shared.Copy(path, target)
 				if err != nil {
@@ -473,6 +486,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 			// Copy .sys and .dll files
 			if ext == ".dll" || ext == ".sys" {
 				target := filepath.Join(dirs["drivers"], filepath.Base(path))
+				logger.Debugw("Copying file", "src", path, "dest", target)
 
 				err = shared.Copy(path, target)
 				if err != nil {
@@ -534,15 +548,21 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 		i++
 	}
 
+	logger.Debugw("Updating Windows registry", "hivefile", "DRIVERS")
+
 	err := lxd.RunCommandWithFds(strings.NewReader(driversRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(dirs["config"], "DRIVERS"))
 	if err != nil {
 		return errors.Wrap(err, "Failed to edit Windows DRIVERS registry")
 	}
 
+	logger.Debugw("Updating Windows registry", "hivefile", "SYSTEM")
+
 	err = lxd.RunCommandWithFds(strings.NewReader(systemRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(dirs["config"], "SYSTEM"))
 	if err != nil {
 		return errors.Wrap(err, "Failed to edit Windows SYSTEM registry")
 	}
+
+	logger.Debugw("Updating Windows registry", "hivefile", "SOFTWARE")
 
 	err = lxd.RunCommandWithFds(strings.NewReader(softwareRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(dirs["config"], "SOFTWARE"))
 	if err != nil {
