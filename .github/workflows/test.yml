@@ -25,12 +25,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Get Go dependencies
-        run: |
-          go mod init github.com/lxc/distrobuilder
-          go get github.com/mudler/docker-companion/api@master
-          go get -t -d ./...
-
       - name: Install dependencies
         run: |
           sudo apt-get -qq update
