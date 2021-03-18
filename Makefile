@@ -5,9 +5,12 @@ ARCHIVE=distrobuilder-$(VERSION).tar
 
 default:
 	gofmt -s -w .
-	go get -t -v -d ./...
 	go install -v ./...
 	@echo "distrobuilder built successfully"
+
+update-gomod:
+	go get -t -v -d -u ./...
+	go mod tidy
 
 check: default
 	go get -v -x github.com/remyoudompheng/go-misc/deadcode
