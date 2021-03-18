@@ -30,5 +30,8 @@ jobs:
           sudo apt-get -qq update
           sudo apt-get install -y squashfs-tools
 
+      - name: Update Go modules
+        run: make update-gomod
+
       - name: Test
         run: make check
