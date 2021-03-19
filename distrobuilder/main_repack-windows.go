@@ -109,10 +109,17 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	success := false
+
 	err = os.Mkdir(c.global.flagCacheDir, 0755)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if c.global.flagCleanup && !success {
+			os.RemoveAll(c.global.flagCacheDir)
+		}
+	}()
 
 	c.global.sourceDir = filepath.Join(c.global.flagCacheDir, "source")
 
@@ -130,6 +137,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	success = true
 	return nil
 }
 
