@@ -254,10 +254,17 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 		}
 	}
 
+	success := false
+
 	_, err := lxd.RunCommand("wimlib-imagex", "mountrw", wimFile, strconv.Itoa(index), wimPath, "--allow-other")
 	if err != nil {
 		return errors.Wrapf(err, "Failed to mount %q", filepath.Base(wimFile))
 	}
+	defer func() {
+		if !success {
+			lxd.RunCommand("wimlib-imagex", "unmount", wimPath)
+		}
+	}()
 
 	dirs, err := c.getWindowsDirectories(wimPath)
 	if err != nil {
@@ -285,7 +292,6 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	// Create registry entries and copy files
 	err = c.injectDrivers(dirs)
 	if err != nil {
-		lxd.RunCommand("wimlib-imagex", "unmount", wimPath)
 		return errors.Wrap(err, "Failed to inject drivers")
 	}
 
@@ -294,6 +300,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 		return err
 	}
 
+	success = true
 	return nil
 }
 
