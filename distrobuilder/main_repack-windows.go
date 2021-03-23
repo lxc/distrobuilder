@@ -28,8 +28,8 @@ type cmdRepackWindows struct {
 	cmd    *cobra.Command
 	global *cmdGlobal
 
-	flagDrivers string
-	flagVersion string
+	flagDrivers        string
+	flagWindowsVersion string
 }
 
 func init() {
@@ -69,7 +69,7 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&c.flagDrivers, "drivers", "", "Path to drivers ISO"+"``")
-	cmd.Flags().StringVar(&c.flagVersion, "version", "", "Windows version to repack"+"``")
+	cmd.Flags().StringVar(&c.flagWindowsVersion, "windows-version", "", "Windows version to repack"+"``")
 
 	return cmd
 }
@@ -78,18 +78,18 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	logger := c.global.logger
 
-	if c.flagVersion == "" {
+	if c.flagWindowsVersion == "" {
 		detectedVersion := detectWindowsVersion(filepath.Base(args[0]))
 
 		if detectedVersion == "" {
-			return fmt.Errorf("Failed to detect Windows version. Please provide the version using the --version flag")
+			return fmt.Errorf("Failed to detect Windows version. Please provide the version using the --windows-version flag")
 		}
 
-		c.flagVersion = detectedVersion
+		c.flagWindowsVersion = detectedVersion
 	} else {
 		supportedVersions := []string{"w10", "2k19", "2k12", "2k16"}
 
-		if !lxd.StringInSlice(c.flagVersion, supportedVersions) {
+		if !lxd.StringInSlice(c.flagWindowsVersion, supportedVersions) {
 			return fmt.Errorf("Version must be one of %v", supportedVersions)
 		}
 	}
@@ -439,7 +439,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 			"driverName":  driver,
 		}
 
-		sourceDir := filepath.Join(driverPath, driver, c.flagVersion, "amd64")
+		sourceDir := filepath.Join(driverPath, driver, c.flagWindowsVersion, "amd64")
 		targetBasePath := filepath.Join(dirs["filerepository"], info.PackageName)
 
 		if !lxd.PathExists(targetBasePath) {
