@@ -377,7 +377,9 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 }
 
 func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
-	defer c.logger.Sync()
+	if c.logger != nil {
+		defer c.logger.Sync()
+	}
 
 	// Clean up cache directory
 	if c.flagCleanup {
