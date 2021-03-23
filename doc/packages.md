@@ -85,3 +85,17 @@ with `--no-install-recommends`.
 `repositories` contains a list of additional repositories which are to be added.
 The `type` field is only needed if the package manager supports more than one repository manager.
 The `key` field is a GPG armored keyring which might be needed for verification.
+
+Depending on the package manager, the `url` field can take the content of a repo file. The following is possible with `yum`:
+
+```yaml
+packages:
+  manager: yum
+  update: false
+  repositories:
+    - name: myrepo
+      url: |-
+        [myrepo]
+        baseurl=http://user:password@1.1.1.1
+        gpgcheck=0
+```

@@ -27,4 +27,4 @@ It defaults to `{{ image.distribution }}-{{ image.release }}-{{ image.architectu
 The `serial` field is the image's serial number.
 It can be anything and defaults to `YYYYmmdd_HHMM` (date format).
 
-The `variant` field can be anything and is used in the LXD metadata as well as for [filtering](filter.md).
+The `variant` field can be anything and is used in the LXD metadata as well as for [filtering](filters.md).
