@@ -20,12 +20,13 @@ Usage:
   distrobuilder [command]
 
 Available Commands:
-  build-dir   Build plain rootfs
-  build-lxc   Build LXC image from scratch
-  build-lxd   Build LXD image from scratch
-  help        Help about any command
-  pack-lxc    Create LXC image from existing rootfs
-  pack-lxd    Create LXD image from existing rootfs
+  build-dir      Build plain rootfs
+  build-lxc      Build LXC image from scratch
+  build-lxd      Build LXD image from scratch
+  help           Help about any command
+  pack-lxc       Create LXC image from existing rootfs
+  pack-lxd       Create LXD image from existing rootfs
+  repack-windows Repack Windows ISO with drivers included
 
 Flags:
       --cache-dir   Cache directory
@@ -37,10 +38,6 @@ Flags:
 
 Use "distrobuilder [command] --help" for more information about a command.
 ```
-
-## How to use
-
-In the following, we see how to create a container image for LXD.
 
 ## Installing from package
 
@@ -84,6 +81,10 @@ Finally, you can run `distrobuilder` as follows. You may also add to your $PATH 
 ```
 $HOME/go/bin/distrobuilder
 ```
+
+## How to use
+
+In the following, we see how to create a container image for LXD.
 
 ### Creating a container image
 
@@ -178,6 +179,42 @@ Then start the container with
 ```bash
 lxc-start -n myContainerImage
 ```
+
+### Repack Windows ISO
+
+With LXD it's possible to run Windows VMs. All you need is a Windows ISO and a bunch of drivers.
+To make the installation a bit easier, `distrobuilder` added the `repack-windows` command. It takes a Windows ISO, and repacks it together with the necessary drivers.
+
+Currently, `distrobuilder` supports Windows 10, Windows Server 2012, Windows Server 2016, and Windows Server 2019. The Windows version will automatically be detected, but in case this fails you can use the `--windows-version` flag to set it manually. It supports the values `w10`, `2k12`, `2k16`, and `2k19` for Windows 10, Windows Server 2012, Windows Server 2016 and Windows Server 2019 respectively.
+
+Here's how to repack a Windows ISO:
+```bash
+distrobuilder repack-windows path/to/Windows.iso path/to/Windows-repacked.iso
+```
+
+More information on `repack-windows` can be found by running
+
+```bash
+distrobuilder repack-windows -h
+```
+
+### Install Windows
+
+Run the following commands to initialize the VM, to configure (=increase) the allocated disk space and finally attach the full path of your prepared ISO file. Note that the installation of Windows 10 takes about 10GB (before updates), therefore a 30GB disk gives you about 20GB of free space.
+
+```bash
+lxc init win10 --empty --vm -c security.secureboot=false
+lxc config device override win10 root size=30GiB
+lxc config device add win10 iso disk source=/path/to/Windows-repacked.iso boot.priority=10
+```
+
+Now, the VM win10 has been configured and it is ready to be started. The following command starts the virtual machine and opens up a VGA console so that we go through the graphical installation of Windows.
+
+```bash
+lxc start win10 --console=vga
+```
+
+Taken from: https://blog.simos.info/how-to-run-a-windows-virtual-machine-on-lxd-on-linux/
 
 ### Examples
 
