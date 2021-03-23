@@ -88,6 +88,8 @@ See the [image section](image.md) for more on the image name.
 
 If `--compression` is set, the tarballs will use the provided compression instead of `xz`.
 
+Setting `--vm` will create a qcow2 image which is used for virtual machines.
+
 After building the image, the rootfs will be destroyed.
 
 The `pack-lxd` subcommand can be used to create an image from an existing rootfs.
