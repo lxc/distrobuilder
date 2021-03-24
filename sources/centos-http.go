@@ -41,9 +41,8 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL,
-		s.majorVersion,
+		definition.Image.Release,
 		definition.Image.ArchitectureMapped)
-
 	s.fname = s.getRelease(definition.Source.URL, definition.Image.Release,
 		definition.Source.Variant, definition.Image.ArchitectureMapped)
 	if s.fname == "" {
@@ -362,7 +361,7 @@ rm -rf /rootfs/var/cache/yum
 func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 	releaseFields := strings.Split(release, ".")
 
-	resp, err := http.Get(URL + path.Join("/", strings.ToLower(releaseFields[0]), "isos", arch))
+	resp, err := http.Get(URL + path.Join("/", release, "isos", arch))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return ""
@@ -375,6 +374,32 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 		return ""
 	}
 
+	if len(releaseFields) != 3 && strings.Contains(URL, "vault.centos.org") {
+		fmt.Println("Patch releases are only supported when using vault.centos.org as the mirror")
+		return ""
+	}
+
+	if strings.HasSuffix(releaseFields[0], "-Stream") {
+		fields := strings.Split(releaseFields[0], "-")
+		// Convert <version>-Stream to Stream-<version>
+		releaseFields[0] = fmt.Sprintf("%s-%s", fields[1], fields[0])
+	}
+
+	re := s.getRegexes(arch, variant, release)
+
+	for _, r := range re {
+		matches := r.FindAllString(string(body), -1)
+		if len(matches) > 0 {
+			return matches[len(matches)-1]
+		}
+	}
+
+	return ""
+}
+
+func (s *CentOSHTTP) getRegexes(arch string, variant string, release string) []*regexp.Regexp {
+	releaseFields := strings.Split(release, ".")
+
 	if strings.HasSuffix(releaseFields[0], "-Stream") {
 		fields := strings.Split(releaseFields[0], "-")
 		// Convert <version>-Stream to Stream-<version>
@@ -382,17 +407,8 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 	}
 
 	var re []string
-	if len(releaseFields) > 1 {
-		if arch == "armhfp" {
-			re = append(re, fmt.Sprintf("CentOS-Userland-%s.%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
-				releaseFields[0], releaseFields[1], variant))
-		} else {
-			re = append(re, fmt.Sprintf("CentOS-%s.%s-%s-(?i:%s)(-\\d+)?.iso",
-				releaseFields[0], releaseFields[1], arch, variant))
-			re = append(re, fmt.Sprintf("CentOS-%s-%s-%s-(?i:%s).iso",
-				releaseFields[0], arch, releaseFields[1], variant))
-		}
-	} else {
+	switch len(releaseFields) {
+	case 1:
 		if arch == "armhfp" {
 			re = append(re, fmt.Sprintf("CentOS-Userland-%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
 				releaseFields[0], variant))
@@ -402,16 +418,43 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)*-%s(-\\d+)?-(?i:%s).iso",
 				releaseFields[0], arch, variant))
 		}
-	}
+	case 2:
+		if arch == "armhfp" {
+			re = append(re, fmt.Sprintf("CentOS-Userland-%s.%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
+				releaseFields[0], releaseFields[1], variant))
+		} else {
+			re = append(re, fmt.Sprintf("CentOS-%s.%s-%s-(?i:%s)(-\\d+)?.iso",
+				releaseFields[0], releaseFields[1], arch, variant))
+			re = append(re, fmt.Sprintf("CentOS-%s-%s-%s-(?i:%s).iso",
+				releaseFields[0], arch, releaseFields[1], variant))
+		}
+	case 3:
+		if arch == "x86_64" {
+			re = append(re, fmt.Sprintf("CentOS-%s.%s-%s-%s-(?i:%s)(-\\d+)?.iso",
+				releaseFields[0], releaseFields[1], releaseFields[2], arch, variant))
 
-	for _, r := range re {
-		matches := regexp.MustCompile(r).FindAllString(string(body), -1)
-		if len(matches) > 0 {
-			return matches[len(matches)-1]
+			if len(releaseFields[1]) == 1 {
+				re = append(re, fmt.Sprintf("CentOS-%s-%s-(?i:%s)-%s-0%s.iso",
+					releaseFields[0], arch, variant, releaseFields[2], releaseFields[1]))
+			} else {
+				re = append(re, fmt.Sprintf("CentOS-%s-%s-(?i:%s)-%s-%s.iso",
+					releaseFields[0], arch, variant, releaseFields[2], releaseFields[1]))
+			}
+
+			re = append(re, fmt.Sprintf("CentOS-%s-%s-(?i:%s)-%s.iso",
+				releaseFields[0], arch, variant, releaseFields[2]))
+			re = append(re, fmt.Sprintf("CentOS-%s-%s-%s-(?i:%s).iso",
+				releaseFields[0], arch, releaseFields[2], variant))
 		}
 	}
 
-	return ""
+	regexes := make([]*regexp.Regexp, len(re))
+
+	for i, r := range re {
+		regexes[i] = regexp.MustCompile(r)
+	}
+
+	return regexes
 }
 
 func (s CentOSHTTP) unpackRootfsImage(imageFile string, target string) error {
