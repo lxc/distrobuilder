@@ -41,7 +41,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL,
-		definition.Image.Release,
+		strings.ToLower(definition.Image.Release),
 		definition.Image.ArchitectureMapped)
 	s.fname = s.getRelease(definition.Source.URL, definition.Image.Release,
 		definition.Source.Variant, definition.Image.ArchitectureMapped)
@@ -361,7 +361,7 @@ rm -rf /rootfs/var/cache/yum
 func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 	releaseFields := strings.Split(release, ".")
 
-	resp, err := http.Get(URL + path.Join("/", release, "isos", arch))
+	resp, err := http.Get(URL + path.Join("/", strings.ToLower(release), "isos", arch))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return ""
@@ -374,7 +374,7 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 		return ""
 	}
 
-	if len(releaseFields) != 3 && strings.Contains(URL, "vault.centos.org") {
+	if len(releaseFields) == 3 && !strings.Contains(URL, "vault.centos.org") {
 		fmt.Println("Patch releases are only supported when using vault.centos.org as the mirror")
 		return ""
 	}
