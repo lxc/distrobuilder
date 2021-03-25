@@ -374,7 +374,7 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 		return ""
 	}
 
-	if len(releaseFields) != 3 && strings.Contains(URL, "vault.centos.org") {
+	if len(releaseFields) == 3 && !strings.Contains(URL, "vault.centos.org") {
 		fmt.Println("Patch releases are only supported when using vault.centos.org as the mirror")
 		return ""
 	}
