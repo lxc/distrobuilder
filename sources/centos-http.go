@@ -375,6 +375,17 @@ enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 EOF
 
+	if grep -q "CentOS Stream" /etc/os-release; then
+		cat <<- "EOF" > /etc/yum.repos.d/CentOS-Appstream.repo
+[AppStream]
+name=CentOS-$releasever - Base
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=AppStream&infra=$infra
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+EOF
+	fi
+
 	# Use dnf in the boot iso since yum isn't available
 	alias yum=dnf
 fi
