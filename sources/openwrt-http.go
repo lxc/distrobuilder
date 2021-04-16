@@ -32,7 +32,17 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 
 	release := definition.Image.Release
 	releaseInFilename := strings.ToLower(release) + "-"
-	architecturePath := strings.Replace(definition.Image.ArchitectureMapped, "_", "/", 1)
+
+	var architecturePath string
+
+	switch definition.Image.ArchitectureMapped {
+	case "x86_64":
+		architecturePath = strings.Replace(definition.Image.ArchitectureMapped, "_", "/", 1)
+	case "armv7l":
+		architecturePath = "armvirt/32"
+	case "aarch64":
+		architecturePath = "armvirt/64"
+	}
 
 	// Figure out the correct release
 	if release == "snapshot" {
@@ -61,11 +71,28 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	var fname string
 
 	if release == "snapshot" {
-		fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
-			strings.Replace(definition.Image.ArchitectureMapped, "_", "-", 1))
+		switch definition.Image.ArchitectureMapped {
+		case "x86_64":
+			fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
+				strings.Replace(architecturePath, "/", "-", 1))
+		case "armv7l":
+			fallthrough
+		case "aarch64":
+			fname = fmt.Sprintf("openwrt-%s-default-rootfs.tar.gz",
+				strings.Replace(architecturePath, "/", "-", 1))
+		}
+
 	} else {
-		fname = fmt.Sprintf("openwrt-%s%s-generic-rootfs.tar.gz", releaseInFilename,
-			strings.Replace(definition.Image.ArchitectureMapped, "_", "-", 1))
+		switch definition.Image.ArchitectureMapped {
+		case "x86_64":
+			fname = fmt.Sprintf("openwrt-%s%s-generic-rootfs.tar.gz", releaseInFilename,
+				strings.Replace(architecturePath, "/", "-", 1))
+		case "armv7l":
+			fallthrough
+		case "aarch64":
+			fname = fmt.Sprintf("openwrt-%s%s-default-rootfs.tar.gz", releaseInFilename,
+				strings.Replace(architecturePath, "/", "-", 1))
+		}
 	}
 
 	resp, err := http.Head(baseURL)
@@ -178,7 +205,14 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	}
 
 	os.Setenv("OPENWRT_SDK", fmt.Sprintf("build_dir/%s", strings.TrimSuffix(sdk, ".tar.xz")))
-	os.Setenv("OPENWRT_ARCH", definition.Image.Architecture)
+
+	if definition.Image.Architecture == "armv7l" {
+		os.Setenv("OPENWRT_ARCH", "aarch32")
+
+	} else {
+		os.Setenv("OPENWRT_ARCH", definition.Image.Architecture)
+	}
+
 	os.Setenv("OPENWRT_VERSION", release)
 
 	err = os.Chdir(tempScriptsDir)
