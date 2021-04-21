@@ -63,6 +63,7 @@ import (
 	"strings"
 	"time"
 
+	lxd "github.com/lxc/lxd/shared"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -440,4 +441,19 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 	}
 
 	return &def, nil
+}
+
+func fixCapabilities() {
+	// Check if container has systemd
+	if !lxd.PathExists("/etc/systemd") {
+		return
+	}
+
+	os.MkdirAll("/etc/systemd/system/service.d", 0755)
+
+	content := `[Service]
+ProtectProc=default
+ProtectControlGroups=no
+`
+	ioutil.WriteFile("/etc/systemd/system/service.d/lxc.conf", []byte(content), 0644)
 }

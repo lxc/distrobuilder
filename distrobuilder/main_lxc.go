@@ -152,6 +152,8 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		}
 	}
 
+	fixCapabilities()
+
 	exitChroot()
 
 	err = img.Build()

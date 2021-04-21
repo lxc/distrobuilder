@@ -315,6 +315,10 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		}
 	}
 
+	if !c.flagVM {
+		fixCapabilities()
+	}
+
 	exitChroot()
 
 	// Unmount VM directory and loop device before creating the image.
