@@ -1,8 +1,8 @@
 package sources
 
 import (
-	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -40,29 +41,44 @@ func (s *FuntooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		definition.Source.URL, definition.Image.Release,
 		topLevelArch, definition.Image.ArchitectureMapped)
 
-	releaseDate, err := s.getReleaseDate(baseURL)
+	releaseDates, err := s.getReleaseDates(baseURL)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get release dates")
 	}
 
-	fname := fmt.Sprintf("stage3-%s-%s-release-std-%s.tar.xz", definition.Image.ArchitectureMapped, definition.Image.Release, releaseDate)
-	tarball := fmt.Sprintf("%s/%s/%s", baseURL, releaseDate, fname)
+	var fname string
+	var tarball string
+
+	// Find a valid release tarball
+	for i := len(releaseDates) - 1; i >= 0; i-- {
+		fname = fmt.Sprintf("stage3-%s-%s-release-std-%s.tar.xz", definition.Image.ArchitectureMapped, definition.Image.Release, releaseDates[i])
+		tarball = fmt.Sprintf("%s/%s/%s", baseURL, releaseDates[i], fname)
+
+		resp, err := http.Head(tarball)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to call HEAD on %q", tarball)
+		}
+
+		if resp.StatusCode == http.StatusNotFound {
+			continue
+		}
+	}
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to parse URL %q", tarball)
 	}
 
 	if !definition.Source.SkipVerification && url.Scheme != "https" &&
 		len(definition.Source.Keys) == 0 {
-		return errors.New("GPG keys are required if downloading from HTTP")
+		return fmt.Errorf("GPG keys are required if downloading from HTTP")
 	}
 
 	var fpath string
 
 	fpath, err = shared.DownloadHash(definition.Image, tarball, "", nil)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to download tarball")
 	}
 
 	// Force gpg checks when using http
@@ -74,26 +90,26 @@ func (s *FuntooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 			definition.Source.Keys,
 			definition.Source.Keyserver)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to download verification files")
 		}
 		if !valid {
-			return errors.New("Failed to verify tarball")
+			return fmt.Errorf("Failed to verify tarball")
 		}
 	}
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to unpack tarball to %q", rootfsDir)
 	}
 
 	return nil
 }
 
-func (s *FuntooHTTP) getReleaseDate(URL string) (string, error) {
+func (s *FuntooHTTP) getReleaseDates(URL string) ([]string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", err
+		return nil, errors.Wrapf(err, "Failed to load URL %q", URL)
 	}
 
 	re := regexp.MustCompile(`^\d{4}\-\d{2}\-\d{2}/?$`)
@@ -107,11 +123,11 @@ func (s *FuntooHTTP) getReleaseDate(URL string) (string, error) {
 	}
 
 	if len(dirs) == 0 {
-		return "", fmt.Errorf("Failed to get release date")
+		return nil, fmt.Errorf("Failed to get release dates")
 	}
 
 	// Sort dirs in case they're out-of-order
 	sort.Strings(dirs)
 
-	return dirs[len(dirs)-1], nil
+	return dirs, nil
 }
