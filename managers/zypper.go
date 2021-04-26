@@ -40,6 +40,7 @@ func NewZypper() *Manager {
 			install: []string{
 				"install",
 				"--allow-downgrade",
+				"--replacefiles",
 			},
 			remove: []string{
 				"remove",
