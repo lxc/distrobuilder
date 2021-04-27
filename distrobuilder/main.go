@@ -454,6 +454,7 @@ func fixCapabilities() {
 	content := `[Service]
 ProtectProc=default
 ProtectControlGroups=no
+ProtectKernelTunables=no
 `
 	ioutil.WriteFile("/etc/systemd/system/service.d/lxc.conf", []byte(content), 0644)
 }
