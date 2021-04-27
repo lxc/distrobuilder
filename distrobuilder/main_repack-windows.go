@@ -196,17 +196,51 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	}
 	defer unix.Unmount(driverPath, 0)
 
-	// Modify wim (Windows Imaging Format) files
-	bootWim := filepath.Join(overlayDir, "sources", "boot.wim")
+	var sourcesDir string
 
-	// This injects the drivers into the installation process
-	err = c.modifyWim(bootWim, 2)
+	entries, err := ioutil.ReadDir(overlayDir)
+
+	for _, entry := range entries {
+		if strings.ToLower(entry.Name()) == "sources" {
+			sourcesDir = filepath.Join(overlayDir, entry.Name())
+			break
+		}
+	}
+
+	entries, err = ioutil.ReadDir(sourcesDir)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to modify index 2 of %q", filepath.Base(bootWim))
+		return errors.Wrapf(err, "Failed to read directory %q", sourcesDir)
+	}
+
+	var bootWim string
+	var installWim string
+
+	// Find boot.wim and install.wim but consider their case.
+	for _, entry := range entries {
+		if bootWim != "" && installWim != "" {
+			break
+		}
+
+		if strings.ToLower(entry.Name()) == "boot.wim" {
+			bootWim = filepath.Join(sourcesDir, entry.Name())
+			continue
+		}
+
+		if strings.ToLower(entry.Name()) == "install.wim" {
+			installWim = filepath.Join(sourcesDir, entry.Name())
+			continue
+		}
+	}
+
+	if bootWim == "" {
+		return fmt.Errorf("Unable to find boot.wim")
+	}
+
+	if installWim == "" {
+		return fmt.Errorf("Unable to find install.wim")
 	}
 
 	var buf bytes.Buffer
-	installWim := filepath.Join(overlayDir, "sources", "install.wim")
 
 	err = lxd.RunCommandWithFds(nil, &buf, "wimlib-imagex", "info", installWim)
 	if err != nil {
@@ -228,6 +262,12 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 			}
 			indexes = append(indexes, index)
 		}
+	}
+
+	// This injects the drivers into the installation process
+	err = c.modifyWim(bootWim, 2)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to modify index 2 of %q", filepath.Base(bootWim))
 	}
 
 	// This injects the drivers into the final OS
