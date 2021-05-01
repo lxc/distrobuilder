@@ -10,6 +10,8 @@ type Downloader interface {
 // Get returns a Downloader.
 func Get(name string) Downloader {
 	switch name {
+	case "almalinux-http":
+		return NewAlmaLinuxHTTP()
 	case "alpinelinux-http":
 		return NewAlpineLinuxHTTP()
 	case "alt-http":
