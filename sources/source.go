@@ -48,6 +48,8 @@ func Get(name string) Downloader {
 		return NewFuntooHTTP()
 	case "rootfs-http":
 		return NewRootfsHTTP()
+	case "rockylinux-http":
+		return NewRockyLinuxHTTP()
 	}
 
 	return nil
