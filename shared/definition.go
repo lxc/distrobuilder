@@ -320,6 +320,7 @@ func (d *Definition) Validate() error {
 	}
 
 	validDownloaders := []string{
+		"almalinux-http",
 		"alpinelinux-http",
 		"alt-http",
 		"apertis-http",
@@ -410,6 +411,7 @@ func (d *Definition) Validate() error {
 	}
 
 	validMappings := []string{
+		"almalinux",
 		"alpinelinux",
 		"altlinux",
 		"archlinux",
