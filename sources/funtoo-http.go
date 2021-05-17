@@ -62,6 +62,8 @@ func (s *FuntooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		if resp.StatusCode == http.StatusNotFound {
 			continue
 		}
+
+		break
 	}
 
 	url, err := url.Parse(tarball)
