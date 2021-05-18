@@ -150,6 +150,20 @@ func optimizePackageSets(sets []shared.DefinitionPackagesSet) []shared.Definitio
 }
 
 func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), string, error) {
+	var stat unix.Statfs_t
+
+	// Skip overlay on xfs
+	for _, dir := range []string{cacheDir, sourceDir} {
+		err := unix.Statfs(dir, &stat)
+		if err != nil {
+			return nil, "", err
+		}
+
+		if stat.Type == unix.XFS_SUPER_MAGIC {
+			return nil, "", fmt.Errorf("overlay not supported on xfs")
+		}
+	}
+
 	upperDir := filepath.Join(cacheDir, "upper")
 	overlayDir := filepath.Join(cacheDir, "overlay")
 	workDir := filepath.Join(cacheDir, "work")
