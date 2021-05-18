@@ -324,6 +324,10 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		return errors.Wrap(err, "Failed to chroot")
 	}
 
+	if !c.flagVM {
+		fixCapabilities()
+	}
+
 	// Run post files hook
 	for _, action := range c.global.definition.GetRunnableActions("post-files", imageTargets) {
 		err := shared.RunScript(action.Action)
@@ -331,10 +335,6 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 			exitChroot()
 			return errors.Wrap(err, "Failed to run post-files")
 		}
-	}
-
-	if !c.flagVM {
-		fixCapabilities()
 	}
 
 	exitChroot()
