@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -29,9 +30,18 @@ func (c *cmdLXC) commandBuild() *cobra.Command {
 
 			cleanup, overlayDir, err := getOverlay(logger, c.global.flagCacheDir, c.global.sourceDir)
 			if err != nil {
-				return errors.Wrap(err, "Failed to create overlay")
+				logger.Warnw("Failed to creaty overlay", "err", err)
+
+				overlayDir = filepath.Join(c.global.flagCacheDir, "overlay")
+
+				// Use rsync if overlay doesn't work
+				err = shared.RunCommand("rsync", "-a", c.global.sourceDir+"/", overlayDir)
+				if err != nil {
+					return errors.Wrap(err, "Failed to copy image content")
+				}
+			} else {
+				defer cleanup()
 			}
-			defer cleanup()
 
 			return c.run(cmd, args, overlayDir)
 		},
@@ -50,9 +60,18 @@ func (c *cmdLXC) commandPack() *cobra.Command {
 
 			cleanup, overlayDir, err := getOverlay(logger, c.global.flagCacheDir, c.global.sourceDir)
 			if err != nil {
-				return errors.Wrap(err, "Failed to create overlay")
+				logger.Warnw("Failed to creaty overlay", "err", err)
+
+				overlayDir = filepath.Join(c.global.flagCacheDir, "overlay")
+
+				// Use rsync if overlay doesn't work
+				err = shared.RunCommand("rsync", "-a", c.global.sourceDir+"/", overlayDir)
+				if err != nil {
+					return errors.Wrap(err, "Failed to copy image content")
+				}
+			} else {
+				defer cleanup()
 			}
-			defer cleanup()
 
 			err = c.runPack(cmd, args, overlayDir)
 			if err != nil {
