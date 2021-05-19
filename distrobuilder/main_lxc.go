@@ -145,7 +145,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		return err
 	}
 
-	fixCapabilities()
+	addSystemdGenerator()
 
 	// Run post files hook
 	for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetAll|shared.ImageTargetContainer) {

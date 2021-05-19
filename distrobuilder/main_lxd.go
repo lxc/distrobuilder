@@ -308,9 +308,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		return errors.Wrap(err, "Failed to chroot")
 	}
 
-	if !c.flagVM {
-		fixCapabilities()
-	}
+	addSystemdGenerator()
 
 	// Run post files hook
 	for _, action := range c.global.definition.GetRunnableActions("post-files", imageTargets) {
