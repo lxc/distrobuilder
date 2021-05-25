@@ -48,20 +48,12 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 			return c.global.preRunBuild(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger := c.global.logger
-
-			cleanup, overlayDir, err := getOverlay(logger, c.global.flagCacheDir, c.global.sourceDir)
+			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				logger.Warnw("Failed to creaty overlay", "err", err)
+				return err
+			}
 
-				overlayDir = filepath.Join(c.global.flagCacheDir, "overlay")
-
-				// Use rsync if overlay doesn't work
-				err = shared.RunCommand("rsync", "-a", c.global.sourceDir+"/", overlayDir)
-				if err != nil {
-					return errors.Wrap(err, "Failed to copy image content")
-				}
-			} else {
+			if cleanup != nil {
 				defer cleanup()
 			}
 
@@ -97,20 +89,12 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 			return c.global.preRunPack(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger := c.global.logger
-
-			cleanup, overlayDir, err := getOverlay(logger, c.global.flagCacheDir, c.global.sourceDir)
+			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				logger.Warnw("Failed to creaty overlay", "err", err)
+				return err
+			}
 
-				overlayDir = filepath.Join(c.global.flagCacheDir, "overlay")
-
-				// Use rsync if overlay doesn't work
-				err = shared.RunCommand("rsync", "-a", c.global.sourceDir+"/", overlayDir)
-				if err != nil {
-					return errors.Wrap(err, "Failed to copy image content")
-				}
-			} else {
+			if cleanup != nil {
 				defer cleanup()
 			}
 

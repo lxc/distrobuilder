@@ -76,12 +76,13 @@ import (
 )
 
 type cmdGlobal struct {
-	flagCleanup  bool
-	flagCacheDir string
-	flagDebug    bool
-	flagOptions  []string
-	flagTimeout  uint
-	flagVersion  bool
+	flagCleanup        bool
+	flagCacheDir       string
+	flagDebug          bool
+	flagOptions        []string
+	flagTimeout        uint
+	flagVersion        bool
+	flagDisableOverlay bool
 
 	definition *shared.Definition
 	sourceDir  string
@@ -136,6 +137,7 @@ func main() {
 		"Timeout in seconds"+"``")
 	app.PersistentFlags().BoolVar(&globalCmd.flagVersion, "version", false, "Print version number")
 	app.PersistentFlags().BoolVar(&globalCmd.flagDebug, "debug", false, "Enable debug output")
+	app.PersistentFlags().BoolVar(&globalCmd.flagDisableOverlay, "disable-overlay", false, "Disable the use of filesystem overlays")
 
 	// Version handling
 	app.SetVersionTemplate("{{.Version}}\n")
@@ -388,6 +390,39 @@ func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
+	var (
+		cleanup    func()
+		overlayDir string
+		err        error
+	)
+
+	if c.flagDisableOverlay {
+		overlayDir = filepath.Join(c.flagCacheDir, "overlay")
+
+		// Use rsync if overlay doesn't work
+		err = shared.RunCommand("rsync", "-a", c.sourceDir+"/", overlayDir)
+		if err != nil {
+			return "", nil, errors.Wrap(err, "Failed to copy image content")
+		}
+	} else {
+		cleanup, overlayDir, err = getOverlay(c.logger, c.flagCacheDir, c.sourceDir)
+		if err != nil {
+			c.logger.Warnw("Failed to create overlay", "err", err)
+
+			overlayDir = filepath.Join(c.flagCacheDir, "overlay")
+
+			// Use rsync if overlay doesn't work
+			err = shared.RunCommand("rsync", "-a", c.sourceDir+"/", overlayDir)
+			if err != nil {
+				return "", nil, errors.Wrap(err, "Failed to copy image content")
+			}
+		}
+	}
+
+	return overlayDir, cleanup, nil
 }
 
 func getDefinition(fname string, options []string) (*shared.Definition, error) {

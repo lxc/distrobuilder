@@ -44,20 +44,11 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 		Args:    cobra.ExactArgs(2),
 		PreRunE: c.preRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger := c.global.logger
 			defer unix.Unmount(c.global.sourceDir, 0)
 
-			cleanup, overlayDir, err := getOverlay(logger, c.global.flagCacheDir, c.global.sourceDir)
+			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				logger.Info("OverlayFS not supported. Unpacking ISO")
-
-				overlayDir = filepath.Join(c.global.flagCacheDir, "overlay")
-
-				// Use rsync if overlay doesn't work
-				err = shared.RunCommand("rsync", "-a", c.global.sourceDir+"/", overlayDir)
-				if err != nil {
-					return errors.Wrap(err, "Failed to copy content of Windows ISO")
-				}
+				return err
 			}
 
 			if cleanup != nil {
