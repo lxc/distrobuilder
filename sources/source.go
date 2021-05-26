@@ -46,6 +46,8 @@ func Get(name string) Downloader {
 		return NewVoidLinuxHTTP()
 	case "funtoo-http":
 		return NewFuntooHTTP()
+	case "rootfs-http":
+		return NewRootfsHTTP()
 	}
 
 	return nil
