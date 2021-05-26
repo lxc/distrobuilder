@@ -338,6 +338,7 @@ func (d *Definition) Validate() error {
 		"plamolinux-http",
 		"voidlinux-http",
 		"funtoo-http",
+		"rootfs-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
