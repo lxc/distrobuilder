@@ -326,6 +326,7 @@ func (d *Definition) Validate() error {
 		"apertis-http",
 		"archlinux-http",
 		"centos-http",
+		"springdalelinux-http",
 		"debootstrap",
 		"fedora-http",
 		"gentoo-http",
