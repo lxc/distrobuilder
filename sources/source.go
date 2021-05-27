@@ -22,6 +22,8 @@ func Get(name string) Downloader {
 		return NewArchLinuxHTTP()
 	case "centos-http":
 		return NewCentOSHTTP()
+	case "springdalelinux-http":
+		return NewSpringdaleLinuxHTTP()
 	case "debootstrap":
 		return NewDebootstrap()
 	case "fedora-http":
