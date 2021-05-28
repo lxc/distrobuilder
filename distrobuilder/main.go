@@ -264,6 +264,12 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Run template on source URL
+	c.definition.Source.URL, err = shared.RenderTemplate(c.definition.Source.URL, c.definition)
+	if err != nil {
+		return errors.Wrap(err, "Failed to render source URL")
+	}
+
 	// Download the root filesystem
 	err = downloader.Run(*c.definition, c.sourceDir)
 	if err != nil {
