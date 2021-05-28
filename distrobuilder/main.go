@@ -484,18 +484,137 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 	return &def, nil
 }
 
-func fixCapabilities() {
+// addSystemdGenerator creates a systemd-generator which runs on boot, and does some configuration around the system itself and networking.
+func addSystemdGenerator() {
 	// Check if container has systemd
 	if !lxd.PathExists("/etc/systemd") {
 		return
 	}
 
-	os.MkdirAll("/etc/systemd/system/service.d", 0755)
+	content := `#!/bin/sh
 
-	content := `[Service]
-ProtectProc=default
-ProtectControlGroups=no
-ProtectKernelTunables=no
+# NOTE: systemctl is not available for systemd-generators
+
+## Helper functions
+
+# is_container succeeds if we're running inside a container
+is_container() {
+	grep -qa container=lxc /proc/1/environ
+}
+
+# Exit immediately if this is neither a VM nor a container
+if ! systemd-detect-virt && ! is_container; then
+	exit
+fi
+
+# Determine systemd version
+for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
+	[ -e "${path}" ] || continue
+	systemd_version="$("${path}" --version | head -n1 | cut -d' ' -f2)"
+	break
+done
+
+## Fixes
+
+# Fix capabilities
+(
+	if [ "${systemd_version}" -ge 244 ]; then
+		# Create top level dropin
+		dropin_dir="/run/systemd/system/service.d"
+		mkdir -p "${dropin_dir}"
+		echo "[Service]" > "${dropin_dir}/lxc.conf"
+		[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/lxc.conf"
+		echo "ProtectControlGroups=no" >> "${dropin_dir}/lxc.conf"
+		echo "ProtectKernelTunables=no" >> "${dropin_dir}/lxc.conf"
+	else
+		# Create per-unit dropin for all service units
+		find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed -r 's#/usr/lib/systemd/##;s#/etc/systemd/##g;s#/run/systemd/##g' | while read service_file; do
+			dropin_dir="/run/systemd/${service_file}.d"
+			mkdir -p "${dropin_dir}"
+			echo "[Service]" > "${dropin_dir}/lxc.conf"
+			[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/lxc.conf"
+			[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no" >> "${dropin_dir}/lxc.conf"
+			[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no" >> "${dropin_dir}/lxc.conf"
+		done
+	fi
+)
+
+# Network fix for fedora/34/cloud
+(
+	. /etc/os-release
+
+	if ! which cloud-init || ! which NetworkManger || ! [ -e /sys/class/net/eth0 ] || ! is_container || [ "${ID}" != "fedora" ] || [ "${VERSION_ID}" != "34" ]; then
+		exit
+	fi
+
+	cat <<-EOF > /run/systemd/system/network-connection-activate.service
+[Unit]
+Description=Activate connection
+After=NetworkManager-wait-online.service
+
+[Service]
+ExecStart=-/usr/bin/nmcli c up "System eth0"
+Type=oneshot
+RemainAfterExit=true
+
+[Install]
+WantedBy=default.target
+EOF
+
+	mkdir -p /run/systemd/system/default.target.wants
+	ln -s /run/systemd/system/network-connection-activate.service /run/systemd/system/default.target.wants/network-connection-activate.service
+)
+
+# NetworkManager fix for various distributions
+(
+	if ! which NetworkManager || ! [ -f /bin/ip ] || ! [ -e /sys/class/net/eth0 ]; then
+		exit
+	fi
+
+	cat <<-EOF > /run/systemd/system/network-device-down.service
+[Unit]
+Description=Turn off network device
+Before=NetworkManager.service
+
+[Service]
+ExecStart=-/bin/ip link set eth0 down
+Type=oneshot
+RemainAfterExit=true
+
+[Install]
+WantedBy=default.target
+EOF
+
+	mkdir -p /run/systemd/system/default.target.wants
+	ln -s /run/systemd/system/network-device-down.service /run/systemd/system/default.target.wants/network-device-down.service
+)
+
+# Fix for systemd-networkd
+(
+	. /etc/os-release
+
+	[ "${ID}" = "altlinux" ] || exit
+
+	mkdir -p /run/systemd/system/systemd-networkd.service.d
+
+	if [ -e /run/systemd/system/systemd-networkd.service.d/lxc.conf ]; then
+		echo "BindReadOnlyPaths=/sys" >> /run/systemd/system/systemd-networkd.service.d/lxc.conf
+	else
+		cat <<-EOF > /run/systemd/system/systemd-networkd.service.d/lxc.conf
+[Service]
+BindReadOnlyPaths=/sys
+EOF
+	fi
+)
+
+# Mask systemd-journal-audit
+(
+	is_container || exit
+
+	ln -s /dev/null /run/systemd/system/systemd-journal-audit.socket
+)
 `
-	ioutil.WriteFile("/etc/systemd/system/service.d/lxc.conf", []byte(content), 0644)
+	os.MkdirAll("/etc/systemd/system-generators", 0755)
+
+	ioutil.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
 }
