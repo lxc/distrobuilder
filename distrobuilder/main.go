@@ -492,60 +492,39 @@ func addSystemdGenerator() {
 	}
 
 	content := `#!/bin/sh
-
 # NOTE: systemctl is not available for systemd-generators
+set -eu
 
 ## Helper functions
-
-# is_container succeeds if we're running inside a container
-is_container() {
+# is_lxc_container succeeds if we're running inside a LXC container
+is_lxc_container() {
 	grep -qa container=lxc /proc/1/environ
 }
 
-# Exit immediately if this is neither a VM nor a container
-if ! systemd-detect-virt && ! is_container; then
-	exit
-fi
+# is_lxd_vm succeeds if we're running inside a LXD VM
+is_lxd_vm() {
+	[ -e /dev/virtio-ports/org.linuxcontainers.lxd ]
+}
 
-# Determine systemd version
-for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
-	[ -e "${path}" ] || continue
-	systemd_version="$("${path}" --version | head -n1 | cut -d' ' -f2)"
-	break
-done
+## Fix functions
+# fix_networkd avoids udevd issues with /sys being writable
+fix_networkd() {
+	[ "${ID}" = "altlinux" ] || return
 
-## Fixes
+	mkdir -p /run/systemd/system/systemd-networkd.service.d
+	cat <<-EOF > /run/systemd/system/systemd-networkd.service.d/lxc-down.conf
+[Service]
+BindReadOnlyPaths=/sys
+EOF
+}
 
-# Fix capabilities
-(
-	if [ "${systemd_version}" -ge 244 ]; then
-		# Create top level dropin
-		dropin_dir="/run/systemd/system/service.d"
-		mkdir -p "${dropin_dir}"
-		echo "[Service]" > "${dropin_dir}/lxc.conf"
-		[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/lxc.conf"
-		echo "ProtectControlGroups=no" >> "${dropin_dir}/lxc.conf"
-		echo "ProtectKernelTunables=no" >> "${dropin_dir}/lxc.conf"
-	else
-		# Create per-unit dropin for all service units
-		find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed -r 's#/usr/lib/systemd/##;s#/etc/systemd/##g;s#/run/systemd/##g' | while read service_file; do
-			dropin_dir="/run/systemd/${service_file}.d"
-			mkdir -p "${dropin_dir}"
-			echo "[Service]" > "${dropin_dir}/lxc.conf"
-			[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/lxc.conf"
-			[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no" >> "${dropin_dir}/lxc.conf"
-			[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no" >> "${dropin_dir}/lxc.conf"
-		done
-	fi
-)
+# fix_nm_force_up sets up a unit override to force NetworkManager to start the system connection
+fix_nm_force_up() {
+	# Check if the device exists
+	[ -e "/sys/class/net/$1" ] || return
 
-# Network fix for fedora/34/cloud
-(
-	. /etc/os-release
-
-	if ! which cloud-init || ! which NetworkManger || ! [ -e /sys/class/net/eth0 ] || ! is_container || [ "${ID}" != "fedora" ] || [ "${VERSION_ID}" != "34" ]; then
-		exit
-	fi
+	# Check if NetworkManager exists
+	which NetworkManager >/dev/null || return
 
 	cat <<-EOF > /run/systemd/system/network-connection-activate.service
 [Unit]
@@ -553,7 +532,7 @@ Description=Activate connection
 After=NetworkManager-wait-online.service
 
 [Service]
-ExecStart=-/usr/bin/nmcli c up "System eth0"
+ExecStart=-/usr/bin/nmcli c up "System $1"
 Type=oneshot
 RemainAfterExit=true
 
@@ -562,14 +541,12 @@ WantedBy=default.target
 EOF
 
 	mkdir -p /run/systemd/system/default.target.wants
-	ln -s /run/systemd/system/network-connection-activate.service /run/systemd/system/default.target.wants/network-connection-activate.service
-)
+	ln -sf /run/systemd/system/network-connection-activate.service /run/systemd/system/default.target.wants/network-connection-activate.service
+}
 
-# NetworkManager fix for various distributions
-(
-	if ! which NetworkManager || ! [ -f /bin/ip ] || ! [ -e /sys/class/net/eth0 ]; then
-		exit
-	fi
+# fix_nm_link_state forces the network interface to a DOWN state ahead of NetworkManager starting up
+fix_nm_link_state() {
+	[ -e "/sys/class/net/$1" ] || return
 
 	cat <<-EOF > /run/systemd/system/network-device-down.service
 [Unit]
@@ -577,7 +554,7 @@ Description=Turn off network device
 Before=NetworkManager.service
 
 [Service]
-ExecStart=-/bin/ip link set eth0 down
+ExecStart=-/bin/ip link set $1 down
 Type=oneshot
 RemainAfterExit=true
 
@@ -586,35 +563,71 @@ WantedBy=default.target
 EOF
 
 	mkdir -p /run/systemd/system/default.target.wants
-	ln -s /run/systemd/system/network-device-down.service /run/systemd/system/default.target.wants/network-device-down.service
-)
+	ln -sf /run/systemd/system/network-device-down.service /run/systemd/system/default.target.wants/network-device-down.service
+}
 
-# Fix for systemd-networkd
-(
+# fix_systemd_override_unit generates a unit specific override
+fix_systemd_override_unit() {
+	dropin_dir="/run/systemd/${1}.d"
+	mkdir -p "${dropin_dir}"
+	echo "[Service]" > "${dropin_dir}/lxc-service.conf"
+	[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/lxc-service.conf"
+	[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no" >> "${dropin_dir}/lxc-service.conf"
+	[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no" >> "${dropin_dir}/lxc-service.conf"
+}
+
+# fix_systemd_mask_audit masks the systemd-journal-audit socket
+fix_systemd_mask_audit() {
+	ln -sf /dev/null /run/systemd/system/systemd-journal-audit.socket
+}
+
+## Main logic
+# Exit immediately if not a LXC/LXD container or VM
+if ! is_lxd_vm && ! is_lxc_container; then
+	exit
+fi
+
+# Determine systemd version
+for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
+	[ -x "${path}" ] || continue
+
+	systemd_version="$("${path}" --version | head -n1 | cut -d' ' -f2)"
+	break
+done
+
+# Determine distro name and release
+ID=""
+VERSION_ID=""
+if [ -e /etc/os-release ]; then
 	. /etc/os-release
+fi
 
-	[ "${ID}" = "altlinux" ] || exit
+# Apply systemd overrides
+if [ "${systemd_version}" -ge 244 ]; then
+	fix_systemd_override_unit system/service.d
+else
+	# Setup per-unit overrides
+	find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed -r 's#/usr/lib/systemd/##;s#/etc/systemd/##g;s#/run/systemd/##g' | while read -r service_file; do
+		fix_systemd_override_unit "${service_file}"
+	done
+fi
 
-	mkdir -p /run/systemd/system/systemd-networkd.service.d
+# Workarounds for all containers
+if is_container; then
+	fix_systemd_audit
+	fix_networkd
+fi
 
-	if [ -e /run/systemd/system/systemd-networkd.service.d/lxc.conf ]; then
-		echo "BindReadOnlyPaths=/sys" >> /run/systemd/system/systemd-networkd.service.d/lxc.conf
-	else
-		cat <<-EOF > /run/systemd/system/systemd-networkd.service.d/lxc.conf
-[Service]
-BindReadOnlyPaths=/sys
-EOF
-	fi
-)
+# Workarounds for fedora/34/cloud containers
+if is_container && [ "${ID}" = "fedora" ] && [ "${VERSION_ID}" = "34" ] && which cloud-init >/dev/null; then
+	fix_nm_force_up eth0
+fi
 
-# Mask systemd-journal-audit
-(
-	is_container || exit
-
-	ln -s /dev/null /run/systemd/system/systemd-journal-audit.socket
-)
+# Workarounds for NetworkManager in containers
+if which NetworkManager >/dev/null; then
+	fix_nm_link_state eth0
+fi
 `
 	os.MkdirAll("/etc/systemd/system-generators", 0755)
-
 	ioutil.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
 }
