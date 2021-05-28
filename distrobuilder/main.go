@@ -512,7 +512,7 @@ fix_networkd() {
 	[ "${ID}" = "altlinux" ] || return
 
 	mkdir -p /run/systemd/system/systemd-networkd.service.d
-	cat <<-EOF > /run/systemd/system/systemd-networkd.service.d/lxc-down.conf
+	cat <<-EOF > /run/systemd/system/systemd-networkd.service.d/lxc-ropath.conf
 [Service]
 BindReadOnlyPaths=/sys
 EOF
@@ -607,19 +607,19 @@ if [ "${systemd_version}" -ge 244 ]; then
 	fix_systemd_override_unit system/service.d
 else
 	# Setup per-unit overrides
-	find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed -r 's#/usr/lib/systemd/##;s#/etc/systemd/##g;s#/run/systemd/##g' | while read -r service_file; do
+	find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed -E 's#/usr/lib/systemd/##;s#/etc/systemd/##g;s#/run/systemd/##g' | while read -r service_file; do
 		fix_systemd_override_unit "${service_file}"
 	done
 fi
 
 # Workarounds for all containers
-if is_container; then
+if is_lxc_container; then
 	fix_systemd_audit
 	fix_networkd
 fi
 
 # Workarounds for fedora/34/cloud containers
-if is_container && [ "${ID}" = "fedora" ] && [ "${VERSION_ID}" = "34" ] && which cloud-init >/dev/null; then
+if is_lxc_container && [ "${ID}" = "fedora" ] && [ "${VERSION_ID}" = "34" ] && which cloud-init >/dev/null; then
 	fix_nm_force_up eth0
 fi
 
