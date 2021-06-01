@@ -507,24 +507,22 @@ is_lxd_vm() {
 }
 
 ## Fix functions
-# fix_networkd avoids udevd issues with /sys being writable
-fix_networkd() {
-	[ "${ID}" = "altlinux" ] || return
-
-	mkdir -p /run/systemd/system/systemd-networkd.service.d
-	cat <<-EOF > /run/systemd/system/systemd-networkd.service.d/lxc-ropath.conf
+# fix_ro_paths avoids udevd issues with /sys and /proc being writable
+fix_ro_paths() {
+	mkdir -p /run/systemd/system/$1.d
+	cat <<-EOF > /run/systemd/system/$1.d/lxc-ropath.conf
 [Service]
-BindReadOnlyPaths=/sys
+BindReadOnlyPaths=/sys /proc
 EOF
 }
 
 # fix_nm_force_up sets up a unit override to force NetworkManager to start the system connection
 fix_nm_force_up() {
 	# Check if the device exists
-	[ -e "/sys/class/net/$1" ] || return
+	[ -e "/sys/class/net/$1" ] || return 0
 
 	# Check if NetworkManager exists
-	which NetworkManager >/dev/null || return
+	type NetworkManager >/dev/null || return 0
 
 	cat <<-EOF > /run/systemd/system/network-connection-activate.service
 [Unit]
@@ -546,7 +544,7 @@ EOF
 
 # fix_nm_link_state forces the network interface to a DOWN state ahead of NetworkManager starting up
 fix_nm_link_state() {
-	[ -e "/sys/class/net/$1" ] || return
+	[ -e "/sys/class/net/$1" ] || return 0
 
 	cat <<-EOF > /run/systemd/system/network-device-down.service
 [Unit]
@@ -574,6 +572,17 @@ fix_systemd_override_unit() {
 	[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/lxc-service.conf"
 	[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no" >> "${dropin_dir}/lxc-service.conf"
 	[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no" >> "${dropin_dir}/lxc-service.conf"
+
+	# Additional settings for privileged containers
+	if grep -q 4294967295 /proc/self/uid_map; then
+		echo "ProtectHome=no" >> "${dropin_dir}/lxc-service.conf"
+		echo "ProtectSystem=no" >> "${dropin_dir}/lxc-service.conf"
+		echo "PrivateDevices=no" >> "${dropin_dir}/lxc-service.conf"
+		echo "PrivateTmp=no" >> "${dropin_dir}/lxc-service.conf"
+		[ "${systemd_version}" -ge 244 ] && echo "ProtectKernelLogs=no" >> "${dropin_dir}/lxc-service.conf"
+		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelModules=no" >> "${dropin_dir}/lxc-service.conf"
+		echo "ReadWritePaths=" >> "${dropin_dir}/lxc-service.conf"
+	fi
 }
 
 # fix_systemd_mask_audit masks the systemd-journal-audit socket
@@ -604,27 +613,30 @@ fi
 
 # Apply systemd overrides
 if [ "${systemd_version}" -ge 244 ]; then
-	fix_systemd_override_unit system/service.d
+	fix_systemd_override_unit system/service
 else
 	# Setup per-unit overrides
-	find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed -E 's#/usr/lib/systemd/##;s#/etc/systemd/##g;s#/run/systemd/##g' | while read -r service_file; do
+	find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
 		fix_systemd_override_unit "${service_file}"
 	done
 fi
 
 # Workarounds for all containers
 if is_lxc_container; then
-	fix_systemd_audit
-	fix_networkd
+	fix_systemd_mask_audit
+	if [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; then
+		fix_ro_paths systemd-networkd
+		fix_ro_paths systemd_resolved
+	fi
 fi
 
 # Workarounds for fedora/34/cloud containers
-if is_lxc_container && [ "${ID}" = "fedora" ] && [ "${VERSION_ID}" = "34" ] && which cloud-init >/dev/null; then
+if is_lxc_container && [ "${ID}" = "fedora" ] && [ "${VERSION_ID}" = "34" ] && type cloud-init >/dev/null; then
 	fix_nm_force_up eth0
 fi
 
 # Workarounds for NetworkManager in containers
-if which NetworkManager >/dev/null; then
+if type NetworkManager >/dev/null; then
 	fix_nm_link_state eth0
 fi
 `
