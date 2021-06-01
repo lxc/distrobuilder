@@ -605,7 +605,7 @@ if [ "${systemd_version}" -ge 244 ]; then
 	fix_systemd_override_unit system/service
 else
 	# Setup per-unit overrides
-	find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed -E 's#/usr/lib/systemd/##;s#/etc/systemd/##g;s#/run/systemd/##g' | while read -r service_file; do
+	find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
 		fix_systemd_override_unit "${service_file}"
 	done
 fi
