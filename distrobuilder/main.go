@@ -572,6 +572,17 @@ fix_systemd_override_unit() {
 	[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/lxc-service.conf"
 	[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no" >> "${dropin_dir}/lxc-service.conf"
 	[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no" >> "${dropin_dir}/lxc-service.conf"
+
+	# Additional settings for privileged containers
+	if grep -q 4294967295 /proc/self/uid_map; then
+		echo "ProtectHome=no" >> "${dropin_dir}/lxc-service.conf"
+		echo "ProtectSystem=no" >> "${dropin_dir}/lxc-service.conf"
+		echo "PrivateDevices=no" >> "${dropin_dir}/lxc-service.conf"
+		echo "PrivateTmp=no" >> "${dropin_dir}/lxc-service.conf"
+		[ "${systemd_version}" -ge 244 ] && echo "ProtectKernelLogs=no" >> "${dropin_dir}/lxc-service.conf"
+		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelModules=no" >> "${dropin_dir}/lxc-service.conf"
+		echo "ReadWritePaths=" >> "${dropin_dir}/lxc-service.conf"
+	fi
 }
 
 # fix_systemd_mask_audit masks the systemd-journal-audit socket
