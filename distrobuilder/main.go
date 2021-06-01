@@ -519,10 +519,10 @@ EOF
 # fix_nm_force_up sets up a unit override to force NetworkManager to start the system connection
 fix_nm_force_up() {
 	# Check if the device exists
-	[ -e "/sys/class/net/$1" ] || return
+	[ -e "/sys/class/net/$1" ] || return 0
 
 	# Check if NetworkManager exists
-	type NetworkManager >/dev/null || return
+	type NetworkManager >/dev/null || return 0
 
 	cat <<-EOF > /run/systemd/system/network-connection-activate.service
 [Unit]
@@ -544,7 +544,7 @@ EOF
 
 # fix_nm_link_state forces the network interface to a DOWN state ahead of NetworkManager starting up
 fix_nm_link_state() {
-	[ -e "/sys/class/net/$1" ] || return
+	[ -e "/sys/class/net/$1" ] || return 0
 
 	cat <<-EOF > /run/systemd/system/network-device-down.service
 [Unit]
