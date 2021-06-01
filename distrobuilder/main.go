@@ -604,7 +604,7 @@ fi
 
 # Apply systemd overrides
 if [ "${systemd_version}" -ge 244 ]; then
-	fix_systemd_override_unit system/service.d
+	fix_systemd_override_unit system/service
 else
 	# Setup per-unit overrides
 	find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed -E 's#/usr/lib/systemd/##;s#/etc/systemd/##g;s#/run/systemd/##g' | while read -r service_file; do
@@ -614,7 +614,7 @@ fi
 
 # Workarounds for all containers
 if is_lxc_container; then
-	fix_systemd_audit
+	fix_systemd_mask_audit
 	fix_networkd
 fi
 
