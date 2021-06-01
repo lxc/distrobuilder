@@ -522,7 +522,7 @@ fix_nm_force_up() {
 	[ -e "/sys/class/net/$1" ] || return
 
 	# Check if NetworkManager exists
-	which NetworkManager >/dev/null || return
+	type NetworkManager >/dev/null || return
 
 	cat <<-EOF > /run/systemd/system/network-connection-activate.service
 [Unit]
@@ -620,12 +620,12 @@ if is_lxc_container; then
 fi
 
 # Workarounds for fedora/34/cloud containers
-if is_lxc_container && [ "${ID}" = "fedora" ] && [ "${VERSION_ID}" = "34" ] && which cloud-init >/dev/null; then
+if is_lxc_container && [ "${ID}" = "fedora" ] && [ "${VERSION_ID}" = "34" ] && type cloud-init >/dev/null; then
 	fix_nm_force_up eth0
 fi
 
 # Workarounds for NetworkManager in containers
-if which NetworkManager >/dev/null; then
+if type NetworkManager >/dev/null; then
 	fix_nm_link_state eth0
 fi
 `
