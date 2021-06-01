@@ -507,14 +507,12 @@ is_lxd_vm() {
 }
 
 ## Fix functions
-# fix_networkd avoids udevd issues with /sys being writable
-fix_networkd() {
-	[ "${ID}" = "altlinux" ] || return
-
-	mkdir -p /run/systemd/system/systemd-networkd.service.d
-	cat <<-EOF > /run/systemd/system/systemd-networkd.service.d/lxc-ropath.conf
+# fix_ro_paths avoids udevd issues with /sys and /proc being writable
+fix_ro_paths() {
+	mkdir -p /run/systemd/system/$1.d
+	cat <<-EOF > /run/systemd/system/$1.d/lxc-ropath.conf
 [Service]
-BindReadOnlyPaths=/sys
+BindReadOnlyPaths=/sys /proc
 EOF
 }
 
@@ -615,7 +613,10 @@ fi
 # Workarounds for all containers
 if is_lxc_container; then
 	fix_systemd_mask_audit
-	fix_networkd
+	if [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; then
+		fix_ro_paths systemd-networkd
+		fix_ro_paths systemd_resolved
+	fi
 fi
 
 # Workarounds for fedora/34/cloud containers
