@@ -556,13 +556,22 @@ EOF
 fix_nm_link_state() {
 	[ -e "/sys/class/net/$1" ] || return 0
 
+	ip_path=
+	if [ -f /sbin/ip ]; then
+		ip_path=/sbin/ip
+	elif [ -f /bin/ip ]; then
+		ip_path=/bin/ip
+	else
+		return 0
+	fi
+
 	cat <<-EOF > /run/systemd/system/network-device-down.service
 [Unit]
 Description=Turn off network device
 Before=NetworkManager.service
 
 [Service]
-ExecStart=-/bin/ip link set $1 down
+ExecStart=-${ip_path} link set $1 down
 Type=oneshot
 RemainAfterExit=true
 
