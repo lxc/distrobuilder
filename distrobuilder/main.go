@@ -642,8 +642,8 @@ fi
 if is_lxc_container; then
 	fix_systemd_mask_audit
 	if [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; then
-		fix_ro_paths systemd-networkd
-		fix_ro_paths systemd_resolved
+		fix_ro_paths systemd-networkd.service
+		fix_ro_paths systemd_resolved.servce
 	fi
 fi
 
