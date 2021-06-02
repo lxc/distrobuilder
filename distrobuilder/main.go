@@ -641,7 +641,7 @@ fi
 # Workarounds for all containers
 if is_lxc_container; then
 	fix_systemd_mask_audit
-	if [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; then
+	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
 		fix_ro_paths systemd-networkd.service
 		fix_ro_paths systemd_resolved.servce
 	fi
