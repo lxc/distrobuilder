@@ -647,8 +647,8 @@ if is_lxc_container; then
 	fi
 fi
 
-# Workarounds for fedora/34/cloud containers
-if is_lxc_container && [ "${ID}" = "fedora" ] && [ "${VERSION_ID}" = "34" ] && [ "${cloudinit_exists}" -eq 1 ]; then
+# Workarounds for cloud containers
+if is_lxc_container && { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ] || [ "${ID}" = "ol" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
 	fix_nm_force_up eth0
 fi
 
