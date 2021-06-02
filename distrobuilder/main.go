@@ -506,6 +506,16 @@ is_lxd_vm() {
 	[ -e /dev/virtio-ports/org.linuxcontainers.lxd ]
 }
 
+# is_in_path succeeds if the given file exists in on of the paths
+is_in_path() {
+	# Don't use $PATH as that may not include all relevant paths
+	for path in /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin; do
+		[ -e "${path}/$1" ] && return 0
+	done
+
+	return 1
+}
+
 ## Fix functions
 # fix_ro_paths avoids udevd issues with /sys and /proc being writable
 fix_ro_paths() {
@@ -522,7 +532,7 @@ fix_nm_force_up() {
 	[ -e "/sys/class/net/$1" ] || return 0
 
 	# Check if NetworkManager exists
-	type NetworkManager >/dev/null || return 0
+	[ "${nm_exists}" -eq 1 ] || return 0
 
 	cat <<-EOF > /run/systemd/system/network-connection-activate.service
 [Unit]
@@ -546,13 +556,22 @@ EOF
 fix_nm_link_state() {
 	[ -e "/sys/class/net/$1" ] || return 0
 
+	ip_path=
+	if [ -f /sbin/ip ]; then
+		ip_path=/sbin/ip
+	elif [ -f /bin/ip ]; then
+		ip_path=/bin/ip
+	else
+		return 0
+	fi
+
 	cat <<-EOF > /run/systemd/system/network-device-down.service
 [Unit]
 Description=Turn off network device
 Before=NetworkManager.service
 
 [Service]
-ExecStart=-/bin/ip link set $1 down
+ExecStart=-${ip_path} link set $1 down
 Type=oneshot
 RemainAfterExit=true
 
@@ -596,6 +615,13 @@ if ! is_lxd_vm && ! is_lxc_container; then
 	exit
 fi
 
+# Check for NetworkManager and cloud-init
+nm_exists=0
+cloudinit_exists=0
+
+is_in_path NetworkManager && nm_exists=1
+is_in_path cloud-init && cloudinit_exists=1
+
 # Determine systemd version
 for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
 	[ -x "${path}" ] || continue
@@ -616,7 +642,7 @@ if [ "${systemd_version}" -ge 244 ]; then
 	fix_systemd_override_unit system/service
 else
 	# Setup per-unit overrides
-	find /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
+	find /lib/systemd /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(lib\|etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
 		fix_systemd_override_unit "${service_file}"
 	done
 fi
@@ -624,19 +650,19 @@ fi
 # Workarounds for all containers
 if is_lxc_container; then
 	fix_systemd_mask_audit
-	if [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; then
-		fix_ro_paths systemd-networkd
-		fix_ro_paths systemd_resolved
+	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
+		fix_ro_paths systemd-networkd.service
+		fix_ro_paths systemd_resolved.servce
 	fi
 fi
 
-# Workarounds for fedora/34/cloud containers
-if is_lxc_container && [ "${ID}" = "fedora" ] && [ "${VERSION_ID}" = "34" ] && type cloud-init >/dev/null; then
+# Workarounds for cloud containers
+if is_lxc_container && { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ] || [ "${ID}" = "ol" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
 	fix_nm_force_up eth0
 fi
 
 # Workarounds for NetworkManager in containers
-if type NetworkManager >/dev/null; then
+if [ "${nm_exists}" -eq 1 ]; then
 	fix_nm_link_state eth0
 fi
 `
