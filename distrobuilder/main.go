@@ -657,12 +657,16 @@ if is_lxc_container; then
 fi
 
 # Workarounds for cloud containers
-if is_lxc_container && { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ] || [ "${ID}" = "ol" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
+if is_lxc_container && { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
 	fix_nm_force_up eth0
 fi
 
 # Workarounds for NetworkManager in containers
 if [ "${nm_exists}" -eq 1 ]; then
+	if [ "${ID}" = "ol" ]; then
+		fix_nm_force_up eth0
+	fi
+
 	fix_nm_link_state eth0
 fi
 `
