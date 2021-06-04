@@ -520,7 +520,7 @@ is_in_path() {
 # fix_ro_paths avoids udevd issues with /sys and /proc being writable
 fix_ro_paths() {
 	mkdir -p /run/systemd/system/$1.d
-	cat <<-EOF > /run/systemd/system/$1.d/lxc-ropath.conf
+	cat <<-EOF > /run/systemd/system/$1.d/zzz-lxc-ropath.conf
 [Service]
 BindReadOnlyPaths=/sys /proc
 EOF
@@ -587,20 +587,20 @@ EOF
 fix_systemd_override_unit() {
 	dropin_dir="/run/systemd/${1}.d"
 	mkdir -p "${dropin_dir}"
-	echo "[Service]" > "${dropin_dir}/lxc-service.conf"
-	[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/lxc-service.conf"
-	[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no" >> "${dropin_dir}/lxc-service.conf"
-	[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no" >> "${dropin_dir}/lxc-service.conf"
+	echo "[Service]" > "${dropin_dir}/zzz-lxc-service.conf"
+	[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/zzz-lxc-service.conf"
+	[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no" >> "${dropin_dir}/zzz-lxc-service.conf"
+	[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no" >> "${dropin_dir}/zzz-lxc-service.conf"
 
 	# Additional settings for privileged containers
 	if grep -q 4294967295 /proc/self/uid_map; then
-		echo "ProtectHome=no" >> "${dropin_dir}/lxc-service.conf"
-		echo "ProtectSystem=no" >> "${dropin_dir}/lxc-service.conf"
-		echo "PrivateDevices=no" >> "${dropin_dir}/lxc-service.conf"
-		echo "PrivateTmp=no" >> "${dropin_dir}/lxc-service.conf"
-		[ "${systemd_version}" -ge 244 ] && echo "ProtectKernelLogs=no" >> "${dropin_dir}/lxc-service.conf"
-		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelModules=no" >> "${dropin_dir}/lxc-service.conf"
-		echo "ReadWritePaths=" >> "${dropin_dir}/lxc-service.conf"
+		echo "ProtectHome=no" >> "${dropin_dir}/zzz-lxc-service.conf"
+		echo "ProtectSystem=no" >> "${dropin_dir}/zzz-lxc-service.conf"
+		echo "PrivateDevices=no" >> "${dropin_dir}/zzz-lxc-service.conf"
+		echo "PrivateTmp=no" >> "${dropin_dir}/zzz-lxc-service.conf"
+		[ "${systemd_version}" -ge 244 ] && echo "ProtectKernelLogs=no" >> "${dropin_dir}/zzz-lxc-service.conf"
+		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelModules=no" >> "${dropin_dir}/zzz-lxc-service.conf"
+		echo "ReadWritePaths=" >> "${dropin_dir}/zzz-lxc-service.conf"
 	fi
 }
 
