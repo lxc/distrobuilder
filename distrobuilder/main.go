@@ -537,7 +537,7 @@ fix_nm_force_up() {
 	cat <<-EOF > /run/systemd/system/network-connection-activate.service
 [Unit]
 Description=Activate connection
-After=NetworkManager-wait-online.service
+After=NetworkManager.service NetworkManager-wait-online.service
 
 [Service]
 ExecStart=-/usr/bin/nmcli c up "System $1"
