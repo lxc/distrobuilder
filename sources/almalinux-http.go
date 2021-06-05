@@ -390,30 +390,9 @@ EOF
 	cat <<- "EOF" > /etc/yum.repos.d/almalinux.repo
 [baseos]
 name=AlmaLinux $releasever - BaseOS
-mirrorlist=https://mirrors.almalinux.org/mirrorlist/$releasever/baseos
+baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
 gpgcheck=1
 enabled=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
-
-[appstream]
-name=AlmaLinux $releasever - AppStream
-mirrorlist=https://mirrors.almalinux.org/mirrorlist/$releasever/appstream
-gpgcheck=1
-enabled=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
-
-[powertools]
-name=AlmaLinux $releasever - PowerTools
-mirrorlist=https://mirrors.almalinux.org/mirrorlist/$releasever/powertools
-enabled=1
-gpgcheck=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
-
-[extras]
-name=AlmaLinux $releasever - Extras
-mirrorlist=https://mirrors.almalinux.org/mirrorlist/$releasever/extras
-enabled=1
-gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 EOF
 
@@ -470,43 +449,15 @@ func (s *AlmaLinuxHTTP) getRegexes(arch string, variant string, release string) 
 	var re []string
 	switch len(releaseFields) {
 	case 1:
-		if arch == "armhfp" {
-			re = append(re, fmt.Sprintf("AlmaLinux-Userland-%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
-				releaseFields[0], variant))
-		} else {
-			re = append(re, fmt.Sprintf("AlmaLinux-%s(.\\d+)*-%s-(?i:%s)(-\\d+)?.iso",
-				releaseFields[0], arch, variant))
-			re = append(re, fmt.Sprintf("AlmaLinux-%s(.\\d+)*-%s(-\\d+)?-(?i:%s).iso",
-				releaseFields[0], arch, variant))
-		}
+		re = append(re, fmt.Sprintf("AlmaLinux-%s(\\.\\d+)*-%s-(?i:%s)(-\\d+)?.iso",
+			releaseFields[0], arch, variant))
+		re = append(re, fmt.Sprintf("AlmaLinux-%s(.\\d+)*-(beta|rc)-\\d-%s-(?i:%s).iso",
+			releaseFields[0], arch, variant))
 	case 2:
-		if arch == "armhfp" {
-			re = append(re, fmt.Sprintf("AlmaLinux-Userland-%s.%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
-				releaseFields[0], releaseFields[1], variant))
-		} else {
-			re = append(re, fmt.Sprintf("AlmaLinux-%s.%s-%s-(?i:%s)(-\\d+)?.iso",
-				releaseFields[0], releaseFields[1], arch, variant))
-			re = append(re, fmt.Sprintf("AlmaLinux-%s-%s-%s-(?i:%s).iso",
-				releaseFields[0], arch, releaseFields[1], variant))
-		}
-	case 3:
-		if arch == "x86_64" {
-			re = append(re, fmt.Sprintf("AlmaLinux-%s.%s-%s-%s-(?i:%s)(-\\d+)?.iso",
-				releaseFields[0], releaseFields[1], releaseFields[2], arch, variant))
-
-			if len(releaseFields[1]) == 1 {
-				re = append(re, fmt.Sprintf("AlmaLinux-%s-%s-(?i:%s)-%s-0%s.iso",
-					releaseFields[0], arch, variant, releaseFields[2], releaseFields[1]))
-			} else {
-				re = append(re, fmt.Sprintf("AlmaLinux-%s-%s-(?i:%s)-%s-%s.iso",
-					releaseFields[0], arch, variant, releaseFields[2], releaseFields[1]))
-			}
-
-			re = append(re, fmt.Sprintf("AlmaLinux-%s-%s-(?i:%s)-%s.iso",
-				releaseFields[0], arch, variant, releaseFields[2]))
-			re = append(re, fmt.Sprintf("AlmaLinux-%s-%s-%s-(?i:%s).iso",
-				releaseFields[0], arch, releaseFields[2], variant))
-		}
+		re = append(re, fmt.Sprintf("AlmaLinux-%s\\.%s-%s-(?i:%s)(-\\d+)?.iso",
+			releaseFields[0], releaseFields[1], arch, variant))
+		re = append(re, fmt.Sprintf("AlmaLinux-%s\\.%s-(beta|rc)-\\d-%s-(?i:%s).iso",
+			releaseFields[0], releaseFields[1], arch, variant))
 	}
 
 	regexes := make([]*regexp.Regexp, len(re))
