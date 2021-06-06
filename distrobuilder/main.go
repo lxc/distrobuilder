@@ -663,7 +663,7 @@ fi
 
 # Workarounds for NetworkManager in containers
 if [ "${nm_exists}" -eq 1 ]; then
-	if [ "${ID}" = "ol" ]; then
+	if [ "${ID}" = "ol" ] || [ "${ID}" = "centos" ]; then
 		fix_nm_force_up eth0
 	fi
 
