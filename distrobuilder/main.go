@@ -604,9 +604,9 @@ fix_systemd_override_unit() {
 	fi
 }
 
-# fix_systemd_mask_audit masks the systemd-journal-audit socket
+# fix_systemd_mask_audit masks the systemd-journald-audit socket
 fix_systemd_mask_audit() {
-	ln -sf /dev/null /run/systemd/system/systemd-journal-audit.socket
+	ln -sf /dev/null /run/systemd/system/systemd-journald-audit.socket
 }
 
 ## Main logic
