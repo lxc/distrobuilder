@@ -604,9 +604,9 @@ fix_systemd_override_unit() {
 	fi
 }
 
-# fix_systemd_mask_audit masks the systemd-journald-audit socket
-fix_systemd_mask_audit() {
-	ln -sf /dev/null /run/systemd/system/systemd-journald-audit.socket
+# fix_systemd_mask masks the systemd unit
+fix_systemd_mask() {
+	ln -sf /dev/null /run/systemd/system/$1
 }
 
 # fix_systemd_udev_trigger overrides the systemd-udev-trigger.service to match the latest version
@@ -661,8 +661,14 @@ fi
 
 # Workarounds for all containers
 if is_lxc_container; then
-	fix_systemd_mask_audit
 	fix_systemd_udev_trigger
+	fix_systemd_mask dev-hugepages.mount
+	fix_systemd_mask systemd-journald-audit.socket
+	fix_systemd_mask run-ribchester-general.mount
+	fix_systemd_mask systemd-modules-load.service
+	if [ ! -e /dev/tty1 ]; then
+		fix_systemd_mask vconsole-setup-kludge@tty1.service
+	fi
 	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
 		fix_ro_paths systemd-networkd.service
 		fix_ro_paths systemd_resolved.servce
