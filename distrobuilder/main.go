@@ -609,6 +609,18 @@ fix_systemd_mask_audit() {
 	ln -sf /dev/null /run/systemd/system/systemd-journald-audit.socket
 }
 
+# fix_systemd_udev_trigger overrides the systemd-udev-trigger.service to match the latest version
+# of the file which uses "ExecStart=-" instead of "ExecStart=".
+fix_systemd_udev_trigger() {
+	mkdir -p /run/systemd/system/systemd-udev-trigger.service.d
+	cat <<-EOF > /run/systemd/system/systemd-udev-trigger.service.d/zzz-lxc-override.conf
+[Service]
+ExecStart=
+ExecStart=-udevadm trigger --type=subsystems --action=add
+ExecStart=-udevadm trigger --type=devices --action=add
+EOF
+}
+
 ## Main logic
 # Exit immediately if not a LXC/LXD container or VM
 if ! is_lxd_vm && ! is_lxc_container; then
@@ -650,6 +662,7 @@ fi
 # Workarounds for all containers
 if is_lxc_container; then
 	fix_systemd_mask_audit
+	fix_systemd_udev_trigger
 	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
 		fix_ro_paths systemd-networkd.service
 		fix_ro_paths systemd_resolved.servce
