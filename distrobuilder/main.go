@@ -621,6 +621,16 @@ ExecStart=-udevadm trigger --type=devices --action=add
 EOF
 }
 
+# fix_systemd_sysctl overrides the systemd-sysctl.service to use "ExecStart=-" instead of "ExecStart=".
+fix_systemd_sysctl() {
+	mkdir -p /run/systemd/system/systemd-sysctl.service.d
+	cat <<-EOF > /run/systemd/system/systemd-sysctl.service.d/zzz-lxc-override.conf
+[Service]
+ExecStart=
+ExecStart=-/usr/lib/systemd/systemd-sysctl
+EOF
+}
+
 ## Main logic
 # Exit immediately if not a LXC/LXD container or VM
 if ! is_lxd_vm && ! is_lxc_container; then
@@ -662,6 +672,7 @@ fi
 # Workarounds for all containers
 if is_lxc_container; then
 	fix_systemd_udev_trigger
+	fix_systemd_sysctl
 	fix_systemd_mask dev-hugepages.mount
 	fix_systemd_mask systemd-journald-audit.socket
 	fix_systemd_mask run-ribchester-general.mount
