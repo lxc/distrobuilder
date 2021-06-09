@@ -154,11 +154,15 @@ func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch str
 	} else {
 		u.Path = path.Join(u.Path, fmt.Sprintf("openSUSE-Leap-%s", release))
 
-		switch arch {
-		case "x86_64":
+		if release == "15.3" {
 			u.Path = path.Join(u.Path, "containers")
-		case "aarch64", "ppc64le":
-			u.Path = path.Join(u.Path, "containers_ports")
+		} else {
+			switch arch {
+			case "x86_64":
+				u.Path = path.Join(u.Path, "containers")
+			case "aarch64", "ppc64le":
+				u.Path = path.Join(u.Path, "containers_ports")
+			}
 		}
 
 		tarballName := s.getTarballName(u, "leap", arch)
