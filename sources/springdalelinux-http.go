@@ -14,38 +14,34 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// SpringdaleLinuxHTTP represents the Springdale HTTP downloader.
-type SpringdaleLinuxHTTP struct {
+type springdalelinux struct {
+	common
+
 	fname        string
 	majorVersion string
 }
 
-// NewSpringdaleLinuxHTTP creates a new SpringdaleHTTP instance.
-func NewSpringdaleLinuxHTTP() *SpringdaleLinuxHTTP {
-	return &SpringdaleLinuxHTTP{}
-}
-
 // Run downloads the tarball and unpacks it.
-func (s *SpringdaleLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	s.majorVersion = strings.Split(definition.Image.Release, ".")[0]
+func (s *springdalelinux) Run() error {
+	s.majorVersion = strings.Split(s.definition.Image.Release, ".")[0]
 
 	// Example: http://puias.princeton.edu/data/puias/8.3/x86_64/os/images/boot.iso
-	baseURL := fmt.Sprintf("%s/%s/%s/os/images/", definition.Source.URL,
-		strings.ToLower(definition.Image.Release),
-		definition.Image.ArchitectureMapped)
+	baseURL := fmt.Sprintf("%s/%s/%s/os/images/", s.definition.Source.URL,
+		strings.ToLower(s.definition.Image.Release),
+		s.definition.Image.ArchitectureMapped)
 	s.fname = "boot.iso"
 
-	fpath := shared.GetTargetDir(definition.Image)
+	fpath := shared.GetTargetDir(s.definition.Image)
 
-	_, err := shared.DownloadHash(definition.Image, baseURL+s.fname, "", nil)
+	_, err := shared.DownloadHash(s.definition.Image, baseURL+s.fname, "", nil)
 	if err != nil {
 		return errors.Wrap(err, "Error downloading Springdale image")
 	}
 
-	return s.unpackISO(filepath.Join(fpath, s.fname), rootfsDir)
+	return s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir)
 }
 
-func (s SpringdaleLinuxHTTP) unpackISO(filePath, rootfsDir string) error {
+func (s springdalelinux) unpackISO(filePath, rootfsDir string) error {
 	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
 	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
@@ -292,7 +288,7 @@ rm -rf /rootfs/var/cache/yum
 	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 }
 
-func (s SpringdaleLinuxHTTP) unpackRootfsImage(imageFile string, target string) error {
+func (s springdalelinux) unpackRootfsImage(imageFile string, target string) error {
 	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
 	if err != nil {
 		return err

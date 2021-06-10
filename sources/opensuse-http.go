@@ -21,25 +21,21 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// OpenSUSEHTTP represents the OpenSUSE HTTP downloader.
-type OpenSUSEHTTP struct{}
-
-// NewOpenSUSEHTTP creates a new OpenSUSEHTTP instance.
-func NewOpenSUSEHTTP() *OpenSUSEHTTP {
-	return &OpenSUSEHTTP{}
+type opensuse struct {
+	common
 }
 
 // Run downloads an OpenSUSE tarball.
-func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error {
+func (s *opensuse) Run() error {
 	var baseURL string
 	var fname string
 
-	if definition.Source.URL == "" {
-		definition.Source.URL = "https://mirrorcache-us.opensuse.org/download"
+	if s.definition.Source.URL == "" {
+		s.definition.Source.URL = "https://mirrorcache-us.opensuse.org/download"
 	}
 
-	tarballPath := s.getPathToTarball(definition.Source.URL, definition.Image.Release,
-		definition.Image.ArchitectureMapped)
+	tarballPath := s.getPathToTarball(s.definition.Source.URL, s.definition.Image.Release,
+		s.definition.Image.ArchitectureMapped)
 
 	resp, err := http.Head(tarballPath)
 	if err != nil {
@@ -53,36 +49,36 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 		return err
 	}
 
-	fpath, err := shared.DownloadHash(definition.Image, url.String(), "", nil)
+	fpath, err := shared.DownloadHash(s.definition.Image, url.String(), "", nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to download image tarball")
 	}
 
-	_, err = shared.DownloadHash(definition.Image, url.String()+".sha256", "", nil)
+	_, err = shared.DownloadHash(s.definition.Image, url.String()+".sha256", "", nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to download checksum file")
 	}
 
-	if !definition.Source.SkipVerification {
-		err = s.verifyTarball(filepath.Join(fpath, fname), definition)
+	if !s.definition.Source.SkipVerification {
+		err = s.verifyTarball(filepath.Join(fpath, fname), s.definition)
 		if err != nil {
 			return errors.Wrap(err, "Failed to verify image")
 		}
 	}
 
 	// Unpack
-	return lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
+	return lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 }
 
-func (s *OpenSUSEHTTP) verifyTarball(imagePath string, definition shared.Definition) error {
+func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition) error {
 	var err error
 	var checksum []byte
 
 	checksumPath := imagePath + ".sha256"
 
-	valid, err := shared.VerifyFile(checksumPath, "", definition.Source.Keys, definition.Source.Keyserver)
+	valid, err := shared.VerifyFile(checksumPath, "", s.definition.Source.Keys, s.definition.Source.Keyserver)
 	if err == nil && valid {
-		checksum, err = shared.GetSignedContent(checksumPath, definition.Source.Keys, definition.Source.Keyserver)
+		checksum, err = shared.GetSignedContent(checksumPath, s.definition.Source.Keys, s.definition.Source.Keyserver)
 	} else {
 		checksum, err = ioutil.ReadFile(checksumPath)
 	}
@@ -113,7 +109,7 @@ func (s *OpenSUSEHTTP) verifyTarball(imagePath string, definition shared.Definit
 	return nil
 }
 
-func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch string) string {
+func (s *opensuse) getPathToTarball(baseURL string, release string, arch string) string {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return ""
@@ -170,7 +166,7 @@ func (s *OpenSUSEHTTP) getPathToTarball(baseURL string, release string, arch str
 	return u.String()
 }
 
-func (s *OpenSUSEHTTP) getTarballName(u *url.URL, release, arch string) string {
+func (s *opensuse) getTarballName(u *url.URL, release, arch string) string {
 	doc, err := htmlquery.LoadURL(u.String())
 	if err != nil || doc == nil {
 		return ""

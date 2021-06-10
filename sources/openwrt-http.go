@@ -18,26 +18,22 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// OpenWrtHTTP represents the ALT Linux downloader.
-type OpenWrtHTTP struct{}
-
-// NewOpenWrtHTTP creates a new OpenWrtHTTP instance.
-func NewOpenWrtHTTP() *OpenWrtHTTP {
-	return &OpenWrtHTTP{}
+type openwrt struct {
+	common
 }
 
 // Run downloads the tarball and unpacks it.
-func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error {
+func (s *openwrt) Run() error {
 	var baseURL string
 
-	release := definition.Image.Release
+	release := s.definition.Image.Release
 	releaseInFilename := strings.ToLower(release) + "-"
 
 	var architecturePath string
 
-	switch definition.Image.ArchitectureMapped {
+	switch s.definition.Image.ArchitectureMapped {
 	case "x86_64":
-		architecturePath = strings.Replace(definition.Image.ArchitectureMapped, "_", "/", 1)
+		architecturePath = strings.Replace(s.definition.Image.ArchitectureMapped, "_", "/", 1)
 	case "armv7l":
 		architecturePath = "armvirt/32"
 	case "aarch64":
@@ -48,10 +44,10 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	if release == "snapshot" {
 		// Build a daily snapshot.
 		baseURL = fmt.Sprintf("%s/snapshots/targets/%s/",
-			definition.Source.URL, architecturePath)
+			s.definition.Source.URL, architecturePath)
 		releaseInFilename = ""
 	} else {
-		baseURL = fmt.Sprintf("%s/releases", definition.Source.URL)
+		baseURL = fmt.Sprintf("%s/releases", s.definition.Source.URL)
 
 		matched, err := regexp.MatchString(`^\d+\.\d+$`, release)
 		if err != nil {
@@ -71,7 +67,7 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	var fname string
 
 	if release == "snapshot" {
-		switch definition.Image.ArchitectureMapped {
+		switch s.definition.Image.ArchitectureMapped {
 		case "x86_64":
 			fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
 				strings.Replace(architecturePath, "/", "-", 1))
@@ -83,7 +79,7 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 		}
 
 	} else {
-		switch definition.Image.ArchitectureMapped {
+		switch s.definition.Image.ArchitectureMapped {
 		case "x86_64":
 			fname = fmt.Sprintf("openwrt-%s%s-generic-rootfs.tar.gz", releaseInFilename,
 				strings.Replace(architecturePath, "/", "-", 1))
@@ -101,7 +97,7 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	}
 
 	// Use fallback image "generic"
-	if resp.StatusCode == http.StatusNotFound && definition.Image.ArchitectureMapped == "x86_64" {
+	if resp.StatusCode == http.StatusNotFound && s.definition.Image.ArchitectureMapped == "x86_64" {
 		baseURL = strings.ReplaceAll(baseURL, "x86/64", "x86/generic")
 		baseURL = strings.ReplaceAll(baseURL, "x86-64", "x86-generic")
 		fname = strings.ReplaceAll(fname, "x86-64", "x86-generic")
@@ -113,15 +109,15 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	}
 
 	checksumFile := ""
-	if !definition.Source.SkipVerification {
-		if len(definition.Source.Keys) != 0 {
+	if !s.definition.Source.SkipVerification {
+		if len(s.definition.Source.Keys) != 0 {
 			checksumFile = baseURL + "sha256sums"
-			fpath, err := shared.DownloadHash(definition.Image, checksumFile+".asc", "", nil)
+			fpath, err := shared.DownloadHash(s.definition.Image, checksumFile+".asc", "", nil)
 			if err != nil {
 				return err
 			}
 
-			_, err = shared.DownloadHash(definition.Image, checksumFile, "", nil)
+			_, err = shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
 			if err != nil {
 				return err
 			}
@@ -129,8 +125,8 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 			valid, err := shared.VerifyFile(
 				filepath.Join(fpath, "sha256sums"),
 				filepath.Join(fpath, "sha256sums.asc"),
-				definition.Source.Keys,
-				definition.Source.Keyserver)
+				s.definition.Source.Keys,
+				s.definition.Source.Keyserver)
 			if err != nil {
 				return err
 			}
@@ -145,7 +141,7 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 		}
 	}
 
-	fpath, err := shared.DownloadHash(definition.Image, baseURL+fname, checksumFile, sha256.New())
+	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, checksumFile, sha256.New())
 	if err != nil {
 		return err
 	}
@@ -155,12 +151,12 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 		return fmt.Errorf("Failed to find SDK")
 	}
 
-	_, err = shared.DownloadHash(definition.Image, baseURL+sdk, checksumFile, sha256.New())
+	_, err = shared.DownloadHash(s.definition.Image, baseURL+sdk, checksumFile, sha256.New())
 	if err != nil {
 		return err
 	}
 
-	_, err = shared.DownloadHash(definition.Image, "https://github.com/mikma/lxd-openwrt/archive/master.tar.gz", "", sha256.New())
+	_, err = shared.DownloadHash(s.definition.Image, "https://github.com/mikma/lxd-openwrt/archive/master.tar.gz", "", sha256.New())
 	if err != nil {
 		return err
 	}
@@ -173,7 +169,7 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}
@@ -198,19 +194,19 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	os.Setenv("OPENWRT_ROOTFS", filepath.Join(fpath, fname))
 
 	// Always use an absolute path
-	if strings.HasPrefix(rootfsDir, "/") {
-		os.Setenv("OPENWRT_ROOTFS_DIR", rootfsDir)
+	if strings.HasPrefix(s.rootfsDir, "/") {
+		os.Setenv("OPENWRT_ROOTFS_DIR", s.rootfsDir)
 	} else {
-		os.Setenv("OPENWRT_ROOTFS_DIR", filepath.Join(currentDir, rootfsDir))
+		os.Setenv("OPENWRT_ROOTFS_DIR", filepath.Join(currentDir, s.rootfsDir))
 	}
 
 	os.Setenv("OPENWRT_SDK", fmt.Sprintf("build_dir/%s", strings.TrimSuffix(sdk, ".tar.xz")))
 
-	if definition.Image.Architecture == "armv7l" {
+	if s.definition.Image.Architecture == "armv7l" {
 		os.Setenv("OPENWRT_ARCH", "aarch32")
 
 	} else {
-		os.Setenv("OPENWRT_ARCH", definition.Image.Architecture)
+		os.Setenv("OPENWRT_ARCH", s.definition.Image.Architecture)
 	}
 
 	os.Setenv("OPENWRT_VERSION", release)
@@ -303,7 +299,7 @@ func (s *OpenWrtHTTP) Run(definition shared.Definition, rootfsDir string) error 
 	return nil
 }
 
-func (s *OpenWrtHTTP) getLatestServiceRelease(baseURL, release string) string {
+func (s *openwrt) getLatestServiceRelease(baseURL, release string) string {
 	resp, err := http.Get(baseURL)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -327,7 +323,7 @@ func (s *OpenWrtHTTP) getLatestServiceRelease(baseURL, release string) string {
 	return ""
 }
 
-func (s *OpenWrtHTTP) getSDK(baseURL, release string) string {
+func (s *openwrt) getSDK(baseURL, release string) string {
 	resp, err := http.Get(baseURL)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

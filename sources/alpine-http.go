@@ -2,7 +2,6 @@ package sources
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -10,29 +9,25 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// AlpineLinuxHTTP represents the Alpine Linux downloader.
-type AlpineLinuxHTTP struct{}
-
-// NewAlpineLinuxHTTP creates a new AlpineLinuxHTTP instance.
-func NewAlpineLinuxHTTP() *AlpineLinuxHTTP {
-	return &AlpineLinuxHTTP{}
+type alpineLinux struct {
+	common
 }
 
-// Run downloads an Alpine Linux mini root filesystem.
-func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	releaseFull := definition.Image.Release
+func (s *alpineLinux) Run() error {
+	releaseFull := s.definition.Image.Release
 	releaseShort := releaseFull
 
-	if definition.Image.Release == "edge" {
-		if definition.Source.SameAs == "" {
+	if s.definition.Image.Release == "edge" {
+		if s.definition.Source.SameAs == "" {
 			return fmt.Errorf("You can't use Alpine edge without setting same_as")
 		}
 
-		releaseFull = definition.Source.SameAs
+		releaseFull = s.definition.Source.SameAs
 		releaseShort = releaseFull
 	}
 
@@ -46,41 +41,39 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		return fmt.Errorf("Bad Alpine release: %s", releaseFull)
 	}
 
-	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", releaseFull,
-		definition.Image.ArchitectureMapped)
+	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", releaseFull, s.definition.Image.ArchitectureMapped)
 
-	tarball := fmt.Sprintf("%s/%s/releases/%s/%s", definition.Source.URL,
-		releaseShort, definition.Image.ArchitectureMapped, fname)
+	tarball := fmt.Sprintf("%s/%s/releases/%s/%s", s.definition.Source.URL, releaseShort, s.definition.Image.ArchitectureMapped, fname)
 
 	url, err := url.Parse(tarball)
 	if err != nil {
 		return err
 	}
 
-	if !definition.Source.SkipVerification && url.Scheme != "https" &&
-		len(definition.Source.Keys) == 0 {
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
+		len(s.definition.Source.Keys) == 0 {
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
 	var fpath string
 
-	if definition.Source.SkipVerification {
-		fpath, err = shared.DownloadHash(definition.Image, tarball, "", nil)
+	if s.definition.Source.SkipVerification {
+		fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	} else {
-		fpath, err = shared.DownloadHash(definition.Image, tarball, tarball+".sha256", sha256.New())
+		fpath, err = shared.DownloadHash(s.definition.Image, tarball, tarball+".sha256", sha256.New())
 	}
 	if err != nil {
 		return err
 	}
 
 	// Force gpg checks when using http
-	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(definition.Image, tarball+".asc", "", nil)
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
+		shared.DownloadHash(s.definition.Image, tarball+".asc", "", nil)
 		valid, err := shared.VerifyFile(
 			filepath.Join(fpath, fname),
 			filepath.Join(fpath, fname+".asc"),
-			definition.Source.Keys,
-			definition.Source.Keyserver)
+			s.definition.Source.Keys,
+			s.definition.Source.Keyserver)
 		if err != nil {
 			return err
 		}
@@ -90,15 +83,15 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}
 
 	// Handle edge builds
-	if definition.Image.Release == "edge" {
+	if s.definition.Image.Release == "edge" {
 		// Upgrade to edge
-		exitChroot, err := shared.SetupChroot(rootfsDir, definition.Environment, nil)
+		exitChroot, err := shared.SetupChroot(s.rootfsDir, s.definition.Environment, nil)
 		if err != nil {
 			return err
 		}
@@ -119,7 +112,7 @@ func (s *AlpineLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 	}
 
 	// Fix bad permissions in Alpine tarballs
-	err = os.Chmod(rootfsDir, 0755)
+	err = os.Chmod(s.rootfsDir, 0755)
 	if err != nil {
 		return err
 	}

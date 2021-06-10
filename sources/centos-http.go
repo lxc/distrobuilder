@@ -21,35 +21,30 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// CentOSHTTP represents the CentOS HTTP downloader.
-type CentOSHTTP struct {
+type centOS struct {
+	common
+
 	fname        string
 	majorVersion string
 }
 
-// NewCentOSHTTP creates a new CentOSHTTP instance.
-func NewCentOSHTTP() *CentOSHTTP {
-	return &CentOSHTTP{}
-}
-
-// Run downloads the tarball and unpacks it.
-func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	if strings.HasSuffix(definition.Image.Release, "-Stream") {
-		s.majorVersion = strings.ToLower(definition.Image.Release)
+func (s *centOS) Run() error {
+	if strings.HasSuffix(s.definition.Image.Release, "-Stream") {
+		s.majorVersion = strings.ToLower(s.definition.Image.Release)
 	} else {
-		s.majorVersion = strings.Split(definition.Image.Release, ".")[0]
+		s.majorVersion = strings.Split(s.definition.Image.Release, ".")[0]
 	}
 
-	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL,
-		strings.ToLower(definition.Image.Release),
-		definition.Image.ArchitectureMapped)
-	s.fname = s.getRelease(definition.Source.URL, definition.Image.Release,
-		definition.Source.Variant, definition.Image.ArchitectureMapped)
+	baseURL := fmt.Sprintf("%s/%s/isos/%s/", s.definition.Source.URL,
+		strings.ToLower(s.definition.Image.Release),
+		s.definition.Image.ArchitectureMapped)
+	s.fname = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
+		s.definition.Source.Variant, s.definition.Image.ArchitectureMapped)
 	if s.fname == "" {
 		return fmt.Errorf("Couldn't get name of iso")
 	}
 
-	fpath := shared.GetTargetDir(definition.Image)
+	fpath := shared.GetTargetDir(s.definition.Image)
 
 	// Skip download if raw image exists and has already been decompressed.
 	if strings.HasSuffix(s.fname, ".raw.xz") {
@@ -58,7 +53,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		stat, err := os.Stat(imagePath)
 		if err == nil && stat.Size() > 0 {
 			return s.unpackRaw(filepath.Join(fpath, strings.TrimSuffix(s.fname, ".xz")),
-				rootfsDir)
+				s.rootfsDir)
 		}
 	}
 
@@ -68,24 +63,24 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	checksumFile := ""
-	if !definition.Source.SkipVerification {
+	if !s.definition.Source.SkipVerification {
 		// Force gpg checks when using http
 		if url.Scheme != "https" {
-			if len(definition.Source.Keys) == 0 {
+			if len(s.definition.Source.Keys) == 0 {
 				return errors.New("GPG keys are required if downloading from HTTP")
 			}
 
-			if definition.Image.ArchitectureMapped == "armhfp" {
+			if s.definition.Image.ArchitectureMapped == "armhfp" {
 				checksumFile = "sha256sum.txt"
 			} else {
-				if strings.HasPrefix(definition.Image.Release, "8") {
+				if strings.HasPrefix(s.definition.Image.Release, "8") {
 					checksumFile = "CHECKSUM"
 				} else {
 					checksumFile = "sha256sum.txt.asc"
 				}
 			}
 
-			fpath, err := shared.DownloadHash(definition.Image, baseURL+checksumFile, "", nil)
+			fpath, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
 				return err
 			}
@@ -93,7 +88,7 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 			// Only verify file if possible.
 			if strings.HasSuffix(checksumFile, ".asc") {
 				valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
-					definition.Source.Keys, definition.Source.Keyserver)
+					s.definition.Source.Keys, s.definition.Source.Keyserver)
 				if err != nil {
 					return err
 				}
@@ -104,19 +99,19 @@ func (s *CentOSHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		}
 	}
 
-	_, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
+	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return errors.Wrap(err, "Error downloading CentOS image")
 	}
 
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
-		return s.unpackRaw(filepath.Join(fpath, s.fname), rootfsDir)
+		return s.unpackRaw(filepath.Join(fpath, s.fname), s.rootfsDir)
 	}
 
-	return s.unpackISO(filepath.Join(fpath, s.fname), rootfsDir)
+	return s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir)
 }
 
-func (s CentOSHTTP) unpackRaw(filePath, rootfsDir string) error {
+func (s *centOS) unpackRaw(filePath, rootfsDir string) error {
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
 	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
 
@@ -193,7 +188,7 @@ sed -ri 's/^enabled=.*/enabled=0/g' /rootfs/etc/yum.repos.d/CentOS-armhfp-kernel
 	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 }
 
-func (s CentOSHTTP) unpackISO(filePath, rootfsDir string) error {
+func (s *centOS) unpackISO(filePath, rootfsDir string) error {
 	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
 	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
@@ -411,7 +406,7 @@ rm -rf /rootfs/var/cache/yum
 	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 }
 
-func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
+func (s *centOS) getRelease(URL, release, variant, arch string) string {
 	releaseFields := strings.Split(release, ".")
 
 	resp, err := http.Get(URL + path.Join("/", strings.ToLower(release), "isos", arch))
@@ -450,7 +445,7 @@ func (s CentOSHTTP) getRelease(URL, release, variant, arch string) string {
 	return ""
 }
 
-func (s *CentOSHTTP) getRegexes(arch string, variant string, release string) []*regexp.Regexp {
+func (s *centOS) getRegexes(arch string, variant string, release string) []*regexp.Regexp {
 	releaseFields := strings.Split(release, ".")
 
 	if strings.HasSuffix(releaseFields[0], "-Stream") {
@@ -510,7 +505,7 @@ func (s *CentOSHTTP) getRegexes(arch string, variant string, release string) []*
 	return regexes
 }
 
-func (s CentOSHTTP) unpackRootfsImage(imageFile string, target string) error {
+func (s *centOS) unpackRootfsImage(imageFile string, target string) error {
 	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
 	if err != nil {
 		return err

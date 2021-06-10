@@ -17,25 +17,21 @@ import (
 	"gopkg.in/antchfx/htmlquery.v1"
 )
 
-// ArchLinuxHTTP represents the Arch Linux downloader.
-type ArchLinuxHTTP struct{}
-
-// NewArchLinuxHTTP creates a new ArchLinuxHTTP instance.
-func NewArchLinuxHTTP() *ArchLinuxHTTP {
-	return &ArchLinuxHTTP{}
+type archlinux struct {
+	common
 }
 
 // Run downloads an Arch Linux tarball.
-func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	release := definition.Image.Release
+func (s *archlinux) Run() error {
+	release := s.definition.Image.Release
 
 	// Releases are only available for the x86_64 architecture. ARM only has
 	// a "latest" tarball.
-	if definition.Image.ArchitectureMapped == "x86_64" && release == "" {
+	if s.definition.Image.ArchitectureMapped == "x86_64" && release == "" {
 		var err error
 
 		// Get latest release
-		release, err = s.getLatestRelease(definition.Source.URL, definition.Image.ArchitectureMapped)
+		release, err = s.getLatestRelease(s.definition.Source.URL, s.definition.Image.ArchitectureMapped)
 		if err != nil {
 			return err
 		}
@@ -44,15 +40,15 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	var fname string
 	var tarball string
 
-	if definition.Image.ArchitectureMapped == "x86_64" {
+	if s.definition.Image.ArchitectureMapped == "x86_64" {
 		fname = fmt.Sprintf("archlinux-bootstrap-%s-%s.tar.gz",
-			release, definition.Image.ArchitectureMapped)
-		tarball = fmt.Sprintf("%s/%s/%s", definition.Source.URL,
+			release, s.definition.Image.ArchitectureMapped)
+		tarball = fmt.Sprintf("%s/%s/%s", s.definition.Source.URL,
 			release, fname)
 	} else {
 		fname = fmt.Sprintf("ArchLinuxARM-%s-latest.tar.gz",
-			definition.Image.ArchitectureMapped)
-		tarball = fmt.Sprintf("%s/os/%s", definition.Source.URL, fname)
+			s.definition.Image.ArchitectureMapped)
+		tarball = fmt.Sprintf("%s/os/%s", s.definition.Source.URL, fname)
 	}
 
 	url, err := url.Parse(tarball)
@@ -60,25 +56,25 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		return err
 	}
 
-	if !definition.Source.SkipVerification && url.Scheme != "https" &&
-		len(definition.Source.Keys) == 0 {
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
+		len(s.definition.Source.Keys) == 0 {
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
-	fpath, err := shared.DownloadHash(definition.Image, tarball, "", nil)
+	fpath, err := shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	if err != nil {
 		return err
 	}
 
 	// Force gpg checks when using http
-	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(definition.Image, tarball+".sig", "", nil)
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
+		shared.DownloadHash(s.definition.Image, tarball+".sig", "", nil)
 
 		valid, err := shared.VerifyFile(
 			filepath.Join(fpath, fname),
 			filepath.Join(fpath, fname+".sig"),
-			definition.Source.Keys,
-			definition.Source.Keyserver)
+			s.definition.Source.Keys,
+			s.definition.Source.Keyserver)
 		if err != nil {
 			return err
 		}
@@ -88,31 +84,31 @@ func (s *ArchLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}
 
 	// Move everything inside 'root.<architecture>' (which was is the tarball) to its
 	// parent directory
-	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(rootfsDir,
-		"root."+definition.Image.ArchitectureMapped)))
+	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(s.rootfsDir,
+		"root."+s.definition.Image.ArchitectureMapped)))
 	if err != nil {
 		return err
 	}
 
 	for _, file := range files {
-		err = os.Rename(file, filepath.Join(rootfsDir, path.Base(file)))
+		err = os.Rename(file, filepath.Join(s.rootfsDir, path.Base(file)))
 		if err != nil {
 			return err
 		}
 	}
 
-	return os.RemoveAll(filepath.Join(rootfsDir, "root."+
-		definition.Image.ArchitectureMapped))
+	return os.RemoveAll(filepath.Join(s.rootfsDir, "root."+
+		s.definition.Image.ArchitectureMapped))
 }
 
-func (s *ArchLinuxHTTP) getLatestRelease(URL string, arch string) (string, error) {
+func (s *archlinux) getLatestRelease(URL string, arch string) (string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
 		return "", err

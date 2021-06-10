@@ -21,31 +21,27 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// AlmaLinuxHTTP represents the AlmaLinux HTTP downloader.
-type AlmaLinuxHTTP struct {
+type almalinux struct {
+	common
+
 	fname        string
 	majorVersion string
 }
 
-// NewAlmaLinuxHTTP creates a new AlmaLinuxHTTP instance.
-func NewAlmaLinuxHTTP() *AlmaLinuxHTTP {
-	return &AlmaLinuxHTTP{}
-}
-
 // Run downloads the tarball and unpacks it.
-func (s *AlmaLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	s.majorVersion = strings.Split(definition.Image.Release, ".")[0]
+func (s *almalinux) Run() error {
+	s.majorVersion = strings.Split(s.definition.Image.Release, ".")[0]
 
-	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL,
-		strings.ToLower(definition.Image.Release),
-		definition.Image.ArchitectureMapped)
-	s.fname = s.getRelease(definition.Source.URL, definition.Image.Release,
-		definition.Source.Variant, definition.Image.ArchitectureMapped)
+	baseURL := fmt.Sprintf("%s/%s/isos/%s/", s.definition.Source.URL,
+		strings.ToLower(s.definition.Image.Release),
+		s.definition.Image.ArchitectureMapped)
+	s.fname = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
+		s.definition.Source.Variant, s.definition.Image.ArchitectureMapped)
 	if s.fname == "" {
 		return fmt.Errorf("Couldn't get name of iso")
 	}
 
-	fpath := shared.GetTargetDir(definition.Image)
+	fpath := shared.GetTargetDir(s.definition.Image)
 
 	// Skip download if raw image exists and has already been decompressed.
 	if strings.HasSuffix(s.fname, ".raw.xz") {
@@ -54,7 +50,7 @@ func (s *AlmaLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		stat, err := os.Stat(imagePath)
 		if err == nil && stat.Size() > 0 {
 			return s.unpackRaw(filepath.Join(fpath, strings.TrimSuffix(s.fname, ".xz")),
-				rootfsDir)
+				s.rootfsDir)
 		}
 	}
 
@@ -64,24 +60,24 @@ func (s *AlmaLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	}
 
 	checksumFile := ""
-	if !definition.Source.SkipVerification {
+	if !s.definition.Source.SkipVerification {
 		// Force gpg checks when using http
 		if url.Scheme != "https" {
-			if len(definition.Source.Keys) == 0 {
+			if len(s.definition.Source.Keys) == 0 {
 				return errors.New("GPG keys are required if downloading from HTTP")
 			}
 
-			if definition.Image.ArchitectureMapped == "armhfp" {
+			if s.definition.Image.ArchitectureMapped == "armhfp" {
 				checksumFile = "sha256sum.txt"
 			} else {
-				if strings.HasPrefix(definition.Image.Release, "8") {
+				if strings.HasPrefix(s.definition.Image.Release, "8") {
 					checksumFile = "CHECKSUM"
 				} else {
 					checksumFile = "sha256sum.txt.asc"
 				}
 			}
 
-			fpath, err := shared.DownloadHash(definition.Image, baseURL+checksumFile, "", nil)
+			fpath, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
 				return err
 			}
@@ -89,7 +85,7 @@ func (s *AlmaLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 			// Only verify file if possible.
 			if strings.HasSuffix(checksumFile, ".asc") {
 				valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
-					definition.Source.Keys, definition.Source.Keyserver)
+					s.definition.Source.Keys, s.definition.Source.Keyserver)
 				if err != nil {
 					return err
 				}
@@ -100,19 +96,19 @@ func (s *AlmaLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		}
 	}
 
-	_, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
+	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return errors.Wrap(err, "Error downloading AlmaLinux image")
 	}
 
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
-		return s.unpackRaw(filepath.Join(fpath, s.fname), rootfsDir)
+		return s.unpackRaw(filepath.Join(fpath, s.fname), s.rootfsDir)
 	}
 
-	return s.unpackISO(filepath.Join(fpath, s.fname), rootfsDir)
+	return s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir)
 }
 
-func (s AlmaLinuxHTTP) unpackRaw(filePath, rootfsDir string) error {
+func (s *almalinux) unpackRaw(filePath, rootfsDir string) error {
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
 	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
 
@@ -186,7 +182,7 @@ rm -rf /rootfs/var/cache/yum
 	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 }
 
-func (s AlmaLinuxHTTP) unpackISO(filePath, rootfsDir string) error {
+func (s *almalinux) unpackISO(filePath, rootfsDir string) error {
 	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
 	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
@@ -417,7 +413,7 @@ rm -rf /rootfs/var/cache/yum
 	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 }
 
-func (s AlmaLinuxHTTP) getRelease(URL, release, variant, arch string) string {
+func (s *almalinux) getRelease(URL, release, variant, arch string) string {
 	resp, err := http.Get(URL + path.Join("/", strings.ToLower(release), "isos", arch))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -443,7 +439,7 @@ func (s AlmaLinuxHTTP) getRelease(URL, release, variant, arch string) string {
 	return ""
 }
 
-func (s *AlmaLinuxHTTP) getRegexes(arch string, variant string, release string) []*regexp.Regexp {
+func (s *almalinux) getRegexes(arch string, variant string, release string) []*regexp.Regexp {
 	releaseFields := strings.Split(release, ".")
 
 	var re []string
@@ -469,7 +465,7 @@ func (s *AlmaLinuxHTTP) getRegexes(arch string, variant string, release string) 
 	return regexes
 }
 
-func (s AlmaLinuxHTTP) unpackRootfsImage(imageFile string, target string) error {
+func (s *almalinux) unpackRootfsImage(imageFile string, target string) error {
 	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
 	if err != nil {
 		return err

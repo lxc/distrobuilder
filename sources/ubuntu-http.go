@@ -21,37 +21,33 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// UbuntuHTTP represents the Ubuntu HTTP downloader.
-type UbuntuHTTP struct {
+type ubuntu struct {
+	common
+
 	fname string
 	fpath string
 }
 
-// NewUbuntuHTTP creates a new UbuntuHTTP instance.
-func NewUbuntuHTTP() *UbuntuHTTP {
-	return &UbuntuHTTP{}
-}
-
 // Run downloads the tarball and unpacks it.
-func (s *UbuntuHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	err := s.downloadImage(definition)
+func (s *ubuntu) Run() error {
+	err := s.downloadImage(s.definition)
 	if err != nil {
 		return err
 	}
 
-	switch strings.ToLower(definition.Source.Variant) {
+	switch strings.ToLower(s.definition.Source.Variant) {
 	case "core":
-		return s.runCoreVariant(definition, rootfsDir)
+		return s.runCoreVariant(s.definition, s.rootfsDir)
 	}
 
-	return s.runDefaultVariant(definition, rootfsDir)
+	return s.runDefaultVariant(s.definition, s.rootfsDir)
 }
 
-func (s *UbuntuHTTP) runDefaultVariant(definition shared.Definition, rootfsDir string) error {
+func (s *ubuntu) runDefaultVariant(definition shared.Definition, rootfsDir string) error {
 	return s.unpack(filepath.Join(s.fpath, s.fname), rootfsDir)
 }
 
-func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir string) error {
+func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) error {
 	if !lxd.PathExists(filepath.Join(s.fpath, strings.TrimSuffix(s.fname, ".xz"))) {
 		err := shared.RunCommand("unxz", "-k", filepath.Join(s.fpath, s.fname))
 		if err != nil {
@@ -133,14 +129,14 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 
 	baseDistro := "xenial"
 
-	if definition.Image.Release == "18" {
+	if s.definition.Image.Release == "18" {
 		baseDistro = "bionic"
 	}
 
 	// Download the base Ubuntu image
-	coreImage := getLatestCoreBaseImage("https://images.linuxcontainers.org/images", baseDistro, definition.Image.ArchitectureMapped)
+	coreImage := getLatestCoreBaseImage("https://images.linuxcontainers.org/images", baseDistro, s.definition.Image.ArchitectureMapped)
 
-	_, err = shared.DownloadHash(definition.Image, coreImage, "", sha256.New())
+	_, err = shared.DownloadHash(s.definition.Image, coreImage, "", sha256.New())
 	if err != nil {
 		return errors.Wrap(err, "Error downloading base Ubuntu image")
 	}
@@ -283,30 +279,30 @@ func (s *UbuntuHTTP) runCoreVariant(definition shared.Definition, rootfsDir stri
 	return nil
 }
 
-func (s *UbuntuHTTP) downloadImage(definition shared.Definition) error {
+func (s *ubuntu) downloadImage(definition shared.Definition) error {
 	var baseURL string
 
-	switch strings.ToLower(definition.Image.Variant) {
+	switch strings.ToLower(s.definition.Image.Variant) {
 	case "default":
-		baseURL = fmt.Sprintf("%s/releases/%s/release/", definition.Source.URL,
-			definition.Image.Release)
+		baseURL = fmt.Sprintf("%s/releases/%s/release/", s.definition.Source.URL,
+			s.definition.Image.Release)
 
-		if strings.ContainsAny(definition.Image.Release, "0123456789") {
+		if strings.ContainsAny(s.definition.Image.Release, "0123456789") {
 			s.fname = fmt.Sprintf("ubuntu-base-%s-base-%s.tar.gz",
-				definition.Image.Release, definition.Image.ArchitectureMapped)
+				s.definition.Image.Release, s.definition.Image.ArchitectureMapped)
 		} else {
 			// if release is non-numerical, find the latest release
 			s.fname = getLatestRelease(baseURL,
-				definition.Image.Release, definition.Image.ArchitectureMapped)
+				s.definition.Image.Release, s.definition.Image.ArchitectureMapped)
 			if s.fname == "" {
 				return fmt.Errorf("Couldn't find latest release")
 			}
 		}
 	case "core":
-		baseURL = fmt.Sprintf("%s/%s/stable/current/", definition.Source.URL, definition.Image.Release)
-		s.fname = fmt.Sprintf("ubuntu-core-%s-%s.img.xz", definition.Image.Release, definition.Image.ArchitectureMapped)
+		baseURL = fmt.Sprintf("%s/%s/stable/current/", s.definition.Source.URL, s.definition.Image.Release)
+		s.fname = fmt.Sprintf("ubuntu-core-%s-%s.img.xz", s.definition.Image.Release, s.definition.Image.ArchitectureMapped)
 	default:
-		return fmt.Errorf("Unknown Ubuntu variant: %s", definition.Image.Variant)
+		return fmt.Errorf("Unknown Ubuntu variant: %s", s.definition.Image.Variant)
 	}
 
 	url, err := url.Parse(baseURL)
@@ -318,24 +314,24 @@ func (s *UbuntuHTTP) downloadImage(definition shared.Definition) error {
 
 	checksumFile := ""
 	// Force gpg checks when using http
-	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		if len(definition.Source.Keys) == 0 {
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
+		if len(s.definition.Source.Keys) == 0 {
 			return errors.New("GPG keys are required if downloading from HTTP")
 		}
 
 		checksumFile = baseURL + "SHA256SUMS"
-		fpath, err = shared.DownloadHash(definition.Image, baseURL+"SHA256SUMS.gpg", "", nil)
+		fpath, err = shared.DownloadHash(s.definition.Image, baseURL+"SHA256SUMS.gpg", "", nil)
 		if err != nil {
 			return err
 		}
 
-		shared.DownloadHash(definition.Image, checksumFile, "", nil)
+		shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
 
 		valid, err := shared.VerifyFile(
 			filepath.Join(fpath, "SHA256SUMS"),
 			filepath.Join(fpath, "SHA256SUMS.gpg"),
-			definition.Source.Keys,
-			definition.Source.Keyserver)
+			s.definition.Source.Keys,
+			s.definition.Source.Keyserver)
 		if err != nil {
 			return err
 		}
@@ -344,7 +340,7 @@ func (s *UbuntuHTTP) downloadImage(definition shared.Definition) error {
 		}
 	}
 
-	s.fpath, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
+	s.fpath, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return errors.Wrap(err, "Error downloading Ubuntu image")
 	}
@@ -352,7 +348,7 @@ func (s *UbuntuHTTP) downloadImage(definition shared.Definition) error {
 	return nil
 }
 
-func (s UbuntuHTTP) unpack(filePath, rootDir string) error {
+func (s ubuntu) unpack(filePath, rootDir string) error {
 	os.RemoveAll(rootDir)
 	os.MkdirAll(rootDir, 0755)
 

@@ -16,18 +16,14 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// VoidLinuxHTTP represents the Alpine Linux downloader.
-type VoidLinuxHTTP struct{}
-
-// NewVoidLinuxHTTP creates a new VoidLinuxHTTP instance.
-func NewVoidLinuxHTTP() *VoidLinuxHTTP {
-	return &VoidLinuxHTTP{}
+type voidlinux struct {
+	common
 }
 
 // Run downloads a Void Linux rootfs tarball.
-func (s *VoidLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	baseURL := definition.Source.URL
-	fname, err := s.getLatestBuild(baseURL, definition.Image.ArchitectureMapped, definition.Source.Variant)
+func (s *voidlinux) Run() error {
+	baseURL := s.definition.Source.URL
+	fname, err := s.getLatestBuild(baseURL, s.definition.Image.ArchitectureMapped, s.definition.Source.Variant)
 	if err != nil {
 		return err
 	}
@@ -45,31 +41,31 @@ func (s *VoidLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 		return err
 	}
 
-	if !definition.Source.SkipVerification && url.Scheme != "https" &&
-		len(definition.Source.Keys) == 0 {
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
+		len(s.definition.Source.Keys) == 0 {
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
 	var fpath string
 
-	if definition.Source.SkipVerification {
-		fpath, err = shared.DownloadHash(definition.Image, tarball, "", nil)
+	if s.definition.Source.SkipVerification {
+		fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	} else {
-		fpath, err = shared.DownloadHash(definition.Image, tarball, digests, sha256.New())
+		fpath, err = shared.DownloadHash(s.definition.Image, tarball, digests, sha256.New())
 	}
 	if err != nil {
 		return err
 	}
 
 	// Force gpg checks when using http
-	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(definition.Image, digests, "", nil)
-		shared.DownloadHash(definition.Image, signatures, "", nil)
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
+		shared.DownloadHash(s.definition.Image, digests, "", nil)
+		shared.DownloadHash(s.definition.Image, signatures, "", nil)
 		valid, err := shared.VerifyFile(
 			filepath.Join(fpath, "sha256sum.txt"),
 			filepath.Join(fpath, "sha256sum.sig"),
-			definition.Source.Keys,
-			definition.Source.Keyserver)
+			s.definition.Source.Keys,
+			s.definition.Source.Keyserver)
 		if err != nil {
 			return err
 		}
@@ -79,7 +75,7 @@ func (s *VoidLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}
@@ -87,7 +83,7 @@ func (s *VoidLinuxHTTP) Run(definition shared.Definition, rootfsDir string) erro
 	return nil
 }
 
-func (s *VoidLinuxHTTP) getLatestBuild(baseURL, arch, variant string) (string, error) {
+func (s *voidlinux) getLatestBuild(baseURL, arch, variant string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
 		return "", err

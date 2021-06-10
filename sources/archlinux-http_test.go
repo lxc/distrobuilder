@@ -8,7 +8,7 @@ import (
 )
 
 func TestArchLinuxGetLatestRelease(t *testing.T) {
-	var src ArchLinuxHTTP
+	var src archlinux
 
 	release, err := src.getLatestRelease("https://mirrors.evowise.com/archlinux/iso/", "x86_64")
 	require.NoError(t, err)

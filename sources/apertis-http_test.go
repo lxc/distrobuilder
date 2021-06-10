@@ -8,7 +8,7 @@ import (
 )
 
 func TestApertisHTTP_getLatestRelease(t *testing.T) {
-	s := &ApertisHTTP{}
+	s := &apertis{}
 
 	tests := []struct {
 		release string

@@ -250,12 +250,6 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Get the downloader to use for this image
-	downloader := sources.Get(c.definition.Source.Downloader)
-	if downloader == nil {
-		return fmt.Errorf("Unsupported source downloader: %s", c.definition.Source.Downloader)
-	}
-
 	// Run template on source keys
 	for i, key := range c.definition.Source.Keys {
 		c.definition.Source.Keys[i], err = shared.RenderTemplate(key, c.definition)
@@ -270,8 +264,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "Failed to render source URL")
 	}
 
-	// Download the root filesystem
-	err = downloader.Run(*c.definition, c.sourceDir)
+	// Load and run downloader
+	downloader, err := sources.Load(c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to load downloader %q", c.definition.Source.Downloader)
+	}
+
+	err = downloader.Run()
 	if err != nil {
 		return errors.Wrap(err, "Error while downloading source")
 	}
