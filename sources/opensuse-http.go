@@ -34,19 +34,12 @@ func (s *OpenSUSEHTTP) Run(definition shared.Definition, rootfsDir string) error
 	var baseURL string
 	var fname string
 
-	useCustomURL := true
-
 	if definition.Source.URL == "" {
-		definition.Source.URL = "https://download.opensuse.org"
-		useCustomURL = false
+		definition.Source.URL = "https://mirrorcache-us.opensuse.org/download"
 	}
 
 	tarballPath := s.getPathToTarball(definition.Source.URL, definition.Image.Release,
 		definition.Image.ArchitectureMapped)
-
-	if !useCustomURL {
-		tarballPath = strings.Replace(tarballPath, "download", "downloadcontent", 1)
-	}
 
 	resp, err := http.Head(tarballPath)
 	if err != nil {
@@ -194,7 +187,7 @@ func (s *OpenSUSEHTTP) getTarballName(u *url.URL, release, arch string) string {
 	var builds []string
 
 	for _, n := range nodes {
-		text := htmlquery.InnerText(n)
+		text := strings.TrimPrefix(htmlquery.InnerText(n), "./")
 
 		if !re.MatchString(text) {
 			continue
