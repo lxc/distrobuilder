@@ -99,7 +99,7 @@ func main() {
 		Use:   "distrobuilder",
 		Short: "System container image builder for LXC and LXD",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			// Sanity checks
+			// Quick checks
 			if os.Geteuid() != 0 {
 				fmt.Fprintf(os.Stderr, "You must be root to run this tool\n")
 				os.Exit(1)
