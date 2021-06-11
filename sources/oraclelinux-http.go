@@ -17,23 +17,19 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// OracleLinuxHTTP represents the Oracle Linux downloader.
-type OracleLinuxHTTP struct {
+type oraclelinux struct {
+	common
+
 	majorVersion string
 	architecture string
 }
 
-// NewOracleLinuxHTTP creates a new OracleLinuxHTTP instance.
-func NewOracleLinuxHTTP() *OracleLinuxHTTP {
-	return &OracleLinuxHTTP{}
-}
-
 // Run downloads Oracle Linux.
-func (s *OracleLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	s.majorVersion = definition.Image.Release
-	s.architecture = definition.Image.ArchitectureMapped
+func (s *oraclelinux) Run() error {
+	s.majorVersion = s.definition.Image.Release
+	s.architecture = s.definition.Image.ArchitectureMapped
 	fname := fmt.Sprintf("%s-boot.iso", s.architecture)
-	baseURL := fmt.Sprintf("%s/OL%s", definition.Source.URL, definition.Image.Release)
+	baseURL := fmt.Sprintf("%s/OL%s", s.definition.Source.URL, s.definition.Image.Release)
 
 	updates, err := s.getUpdates(baseURL)
 	if err != nil {
@@ -58,16 +54,16 @@ func (s *OracleLinuxHTTP) Run(definition shared.Definition, rootfsDir string) er
 		}
 	}
 
-	fpath, err := shared.DownloadHash(definition.Image, fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname),
+	fpath, err := shared.DownloadHash(s.definition.Image, fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname),
 		"", nil)
 	if err != nil {
 		return errors.Wrap(err, "Error downloading Oracle Linux image")
 	}
 
-	return s.unpackISO(latestUpdate[1:], filepath.Join(fpath, fname), rootfsDir)
+	return s.unpackISO(latestUpdate[1:], filepath.Join(fpath, fname), s.rootfsDir)
 }
 
-func (s *OracleLinuxHTTP) unpackISO(latestUpdate, filePath, rootfsDir string) error {
+func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error {
 	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
 	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
@@ -272,7 +268,7 @@ EOF
 	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 }
 
-func (s *OracleLinuxHTTP) getUpdates(URL string) ([]string, error) {
+func (s *oraclelinux) getUpdates(URL string) ([]string, error) {
 	re := regexp.MustCompile(`^[uU]\d+/$`)
 
 	doc, err := htmlquery.LoadURL(URL)
@@ -295,7 +291,7 @@ func (s *OracleLinuxHTTP) getUpdates(URL string) ([]string, error) {
 	return updates, nil
 }
 
-func (s OracleLinuxHTTP) unpackRootfsImage(imageFile string, target string) error {
+func (s oraclelinux) unpackRootfsImage(imageFile string, target string) error {
 	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
 	if err != nil {
 		return err

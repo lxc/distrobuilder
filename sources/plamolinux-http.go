@@ -15,31 +15,26 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// PlamoLinuxHTTP represents the Plamo Linux downloader.
-type PlamoLinuxHTTP struct {
-}
-
-// NewPlamoLinuxHTTP creates a new PlamoLinuxHTTP instance.
-func NewPlamoLinuxHTTP() *PlamoLinuxHTTP {
-	return &PlamoLinuxHTTP{}
+type plamolinux struct {
+	common
 }
 
 // Run downloads Plamo Linux.
-func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	releaseStr := strings.TrimSuffix(definition.Image.Release, ".x")
+func (s *plamolinux) Run() error {
+	releaseStr := strings.TrimSuffix(s.definition.Image.Release, ".x")
 
 	release, err := strconv.Atoi(releaseStr)
 	if err != nil {
 		return errors.Wrap(err, "Failed to determine release")
 	}
 
-	u, err := url.Parse(definition.Source.URL)
+	u, err := url.Parse(s.definition.Source.URL)
 	if err != nil {
 		return err
 	}
 
 	mirrorPath := path.Join(u.Path, fmt.Sprintf("Plamo-%s.x", releaseStr),
-		definition.Image.ArchitectureMapped, "plamo")
+		s.definition.Image.ArchitectureMapped, "plamo")
 
 	paths := []string{path.Join(mirrorPath, "00_base")}
 	ignoredPkgs := []string{"alsa_utils", "grub", "kernel", "lilo", "linux_firmware", "microcode_ctl",
@@ -54,7 +49,7 @@ func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 	for _, p := range paths {
 		u.Path = p
 
-		pkgDir, err = s.downloadFiles(definition.Image, u.String(), ignoredPkgs)
+		pkgDir, err = s.downloadFiles(s.definition.Image, u.String(), ignoredPkgs)
 		if err != nil {
 			return errors.Wrap(err, "Failed to download packages")
 		}
@@ -85,7 +80,7 @@ func (s *PlamoLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 		return err
 	}
 
-	rootfsDirAbs, err := filepath.Abs(rootfsDir)
+	rootfsDirAbs, err := filepath.Abs(s.rootfsDir)
 	if err != nil {
 		return err
 	}
@@ -121,7 +116,7 @@ done
 `, pkgDir, rootfsDirAbs))
 }
 
-func (s *PlamoLinuxHTTP) downloadFiles(def shared.DefinitionImage, URL string, ignoredPkgs []string) (string, error) {
+func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignoredPkgs []string) (string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
 		return "", err

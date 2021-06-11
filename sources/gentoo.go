@@ -16,17 +16,13 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// GentooHTTP represents the Alpine Linux downloader.
-type GentooHTTP struct{}
-
-// NewGentooHTTP creates a new GentooHTTP instance.
-func NewGentooHTTP() *GentooHTTP {
-	return &GentooHTTP{}
+type gentoo struct {
+	common
 }
 
 // Run downloads a Gentoo stage3 tarball.
-func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
-	topLevelArch := definition.Image.ArchitectureMapped
+func (s *gentoo) Run() error {
+	topLevelArch := s.definition.Image.ArchitectureMapped
 	if topLevelArch == "i686" {
 		topLevelArch = "x86"
 	} else if strings.HasPrefix(topLevelArch, "arm") {
@@ -38,9 +34,9 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	baseURL := fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s",
-		definition.Source.URL, topLevelArch,
-		definition.Image.ArchitectureMapped)
-	fname, err := s.getLatestBuild(baseURL, definition.Image.ArchitectureMapped)
+		s.definition.Source.URL, topLevelArch,
+		s.definition.Image.ArchitectureMapped)
+	fname, err := s.getLatestBuild(baseURL, s.definition.Image.ArchitectureMapped)
 	if err != nil {
 		return err
 	}
@@ -56,30 +52,30 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 		return err
 	}
 
-	if !definition.Source.SkipVerification && url.Scheme != "https" &&
-		len(definition.Source.Keys) == 0 {
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
+		len(s.definition.Source.Keys) == 0 {
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
 	var fpath string
 
-	if definition.Source.SkipVerification {
-		fpath, err = shared.DownloadHash(definition.Image, tarball, "", nil)
+	if s.definition.Source.SkipVerification {
+		fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	} else {
-		fpath, err = shared.DownloadHash(definition.Image, tarball, tarball+".DIGESTS", sha512.New())
+		fpath, err = shared.DownloadHash(s.definition.Image, tarball, tarball+".DIGESTS", sha512.New())
 	}
 	if err != nil {
 		return err
 	}
 
 	// Force gpg checks when using http
-	if !definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(definition.Image, tarball+".DIGESTS.asc", "", nil)
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
+		shared.DownloadHash(s.definition.Image, tarball+".DIGESTS.asc", "", nil)
 		valid, err := shared.VerifyFile(
 			filepath.Join(fpath, fname+".DIGESTS.asc"),
 			"",
-			definition.Source.Keys,
-			definition.Source.Keyserver)
+			s.definition.Source.Keys,
+			s.definition.Source.Keyserver)
 		if err != nil {
 			return err
 		}
@@ -89,7 +85,7 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}
@@ -97,7 +93,7 @@ func (s *GentooHTTP) Run(definition shared.Definition, rootfsDir string) error {
 	return nil
 }
 
-func (s *GentooHTTP) getLatestBuild(baseURL, arch string) (string, error) {
+func (s *gentoo) getLatestBuild(baseURL, arch string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
 		return "", err

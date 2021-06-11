@@ -12,34 +12,30 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// Debootstrap represents the debootstrap downloader.
-type Debootstrap struct{}
-
-// NewDebootstrap creates a new Debootstrap instance.
-func NewDebootstrap() *Debootstrap {
-	return &Debootstrap{}
+type debootstrap struct {
+	common
 }
 
 // Run runs debootstrap.
-func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error {
+func (s *debootstrap) Run() error {
 	var args []string
 
-	os.RemoveAll(rootfsDir)
+	os.RemoveAll(s.rootfsDir)
 
-	if definition.Source.Variant != "" {
-		args = append(args, "--variant", definition.Source.Variant)
+	if s.definition.Source.Variant != "" {
+		args = append(args, "--variant", s.definition.Source.Variant)
 	}
 
-	if definition.Image.ArchitectureMapped != "" {
-		args = append(args, "--arch", definition.Image.ArchitectureMapped)
+	if s.definition.Image.ArchitectureMapped != "" {
+		args = append(args, "--arch", s.definition.Image.ArchitectureMapped)
 	}
 
-	if definition.Source.SkipVerification {
+	if s.definition.Source.SkipVerification {
 		args = append(args, "--no-check-gpg")
 	}
 
-	earlyPackagesInstall := definition.GetEarlyPackages("install")
-	earlyPackagesRemove := definition.GetEarlyPackages("remove")
+	earlyPackagesInstall := s.definition.GetEarlyPackages("install")
+	earlyPackagesRemove := s.definition.GetEarlyPackages("remove")
 
 	if len(earlyPackagesInstall) > 0 {
 		args = append(args, fmt.Sprintf("--include=%s", strings.Join(earlyPackagesInstall, ",")))
@@ -49,8 +45,8 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 		args = append(args, fmt.Sprintf("--exclude=%s", strings.Join(earlyPackagesRemove, ",")))
 	}
 
-	if len(definition.Source.Keys) > 0 {
-		keyring, err := shared.CreateGPGKeyring(definition.Source.Keyserver, definition.Source.Keys)
+	if len(s.definition.Source.Keys) > 0 {
+		keyring, err := shared.CreateGPGKeyring(s.definition.Source.Keyserver, s.definition.Source.Keys)
 		if err != nil {
 			return err
 		}
@@ -62,21 +58,21 @@ func (s *Debootstrap) Run(definition shared.Definition, rootfsDir string) error 
 	// If source.suite is set, debootstrap will use this instead of
 	// image.release as its first positional argument (SUITE). This is important
 	// for derivatives which don't have their own sources, e.g. Linux Mint.
-	if definition.Source.Suite != "" {
-		args = append(args, definition.Source.Suite, rootfsDir)
+	if s.definition.Source.Suite != "" {
+		args = append(args, s.definition.Source.Suite, s.rootfsDir)
 	} else {
-		args = append(args, definition.Image.Release, rootfsDir)
+		args = append(args, s.definition.Image.Release, s.rootfsDir)
 	}
 
-	if definition.Source.URL != "" {
-		args = append(args, definition.Source.URL)
+	if s.definition.Source.URL != "" {
+		args = append(args, s.definition.Source.URL)
 	}
 
-	// If definition.Source.SameAs is set, create a symlink in /usr/share/debootstrap/scripts
-	// pointing release to definition.Source.SameAs.
-	scriptPath := filepath.Join("/usr/share/debootstrap/scripts", definition.Image.Release)
-	if !lxd.PathExists(scriptPath) && definition.Source.SameAs != "" {
-		err := os.Symlink(definition.Source.SameAs, scriptPath)
+	// If s.definition.Source.SameAs is set, create a symlink in /usr/share/debootstrap/scripts
+	// pointing release to s.definition.Source.SameAs.
+	scriptPath := filepath.Join("/usr/share/debootstrap/scripts", s.definition.Image.Release)
+	if !lxd.PathExists(scriptPath) && s.definition.Source.SameAs != "" {
+		err := os.Symlink(s.definition.Source.SameAs, scriptPath)
 		if err != nil {
 			return err
 		}

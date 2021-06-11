@@ -19,32 +19,28 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// RockyLinuxHTTP represents the Rocky HTTP downloader.
-type RockyLinuxHTTP struct {
+type rockylinux struct {
+	common
+
 	fname        string
 	majorVersion string
 }
 
-// NewRockyLinuxHTTP creates a new RockyOSHTTP instance.
-func NewRockyLinuxHTTP() *RockyLinuxHTTP {
-	return &RockyLinuxHTTP{}
-}
-
 // Run downloads the tarball and unpacks it.
-func (s *RockyLinuxHTTP) Run(definition shared.Definition, rootfsDir string) error {
+func (s *rockylinux) Run() error {
 
-	s.majorVersion = strings.Split(definition.Image.Release, ".")[0]
+	s.majorVersion = strings.Split(s.definition.Image.Release, ".")[0]
 
-	baseURL := fmt.Sprintf("%s/%s/isos/%s/", definition.Source.URL,
-		strings.ToLower(definition.Image.Release),
-		definition.Image.ArchitectureMapped)
-	s.fname = s.getRelease(definition.Source.URL, definition.Image.Release,
-		definition.Source.Variant, definition.Image.ArchitectureMapped)
+	baseURL := fmt.Sprintf("%s/%s/isos/%s/", s.definition.Source.URL,
+		strings.ToLower(s.definition.Image.Release),
+		s.definition.Image.ArchitectureMapped)
+	s.fname = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
+		s.definition.Source.Variant, s.definition.Image.ArchitectureMapped)
 	if s.fname == "" {
 		return fmt.Errorf("Couldn't get name of iso")
 	}
 
-	fpath := shared.GetTargetDir(definition.Image)
+	fpath := shared.GetTargetDir(s.definition.Image)
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
@@ -52,31 +48,31 @@ func (s *RockyLinuxHTTP) Run(definition shared.Definition, rootfsDir string) err
 	}
 
 	checksumFile := ""
-	if !definition.Source.SkipVerification {
+	if !s.definition.Source.SkipVerification {
 		// Force gpg checks when using http
 		if url.Scheme != "https" {
-			if len(definition.Source.Keys) == 0 {
+			if len(s.definition.Source.Keys) == 0 {
 				return errors.New("GPG keys are required if downloading from HTTP")
 			}
 
 			checksumFile = "CHECKSUM"
 
-			_, err := shared.DownloadHash(definition.Image, baseURL+checksumFile, "", nil)
+			_, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	_, err = shared.DownloadHash(definition.Image, baseURL+s.fname, checksumFile, sha256.New())
+	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return errors.Wrap(err, "Error downloading RockyOS image")
 	}
 
-	return s.unpackISO(filepath.Join(fpath, s.fname), rootfsDir)
+	return s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir)
 }
 
-func (s *RockyLinuxHTTP) unpackISO(filePath, rootfsDir string) error {
+func (s *rockylinux) unpackISO(filePath, rootfsDir string) error {
 	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
 	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
@@ -253,7 +249,7 @@ rm -rf /rootfs/var/cache/yum
 	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 }
 
-func (s *RockyLinuxHTTP) getRelease(URL, release, variant, arch string) string {
+func (s *rockylinux) getRelease(URL, release, variant, arch string) string {
 	resp, err := http.Get(URL + path.Join("/", strings.ToLower(release), "isos", arch))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -279,7 +275,7 @@ func (s *RockyLinuxHTTP) getRelease(URL, release, variant, arch string) string {
 	return ""
 }
 
-func (s *RockyLinuxHTTP) getRegexes(arch string, variant string, release string) []*regexp.Regexp {
+func (s *rockylinux) getRegexes(arch string, variant string, release string) []*regexp.Regexp {
 	releaseFields := strings.Split(release, ".")
 
 	var re []string
@@ -301,7 +297,7 @@ func (s *RockyLinuxHTTP) getRegexes(arch string, variant string, release string)
 	return regexes
 }
 
-func (s *RockyLinuxHTTP) unpackRootfsImage(imageFile string, target string) error {
+func (s *rockylinux) unpackRootfsImage(imageFile string, target string) error {
 	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
 	if err != nil {
 		return err

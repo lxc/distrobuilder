@@ -16,46 +16,42 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// FedoraHTTP represents the Fedora HTTP downloader.
-type FedoraHTTP struct{}
-
-// NewFedoraHTTP creates a new FedoraHTTP instance.
-func NewFedoraHTTP() *FedoraHTTP {
-	return &FedoraHTTP{}
+type fedora struct {
+	common
 }
 
 // Run downloads a container base image and unpacks it and its layers.
-func (s *FedoraHTTP) Run(definition shared.Definition, rootfsDir string) error {
+func (s *fedora) Run() error {
 	baseURL := fmt.Sprintf("%s/packages/Fedora-Container-Base",
-		definition.Source.URL)
+		s.definition.Source.URL)
 
 	// Get latest build
-	build, err := s.getLatestBuild(baseURL, definition.Image.Release)
+	build, err := s.getLatestBuild(baseURL, s.definition.Image.Release)
 	if err != nil {
 		return err
 	}
 
 	fname := fmt.Sprintf("Fedora-Container-Base-%s-%s.%s.tar.xz",
-		definition.Image.Release, build, definition.Image.ArchitectureMapped)
+		s.definition.Image.Release, build, s.definition.Image.ArchitectureMapped)
 
 	// Download image
-	fpath, err := shared.DownloadHash(definition.Image, fmt.Sprintf("%s/%s/%s/images/%s",
-		baseURL, definition.Image.Release, build, fname), "", nil)
+	fpath, err := shared.DownloadHash(s.definition.Image, fmt.Sprintf("%s/%s/%s/images/%s",
+		baseURL, s.definition.Image.Release, build, fname), "", nil)
 	if err != nil {
 		return err
 	}
 
 	// Unpack the base image
-	err = lxd.Unpack(filepath.Join(fpath, fname), rootfsDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
 		return err
 	}
 
 	// Unpack the rest of the image (/bin, /sbin, /usr, etc.)
-	return s.unpackLayers(rootfsDir)
+	return s.unpackLayers(s.rootfsDir)
 }
 
-func (s *FedoraHTTP) unpackLayers(rootfsDir string) error {
+func (s *fedora) unpackLayers(rootfsDir string) error {
 	// Read manifest file which contains the path to the layers
 	file, err := os.Open(filepath.Join(rootfsDir, "manifest.json"))
 	if err != nil {
@@ -121,7 +117,7 @@ func (s *FedoraHTTP) unpackLayers(rootfsDir string) error {
 	return nil
 }
 
-func (s *FedoraHTTP) getLatestBuild(URL, release string) (string, error) {
+func (s *fedora) getLatestBuild(URL, release string) (string, error) {
 	resp, err := http.Get(fmt.Sprintf("%s/%s", URL, release))
 	if err != nil {
 		return "", err

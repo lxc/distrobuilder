@@ -8,7 +8,7 @@ import (
 )
 
 func TestOpenWrtHTTP_getLatestServiceRelease(t *testing.T) {
-	s := &OpenWrtHTTP{}
+	s := &openwrt{}
 
 	tests := []struct {
 		release string

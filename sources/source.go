@@ -1,58 +1,60 @@
 package sources
 
-import "github.com/lxc/distrobuilder/shared"
+import (
+	"fmt"
 
-// A Downloader represents a source downloader.
-type Downloader interface {
-	Run(shared.Definition, string) error
+	"github.com/lxc/distrobuilder/shared"
+	"go.uber.org/zap"
+)
+
+// ErrUnknownDownloader represents the unknown downloader error
+var ErrUnknownDownloader = fmt.Errorf("Unknown downloader")
+
+type downloader interface {
+	init(logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string)
+
+	Downloader
 }
 
-// Get returns a Downloader.
-func Get(name string) Downloader {
-	switch name {
-	case "almalinux-http":
-		return NewAlmaLinuxHTTP()
-	case "alpinelinux-http":
-		return NewAlpineLinuxHTTP()
-	case "alt-http":
-		return NewALTHTTP()
-	case "apertis-http":
-		return NewApertisHTTP()
-	case "archlinux-http":
-		return NewArchLinuxHTTP()
-	case "centos-http":
-		return NewCentOSHTTP()
-	case "springdalelinux-http":
-		return NewSpringdaleLinuxHTTP()
-	case "debootstrap":
-		return NewDebootstrap()
-	case "fedora-http":
-		return NewFedoraHTTP()
-	case "gentoo-http":
-		return NewGentooHTTP()
-	case "ubuntu-http":
-		return NewUbuntuHTTP()
-	case "sabayon-http":
-		return NewSabayonHTTP()
-	case "docker-http":
-		return NewDockerHTTP()
-	case "oraclelinux-http":
-		return NewOracleLinuxHTTP()
-	case "opensuse-http":
-		return NewOpenSUSEHTTP()
-	case "openwrt-http":
-		return NewOpenWrtHTTP()
-	case "plamolinux-http":
-		return NewPlamoLinuxHTTP()
-	case "voidlinux-http":
-		return NewVoidLinuxHTTP()
-	case "funtoo-http":
-		return NewFuntooHTTP()
-	case "rootfs-http":
-		return NewRootfsHTTP()
-	case "rockylinux-http":
-		return NewRockyLinuxHTTP()
+// Downloader represents a source downloader.
+type Downloader interface {
+	Run() error
+}
+
+var downloaders = map[string]func() downloader{
+	"almalinux-http":       func() downloader { return &almalinux{} },
+	"alpinelinux-http":     func() downloader { return &alpineLinux{} },
+	"alt-http":             func() downloader { return &altLinux{} },
+	"apertis-http":         func() downloader { return &apertis{} },
+	"archlinux-http":       func() downloader { return &archlinux{} },
+	"centos-http":          func() downloader { return &centOS{} },
+	"debootstrap":          func() downloader { return &debootstrap{} },
+	"docker":               func() downloader { return &docker{} },
+	"fedora-http":          func() downloader { return &fedora{} },
+	"funtoo-http":          func() downloader { return &funtoo{} },
+	"gentoo-http":          func() downloader { return &gentoo{} },
+	"opensuse-http":        func() downloader { return &opensuse{} },
+	"openwrt-http":         func() downloader { return &openwrt{} },
+	"oraclelinux-http":     func() downloader { return &oraclelinux{} },
+	"plamolinux-http":      func() downloader { return &plamolinux{} },
+	"rockylinux-http":      func() downloader { return &rockylinux{} },
+	"rootfs-http":          func() downloader { return &rootfs{} },
+	"sabayon-http":         func() downloader { return &sabayon{} },
+	"springdalelinux-http": func() downloader { return &springdalelinux{} },
+	"ubuntu-http":          func() downloader { return &ubuntu{} },
+	"voidlinux-http":       func() downloader { return &voidlinux{} },
+}
+
+// Load loads and initializes a downloader.
+func Load(downloaderName string, logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string) (Downloader, error) {
+	df, ok := downloaders[downloaderName]
+	if !ok {
+		return nil, ErrUnknownDownloader
 	}
 
-	return nil
+	d := df()
+
+	d.init(logger, definition, rootfsDir)
+
+	return d, nil
 }
