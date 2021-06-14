@@ -29,7 +29,7 @@ var downloaders = map[string]func() downloader{
 	"archlinux-http":       func() downloader { return &archlinux{} },
 	"centos-http":          func() downloader { return &centOS{} },
 	"debootstrap":          func() downloader { return &debootstrap{} },
-	"docker":               func() downloader { return &docker{} },
+	"docker-http":          func() downloader { return &docker{} },
 	"fedora-http":          func() downloader { return &fedora{} },
 	"funtoo-http":          func() downloader { return &funtoo{} },
 	"gentoo-http":          func() downloader { return &gentoo{} },
