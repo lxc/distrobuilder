@@ -28,7 +28,7 @@ type oraclelinux struct {
 func (s *oraclelinux) Run() error {
 	s.majorVersion = s.definition.Image.Release
 	s.architecture = s.definition.Image.ArchitectureMapped
-	fname := fmt.Sprintf("%s-boot.iso", s.architecture)
+
 	baseURL := fmt.Sprintf("%s/OL%s", s.definition.Source.URL, s.definition.Image.Release)
 
 	updates, err := s.getUpdates(baseURL)
@@ -37,11 +37,19 @@ func (s *oraclelinux) Run() error {
 	}
 
 	var latestUpdate string
+	var fname string
 
 	// Only consider updates providing a boot image since we're not interested in the
 	// DVD ISO.
 	for i := len(updates) - 1; i > 0; i-- {
-		fullURL := fmt.Sprintf("%s/%s/%s/%s", baseURL, updates[i], s.architecture, fname)
+		URL := fmt.Sprintf("%s/%s/%s", baseURL, updates[i], s.architecture)
+
+		fname, err = s.getISO(URL, s.architecture)
+		if err != nil {
+			continue
+		}
+
+		fullURL := fmt.Sprintf("%s/%s", URL, fname)
 
 		resp, err := http.Head(fullURL)
 		if err != nil {
@@ -266,6 +274,37 @@ EOF
 	exitChroot()
 
 	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+}
+
+func (s *oraclelinux) getISO(URL string, architecture string) (string, error) {
+	var re *regexp.Regexp
+
+	if architecture == "x86_64" {
+		re = regexp.MustCompile(fmt.Sprintf("%s-boot(-\\d{8})?.iso", architecture))
+	} else if architecture == "aarch64" {
+		re = regexp.MustCompile(fmt.Sprintf("%s-boot-uek(-\\d{8})?.iso", architecture))
+	} else {
+		return "", fmt.Errorf("Unsupported architecture %q", architecture)
+	}
+
+	doc, err := htmlquery.LoadURL(URL)
+	if err != nil {
+		return "", err
+	}
+
+	var isos []string
+
+	for _, a := range htmlquery.Find(doc, "//a/@href") {
+		if re.MatchString(a.FirstChild.Data) {
+			isos = append(isos, a.FirstChild.Data)
+		}
+	}
+
+	if len(isos) == 0 {
+		return "", fmt.Errorf("No isos found")
+	}
+
+	return isos[len(isos)-1], nil
 }
 
 func (s *oraclelinux) getUpdates(URL string) ([]string, error) {
