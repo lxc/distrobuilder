@@ -458,7 +458,7 @@ func (s *centOS) getRegexes(arch string, variant string, release string) []*rege
 	switch len(releaseFields) {
 	case 1:
 		if arch == "armhfp" {
-			re = append(re, fmt.Sprintf("CentOS-Userland-%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
+			re = append(re, fmt.Sprintf("CentOS-Userland-%s-armv7hl-(RootFS|generic)-(?i:%s)(-\\d+)?-sda.raw.xz",
 				releaseFields[0], variant))
 		} else {
 			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)*-%s-(?i:%s)(-\\d+)?.iso",
