@@ -85,8 +85,13 @@ func (s *openwrt) Run() error {
 	} else {
 		switch s.definition.Image.ArchitectureMapped {
 		case "x86_64":
-			fname = fmt.Sprintf("openwrt-%s%s-generic-rootfs.tar.gz", releaseInFilename,
-				strings.Replace(architecturePath, "/", "-", 1))
+			if strings.HasPrefix(release, "21.02") {
+				fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
+					strings.Replace(architecturePath, "/", "-", 1))
+			} else {
+				fname = fmt.Sprintf("openwrt-%s%s-generic-rootfs.tar.gz", releaseInFilename,
+					strings.Replace(architecturePath, "/", "-", 1))
+			}
 		case "armv7l":
 			fallthrough
 		case "aarch64":
