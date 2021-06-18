@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
@@ -11,18 +10,15 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
-	lxd "github.com/lxc/lxd/shared"
 	"github.com/pkg/errors"
-	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
 )
 
 type almalinux struct {
-	common
+	commonRHEL
 
 	fname        string
 	majorVersion string
@@ -50,7 +46,7 @@ func (s *almalinux) Run() error {
 		stat, err := os.Stat(imagePath)
 		if err == nil && stat.Size() > 0 {
 			return s.unpackRaw(filepath.Join(fpath, strings.TrimSuffix(s.fname, ".xz")),
-				s.rootfsDir)
+				s.rootfsDir, s.rawRunner)
 		}
 	}
 
@@ -102,189 +98,33 @@ func (s *almalinux) Run() error {
 	}
 
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
-		return s.unpackRaw(filepath.Join(fpath, s.fname), s.rootfsDir)
+		return s.unpackRaw(filepath.Join(fpath, s.fname), s.rootfsDir, s.rawRunner)
 	}
 
-	return s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir)
+	return s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
 }
 
-func (s *almalinux) unpackRaw(filePath, rootfsDir string) error {
-	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
-	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
+func (s *almalinux) rawRunner() error {
+	err := shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	set -eux
 
-	os.MkdirAll(roRootDir, 0755)
-	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
+	# Create required files
+	touch /etc/mtab /etc/fstab
 
-	if strings.HasSuffix(filePath, ".raw.xz") {
-		// Uncompress raw image
-		err := shared.RunCommand("unxz", filePath)
-		if err != nil {
-			return err
-		}
-	}
-
-	rawFilePath := strings.TrimSuffix(filePath, ".xz")
-
-	// Figure out the offset
-	var buf bytes.Buffer
-
-	err := lxd.RunCommandWithFds(nil, &buf, "fdisk", "-l", "-o", "Start", rawFilePath)
+	# Create a minimal rootfs
+	mkdir /rootfs
+	yum --installroot=/rootfs --disablerepo=* --enablerepo=base -y --releasever=%s install basesystem almalinux-release yum
+	rm -rf /rootfs/var/cache/yum
+	`, s.majorVersion))
 	if err != nil {
 		return err
 	}
 
-	output := strings.Split(buf.String(), "\n")
-	offsetStr := strings.TrimSpace(output[len(output)-2])
-
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil {
-		return err
-	}
-
-	// Mount the partition read-only since we don't want to accidently modify it.
-	err = shared.RunCommand("mount", "-o", fmt.Sprintf("ro,loop,offset=%d", offset*512),
-		rawFilePath, roRootDir)
-	if err != nil {
-		return err
-	}
-
-	// Since roRootDir is read-only, we need to copy it to a temporary rootfs
-	// directory in order to create the minimal rootfs.
-	err = shared.RunCommand("rsync", "-qa", roRootDir+"/", tempRootDir)
-	if err != nil {
-		return err
-	}
-
-	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
-	if err != nil {
-		return errors.Wrap(err, "Failed to setup chroot")
-	}
-
-	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
-set -eux
-
-# Create required files
-touch /etc/mtab /etc/fstab
-
-# Create a minimal rootfs
-mkdir /rootfs
-yum --installroot=/rootfs --disablerepo=* --enablerepo=base -y --releasever=%s install basesystem almalinux-release yum
-rm -rf /rootfs/var/cache/yum
-`, s.majorVersion))
-	if err != nil {
-		exitChroot()
-		return err
-	}
-
-	exitChroot()
-
-	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	return nil
 }
 
-func (s *almalinux) unpackISO(filePath, rootfsDir string) error {
-	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
-	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
-	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
-	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
-
-	os.MkdirAll(isoDir, 0755)
-	os.MkdirAll(squashfsDir, 0755)
-	os.MkdirAll(roRootDir, 0755)
-	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
-
-	// this is easier than doing the whole loop thing ourselves
-	err := shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
-	if err != nil {
-		return err
-	}
-	defer unix.Unmount(isoDir, 0)
-
-	var rootfsImage string
-	squashfsImage := filepath.Join(isoDir, "LiveOS", "squashfs.img")
-	if lxd.PathExists(squashfsImage) {
-		// The squashfs.img contains an image containing the rootfs, so first
-		// mount squashfs.img
-		err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
-		if err != nil {
-			return err
-		}
-		defer unix.Unmount(squashfsDir, 0)
-
-		rootfsImage = filepath.Join(squashfsDir, "LiveOS", "rootfs.img")
-	} else {
-		rootfsImage = filepath.Join(isoDir, "images", "install.img")
-	}
-
-	// Remove rootfsDir otherwise rsync will copy the content into the directory
-	// itself
-	err = os.RemoveAll(rootfsDir)
-	if err != nil {
-		return err
-	}
-
-	err = s.unpackRootfsImage(rootfsImage, tempRootDir)
-	if err != nil {
-		return err
-	}
-
-	gpgKeysPath := ""
-
-	packagesDir := filepath.Join(isoDir, "Packages")
-	repodataDir := filepath.Join(isoDir, "repodata")
-
-	if !lxd.PathExists(packagesDir) {
-		packagesDir = filepath.Join(isoDir, "BaseOS", "Packages")
-	}
-	if !lxd.PathExists(repodataDir) {
-		repodataDir = filepath.Join(isoDir, "BaseOS", "repodata")
-	}
-
-	if lxd.PathExists(packagesDir) && lxd.PathExists(repodataDir) {
-		// Create cdrom repo for yum
-		err = os.MkdirAll(filepath.Join(tempRootDir, "mnt", "cdrom"), 0755)
-		if err != nil {
-			return err
-		}
-
-		// Copy repo relevant files to the cdrom
-		err = shared.RunCommand("rsync", "-qa",
-			packagesDir,
-			repodataDir,
-			filepath.Join(tempRootDir, "mnt", "cdrom"))
-		if err != nil {
-			return err
-		}
-
-		// Find all relevant GPG keys
-		gpgKeys, err := filepath.Glob(filepath.Join(isoDir, "RPM-GPG-KEY-*"))
-		if err != nil {
-			return err
-		}
-
-		// Copy the keys to the cdrom
-		for _, key := range gpgKeys {
-			fmt.Printf("key=%v\n", key)
-			if len(gpgKeysPath) > 0 {
-				gpgKeysPath += " "
-			}
-			gpgKeysPath += fmt.Sprintf("file:///mnt/cdrom/%s", filepath.Base(key))
-
-			err = shared.RunCommand("rsync", "-qa", key,
-				filepath.Join(tempRootDir, "mnt", "cdrom"))
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
-	if err != nil {
-		return errors.Wrap(err, "Failed to setup chroot")
-	}
-
-	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
+func (s *almalinux) isoRunner(gpgKeysPath string) error {
+	err := shared.RunScript(fmt.Sprintf(`#!/bin/sh
 set -eux
 
 GPG_KEYS="%s"
@@ -296,32 +136,32 @@ yum_args=""
 mkdir -p /etc/yum.repos.d
 
 if [ -d /mnt/cdrom ]; then
-	# Install initial package set
-	cd /mnt/cdrom/Packages
-	rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
-	rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
+# Install initial package set
+cd /mnt/cdrom/Packages
+rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
+rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
 
-	# Add cdrom repo
-	cat <<- EOF > /etc/yum.repos.d/cdrom.repo
+# Add cdrom repo
+cat <<- EOF > /etc/yum.repos.d/cdrom.repo
 [cdrom]
 name=Install CD-ROM
 baseurl=file:///mnt/cdrom
 enabled=0
 EOF
 
-	if [ -n "${GPG_KEYS}" ]; then
-		echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
-		echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
-	else
-		echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
-	fi
-
-	yum_args="--disablerepo=* --enablerepo=cdrom"
-	yum ${yum_args} -y reinstall yum
+if [ -n "${GPG_KEYS}" ]; then
+	echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
+	echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
 else
-	if ! [ -f /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux ]; then
-		mkdir -p /etc/pki/rpm-gpg
-		cat <<- "EOF" > /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+	echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
+fi
+
+yum_args="--disablerepo=* --enablerepo=cdrom"
+yum ${yum_args} -y reinstall yum
+else
+if ! [ -f /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux ]; then
+	mkdir -p /etc/pki/rpm-gpg
+	cat <<- "EOF" > /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v1
 
@@ -381,9 +221,9 @@ kAIBinjtZwEEAP4GumNNy7f4l4tt1CBy1EgoYtYCcJC5SGyhWMee3L3hLhHe7Iwd
 =rEWJ
 -----END PGP PUBLIC KEY BLOCK-----
 EOF
-	fi
+fi
 
-	cat <<- "EOF" > /etc/yum.repos.d/almalinux.repo
+cat <<- "EOF" > /etc/yum.repos.d/almalinux.repo
 [baseos]
 name=AlmaLinux $releasever - BaseOS
 baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
@@ -392,8 +232,8 @@ enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 EOF
 
-	# Use dnf in the boot iso since yum isn't available
-	alias yum=dnf
+# Use dnf in the boot iso since yum isn't available
+alias yum=dnf
 fi
 
 pkgs="basesystem almalinux-release yum"
@@ -404,13 +244,10 @@ yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install $
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
-		exitChroot()
 		return err
 	}
 
-	exitChroot()
-
-	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	return nil
 }
 
 func (s *almalinux) getRelease(URL, release, variant, arch string) string {
@@ -463,39 +300,4 @@ func (s *almalinux) getRegexes(arch string, variant string, release string) []*r
 	}
 
 	return regexes
-}
-
-func (s *almalinux) unpackRootfsImage(imageFile string, target string) error {
-	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(installDir)
-
-	err = shared.RunCommand("mount", "-o", "ro", imageFile, installDir)
-	if err != nil {
-		return err
-	}
-	defer unix.Unmount(installDir, 0)
-
-	rootfsDir := installDir
-	rootfsFile := filepath.Join(installDir, "LiveOS", "rootfs.img")
-
-	if lxd.PathExists(rootfsFile) {
-		rootfsDir, err = ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
-		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(rootfsDir)
-
-		err = shared.RunCommand("mount", "-o", "ro", rootfsFile, rootfsDir)
-		if err != nil {
-			return err
-		}
-		defer unix.Unmount(rootfsFile, 0)
-	}
-
-	// Since rootfs is read-only, we need to copy it to a temporary rootfs
-	// directory in order to create the minimal rootfs.
-	return shared.RunCommand("rsync", "-qa", rootfsDir+"/", target)
 }
