@@ -2,7 +2,6 @@ package sources
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -18,7 +17,7 @@ import (
 )
 
 type oraclelinux struct {
-	common
+	commonRHEL
 
 	majorVersion string
 	architecture string
@@ -328,39 +327,4 @@ func (s *oraclelinux) getUpdates(URL string) ([]string, error) {
 	}
 
 	return updates, nil
-}
-
-func (s oraclelinux) unpackRootfsImage(imageFile string, target string) error {
-	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(installDir)
-
-	err = shared.RunCommand("mount", "-o", "ro", imageFile, installDir)
-	if err != nil {
-		return err
-	}
-	defer unix.Unmount(installDir, 0)
-
-	rootfsDir := installDir
-	rootfsFile := filepath.Join(installDir, "LiveOS", "rootfs.img")
-
-	if lxd.PathExists(rootfsFile) {
-		rootfsDir, err = ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
-		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(rootfsDir)
-
-		err = shared.RunCommand("mount", "-o", "ro", rootfsFile, rootfsDir)
-		if err != nil {
-			return err
-		}
-		defer unix.Unmount(rootfsFile, 0)
-	}
-
-	// Since rootfs is read-only, we need to copy it to a temporary rootfs
-	// directory in order to create the minimal rootfs.
-	return shared.RunCommand("rsync", "-qa", rootfsDir+"/", target)
 }
