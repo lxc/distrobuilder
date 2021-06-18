@@ -26,15 +26,17 @@ type almalinux struct {
 
 // Run downloads the tarball and unpacks it.
 func (s *almalinux) Run() error {
+	var err error
+
 	s.majorVersion = strings.Split(s.definition.Image.Release, ".")[0]
 
 	baseURL := fmt.Sprintf("%s/%s/isos/%s/", s.definition.Source.URL,
 		strings.ToLower(s.definition.Image.Release),
 		s.definition.Image.ArchitectureMapped)
-	s.fname = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
+	s.fname, err = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
 		s.definition.Source.Variant, s.definition.Image.ArchitectureMapped)
-	if s.fname == "" {
-		return fmt.Errorf("Couldn't get name of iso")
+	if err != nil {
+		return errors.Wrap(err, "Failed to get release")
 	}
 
 	fpath := shared.GetTargetDir(s.definition.Image)
@@ -52,7 +54,7 @@ func (s *almalinux) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to parse URL %q", baseURL)
 	}
 
 	checksumFile := ""
@@ -75,7 +77,7 @@ func (s *almalinux) Run() error {
 
 			fpath, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to download %q", baseURL+checksumFile)
 			}
 
 			// Only verify file if possible.
@@ -83,10 +85,10 @@ func (s *almalinux) Run() error {
 				valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
 					s.definition.Source.Keys, s.definition.Source.Keyserver)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "Failed to verify %q", checksumFile)
 				}
 				if !valid {
-					return errors.New("Failed to verify tarball")
+					return errors.Errorf("Invalid signature for %q", filepath.Join(fpath, checksumFile))
 				}
 			}
 		}
@@ -94,7 +96,7 @@ func (s *almalinux) Run() error {
 
 	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.Wrap(err, "Error downloading AlmaLinux image")
+		return errors.Wrapf(err, "Failed to download %q", baseURL+s.fname)
 	}
 
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
@@ -117,7 +119,7 @@ func (s *almalinux) rawRunner() error {
 	rm -rf /rootfs/var/cache/yum
 	`, s.majorVersion))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to run script")
 	}
 
 	return nil
@@ -244,24 +246,24 @@ yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install $
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to run script")
 	}
 
 	return nil
 }
 
-func (s *almalinux) getRelease(URL, release, variant, arch string) string {
-	resp, err := http.Get(URL + path.Join("/", strings.ToLower(release), "isos", arch))
+func (s *almalinux) getRelease(URL, release, variant, arch string) (string, error) {
+	fullURL := URL + path.Join("/", strings.ToLower(release), "isos", arch)
+
+	resp, err := http.Get(fullURL)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return ""
+		return "", errors.Wrapf(err, "Failed to GET %q", fullURL)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return ""
+		return "", errors.Wrap(err, "Failed to read body")
 	}
 
 	re := s.getRegexes(arch, variant, release)
@@ -269,11 +271,11 @@ func (s *almalinux) getRelease(URL, release, variant, arch string) string {
 	for _, r := range re {
 		matches := r.FindAllString(string(body), -1)
 		if len(matches) > 0 {
-			return matches[len(matches)-1]
+			return matches[len(matches)-1], nil
 		}
 	}
 
-	return ""
+	return "", nil
 }
 
 func (s *almalinux) getRegexes(arch string, variant string, release string) []*regexp.Regexp {
