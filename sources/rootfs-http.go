@@ -18,13 +18,13 @@ type rootfs struct {
 func (s *rootfs) Run() error {
 	fpath, err := shared.DownloadHash(s.definition.Image, s.definition.Source.URL, "", nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to download tarball")
+		return errors.Wrapf(err, "Failed to download %q", s.definition.Source.URL)
 	}
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, path.Base(s.definition.Source.URL)), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to unpack tarball")
+		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, path.Base(s.definition.Source.URL)))
 	}
 
 	return nil
