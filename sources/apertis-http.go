@@ -1,17 +1,16 @@
 package sources
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -31,7 +30,7 @@ func (s *apertis) Run() error {
 
 	resp, err := http.Head(baseURL)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to HEAD %q", baseURL)
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
@@ -41,7 +40,10 @@ func (s *apertis) Run() error {
 		baseURL = fmt.Sprintf("%s/%s/%s",
 			s.definition.Source.URL, s.definition.Source.Variant, release)
 	} else {
-		exactRelease = s.getLatestRelease(baseURL, release)
+		exactRelease, err = s.getLatestRelease(baseURL, release)
+		if err != nil {
+			return errors.Wrap(err, "Failed to get latest release")
+		}
 	}
 
 	baseURL = fmt.Sprintf("%s/%s/%s/%s/",
@@ -51,7 +53,7 @@ func (s *apertis) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to parse %q", baseURL)
 	}
 
 	// Force gpg checks when using http
@@ -61,38 +63,36 @@ func (s *apertis) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, "", nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to download %q", baseURL+fname)
 	}
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to unpack %q", fname)
 	}
 
 	return nil
 }
 
-func (s *apertis) getLatestRelease(baseURL, release string) string {
+func (s *apertis) getLatestRelease(baseURL, release string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return ""
+		return "", errors.Wrapf(err, "Failed to GET %q", baseURL)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return ""
+		return "", errors.Wrap(err, "Failed to ready body")
 	}
 
 	regex := regexp.MustCompile(fmt.Sprintf(">(%s\\.\\d+)/<", release))
 	releases := regex.FindAllStringSubmatch(string(body), -1)
 
 	if len(releases) > 0 {
-		return releases[len(releases)-1][1]
+		return releases[len(releases)-1][1], nil
 	}
 
-	return ""
+	return "", nil
 }
