@@ -23,7 +23,7 @@ func (s *altLinux) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to parse URL %q", baseURL)
 	}
 
 	checksumFile := ""
@@ -35,10 +35,13 @@ func (s *altLinux) Run() error {
 
 			fpath, err := shared.DownloadHash(s.definition.Image, checksumFile+".asc", "", nil)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to download %q", checksumFile+".asc")
 			}
 
-			shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
+			_, err = shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to download %q", checksumFile)
+			}
 
 			valid, err := shared.VerifyFile(
 				filepath.Join(fpath, "SHA256SUM"),
@@ -46,10 +49,10 @@ func (s *altLinux) Run() error {
 				s.definition.Source.Keys,
 				s.definition.Source.Keyserver)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to verify file")
 			}
 			if !valid {
-				return fmt.Errorf("Failed to validate tarball")
+				return errors.Errorf("Invalid signature for %q", "SHA256SUM")
 			}
 		} else {
 			// Force gpg checks when using http
@@ -61,13 +64,13 @@ func (s *altLinux) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, checksumFile, sha256.New())
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to download %q", baseURL+fname)
 	}
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to unpack %q", fname)
 	}
 
 	return nil
