@@ -32,7 +32,7 @@ func (s *oraclelinux) Run() error {
 
 	updates, err := s.getUpdates(baseURL)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get updates")
 	}
 
 	var latestUpdate string
@@ -61,13 +61,19 @@ func (s *oraclelinux) Run() error {
 		}
 	}
 
-	fpath, err := shared.DownloadHash(s.definition.Image, fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname),
-		"", nil)
+	source := fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname)
+
+	fpath, err := shared.DownloadHash(s.definition.Image, source, "", nil)
 	if err != nil {
-		return errors.Wrap(err, "Error downloading Oracle Linux image")
+		return errors.Wrapf(err, "Failed to download %q", source)
 	}
 
-	return s.unpackISO(latestUpdate[1:], filepath.Join(fpath, fname), s.rootfsDir)
+	err = s.unpackISO(latestUpdate[1:], filepath.Join(fpath, fname), s.rootfsDir)
+	if err != nil {
+		return errors.Wrap(err, "Failed to unpack ISO")
+	}
+
+	return nil
 }
 
 func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error {
@@ -76,15 +82,19 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
 	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
 
-	os.MkdirAll(isoDir, 0755)
-	os.MkdirAll(squashfsDir, 0755)
-	os.MkdirAll(roRootDir, 0755)
 	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
+
+	for _, dir := range []string{isoDir, squashfsDir, roRootDir} {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create %q", dir)
+		}
+	}
 
 	// this is easier than doing the whole loop thing ourselves
 	err := shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to mount %q", filePath)
 	}
 	defer unix.Unmount(isoDir, 0)
 
@@ -96,26 +106,25 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 		// mount squashfs.img
 		err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to mount %q", squashfsImage)
 		}
 		defer unix.Unmount(squashfsDir, 0)
 
 		rootfsImage = filepath.Join(squashfsDir, "LiveOS", "rootfs.img")
 	} else {
 		rootfsImage = filepath.Join(isoDir, "images", "install.img")
-
 	}
 
 	// Remove rootfsDir otherwise rsync will copy the content into the directory
 	// itself
 	err = os.RemoveAll(rootfsDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to remove %q", rootfsDir)
 	}
 
 	err = s.unpackRootfsImage(rootfsImage, tempRootDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to unpack %q", rootfsImage)
 	}
 
 	// Determine rpm and yum packages
@@ -123,7 +132,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 
 	doc, err := htmlquery.LoadURL(fmt.Sprintf("%s/index.html", baseURL))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to load URL %q", fmt.Sprintf("%s/index.html", baseURL))
 	}
 
 	regexRpm := regexp.MustCompile(`^getPackage/rpm-\d+.+\.rpm$`)
@@ -149,45 +158,25 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	}
 
 	if rpmPkg != "" && yumPkg != "" {
-		rpmFileName := filepath.Join(tempRootDir, filepath.Base(rpmPkg))
-		yumFileName := filepath.Join(tempRootDir, filepath.Base(yumPkg))
-		gpgFileName := filepath.Join(tempRootDir, "RPM-GPG-KEY-oracle")
-
-		rpmFile, err := os.Create(rpmFileName)
-		if err != nil {
-			return err
+		array := [][]string{
+			{filepath.Join(tempRootDir, filepath.Base(rpmPkg)), fmt.Sprintf("%s/%s", baseURL, rpmPkg)},
+			{filepath.Join(tempRootDir, filepath.Base(yumPkg)), fmt.Sprintf("%s/%s", baseURL, yumPkg)},
+			{filepath.Join(tempRootDir, "RPM-GPG-KEY-oracle"), "https://oss.oracle.com/ol6/RPM-GPG-KEY-oracle"},
 		}
-		defer rpmFile.Close()
 
-		yumFile, err := os.Create(yumFileName)
-		if err != nil {
-			return err
-		}
-		defer yumFile.Close()
+		for _, elem := range array {
+			f, err := os.Create(elem[0])
+			if err != nil {
+				return errors.Wrapf(err, "Failed to create file %q", elem[0])
+			}
+			defer f.Close()
 
-		gpgFile, err := os.Create(gpgFileName)
-		if err != nil {
-			return err
+			_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, elem[0], elem[1], "", nil, f)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to download %q", elem[1])
+			}
+			f.Close()
 		}
-		defer gpgFile.Close()
-
-		_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, rpmFileName, fmt.Sprintf("%s/%s", baseURL, rpmPkg), "", nil, rpmFile)
-		if err != nil {
-			return err
-		}
-		rpmFile.Close()
-
-		_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, yumFileName, fmt.Sprintf("%s/%s", baseURL, yumPkg), "", nil, yumFile)
-		if err != nil {
-			return err
-		}
-		yumFile.Close()
-
-		_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, gpgFileName, "https://oss.oracle.com/ol6/RPM-GPG-KEY-oracle", "", nil, gpgFile)
-		if err != nil {
-			return err
-		}
-		gpgFile.Close()
 	}
 
 	// Setup the mounts and chroot into the rootfs
@@ -267,12 +256,17 @@ EOF
 `, s.majorVersion, latestUpdate, s.architecture))
 	if err != nil {
 		exitChroot()
-		return err
+		return errors.Wrap(err, "Failed to run script")
 	}
 
 	exitChroot()
 
-	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	if err != nil {
+		return errors.Wrap(err, `Failed to run "rsync"`)
+	}
+
+	return nil
 }
 
 func (s *oraclelinux) getISO(URL string, architecture string) (string, error) {
@@ -283,12 +277,12 @@ func (s *oraclelinux) getISO(URL string, architecture string) (string, error) {
 	} else if architecture == "aarch64" {
 		re = regexp.MustCompile(fmt.Sprintf("%s-boot-uek(-\\d{8})?.iso", architecture))
 	} else {
-		return "", fmt.Errorf("Unsupported architecture %q", architecture)
+		return "", errors.Errorf("Unsupported architecture %q", architecture)
 	}
 
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Failed to load URL %q", URL)
 	}
 
 	var isos []string
@@ -311,7 +305,7 @@ func (s *oraclelinux) getUpdates(URL string) ([]string, error) {
 
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Failed to load URL %q", URL)
 	}
 
 	var updates []string
@@ -323,7 +317,7 @@ func (s *oraclelinux) getUpdates(URL string) ([]string, error) {
 	}
 
 	if len(updates) == 0 {
-		return nil, fmt.Errorf("No updates found")
+		return nil, errors.Errorf("No updates found")
 	}
 
 	return updates, nil
