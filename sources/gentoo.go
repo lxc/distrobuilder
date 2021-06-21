@@ -2,7 +2,6 @@ package sources
 
 import (
 	"crypto/sha512"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -38,18 +38,14 @@ func (s *gentoo) Run() error {
 		s.definition.Image.ArchitectureMapped)
 	fname, err := s.getLatestBuild(baseURL, s.definition.Image.ArchitectureMapped)
 	if err != nil {
-		return err
-	}
-
-	if fname == "" {
-		return errors.New("Failed to determine latest build")
+		return errors.Wrap(err, "Failed to get latest build")
 	}
 
 	tarball := fmt.Sprintf("%s/%s", baseURL, fname)
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to parse %q", tarball)
 	}
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
@@ -65,29 +61,33 @@ func (s *gentoo) Run() error {
 		fpath, err = shared.DownloadHash(s.definition.Image, tarball, tarball+".DIGESTS", sha512.New())
 	}
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to download %q", tarball)
 	}
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(s.definition.Image, tarball+".DIGESTS.asc", "", nil)
+		_, err = shared.DownloadHash(s.definition.Image, tarball+".DIGESTS.asc", "", nil)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to download %q", tarball+".DIGESTS.asc")
+		}
+
 		valid, err := shared.VerifyFile(
 			filepath.Join(fpath, fname+".DIGESTS.asc"),
 			"",
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to verify %q", filepath.Join(fpath, fname+".DIGESTS.asc"))
 		}
 		if !valid {
-			return errors.New("Failed to verify tarball")
+			return errors.Errorf("Failed to verify %q", fname+".DIGESTS.asc")
 		}
 	}
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
 
 	return nil
@@ -96,13 +96,13 @@ func (s *gentoo) Run() error {
 func (s *gentoo) getLatestBuild(baseURL, arch string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Failed to GET %q", baseURL)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Failed to read body")
 	}
 
 	// Look for .tar.xz
@@ -125,5 +125,5 @@ func (s *gentoo) getLatestBuild(baseURL, arch string) (string, error) {
 		return strings.Trim(matches[0], "<>"), nil
 	}
 
-	return "", nil
+	return "", errors.New("Failed to get match")
 }
