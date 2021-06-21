@@ -25,12 +25,12 @@ func (s *plamolinux) Run() error {
 
 	release, err := strconv.Atoi(releaseStr)
 	if err != nil {
-		return errors.Wrap(err, "Failed to determine release")
+		return errors.Wrapf(err, "Failed to convert %q", releaseStr)
 	}
 
 	u, err := url.Parse(s.definition.Source.URL)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to parse %q", s.definition.Source.URL)
 	}
 
 	mirrorPath := path.Join(u.Path, fmt.Sprintf("Plamo-%s.x", releaseStr),
@@ -66,7 +66,7 @@ func (s *plamolinux) Run() error {
 
 	matches, err := filepath.Glob(filepath.Join(pkgDir, fmt.Sprintf("%s-*.txz", pkgTool)))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to match pattern")
 	}
 
 	if len(matches) == 0 {
@@ -77,15 +77,15 @@ func (s *plamolinux) Run() error {
 
 	err = shared.RunCommand("tar", "-pxJf", matches[0], "-C", pkgDir, "sbin/")
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to unpack %q", matches[0])
 	}
 
 	rootfsDirAbs, err := filepath.Abs(s.rootfsDir)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get absolute path")
 	}
 
-	return shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
 set -eux
 
 # Input variables
@@ -114,16 +114,21 @@ for pkg in $(ls -cr ${PKG_DIR}/*.t?z); do
     installpkg -root ${ROOTFS_DIR} -priority ADD ${pkg}
 done
 `, pkgDir, rootfsDirAbs))
+	if err != nil {
+		return errors.Wrap(err, "Failed to run script")
+	}
+
+	return nil
 }
 
 func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignoredPkgs []string) (string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Failed to load URL %q", URL)
 	}
 
 	if doc == nil {
-		return "", fmt.Errorf("Failed to load URL")
+		return "", errors.Errorf("Empty HTML document")
 	}
 
 	nodes := htmlquery.Find(doc, `//a/@href`)
@@ -142,13 +147,13 @@ func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignor
 			// package
 			dir, err = shared.DownloadHash(def, fmt.Sprintf("%s/%s", URL, target), "", nil)
 			if err != nil {
-				return "", err
+				return "", errors.Wrapf(err, "Failed to download %q", fmt.Sprintf("%s/%s", URL, target))
 			}
 		} else if strings.HasSuffix(target, ".txz/") {
 			// directory
 			u, err := url.Parse(URL)
 			if err != nil {
-				return "", err
+				return "", errors.Wrapf(err, "Failed to parse %q", URL)
 			}
 
 			u.Path = path.Join(u.Path, target)

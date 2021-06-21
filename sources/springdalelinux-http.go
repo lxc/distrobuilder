@@ -31,10 +31,15 @@ func (s *springdalelinux) Run() error {
 
 	_, err := shared.DownloadHash(s.definition.Image, baseURL+s.fname, "", nil)
 	if err != nil {
-		return errors.Wrap(err, "Error downloading Springdale image")
+		return errors.Wrapf(err, "Error downloading %q", baseURL+s.fname)
 	}
 
-	return s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
+	err = s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, s.fname))
+	}
+
+	return nil
 }
 
 func (s *springdalelinux) isoRunner(gpgKeysPath string) error {
@@ -173,7 +178,7 @@ yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install $
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to run ISO script")
 	}
 
 	return nil

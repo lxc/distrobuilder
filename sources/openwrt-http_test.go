@@ -25,6 +25,8 @@ func TestOpenWrtHTTP_getLatestServiceRelease(t *testing.T) {
 	}
 	for _, tt := range tests {
 		baseURL := "https://downloads.openwrt.org/releases/"
-		require.Regexp(t, tt.want, s.getLatestServiceRelease(baseURL, tt.release))
+		release, err := s.getLatestServiceRelease(baseURL, tt.release)
+		require.NoError(t, err)
+		require.Regexp(t, tt.want, release)
 	}
 }

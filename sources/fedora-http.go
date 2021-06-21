@@ -2,7 +2,6 @@ package sources
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"sort"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -28,40 +28,46 @@ func (s *fedora) Run() error {
 	// Get latest build
 	build, err := s.getLatestBuild(baseURL, s.definition.Image.Release)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get latest build")
 	}
 
 	fname := fmt.Sprintf("Fedora-Container-Base-%s-%s.%s.tar.xz",
 		s.definition.Image.Release, build, s.definition.Image.ArchitectureMapped)
 
 	// Download image
-	fpath, err := shared.DownloadHash(s.definition.Image, fmt.Sprintf("%s/%s/%s/images/%s",
-		baseURL, s.definition.Image.Release, build, fname), "", nil)
+	sourceURL := fmt.Sprintf("%s/%s/%s/images/%s", baseURL, s.definition.Image.Release, build, fname)
+
+	fpath, err := shared.DownloadHash(s.definition.Image, sourceURL, "", nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to download %q", sourceURL)
 	}
 
 	// Unpack the base image
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
 
 	// Unpack the rest of the image (/bin, /sbin, /usr, etc.)
-	return s.unpackLayers(s.rootfsDir)
+	err = s.unpackLayers(s.rootfsDir)
+	if err != nil {
+		return errors.Wrap(err, "Failed to unpack")
+	}
+
+	return nil
 }
 
 func (s *fedora) unpackLayers(rootfsDir string) error {
 	// Read manifest file which contains the path to the layers
 	file, err := os.Open(filepath.Join(rootfsDir, "manifest.json"))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to open %q", filepath.Join(rootfsDir, "manifest.json"))
 	}
 	defer file.Close()
 
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to read file %q", file.Name())
 	}
 
 	// Structure of the manifest excluding RepoTags
@@ -72,7 +78,7 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 
 	err = json.Unmarshal(data, &manifests)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to unmarshal JSON data")
 	}
 
 	pathsToRemove := []string{
@@ -86,7 +92,7 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 		for _, layer := range manifest.Layers {
 			err := lxd.Unpack(filepath.Join(rootfsDir, layer), rootfsDir, false, false, nil)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(rootfsDir, layer))
 			}
 
 			pathsToRemove = append(pathsToRemove,
@@ -99,14 +105,14 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 	// Clean up /tmp since there are unnecessary files there
 	files, err := filepath.Glob(filepath.Join(rootfsDir, "tmp", "*"))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to find matching files")
 	}
 	pathsToRemove = append(pathsToRemove, files...)
 
 	// Clean up /root since there are unnecessary files there
 	files, err = filepath.Glob(filepath.Join(rootfsDir, "root", "*"))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to find matching files")
 	}
 	pathsToRemove = append(pathsToRemove, files...)
 
@@ -120,13 +126,13 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 func (s *fedora) getLatestBuild(URL, release string) (string, error) {
 	resp, err := http.Get(fmt.Sprintf("%s/%s", URL, release))
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Failed to GET %q", fmt.Sprintf("%s/%s", URL, release))
 	}
 	defer resp.Body.Close()
 
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Failed to read body")
 	}
 
 	// Builds are formatted in one of two ways:

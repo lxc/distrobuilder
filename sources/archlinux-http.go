@@ -1,7 +1,6 @@
 package sources
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/lxc/distrobuilder/shared"
+	"github.com/pkg/errors"
 
 	lxd "github.com/lxc/lxd/shared"
 	"gopkg.in/antchfx/htmlquery.v1"
@@ -33,7 +33,7 @@ func (s *archlinux) Run() error {
 		// Get latest release
 		release, err = s.getLatestRelease(s.definition.Source.URL, s.definition.Image.ArchitectureMapped)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to get latest release")
 		}
 	}
 
@@ -53,7 +53,7 @@ func (s *archlinux) Run() error {
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to parse URL %q", tarball)
 	}
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
@@ -63,7 +63,7 @@ func (s *archlinux) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to download %q", tarball)
 	}
 
 	// Force gpg checks when using http
@@ -76,10 +76,10 @@ func (s *archlinux) Run() error {
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to verify %q", fname)
 		}
 		if !valid {
-			return errors.New("Failed to verify tarball")
+			return errors.Errorf("Invalid signature for %q", fname)
 		}
 	}
 
@@ -94,24 +94,30 @@ func (s *archlinux) Run() error {
 	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(s.rootfsDir,
 		"root."+s.definition.Image.ArchitectureMapped)))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get files")
 	}
 
 	for _, file := range files {
 		err = os.Rename(file, filepath.Join(s.rootfsDir, path.Base(file)))
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to rename file %q", file)
 		}
 	}
 
-	return os.RemoveAll(filepath.Join(s.rootfsDir, "root."+
-		s.definition.Image.ArchitectureMapped))
+	path := filepath.Join(s.rootfsDir, "root."+s.definition.Image.ArchitectureMapped)
+
+	err = os.RemoveAll(path)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to remove %q", path)
+	}
+
+	return nil
 }
 
 func (s *archlinux) getLatestRelease(URL string, arch string) (string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "Failed to load URL %q", URL)
 	}
 
 	re := regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}/?$`)
@@ -125,7 +131,7 @@ func (s *archlinux) getLatestRelease(URL string, arch string) (string, error) {
 	}
 
 	if len(releases) == 0 {
-		return "", fmt.Errorf("Failed to determine latest release")
+		return "", errors.Errorf("Failed to determine latest release")
 	}
 
 	// Sort releases in case they're out-of-order

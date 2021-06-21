@@ -25,15 +25,19 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
 	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
 
-	os.MkdirAll(isoDir, 0755)
-	os.MkdirAll(squashfsDir, 0755)
-	os.MkdirAll(roRootDir, 0755)
 	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
+
+	for _, dir := range []string{isoDir, squashfsDir, roRootDir} {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create directory %q", dir)
+		}
+	}
 
 	// this is easier than doing the whole loop thing ourselves
 	err := shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to mount %q", filePath)
 	}
 	defer unix.Unmount(isoDir, 0)
 
@@ -44,7 +48,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 		// mount squashfs.img
 		err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to mount %q", squashfsImage)
 		}
 		defer unix.Unmount(squashfsDir, 0)
 
@@ -57,12 +61,12 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 	// itself
 	err = os.RemoveAll(rootfsDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to remove directory %q", rootfsDir)
 	}
 
 	err = c.unpackRootfsImage(rootfsImage, tempRootDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to unpack %q", rootfsImage)
 	}
 
 	gpgKeysPath := ""
@@ -81,7 +85,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 		// Create cdrom repo for yum
 		err = os.MkdirAll(filepath.Join(tempRootDir, "mnt", "cdrom"), 0755)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create directory %q", filepath.Join(tempRootDir, "mnt", "cdrom"))
 		}
 
 		// Copy repo relevant files to the cdrom
@@ -90,13 +94,13 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 			repodataDir,
 			filepath.Join(tempRootDir, "mnt", "cdrom"))
 		if err != nil {
-			return err
+			return errors.Wrap(err, `Failed to run "rsync"`)
 		}
 
 		// Find all relevant GPG keys
 		gpgKeys, err := filepath.Glob(filepath.Join(isoDir, "RPM-GPG-KEY-*"))
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to match gpg keys")
 		}
 
 		// Copy the keys to the cdrom
@@ -110,7 +114,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 			err = shared.RunCommand("rsync", "-qa", key,
 				filepath.Join(tempRootDir, "mnt", "cdrom"))
 			if err != nil {
-				return err
+				return errors.Wrap(err, `Failed to run "rsync"`)
 			}
 		}
 	}
@@ -129,19 +133,24 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 
 	exitChroot()
 
-	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	if err != nil {
+		return errors.Wrap(err, `Failed to run "rsync"`)
+	}
+
+	return nil
 }
 
 func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to create temporary directory")
 	}
 	defer os.RemoveAll(installDir)
 
 	err = shared.RunCommand("mount", "-o", "ro", imageFile, installDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to mount %q", imageFile)
 	}
 	defer unix.Unmount(installDir, 0)
 
@@ -151,34 +160,43 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 	if lxd.PathExists(rootfsFile) {
 		rootfsDir, err = ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to create temporary directory")
 		}
 		defer os.RemoveAll(rootfsDir)
 
 		err = shared.RunCommand("mount", "-o", "ro", rootfsFile, rootfsDir)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to mount %q", rootfsFile)
 		}
 		defer unix.Unmount(rootfsFile, 0)
 	}
 
 	// Since rootfs is read-only, we need to copy it to a temporary rootfs
 	// directory in order to create the minimal rootfs.
-	return shared.RunCommand("rsync", "-qa", rootfsDir+"/", target)
+	err = shared.RunCommand("rsync", "-qa", rootfsDir+"/", target)
+	if err != nil {
+		return errors.Wrap(err, `Failed to run "rsync"`)
+	}
+
+	return nil
 }
 
 func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() error) error {
 	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
 	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
 
-	os.MkdirAll(roRootDir, 0755)
+	err := os.MkdirAll(roRootDir, 0755)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to create directory %q", roRootDir)
+	}
+
 	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
 
 	if strings.HasSuffix(filePath, ".raw.xz") {
 		// Uncompress raw image
 		err := shared.RunCommand("unxz", filePath)
 		if err != nil {
-			return err
+			return errors.Wrap(err, `Failed to run "unxz"`)
 		}
 	}
 
@@ -187,9 +205,9 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 	// Figure out the offset
 	var buf bytes.Buffer
 
-	err := lxd.RunCommandWithFds(nil, &buf, "fdisk", "-l", "-o", "Start", rawFilePath)
+	err = lxd.RunCommandWithFds(nil, &buf, "fdisk", "-l", "-o", "Start", rawFilePath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, `Failed to run "fdisk"`)
 	}
 
 	output := strings.Split(buf.String(), "\n")
@@ -197,21 +215,21 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 
 	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to convert %q", offsetStr)
 	}
 
 	// Mount the partition read-only since we don't want to accidently modify it.
 	err = shared.RunCommand("mount", "-o", fmt.Sprintf("ro,loop,offset=%d", offset*512),
 		rawFilePath, roRootDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to mount %q", fmt.Sprintf("ro,loop,offset=%d", offset*512))
 	}
 
 	// Since roRootDir is read-only, we need to copy it to a temporary rootfs
 	// directory in order to create the minimal rootfs.
 	err = shared.RunCommand("rsync", "-qa", roRootDir+"/", tempRootDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, `Failed to run "rsync"`)
 	}
 
 	// Setup the mounts and chroot into the rootfs
@@ -223,10 +241,15 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 	err = scriptRunner()
 	if err != nil {
 		exitChroot()
-		return err
+		return errors.Wrap(err, "Failed to run script")
 	}
 
 	exitChroot()
 
-	return shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	if err != nil {
+		return errors.Wrap(err, `Failed to run "rsync"`)
+	}
+
+	return nil
 }

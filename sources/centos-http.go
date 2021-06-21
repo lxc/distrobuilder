@@ -31,13 +31,15 @@ func (s *centOS) Run() error {
 		s.majorVersion = strings.Split(s.definition.Image.Release, ".")[0]
 	}
 
+	var err error
+
 	baseURL := fmt.Sprintf("%s/%s/isos/%s/", s.definition.Source.URL,
 		strings.ToLower(s.definition.Image.Release),
 		s.definition.Image.ArchitectureMapped)
-	s.fname = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
+	s.fname, err = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
 		s.definition.Source.Variant, s.definition.Image.ArchitectureMapped)
-	if s.fname == "" {
-		return fmt.Errorf("Couldn't get name of iso")
+	if err != nil {
+		return errors.Wrap(err, "Failed to get release")
 	}
 
 	fpath := shared.GetTargetDir(s.definition.Image)
@@ -48,14 +50,20 @@ func (s *centOS) Run() error {
 
 		stat, err := os.Stat(imagePath)
 		if err == nil && stat.Size() > 0 {
-			return s.unpackRaw(filepath.Join(fpath, strings.TrimSuffix(s.fname, ".xz")),
-				s.rootfsDir, s.rawRunner)
+			tarball := filepath.Join(fpath, strings.TrimSuffix(s.fname, ".xz"))
+
+			err = s.unpackRaw(tarball, s.rootfsDir, s.rawRunner)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to unpack %q", tarball)
+			}
+
+			return nil
 		}
 	}
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to parse URL %q", baseURL)
 	}
 
 	checksumFile := ""
@@ -78,7 +86,7 @@ func (s *centOS) Run() error {
 
 			fpath, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to download %q", baseURL+checksumFile)
 			}
 
 			// Only verify file if possible.
@@ -86,10 +94,10 @@ func (s *centOS) Run() error {
 				valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
 					s.definition.Source.Keys, s.definition.Source.Keyserver)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "Failed to verify %q", checksumFile)
 				}
 				if !valid {
-					return errors.New("Failed to verify tarball")
+					return errors.Errorf("Invalid signature for %q", checksumFile)
 				}
 			}
 		}
@@ -97,14 +105,22 @@ func (s *centOS) Run() error {
 
 	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.Wrap(err, "Error downloading CentOS image")
+		return errors.Wrapf(err, "Failed to download %q", baseURL+s.fname)
 	}
+
+	source := filepath.Join(fpath, s.fname)
 
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
-		return s.unpackRaw(filepath.Join(fpath, s.fname), s.rootfsDir, s.rawRunner)
+		err = s.unpackRaw(source, s.rootfsDir, s.rawRunner)
+
+	} else {
+		err = s.unpackISO(source, s.rootfsDir, s.isoRunner)
+	}
+	if err != nil {
+		return errors.Wrapf(err, "Failed to unpack %q", source)
 	}
 
-	return s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
+	return nil
 }
 
 func (s *centOS) rawRunner() error {
@@ -123,7 +139,7 @@ rm -rf /rootfs/var/cache/yum
 sed -ri 's/^enabled=.*/enabled=0/g' /rootfs/etc/yum.repos.d/CentOS-armhfp-kernel.repo
 `, s.majorVersion))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to run script")
 	}
 
 	return nil
@@ -237,31 +253,29 @@ yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install $
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to run script")
 	}
 
 	return nil
 }
 
-func (s *centOS) getRelease(URL, release, variant, arch string) string {
+func (s *centOS) getRelease(URL, release, variant, arch string) (string, error) {
 	releaseFields := strings.Split(release, ".")
+	u := URL + path.Join("/", strings.ToLower(release), "isos", arch)
 
-	resp, err := http.Get(URL + path.Join("/", strings.ToLower(release), "isos", arch))
+	resp, err := http.Get(u)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return ""
+		return "", errors.Wrapf(err, "Failed to get URL %q", u)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return ""
+		return "", errors.Wrap(err, "Failed to read body")
 	}
 
 	if len(releaseFields) == 3 && !strings.Contains(URL, "vault.centos.org") {
-		fmt.Println("Patch releases are only supported when using vault.centos.org as the mirror")
-		return ""
+		return "", errors.New("Patch releases are only supported when using vault.centos.org as the mirror")
 	}
 
 	if strings.HasSuffix(releaseFields[0], "-Stream") {
@@ -275,11 +289,11 @@ func (s *centOS) getRelease(URL, release, variant, arch string) string {
 	for _, r := range re {
 		matches := r.FindAllString(string(body), -1)
 		if len(matches) > 0 {
-			return matches[len(matches)-1]
+			return matches[len(matches)-1], nil
 		}
 	}
 
-	return ""
+	return "", errors.New("Failed to find release")
 }
 
 func (s *centOS) getRegexes(arch string, variant string, release string) []*regexp.Regexp {

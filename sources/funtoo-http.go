@@ -76,29 +76,33 @@ func (s *funtoo) Run() error {
 
 	fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to download tarball")
+		return errors.Wrapf(err, "Failed to download %q", tarball)
 	}
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(s.definition.Image, tarball+".gpg", "", nil)
+		_, err = shared.DownloadHash(s.definition.Image, tarball+".gpg", "", nil)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to download %q", tarball+".gpg")
+		}
+
 		valid, err := shared.VerifyFile(
 			filepath.Join(fpath, fname),
 			filepath.Join(fpath, fname+".gpg"),
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return errors.Wrap(err, "Failed to download verification files")
+			return errors.Wrap(err, "Failed to verify file")
 		}
 		if !valid {
-			return fmt.Errorf("Failed to verify tarball")
+			return errors.Errorf("Invalid signature for %q", filepath.Join(fpath, fname))
 		}
 	}
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack tarball to %q", s.rootfsDir)
+		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
 
 	return nil
@@ -121,7 +125,7 @@ func (s *funtoo) getReleaseDates(URL string) ([]string, error) {
 	}
 
 	if len(dirs) == 0 {
-		return nil, fmt.Errorf("Failed to get release dates")
+		return nil, errors.Errorf("Failed to get release dates")
 	}
 
 	// Sort dirs in case they're out-of-order

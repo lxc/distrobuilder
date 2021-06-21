@@ -21,6 +21,8 @@ func TestApertisHTTP_getLatestRelease(t *testing.T) {
 	}
 	for _, tt := range tests {
 		baseURL := fmt.Sprintf("https://images.apertis.org/release/%s", tt.release)
-		require.Equal(t, tt.want, s.getLatestRelease(baseURL, tt.release))
+		release, err := s.getLatestRelease(baseURL, tt.release)
+		require.NoError(t, err)
+		require.Equal(t, tt.want, release)
 	}
 }
