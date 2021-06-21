@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -80,5 +81,10 @@ func (s *debootstrap) Run() error {
 		defer os.Remove(scriptPath)
 	}
 
-	return shared.RunCommand("debootstrap", args...)
+	err := shared.RunCommand("debootstrap", args...)
+	if err != nil {
+		return errors.Wrap(err, `Failed to run "debootstrap"`)
+	}
+
+	return nil
 }
