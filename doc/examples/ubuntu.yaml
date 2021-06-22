@@ -220,7 +220,6 @@ packages:
   cleanup: true
   sets:
   - packages:
-    - apt-transport-https
     - fuse
     - language-pack-en
     - openssh-client
