@@ -127,7 +127,6 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	// Unmount everything and exit the chroot
 	defer exitChroot()
 
-	var manager *managers.Manager
 	imageTargets := shared.ImageTargetAll
 
 	if c.flagVM {
@@ -136,16 +135,12 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 		imageTargets = shared.ImageTargetContainer
 	}
 
-	if c.global.definition.Packages.Manager != "" {
-		manager = managers.Get(c.global.definition.Packages.Manager)
-		if manager == nil {
-			return fmt.Errorf("Couldn't get manager")
-		}
-	} else {
-		manager = managers.GetCustom(*c.global.definition.Packages.CustomManager)
+	manager, err := managers.Load(c.global.definition.Packages.Manager, c.global.logger, *c.global.definition)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to load manager %q", c.global.definition.Packages.Manager)
 	}
 
-	err = manageRepositories(c.global.definition, manager, imageTargets)
+	err = manager.ManageRepositories(imageTargets)
 	if err != nil {
 		return errors.Wrap(err, "Failed to manage repositories")
 	}
@@ -159,7 +154,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	}
 
 	// Install/remove/update packages
-	err = managePackages(c.global.definition, manager, imageTargets)
+	err = manager.ManagePackages(imageTargets)
 	if err != nil {
 		return errors.Wrap(err, "Failed to manage packages")
 	}
