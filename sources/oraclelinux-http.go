@@ -232,7 +232,7 @@ EOF
 
 rm -rf /var/rootfs/*
 
-yum install --releasever=${version} --installroot=/rootfs -y basesystem oraclelinux-release yum
+yum install --releasever=${version} --installroot=/rootfs -y --skip-broken basesystem oraclelinux-release yum
 rm -rf /rootfs/var/cache/yum
 
 mkdir -p /rootfs/etc/yum.repos.d
