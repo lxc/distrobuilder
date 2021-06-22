@@ -1,31 +1,35 @@
 package managers
 
-// NewEgoPortage creates a new Manager instance.
-func NewEgoPortage() *Manager {
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   "emerge",
-			install: "emerge",
-			refresh: "ego",
-			remove:  "emerge",
-			update:  "emerge",
+type egoportage struct {
+	common
+}
+
+func (m *egoportage) load() error {
+	m.commands = managerCommands{
+		clean:   "emerge",
+		install: "emerge",
+		refresh: "ego",
+		remove:  "emerge",
+		update:  "emerge",
+	}
+
+	m.flags = managerFlags{
+		global: []string{},
+		clean:  []string{},
+		install: []string{
+			"--autounmask-continue",
+			"--quiet-build=y",
 		},
-		flags: ManagerFlags{
-			global: []string{},
-			clean:  []string{},
-			install: []string{
-				"--autounmask-continue",
-				"--quiet-build=y",
-			},
-			remove: []string{
-				"--unmerge",
-			},
-			refresh: []string{
-				"sync",
-			},
-			update: []string{
-				"--update", "@world",
-			},
+		remove: []string{
+			"--unmerge",
+		},
+		refresh: []string{
+			"sync",
+		},
+		update: []string{
+			"--update", "@world",
 		},
 	}
+
+	return nil
 }

@@ -1,9 +1,19 @@
 package managers
 
-import "github.com/lxc/distrobuilder/shared"
+import (
+	"strings"
 
-// ManagerFlags represents flags for all subcommands of a package manager.
-type ManagerFlags struct {
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
+	"github.com/lxc/distrobuilder/shared"
+)
+
+// ErrUnknownManager represents the unknown manager error
+var ErrUnknownManager = errors.Errorf("Unknown manager")
+
+// managerFlags represents flags for all subcommands of a package manager.
+type managerFlags struct {
 	global  []string
 	install []string
 	remove  []string
@@ -12,14 +22,14 @@ type ManagerFlags struct {
 	refresh []string
 }
 
-// ManagerHooks represents custom hooks.
-type ManagerHooks struct {
+// managerHooks represents custom hooks.
+type managerHooks struct {
 	clean      func() error
 	preRefresh func() error
 }
 
-// ManagerCommands represents all commands.
-type ManagerCommands struct {
+// managerCommands represents all commands.
+type managerCommands struct {
 	clean   string
 	install string
 	refresh string
@@ -27,145 +37,186 @@ type ManagerCommands struct {
 	update  string
 }
 
-// A Manager represents a package manager.
+// Manager represents a package manager.
 type Manager struct {
-	commands    ManagerCommands
-	flags       ManagerFlags
-	hooks       ManagerHooks
-	RepoHandler func(repoAction shared.DefinitionPackagesRepository) error
+	mgr manager
+	def shared.Definition
 }
 
-// Get returns a Manager specified by name.
-func Get(name string) *Manager {
-	switch name {
-	case "apk":
-		return NewApk()
-	case "apt":
-		return NewApt()
-	case "dnf":
-		return NewDnf()
-	case "egoportage":
-		return NewEgoPortage()
-	case "opkg":
-		return NewOpkg()
-	case "pacman":
-		return NewPacman()
-	case "portage":
-		return NewPortage()
-	case "xbps":
-		return NewXbps()
-	case "yum":
-		return NewYum()
-	case "equo":
-		return NewEquo()
-	case "luet":
-		return NewLuet()
-	case "zypper":
-		return NewZypper()
+type manager interface {
+	init(logger *zap.SugaredLogger, definition shared.Definition)
+	load() error
+	manageRepository(repo shared.DefinitionPackagesRepository) error
+	install(pkgs, flags []string) error
+	remove(pkgs, flags []string) error
+	clean() error
+	refresh() error
+	update() error
+}
+
+var managers = map[string]func() manager{
+	"":           func() manager { return &custom{} },
+	"apk":        func() manager { return &apk{} },
+	"apt":        func() manager { return &apt{} },
+	"dnf":        func() manager { return &dnf{} },
+	"egoportage": func() manager { return &egoportage{} },
+	"equo":       func() manager { return &equo{} },
+	"luet":       func() manager { return &luet{} },
+	"opkg":       func() manager { return &opkg{} },
+	"pacman":     func() manager { return &pacman{} },
+	"portage":    func() manager { return &portage{} },
+	"xbps":       func() manager { return &xbps{} },
+	"yum":        func() manager { return &yum{} },
+	"zypper":     func() manager { return &zypper{} },
+}
+
+// Load loads and initializes a downloader.
+func Load(managerName string, logger *zap.SugaredLogger, definition shared.Definition) (*Manager, error) {
+	df, ok := managers[managerName]
+	if !ok {
+		return nil, ErrUnknownManager
 	}
 
-	return nil
-}
+	d := df()
 
-// GetCustom returns a custom Manager specified by a Definition.
-func GetCustom(def shared.DefinitionPackagesCustomManager) *Manager {
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   def.Clean.Command,
-			install: def.Install.Command,
-			refresh: def.Refresh.Command,
-			remove:  def.Remove.Command,
-			update:  def.Update.Command,
-		},
-		flags: ManagerFlags{
-			clean:   def.Clean.Flags,
-			install: def.Install.Flags,
-			refresh: def.Refresh.Flags,
-			remove:  def.Remove.Flags,
-			update:  def.Update.Flags,
-			global:  def.Flags,
-		},
+	d.init(logger, definition)
+
+	err := d.load()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to load manager %q", managerName)
 	}
+
+	return &Manager{def: definition, mgr: d}, nil
 }
 
-// Install installs packages to the rootfs.
-func (m Manager) Install(pkgs, flags []string) error {
-	if len(m.flags.install) == 0 || pkgs == nil || len(pkgs) == 0 {
+// ManagePackages manages packages.
+func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
+	var validSets []shared.DefinitionPackagesSet
+
+	for _, set := range m.def.Packages.Sets {
+		if !shared.ApplyFilter(&set, m.def.Image.Release, m.def.Image.ArchitectureMapped, m.def.Image.Variant, m.def.Targets.Type, imageTarget) {
+			continue
+		}
+
+		validSets = append(validSets, set)
+	}
+
+	// If there's nothing to install or remove, and no updates need to be performed,
+	// we can exit here.
+	if len(validSets) == 0 && !m.def.Packages.Update {
 		return nil
 	}
 
-	args := append(m.flags.global, m.flags.install...)
-	args = append(args, flags...)
-	args = append(args, pkgs...)
-
-	return shared.RunCommand(m.commands.install, args...)
-}
-
-// Remove removes packages from the rootfs.
-func (m Manager) Remove(pkgs, flags []string) error {
-	if len(m.flags.remove) == 0 || pkgs == nil || len(pkgs) == 0 {
-		return nil
-	}
-
-	args := append(m.flags.global, m.flags.remove...)
-	args = append(args, flags...)
-	args = append(args, pkgs...)
-
-	return shared.RunCommand(m.commands.remove, args...)
-}
-
-// Clean cleans up cached files used by the package managers.
-func (m Manager) Clean() error {
-	var err error
-
-	if len(m.flags.clean) == 0 {
-		return nil
-	}
-
-	args := append(m.flags.global, m.flags.clean...)
-
-	err = shared.RunCommand(m.commands.clean, args...)
+	err := m.mgr.refresh()
 	if err != nil {
 		return err
 	}
 
-	if m.hooks.clean != nil {
-		err = m.hooks.clean()
+	if m.def.Packages.Update {
+		err = m.mgr.update()
+		if err != nil {
+			return err
+		}
+
+		// Run post update hook
+		for _, action := range m.def.GetRunnableActions("post-update", imageTarget) {
+			err = shared.RunScript(action.Action)
+			if err != nil {
+				return errors.Wrap(err, "Failed to run post-update")
+			}
+		}
 	}
 
-	return err
-}
-
-// Refresh refreshes the local package database.
-func (m Manager) Refresh() error {
-	if len(m.flags.refresh) == 0 {
-		return nil
-	}
-
-	if m.hooks.preRefresh != nil {
-		err := m.hooks.preRefresh()
+	for _, set := range optimizePackageSets(validSets) {
+		if set.Action == "install" {
+			err = m.mgr.install(set.Packages, set.Flags)
+		} else if set.Action == "remove" {
+			err = m.mgr.remove(set.Packages, set.Flags)
+		}
 		if err != nil {
 			return err
 		}
 	}
 
-	args := append(m.flags.global, m.flags.refresh...)
+	if m.def.Packages.Cleanup {
+		err = m.mgr.clean()
+		if err != nil {
+			return err
+		}
+	}
 
-	return shared.RunCommand(m.commands.refresh, args...)
+	return nil
 }
 
-// Update updates all packages.
-func (m Manager) Update() error {
-	if len(m.flags.update) == 0 {
+// ManageRepositories manages repositories.
+func (m *Manager) ManageRepositories(imageTarget shared.ImageTarget) error {
+	var err error
+
+	if m.def.Packages.Repositories == nil || len(m.def.Packages.Repositories) == 0 {
 		return nil
 	}
 
-	args := append(m.flags.global, m.flags.update...)
+	for _, repo := range m.def.Packages.Repositories {
+		if !shared.ApplyFilter(&repo, m.def.Image.Release, m.def.Image.ArchitectureMapped, m.def.Image.Variant, m.def.Targets.Type, imageTarget) {
+			continue
+		}
 
-	return shared.RunCommand(m.commands.update, args...)
+		// Run template on repo.URL
+		repo.URL, err = shared.RenderTemplate(repo.URL, m.def)
+		if err != nil {
+			return err
+		}
+
+		// Run template on repo.Key
+		repo.Key, err = shared.RenderTemplate(repo.Key, m.def)
+		if err != nil {
+			return err
+		}
+
+		err = m.mgr.manageRepository(repo)
+		if err != nil {
+			return errors.Wrapf(err, "Error for repository %s", repo.Name)
+		}
+	}
+
+	return nil
 }
 
-// SetInstallFlags overrides the default install flags.
-func (m *Manager) SetInstallFlags(flags ...string) {
-	m.flags.install = flags
+// optimizePackageSets groups consecutive package sets with the same action to
+// reduce the amount of calls to manager.{Install,Remove}(). It still honors the
+// order of execution.
+func optimizePackageSets(sets []shared.DefinitionPackagesSet) []shared.DefinitionPackagesSet {
+	if len(sets) < 2 {
+		return sets
+	}
+
+	var newSets []shared.DefinitionPackagesSet
+
+	action := sets[0].Action
+	packages := sets[0].Packages
+	flags := sets[0].Flags
+
+	for i := 1; i < len(sets); i++ {
+		if sets[i].Action == sets[i-1].Action && strings.Join(sets[i].Flags, " ") == strings.Join(sets[i-1].Flags, " ") {
+			packages = append(packages, sets[i].Packages...)
+		} else {
+			newSets = append(newSets, shared.DefinitionPackagesSet{
+				Action:   action,
+				Packages: packages,
+				Flags:    flags,
+			})
+
+			action = sets[i].Action
+			packages = sets[i].Packages
+			flags = sets[i].Flags
+		}
+	}
+
+	newSets = append(newSets, shared.DefinitionPackagesSet{
+		Action:   action,
+		Packages: packages,
+		Flags:    flags,
+	})
+
+	return newSets
 }

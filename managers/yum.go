@@ -13,8 +13,11 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// NewYum creates a new Manager instance.
-func NewYum() *Manager {
+type yum struct {
+	common
+}
+
+func (m *yum) load() error {
 	var buf bytes.Buffer
 	globalFlags := []string{"-y"}
 
@@ -29,37 +32,41 @@ func NewYum() *Manager {
 		}
 	}
 
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   "yum",
-			install: "yum",
-			refresh: "yum",
-			remove:  "yum",
-			update:  "yum",
-		},
-		flags: ManagerFlags{
-			clean: []string{
-				"clean", "all",
-			},
-			global: globalFlags,
-			install: []string{
-				"install",
-			},
-			remove: []string{
-				"remove",
-			},
-			refresh: []string{
-				"makecache",
-			},
-			update: []string{
-				"update",
-			},
-		},
-		RepoHandler: yumRepoHandler,
+	m.commands = managerCommands{
+		clean:   "yum",
+		install: "yum",
+		refresh: "yum",
+		remove:  "yum",
+		update:  "yum",
 	}
+
+	m.flags = managerFlags{
+		clean: []string{
+			"clean", "all",
+		},
+		global: globalFlags,
+		install: []string{
+			"install",
+		},
+		remove: []string{
+			"remove",
+		},
+		refresh: []string{
+			"makecache",
+		},
+		update: []string{
+			"update",
+		},
+	}
+
+	return nil
 }
 
-func yumRepoHandler(repoAction shared.DefinitionPackagesRepository) error {
+func (m *yum) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
+	return yumManageRepository(repoAction)
+}
+
+func yumManageRepository(repoAction shared.DefinitionPackagesRepository) error {
 	targetFile := filepath.Join("/etc/yum.repos.d", repoAction.Name)
 
 	if !strings.HasSuffix(targetFile, ".repo") {

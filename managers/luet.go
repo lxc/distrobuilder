@@ -11,21 +11,56 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func luetRepoCaller(repo shared.DefinitionPackagesRepository) error {
+type luet struct {
+	common
+}
+
+func (m *luet) load() error {
+	m.commands = managerCommands{
+		clean:   "luet",
+		install: "luet",
+		refresh: "luet",
+		remove:  "luet",
+		update:  "luet",
+	}
+
+	m.flags = managerFlags{
+		global: []string{},
+		clean: []string{
+			"cleanup",
+		},
+		install: []string{
+			"install",
+		},
+		refresh: []string{
+			"repo", "update",
+		},
+		remove: []string{
+			"uninstall",
+		},
+		update: []string{
+			"upgrade",
+		},
+	}
+
+	return nil
+}
+
+func (m *luet) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
 	var targetFile string
 
-	if repo.Name == "" {
+	if repoAction.Name == "" {
 		return fmt.Errorf("Invalid repository name")
 	}
 
-	if repo.URL == "" {
+	if repoAction.URL == "" {
 		return fmt.Errorf("Invalid repository url")
 	}
 
-	if strings.HasSuffix(repo.Name, ".yml") {
-		targetFile = filepath.Join("/etc/luet/repos.conf.d", repo.Name)
+	if strings.HasSuffix(repoAction.Name, ".yml") {
+		targetFile = filepath.Join("/etc/luet/repos.conf.d", repoAction.Name)
 	} else {
-		targetFile = filepath.Join("/etc/luet/repos.conf.d", repo.Name+".yml")
+		targetFile = filepath.Join("/etc/luet/repos.conf.d", repoAction.Name+".yml")
 	}
 
 	if !lxd.PathExists(filepath.Dir(targetFile)) {
@@ -42,44 +77,10 @@ func luetRepoCaller(repo shared.DefinitionPackagesRepository) error {
 	defer f.Close()
 
 	// NOTE: repo.URL is not an URL but the content of the file.
-	_, err = f.WriteString(repo.URL)
+	_, err = f.WriteString(repoAction.URL)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-// NewLuet create a new Manager instance
-func NewLuet() *Manager {
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   "luet",
-			install: "luet",
-			refresh: "luet",
-			remove:  "luet",
-			update:  "luet",
-		},
-		flags: ManagerFlags{
-			global: []string{},
-			clean: []string{
-				"cleanup",
-			},
-			install: []string{
-				"install",
-			},
-			refresh: []string{
-				"repo", "update",
-			},
-			remove: []string{
-				"uninstall",
-			},
-			update: []string{
-				"upgrade",
-			},
-		},
-		RepoHandler: func(repoAction shared.DefinitionPackagesRepository) error {
-			return luetRepoCaller(repoAction)
-		},
-	}
 }
