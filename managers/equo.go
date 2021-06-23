@@ -6,7 +6,52 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func enmanRepoCaller(repo shared.DefinitionPackagesRepository) error {
+type equo struct {
+	common
+}
+
+func (m *equo) load() error {
+	m.commands = managerCommands{
+		clean:   "equo",
+		install: "equo",
+		refresh: "equo",
+		remove:  "equo",
+		update:  "equo",
+	}
+
+	m.flags = managerFlags{
+		global: []string{},
+		clean: []string{
+			"cleanup",
+		},
+		install: []string{
+			"install",
+		},
+		remove: []string{
+			"remove",
+		},
+		refresh: []string{
+			"update",
+		},
+		update: []string{
+			"upgrade",
+		},
+	}
+
+	return nil
+}
+
+func (m *equo) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
+	if repoAction.Type == "" || repoAction.Type == "equo" {
+		return m.equoRepoCaller(repoAction)
+	} else if repoAction.Type == "enman" {
+		return m.enmanRepoCaller(repoAction)
+	}
+
+	return fmt.Errorf("Invalid repository Type")
+}
+
+func (m *equo) enmanRepoCaller(repo shared.DefinitionPackagesRepository) error {
 	args := []string{
 		"add",
 	}
@@ -24,7 +69,7 @@ func enmanRepoCaller(repo shared.DefinitionPackagesRepository) error {
 	return shared.RunCommand("enman", args...)
 }
 
-func equoRepoCaller(repo shared.DefinitionPackagesRepository) error {
+func (m *equo) equoRepoCaller(repo shared.DefinitionPackagesRepository) error {
 	if repo.Name == "" {
 		return fmt.Errorf("Invalid repository name")
 	}
@@ -35,44 +80,4 @@ func equoRepoCaller(repo shared.DefinitionPackagesRepository) error {
 
 	return shared.RunCommand("equo", "repo", "add", "--repo", repo.URL, "--pkg", repo.URL,
 		repo.Name)
-}
-
-// NewEquo creates a new Manager instance
-func NewEquo() *Manager {
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   "equo",
-			install: "equo",
-			refresh: "equo",
-			remove:  "equo",
-			update:  "equo",
-		},
-		flags: ManagerFlags{
-			global: []string{},
-			clean: []string{
-				"cleanup",
-			},
-			install: []string{
-				"install",
-			},
-			remove: []string{
-				"remove",
-			},
-			refresh: []string{
-				"update",
-			},
-			update: []string{
-				"upgrade",
-			},
-		},
-		RepoHandler: func(repoAction shared.DefinitionPackagesRepository) error {
-			if repoAction.Type == "" || repoAction.Type == "equo" {
-				return equoRepoCaller(repoAction)
-			} else if repoAction.Type == "enman" {
-				return enmanRepoCaller(repoAction)
-			}
-
-			return fmt.Errorf("Invalid repository Type")
-		},
-	}
 }

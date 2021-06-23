@@ -313,18 +313,12 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	var manager *managers.Manager
-
-	if c.definition.Packages.Manager != "" {
-		manager = managers.Get(c.definition.Packages.Manager)
-		if manager == nil {
-			return fmt.Errorf("Couldn't get manager")
-		}
-	} else {
-		manager = managers.GetCustom(*c.definition.Packages.CustomManager)
+	manager, err := managers.Load(c.definition.Packages.Manager, c.logger, *c.definition)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to load manager %q", c.definition.Packages.Manager)
 	}
 
-	err = manageRepositories(c.definition, manager, imageTargets)
+	err = manager.ManageRepositories(imageTargets)
 	if err != nil {
 		return errors.Wrap(err, "Failed to manage repositories")
 	}
@@ -338,7 +332,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Install/remove/update packages
-	err = managePackages(c.definition, manager, imageTargets)
+	err = manager.ManagePackages(imageTargets)
 	if err != nil {
 		return errors.Wrap(err, "Failed to manage packages")
 	}

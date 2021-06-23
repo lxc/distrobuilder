@@ -2,38 +2,43 @@ package managers
 
 import "os"
 
-// NewOpkg creates a new Manager instance.
-func NewOpkg() *Manager {
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   "rm",
-			install: "opkg",
-			refresh: "opkg",
-			remove:  "opkg",
-			update:  "echo",
+type opkg struct {
+	common
+}
+
+func (m *opkg) load() error {
+	m.commands = managerCommands{
+		clean:   "rm",
+		install: "opkg",
+		refresh: "opkg",
+		remove:  "opkg",
+		update:  "echo",
+	}
+
+	m.flags = managerFlags{
+		clean: []string{
+			"-rf", "/tmp/opkg-lists/",
 		},
-		flags: ManagerFlags{
-			clean: []string{
-				"-rf", "/tmp/opkg-lists/",
-			},
-			global: []string{},
-			install: []string{
-				"install",
-			},
-			remove: []string{
-				"remove",
-			},
-			refresh: []string{
-				"update",
-			},
-			update: []string{
-				"Not supported",
-			},
+		global: []string{},
+		install: []string{
+			"install",
 		},
-		hooks: ManagerHooks{
-			preRefresh: func() error {
-				return os.MkdirAll("/var/lock", 0755)
-			},
+		remove: []string{
+			"remove",
+		},
+		refresh: []string{
+			"update",
+		},
+		update: []string{
+			"Not supported",
 		},
 	}
+
+	m.hooks = managerHooks{
+		preRefresh: func() error {
+			return os.MkdirAll("/var/lock", 0755)
+		},
+	}
+
+	return nil
 }

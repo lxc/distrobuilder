@@ -12,78 +12,81 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// NewPacman creates a new Manager instance.
-func NewPacman() *Manager {
-	err := pacmanSetMirrorlist()
-	if err != nil {
-		return nil
-	}
-
-	// shared.RunCommand("pacman", "-Syy")
-
-	err = pacmanSetupTrustedKeys()
-	if err != nil {
-		return nil
-	}
-
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   "pacman",
-			install: "pacman",
-			refresh: "pacman",
-			remove:  "pacman",
-			update:  "pacman",
-		},
-		flags: ManagerFlags{
-			clean: []string{
-				"-Sc",
-			},
-			global: []string{
-				"--noconfirm",
-			},
-			install: []string{
-				"-S", "--needed",
-			},
-			remove: []string{
-				"-Rcs",
-			},
-			refresh: []string{
-				"-Syy",
-			},
-			update: []string{
-				"-Su",
-			},
-		},
-		hooks: ManagerHooks{
-			clean: func() error {
-				path := "/var/cache/pacman/pkg"
-
-				// List all entries.
-				entries, err := ioutil.ReadDir(path)
-				if err != nil {
-					if os.IsNotExist(err) {
-						return nil
-					}
-
-					return errors.Wrapf(err, "Failed to list directory '%s'", path)
-				}
-
-				// Individually wipe all entries.
-				for _, entry := range entries {
-					entryPath := filepath.Join(path, entry.Name())
-					err := os.RemoveAll(entryPath)
-					if err != nil && !os.IsNotExist(err) {
-						return errors.Wrapf(err, "Failed to remove '%s'", entryPath)
-					}
-				}
-
-				return nil
-			},
-		},
-	}
+type pacman struct {
+	common
 }
 
-func pacmanSetupTrustedKeys() error {
+func (m *pacman) load() error {
+	err := m.setMirrorlist()
+	if err != nil {
+		return errors.Wrap(err, "Failed to set mirrorlist")
+	}
+
+	err = m.setupTrustedKeys()
+	if err != nil {
+		return errors.Wrap(err, "Failed to setup trusted keys")
+	}
+
+	m.commands = managerCommands{
+		clean:   "pacman",
+		install: "pacman",
+		refresh: "pacman",
+		remove:  "pacman",
+		update:  "pacman",
+	}
+
+	m.flags = managerFlags{
+		clean: []string{
+			"-Sc",
+		},
+		global: []string{
+			"--noconfirm",
+		},
+		install: []string{
+			"-S", "--needed",
+		},
+		remove: []string{
+			"-Rcs",
+		},
+		refresh: []string{
+			"-Syy",
+		},
+		update: []string{
+			"-Su",
+		},
+	}
+
+	m.hooks = managerHooks{
+		clean: func() error {
+			path := "/var/cache/pacman/pkg"
+
+			// List all entries.
+			entries, err := ioutil.ReadDir(path)
+			if err != nil {
+				if os.IsNotExist(err) {
+					return nil
+				}
+
+				return errors.Wrapf(err, "Failed to list directory '%s'", path)
+			}
+
+			// Individually wipe all entries.
+			for _, entry := range entries {
+				entryPath := filepath.Join(path, entry.Name())
+				err := os.RemoveAll(entryPath)
+				if err != nil && !os.IsNotExist(err) {
+					return errors.Wrapf(err, "Failed to remove '%s'", entryPath)
+				}
+			}
+
+			return nil
+		},
+	}
+
+	return nil
+}
+
+func (m *pacman) setupTrustedKeys() error {
 	var err error
 
 	_, err = os.Stat("/etc/pacman.d/gnupg")
@@ -112,7 +115,7 @@ func pacmanSetupTrustedKeys() error {
 	return nil
 }
 
-func pacmanSetMirrorlist() error {
+func (m *pacman) setMirrorlist() error {
 	f, err := os.Create(filepath.Join("etc", "pacman.d", "mirrorlist"))
 	if err != nil {
 		return err

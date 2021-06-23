@@ -4,48 +4,56 @@ import (
 	"os"
 
 	"github.com/lxc/distrobuilder/shared"
+	"github.com/pkg/errors"
 )
 
-// NewApk creates a new Manager instance.
-func NewApk() *Manager {
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   "apk",
-			install: "apk",
-			refresh: "apk",
-			remove:  "apk",
-			update:  "apk",
-		},
-		flags: ManagerFlags{
-			global: []string{
-				"--no-cache",
-			},
-			install: []string{
-				"add",
-			},
-			remove: []string{
-				"del", "--rdepends",
-			},
-			refresh: []string{
-				"update",
-			},
-			update: []string{
-				"upgrade",
-			},
-		},
-		RepoHandler: func(repoAction shared.DefinitionPackagesRepository) error {
-			f, err := os.OpenFile("/etc/apk/repositories", os.O_WRONLY|os.O_APPEND, 0644)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
+type apk struct {
+	common
+}
 
-			_, err = f.WriteString(repoAction.URL + "\n")
-			if err != nil {
-				return err
-			}
+func (m *apk) load() error {
+	m.commands = managerCommands{
+		clean:   "apk",
+		install: "apk",
+		refresh: "apk",
+		remove:  "apk",
+		update:  "apk",
+	}
 
-			return nil
+	m.flags = managerFlags{
+		global: []string{
+			"--no-cache",
+		},
+		install: []string{
+			"add",
+		},
+		remove: []string{
+			"del", "--rdepends",
+		},
+		refresh: []string{
+			"update",
+		},
+		update: []string{
+			"upgrade",
 		},
 	}
+
+	return nil
+}
+
+func (m *apk) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
+	repoFile := "/etc/apk/repositories"
+
+	f, err := os.OpenFile(repoFile, os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to open %q", repoFile)
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(repoAction.URL + "\n")
+	if err != nil {
+		return errors.Wrap(err, "Failed to write string to file")
+	}
+
+	return nil
 }

@@ -6,57 +6,59 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func zypperRepoCaller(repo shared.DefinitionPackagesRepository) error {
-	if repo.Name == "" {
+type zypper struct {
+	common
+}
+
+func (m *zypper) load() error {
+	m.commands = managerCommands{
+		clean:   "zypper",
+		install: "zypper",
+		refresh: "zypper",
+		remove:  "zypper",
+		update:  "zypper",
+	}
+
+	m.flags = managerFlags{
+		global: []string{
+			"--non-interactive",
+			"--gpg-auto-import-keys",
+		},
+		clean: []string{
+			"clean",
+			"-a",
+		},
+		install: []string{
+			"install",
+			"--allow-downgrade",
+			"--replacefiles",
+		},
+		remove: []string{
+			"remove",
+		},
+		refresh: []string{
+			"refresh",
+		},
+		update: []string{
+			"update",
+		},
+	}
+
+	return nil
+}
+
+func (m *zypper) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
+	if repoAction.Type != "" && repoAction.Type != "zypper" {
+		return fmt.Errorf("Invalid repository Type")
+	}
+
+	if repoAction.Name == "" {
 		return fmt.Errorf("Invalid repository name")
 	}
 
-	if repo.URL == "" {
+	if repoAction.URL == "" {
 		return fmt.Errorf("Invalid repository url")
 	}
 
-	return shared.RunCommand("zypper", "ar", "--refresh", "--check", repo.URL, repo.Name)
-}
-
-// NewZypper create a new Manager instance.
-func NewZypper() *Manager {
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   "zypper",
-			install: "zypper",
-			refresh: "zypper",
-			remove:  "zypper",
-			update:  "zypper",
-		},
-		flags: ManagerFlags{
-			global: []string{
-				"--non-interactive",
-				"--gpg-auto-import-keys",
-			},
-			clean: []string{
-				"clean",
-				"-a",
-			},
-			install: []string{
-				"install",
-				"--allow-downgrade",
-				"--replacefiles",
-			},
-			remove: []string{
-				"remove",
-			},
-			refresh: []string{
-				"refresh",
-			},
-			update: []string{
-				"update",
-			},
-		},
-		RepoHandler: func(repoAction shared.DefinitionPackagesRepository) error {
-			if repoAction.Type == "" || repoAction.Type == "zypper" {
-				return zypperRepoCaller(repoAction)
-			}
-			return fmt.Errorf("Invalid repository Type")
-		},
-	}
+	return shared.RunCommand("zypper", "ar", "--refresh", "--check", repoAction.URL, repoAction.Name)
 }

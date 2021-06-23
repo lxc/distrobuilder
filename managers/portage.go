@@ -1,30 +1,34 @@
 package managers
 
-// NewPortage creates a new Manager instance.
-func NewPortage() *Manager {
-	return &Manager{
-		commands: ManagerCommands{
-			clean:   "emerge",
-			install: "emerge",
-			refresh: "emerge",
-			remove:  "emerge",
-			update:  "emerge",
+type portage struct {
+	common
+}
+
+func (m *portage) load() error {
+	m.commands = managerCommands{
+		clean:   "emerge",
+		install: "emerge",
+		refresh: "emerge",
+		remove:  "emerge",
+		update:  "emerge",
+	}
+
+	m.flags = managerFlags{
+		global: []string{},
+		clean:  []string{},
+		install: []string{
+			"--autounmask-continue",
 		},
-		flags: ManagerFlags{
-			global: []string{},
-			clean:  []string{},
-			install: []string{
-				"--autounmask-continue",
-			},
-			remove: []string{
-				"--unmerge",
-			},
-			refresh: []string{
-				"--sync",
-			},
-			update: []string{
-				"--update", "@world",
-			},
+		remove: []string{
+			"--unmerge",
+		},
+		refresh: []string{
+			"--sync",
+		},
+		update: []string{
+			"--update", "@world",
 		},
 	}
+
+	return nil
 }
