@@ -196,7 +196,6 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 set -eux
 
 version="%s"
-update="%s"
 arch="%s"
 
 # Create required files
@@ -204,12 +203,12 @@ touch /etc/mtab /etc/fstab
 
 mkdir -p /etc/yum.repos.d /rootfs
 
+baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/baseos/latest/${arch}/
+
 if which dnf; then
 	alias yum=dnf
-	baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/baseos/latest/${arch}/
 	gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 else
-	baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/${update}/base/${arch}
 	gpgkey=file:///RPM-GPG-KEY-oracle
 
 	# Fetch and install rpm and yum from the Oracle repo
@@ -253,7 +252,7 @@ gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 EOF
 
-`, s.majorVersion, latestUpdate, s.architecture))
+`, s.majorVersion, s.architecture))
 	if err != nil {
 		exitChroot()
 		return errors.Wrap(err, "Failed to run script")
