@@ -562,6 +562,7 @@ fix_nm_link_state() {
 [Unit]
 Description=Turn off network device
 Before=NetworkManager.service
+Before=systemd-networkd.service
 
 [Service]
 ExecStart=-${ip_path} link set $1 down
