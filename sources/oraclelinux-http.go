@@ -203,7 +203,11 @@ touch /etc/mtab /etc/fstab
 
 mkdir -p /etc/yum.repos.d /rootfs
 
-baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/baseos/latest/${arch}/
+if [ "${version}" = "7" ]; then
+	baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/latest/${arch}/
+else
+	baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/baseos/latest/${arch}/
+fi
 
 if which dnf; then
 	alias yum=dnf
