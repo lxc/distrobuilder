@@ -127,12 +127,21 @@ func (s *centOS) rawRunner() error {
 	err := shared.RunScript(fmt.Sprintf(`#!/bin/sh
 set -eux
 
+version="%s"
+
 # Create required files
 touch /etc/mtab /etc/fstab
 
 # Create a minimal rootfs
 mkdir /rootfs
-yum --installroot=/rootfs --disablerepo=* --enablerepo=base -y --releasever=%s install basesystem centos-release yum
+
+if [ "${version}" = 7 ]; then
+	repo="base"
+else
+	repo="BaseOS"
+fi
+
+yum --installroot=/rootfs --disablerepo=* --enablerepo=${repo} -y --releasever=${version} install basesystem centos-release yum
 rm -rf /rootfs/var/cache/yum
 
 # Disable CentOS kernel repo
