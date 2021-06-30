@@ -145,7 +145,9 @@ yum --installroot=/rootfs --disablerepo=* --enablerepo=${repo} -y --releasever=$
 rm -rf /rootfs/var/cache/yum
 
 # Disable CentOS kernel repo
-sed -ri 's/^enabled=.*/enabled=0/g' /rootfs/etc/yum.repos.d/CentOS-armhfp-kernel.repo
+if [ -e /rootfs/etc/yum.repos.d/CentOS-armhfp-kernel.repo ]; then
+	sed -ri 's/^enabled=.*/enabled=0/g' /rootfs/etc/yum.repos.d/CentOS-armhfp-kernel.repo
+fi
 `, s.majorVersion))
 	if err != nil {
 		return errors.Wrap(err, "Failed to run script")
