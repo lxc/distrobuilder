@@ -253,9 +253,11 @@ baseurl=file:///mnt/cdrom
 enabled=0
 EOF
 
+gpg_keys_official="file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7-aarch64 file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-AltArch-Arm32 file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-AltArch-7-ppc64"
+
 	if [ -n "${GPG_KEYS}" ]; then
 		echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
-		echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
+		echo gpgkey=${gpg_keys_official} ${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
 	else
 		echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
 	fi
