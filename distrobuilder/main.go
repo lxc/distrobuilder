@@ -668,8 +668,9 @@ if is_lxc_container; then
 	fix_systemd_udev_trigger
 	fix_systemd_sysctl
 	fix_systemd_mask dev-hugepages.mount
-	fix_systemd_mask systemd-journald-audit.socket
 	fix_systemd_mask run-ribchester-general.mount
+	fix_systemd_mask systemd-hwdb-update.service
+	fix_systemd_mask systemd-journald-audit.socket
 	fix_systemd_mask systemd-modules-load.service
 	fix_systemd_mask systemd-pstore.service
 	fix_systemd_mask ua-messaging.service
