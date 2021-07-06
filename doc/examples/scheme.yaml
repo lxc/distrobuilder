@@ -19,7 +19,7 @@ source:
   keyserver: http://keyserver.ubuntu.com
   variant: default
   suite: suite
-  same_as: xenial
+  same_as: bionic
   skip_verification: false
 
 targets:
