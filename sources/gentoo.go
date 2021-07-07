@@ -36,7 +36,7 @@ func (s *gentoo) Run() error {
 	baseURL := fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s",
 		s.definition.Source.URL, topLevelArch,
 		s.definition.Image.ArchitectureMapped)
-	fname, err := s.getLatestBuild(baseURL, s.definition.Image.ArchitectureMapped)
+	fname, err := s.getLatestBuild(baseURL, s.definition.Image.ArchitectureMapped, s.definition.Source.Variant)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get latest build")
 	}
@@ -93,7 +93,7 @@ func (s *gentoo) Run() error {
 	return nil
 }
 
-func (s *gentoo) getLatestBuild(baseURL, arch string) (string, error) {
+func (s *gentoo) getLatestBuild(baseURL, arch, variant string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
 		return "", errors.Wrapf(err, "Failed to GET %q", baseURL)
@@ -105,8 +105,14 @@ func (s *gentoo) getLatestBuild(baseURL, arch string) (string, error) {
 		return "", errors.Wrap(err, "Failed to read body")
 	}
 
+	var regex *regexp.Regexp
+
 	// Look for .tar.xz
-	regex := regexp.MustCompile(fmt.Sprintf(">stage3-%s-.*.tar.xz<", arch))
+	if variant != "" {
+		regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-%s-.*.tar.xz<", arch, variant))
+	} else {
+		regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-.*.tar.xz<", arch))
+	}
 
 	// Find all stage3 related files
 	matches := regex.FindAllString(string(body), -1)
@@ -116,7 +122,11 @@ func (s *gentoo) getLatestBuild(baseURL, arch string) (string, error) {
 	}
 
 	// Look for .tar.bz2
-	regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-.*.tar.bz2<", arch))
+	if variant != "" {
+		regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-%s-.*.tar.bz2<", arch, variant))
+	} else {
+		regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-.*.tar.bz2<", arch))
+	}
 
 	// Find all stage3 related files
 	matches = regex.FindAllString(string(body), -1)
