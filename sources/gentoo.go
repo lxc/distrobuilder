@@ -25,7 +25,7 @@ func (s *gentoo) Run() error {
 	topLevelArch := s.definition.Image.ArchitectureMapped
 	if topLevelArch == "i686" {
 		topLevelArch = "x86"
-	} else if strings.HasPrefix(topLevelArch, "arm") {
+	} else if strings.HasPrefix(topLevelArch, "arm") && topLevelArch != "arm64" {
 		topLevelArch = "arm"
 	} else if strings.HasPrefix(topLevelArch, "ppc") {
 		topLevelArch = "ppc"
