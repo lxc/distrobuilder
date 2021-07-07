@@ -131,11 +131,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 		}
 	}
 
-	baseDistro := "xenial"
-
-	if s.definition.Image.Release == "18" {
-		baseDistro = "bionic"
-	}
+	baseDistro := "bionic"
 
 	// Download the base Ubuntu image
 	coreImage, err := getLatestCoreBaseImage("https://images.linuxcontainers.org/images", baseDistro, s.definition.Image.ArchitectureMapped)

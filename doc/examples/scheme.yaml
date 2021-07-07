@@ -19,7 +19,7 @@ source:
   keyserver: http://keyserver.ubuntu.com
   variant: default
   suite: suite
-  same_as: xenial
+  same_as: bionic
   skip_verification: false
 
 targets:
@@ -46,20 +46,10 @@ targets:
         content: |-
           lxc.include = LXC_TEMPLATE_CONFIG/common.conf
 
-          # For Ubuntu 14.04
-          lxc.mount.entry = /sys/kernel/debug sys/kernel/debug none bind,optional 0 0
-          lxc.mount.entry = /sys/kernel/security sys/kernel/security none bind,optional 0 0
-          lxc.mount.entry = /sys/fs/pstore sys/fs/pstore none bind,optional 0 0
-          lxc.mount.entry = mqueue dev/mqueue mqueue rw,relatime,create=dir,optional 0 0
-
       - type: user
         after: 4
         content: |-
           lxc.include = LXC_TEMPLATE_CONFIG/userns.conf
-
-          # For Ubuntu 14.04
-          lxc.mount.entry = /sys/firmware/efi/efivars sys/firmware/efi/efivars none bind,optional 0 0
-          lxc.mount.entry = /proc/sys/fs/binfmt_misc proc/sys/fs/binfmt_misc none bind,optional 0 0
 
       - type: all
         content: |-

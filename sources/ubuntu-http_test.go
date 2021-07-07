@@ -7,7 +7,7 @@ import (
 )
 
 func TestUbuntuGetLatestCoreBaseImage(t *testing.T) {
-	release, err := getLatestCoreBaseImage("https://images.linuxcontainers.org/images", "xenial", "amd64")
+	release, err := getLatestCoreBaseImage("https://images.linuxcontainers.org/images", "bionic", "amd64")
 	require.NoError(t, err)
 	require.NotEmpty(t, release)
 }
