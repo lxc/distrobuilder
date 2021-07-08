@@ -679,7 +679,7 @@ if is_lxc_container; then
 	fi
 	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
 		fix_ro_paths systemd-networkd.service
-		fix_ro_paths systemd_resolved.servce
+		fix_ro_paths systemd-resolved.service
 	fi
 fi
 
