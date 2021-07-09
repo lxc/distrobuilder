@@ -32,8 +32,6 @@ func Get(generator string) Generator {
 		return CopyGenerator{}
 	case "template":
 		return TemplateGenerator{}
-	case "upstart-tty":
-		return UpstartTTYGenerator{}
 	case "cloud-init":
 		return CloudInitGenerator{}
 	case "lxd-agent":
