@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -118,17 +116,16 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		c.global.flagCacheDir, *c.global.definition)
 
 	for _, file := range c.global.definition.Files {
-		generator := generators.Get(file.Generator)
-		if generator == nil {
-			return fmt.Errorf("Unknown generator '%s'", file.Generator)
+		generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, overlayDir, file)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to load generator %q", file.Generator)
 		}
 
 		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, shared.ImageTargetUndefined|shared.ImageTargetAll|shared.ImageTargetContainer) {
 			continue
 		}
 
-		err := generator.RunLXC(c.global.flagCacheDir, overlayDir, img,
-			c.global.definition.Targets.LXC, file)
+		err = generator.RunLXC(img, c.global.definition.Targets.LXC)
 		if err != nil {
 			return err
 		}

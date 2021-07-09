@@ -187,13 +187,12 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 			continue
 		}
 
-		generator := generators.Get(file.Generator)
-		if generator == nil {
-			return fmt.Errorf("Unknown generator '%s'", file.Generator)
+		generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, overlayDir, file)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to load generator %q", file.Generator)
 		}
 
-		err := generator.RunLXD(c.global.flagCacheDir, overlayDir,
-			img, c.global.definition.Targets.LXD, file)
+		err = generator.RunLXD(img, c.global.definition.Targets.LXD)
 		if err != nil {
 			return errors.Wrap(err, "Failed to create LXD data")
 		}
