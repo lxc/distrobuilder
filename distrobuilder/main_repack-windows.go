@@ -52,7 +52,12 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 			}
 
 			if cleanup != nil {
-				defer cleanup()
+				c.global.overlayCleanup = cleanup
+
+				defer func() {
+					cleanup()
+					c.global.overlayCleanup = nil
+				}()
 			}
 
 			return c.run(cmd, args, overlayDir)

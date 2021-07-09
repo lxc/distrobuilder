@@ -84,11 +84,12 @@ type cmdGlobal struct {
 	flagVersion        bool
 	flagDisableOverlay bool
 
-	definition *shared.Definition
-	sourceDir  string
-	targetDir  string
-	interrupt  chan os.Signal
-	logger     *zap.SugaredLogger
+	definition     *shared.Definition
+	sourceDir      string
+	targetDir      string
+	interrupt      chan os.Signal
+	logger         *zap.SugaredLogger
+	overlayCleanup func()
 }
 
 func main() {
@@ -169,6 +170,15 @@ func main() {
 		}
 
 		time.Sleep(time.Duration(globalCmd.flagTimeout) * time.Second)
+
+		// exit all chroots otherwise we cannot remove the cache directory
+		for _, exit := range shared.ActiveChroots {
+			if exit != nil {
+				exit()
+			}
+		}
+
+		globalCmd.postRun(nil, nil)
 		fmt.Println("Timed out")
 		os.Exit(1)
 	}()
@@ -381,6 +391,11 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 	if c.logger != nil {
 		defer c.logger.Sync()
+	}
+
+	// Clean up overlay
+	if c.overlayCleanup != nil {
+		c.overlayCleanup()
 	}
 
 	// Clean up cache directory
