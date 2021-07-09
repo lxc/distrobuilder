@@ -389,17 +389,27 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 }
 
 func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
-	if c.logger != nil {
+	hasLogger := c.logger != nil
+
+	if hasLogger {
 		defer c.logger.Sync()
 	}
 
 	// Clean up overlay
 	if c.overlayCleanup != nil {
+		if hasLogger {
+			c.logger.Info("Cleaning up overlay")
+		}
+
 		c.overlayCleanup()
 	}
 
 	// Clean up cache directory
 	if c.flagCleanup {
+		if hasLogger {
+			c.logger.Info("Removing cache directory")
+		}
+
 		return os.RemoveAll(c.flagCacheDir)
 	}
 
