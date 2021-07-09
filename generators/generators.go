@@ -5,40 +5,50 @@ import (
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
+	"go.uber.org/zap"
 )
 
 // ErrNotSupported returns a "Not supported" error
 var ErrNotSupported = errors.New("Not supported")
 
-// Generator interface.
-type Generator interface {
-	RunLXC(string, string, *image.LXCImage, shared.DefinitionTargetLXC, shared.DefinitionFile) error
-	RunLXD(string, string, *image.LXDImage, shared.DefinitionTargetLXD, shared.DefinitionFile) error
-	Run(string, string, shared.DefinitionFile) error
+// ErrUnknownGenerator represents the unknown generator error
+var ErrUnknownGenerator = errors.New("Unknown generator")
+
+type generator interface {
+	init(logger *zap.SugaredLogger, cacheDir string, sourceDir string, defFile shared.DefinitionFile)
+
+	Generator
 }
 
-// Get returns a Generator.
-func Get(generator string) Generator {
-	switch generator {
-	case "hostname":
-		return HostnameGenerator{}
-	case "hosts":
-		return HostsGenerator{}
-	case "remove":
-		return RemoveGenerator{}
-	case "dump":
-		return DumpGenerator{}
-	case "copy":
-		return CopyGenerator{}
-	case "template":
-		return TemplateGenerator{}
-	case "cloud-init":
-		return CloudInitGenerator{}
-	case "lxd-agent":
-		return LXDAgentGenerator{}
-	case "fstab":
-		return FstabGenerator{}
+// Generator interface.
+type Generator interface {
+	RunLXC(*image.LXCImage, shared.DefinitionTargetLXC) error
+	RunLXD(*image.LXDImage, shared.DefinitionTargetLXD) error
+	Run() error
+}
+
+var generators = map[string]func() generator{
+	"cloud-init": func() generator { return &cloudInit{} },
+	"copy":       func() generator { return &copy{} },
+	"dump":       func() generator { return &dump{} },
+	"fstab":      func() generator { return &fstab{} },
+	"hostname":   func() generator { return &hostname{} },
+	"hosts":      func() generator { return &hosts{} },
+	"lxd-agent":  func() generator { return &lxdAgent{} },
+	"remove":     func() generator { return &remove{} },
+	"template":   func() generator { return &template{} },
+}
+
+// Load loads and initializes a generator.
+func Load(generatorName string, logger *zap.SugaredLogger, cacheDir string, sourceDir string, defFile shared.DefinitionFile) (Generator, error) {
+	df, ok := generators[generatorName]
+	if !ok {
+		return nil, ErrUnknownGenerator
 	}
 
-	return nil
+	d := df()
+
+	d.init(logger, cacheDir, sourceDir, defFile)
+
+	return d, nil
 }

@@ -14,26 +14,25 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// TemplateGenerator represents the Template generator.
-type TemplateGenerator struct{}
+type template struct {
+	common
+}
 
 // RunLXC dumps content to a file.
-func (g TemplateGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
+func (g *template) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
 	// no template support for LXC, ignoring generator
 	return nil
 }
 
 // RunLXD dumps content to a file.
-func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
-	templateDir := filepath.Join(cacheDir, "templates")
+func (g *template) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+	templateDir := filepath.Join(g.cacheDir, "templates")
 
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
 		return err
 	}
-	template := fmt.Sprintf("%s.tpl", defFile.Name)
+	template := fmt.Sprintf("%s.tpl", g.defFile.Name)
 
 	file, err := os.Create(filepath.Join(templateDir, template))
 	if err != nil {
@@ -42,14 +41,14 @@ func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 
 	defer file.Close()
 
-	content := defFile.Content
+	content := g.defFile.Content
 
 	// Append final new line if missing
 	if !strings.HasSuffix(content, "\n") {
 		content += "\n"
 	}
 
-	if defFile.Pongo {
+	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(content)
 		if err != nil {
 			return err
@@ -63,18 +62,18 @@ func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to write to content to %s template", defFile.Name)
+		return errors.Wrapf(err, "Failed to write to content to %s template", g.defFile.Name)
 	}
 
 	// Add to LXD templates
-	img.Metadata.Templates[defFile.Path] = &api.ImageMetadataTemplate{
+	img.Metadata.Templates[g.defFile.Path] = &api.ImageMetadataTemplate{
 		Template:   template,
-		Properties: defFile.Template.Properties,
-		When:       defFile.Template.When,
+		Properties: g.defFile.Template.Properties,
+		When:       g.defFile.Template.When,
 	}
 
-	if len(defFile.Template.When) == 0 {
-		img.Metadata.Templates[defFile.Path].When = []string{
+	if len(g.defFile.Template.When) == 0 {
+		img.Metadata.Templates[g.defFile.Path].When = []string{
 			"create",
 			"copy",
 		}
@@ -84,7 +83,6 @@ func (g TemplateGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 }
 
 // Run does nothing.
-func (g TemplateGenerator) Run(cacheDir, sourceDir string,
-	defFile shared.DefinitionFile) error {
+func (g *template) Run() error {
 	return nil
 }

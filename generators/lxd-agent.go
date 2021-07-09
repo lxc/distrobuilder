@@ -14,17 +14,18 @@ import (
 	lxd "github.com/lxc/lxd/shared"
 )
 
-// LXDAgentGenerator represents the lxd-agent generator.
-type LXDAgentGenerator struct{}
+type lxdAgent struct {
+	common
+}
 
 // RunLXC is not supported.
-func (g LXDAgentGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage, target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
+func (g *lxdAgent) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
 	return ErrNotSupported
 }
 
 // RunLXD creates systemd unit files for the lxd-agent.
-func (g LXDAgentGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage, target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
-	initFile := filepath.Join(sourceDir, "sbin", "init")
+func (g *lxdAgent) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+	initFile := filepath.Join(g.sourceDir, "sbin", "init")
 
 	fi, err := os.Lstat(initFile)
 	if err != nil {
@@ -38,33 +39,32 @@ func (g LXDAgentGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 		}
 
 		if strings.Contains(linkTarget, "systemd") {
-			return g.handleSystemd(sourceDir)
+			return g.handleSystemd()
 		}
 
 		if strings.Contains(linkTarget, "busybox") {
-			return g.getInitSystemFromInittab(sourceDir)
+			return g.getInitSystemFromInittab()
 		}
 
 		return nil
 	}
 
 	// Check if we have upstart.
-	if lxd.PathExists(filepath.Join(sourceDir, "sbin", "initctl")) {
-		return g.handleUpstart(sourceDir)
+	if lxd.PathExists(filepath.Join(g.sourceDir, "sbin", "initctl")) {
+		return g.handleUpstart()
 	}
 
-	return g.getInitSystemFromInittab(sourceDir)
+	return g.getInitSystemFromInittab()
 }
 
 // Run does nothing.
-func (g LXDAgentGenerator) Run(cacheDir, sourceDir string,
-	defFile shared.DefinitionFile) error {
+func (g *lxdAgent) Run() error {
 	return nil
 }
 
-func (g LXDAgentGenerator) handleSystemd(sourceDir string) error {
+func (g *lxdAgent) handleSystemd() error {
 	systemdPath := filepath.Join("/", "lib", "systemd")
-	if !lxd.PathExists(filepath.Join(sourceDir, systemdPath)) {
+	if !lxd.PathExists(filepath.Join(g.sourceDir, systemdPath)) {
 		systemdPath = filepath.Join("/", "usr", "lib", "systemd")
 	}
 
@@ -89,12 +89,12 @@ StartLimitBurst=10
 WantedBy=multi-user.target
 `, systemdPath)
 
-	err := ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "system", "lxd-agent.service"), []byte(lxdAgentServiceUnit), 0644)
+	err := ioutil.WriteFile(filepath.Join(g.sourceDir, systemdPath, "system", "lxd-agent.service"), []byte(lxdAgentServiceUnit), 0644)
 	if err != nil {
 		return err
 	}
 
-	err = os.Symlink(filepath.Join(sourceDir, systemdPath, "system", "lxd-agent.service"), filepath.Join(sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"))
+	err = os.Symlink(filepath.Join(g.sourceDir, systemdPath, "system", "lxd-agent.service"), filepath.Join(g.sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"))
 	if err != nil {
 		return err
 	}
@@ -140,19 +140,19 @@ rmdir "${PREFIX}/.mnt"
 chown -R root:root "${PREFIX}"
 `
 
-	err = ioutil.WriteFile(filepath.Join(sourceDir, systemdPath, "lxd-agent-setup"), []byte(lxdAgentSetupScript), 0755)
+	err = ioutil.WriteFile(filepath.Join(g.sourceDir, systemdPath, "lxd-agent-setup"), []byte(lxdAgentSetupScript), 0755)
 	if err != nil {
 		return err
 	}
 
 	udevPath := filepath.Join("/", "lib", "udev", "rules.d")
-	stat, err := os.Lstat(filepath.Join(sourceDir, "lib", "udev"))
-	if err == nil && stat.Mode()&os.ModeSymlink != 0 || !lxd.PathExists(filepath.Dir(filepath.Join(sourceDir, udevPath))) {
+	stat, err := os.Lstat(filepath.Join(g.sourceDir, "lib", "udev"))
+	if err == nil && stat.Mode()&os.ModeSymlink != 0 || !lxd.PathExists(filepath.Dir(filepath.Join(g.sourceDir, udevPath))) {
 		udevPath = filepath.Join("/", "usr", "lib", "udev", "rules.d")
 	}
 
 	lxdAgentRules := `ACTION=="add", SYMLINK=="virtio-ports/org.linuxcontainers.lxd", TAG+="systemd", ACTION=="add", RUN+="/bin/systemctl start lxd-agent.service"`
-	err = ioutil.WriteFile(filepath.Join(sourceDir, udevPath, "99-lxd-agent.rules"), []byte(lxdAgentRules), 0400)
+	err = ioutil.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-lxd-agent.rules"), []byte(lxdAgentRules), 0400)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ chown -R root:root "${PREFIX}"
 	return nil
 }
 
-func (g LXDAgentGenerator) handleOpenRC(sourceDir string) error {
+func (g *lxdAgent) handleOpenRC() error {
 	lxdAgentScript := `#!/sbin/openrc-run
 
 description="LXD - agent"
@@ -180,12 +180,12 @@ depend() {
 }
 `
 
-	err := ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init.d/lxd-agent"), []byte(lxdAgentScript), 0755)
+	err := ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent"), []byte(lxdAgentScript), 0755)
 	if err != nil {
 		return err
 	}
 
-	err = os.Symlink("/etc/init.d/lxd-agent", filepath.Join(sourceDir, "/etc/runlevels/default/lxd-agent"))
+	err = os.Symlink("/etc/init.d/lxd-agent", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent"))
 	if err != nil {
 		return err
 	}
@@ -206,12 +206,12 @@ start_pre() {
 }
 `
 
-	err = ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init.d/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
+	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
 	if err != nil {
 		return err
 	}
 
-	err = os.Symlink("/etc/init.d/lxd-agent-9p", filepath.Join(sourceDir, "/etc/runlevels/default/lxd-agent-9p"))
+	err = os.Symlink("/etc/init.d/lxd-agent-9p", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-9p"))
 	if err != nil {
 		return err
 	}
@@ -231,12 +231,12 @@ start_pre() {
 	}
 	`
 
-	err = ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init.d/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
+	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
 	if err != nil {
 		return err
 	}
 
-	err = os.Symlink("/etc/init.d/lxd-agent-virtiofs", filepath.Join(sourceDir, "/etc/runlevels/default/lxd-agent-virtiofs"))
+	err = os.Symlink("/etc/init.d/lxd-agent-virtiofs", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-virtiofs"))
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ start_pre() {
 	return nil
 }
 
-func (g LXDAgentGenerator) handleUpstart(sourceDir string) error {
+func (g *lxdAgent) handleUpstart() error {
 	lxdAgentScript := `Description "LXD agent"
 
 start on runlevel [2345]
@@ -256,7 +256,7 @@ respawn limit 10 5
 exec lxd-agent
 `
 
-	err := ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init/lxd-agent"), []byte(lxdAgentScript), 0755)
+	err := ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent"), []byte(lxdAgentScript), 0755)
 	if err != nil {
 		return err
 	}
@@ -285,7 +285,7 @@ task
 exec mount -t 9p config /run/lxd_config/drive -o access=0,trans=virtio
 `
 
-	err = ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
+	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ task
 exec mount -t virtiofs config /run/lxd_config/drive
 `
 
-	err = ioutil.WriteFile(filepath.Join(sourceDir, "/etc/init/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
+	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
 	if err != nil {
 		return err
 	}
@@ -317,8 +317,8 @@ exec mount -t virtiofs config /run/lxd_config/drive
 	return nil
 }
 
-func (g LXDAgentGenerator) getInitSystemFromInittab(sourceDir string) error {
-	f, err := os.Open(filepath.Join(sourceDir, "etc", "inittab"))
+func (g *lxdAgent) getInitSystemFromInittab() error {
+	f, err := os.Open(filepath.Join(g.sourceDir, "etc", "inittab"))
 	if err != nil {
 		return err
 	}
@@ -328,7 +328,7 @@ func (g LXDAgentGenerator) getInitSystemFromInittab(sourceDir string) error {
 
 	for scanner.Scan() {
 		if strings.Contains(scanner.Text(), "sysinit") && strings.Contains(scanner.Text(), "openrc") {
-			return g.handleOpenRC(sourceDir)
+			return g.handleOpenRC()
 		}
 	}
 

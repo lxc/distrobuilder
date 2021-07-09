@@ -21,11 +21,12 @@ func TestCloudInitGeneratorRunLXC(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator := Get("cloud-init")
-	require.Equal(t, CloudInitGenerator{}, generator)
+	generator, err := Load("cloud-init", nil, cacheDir, rootfsDir, shared.DefinitionFile{})
+	require.IsType(t, &cloudInit{}, generator)
+	require.NoError(t, err)
 
 	// Prepare rootfs
-	err := os.MkdirAll(filepath.Join(rootfsDir, "etc", "runlevels"), 0755)
+	err = os.MkdirAll(filepath.Join(rootfsDir, "etc", "runlevels"), 0755)
 	require.NoError(t, err)
 
 	err = os.MkdirAll(filepath.Join(rootfsDir, "etc", "cloud"), 0755)
@@ -53,7 +54,7 @@ func TestCloudInitGeneratorRunLXC(t *testing.T) {
 	}
 
 	// Disable cloud-init
-	generator.RunLXC(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXC{}, shared.DefinitionFile{})
+	generator.RunLXC(nil, shared.DefinitionTargetLXC{})
 
 	// Check whether the generator has altered the rootfs
 	for _, f := range []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"} {
@@ -79,9 +80,6 @@ func TestCloudInitGeneratorRunLXD(t *testing.T) {
 
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
-
-	generator := Get("cloud-init")
-	require.Equal(t, CloudInitGenerator{}, generator)
 
 	definition := shared.Definition{
 		Image: shared.DefinitionImage{
@@ -139,10 +137,14 @@ config:
 	for i, tt := range tests {
 		log.Printf("Running test #%d: %s", i, tt.name)
 
-		err := generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{}, shared.DefinitionFile{
+		generator, err := Load("cloud-init", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 			Generator: "cloud-init",
 			Name:      tt.name,
 		})
+		require.IsType(t, &cloudInit{}, generator)
+		require.NoError(t, err)
+
+		err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
 
 		if !tt.shouldFail {
 			require.NoError(t, err)

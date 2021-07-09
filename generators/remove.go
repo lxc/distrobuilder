@@ -8,23 +8,21 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// RemoveGenerator represents the Remove generator.
-type RemoveGenerator struct{}
+type remove struct {
+	common
+}
 
 // RunLXC removes a path.
-func (g RemoveGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
-	return g.Run(cacheDir, sourceDir, defFile)
+func (g *remove) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
+	return g.Run()
 }
 
 // RunLXD removes a path.
-func (g RemoveGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
-	return g.Run(cacheDir, sourceDir, defFile)
+func (g *remove) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+	return g.Run()
 }
 
 // Run removes a path.
-func (g RemoveGenerator) Run(cacheDir, sourceDir string,
-	defFile shared.DefinitionFile) error {
-	return os.RemoveAll(filepath.Join(sourceDir, defFile.Path))
+func (g *remove) Run() error {
+	return os.RemoveAll(filepath.Join(g.sourceDir, g.defFile.Path))
 }
