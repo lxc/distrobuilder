@@ -22,13 +22,13 @@ func (c *cmdBuildDir) command() *cobra.Command {
 		PostRunE: func(cmd *cobra.Command, args []string) error {
 			// Run global generators
 			for _, file := range c.global.definition.Files {
+				if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, 0) {
+					continue
+				}
+
 				generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, c.global.targetDir, file)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to load generator %q", file.Generator)
-				}
-
-				if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, 0) {
-					continue
 				}
 
 				err = generator.Run()
