@@ -121,7 +121,7 @@ func main() {
 
 			globalCmd.logger, err = shared.GetLogger(globalCmd.flagDebug)
 			if err != nil {
-				fmt.Println(errors.Wrap(err, "Failed to get logger"))
+				fmt.Fprintf(os.Stderr, "Failed to get logger: %s\n", err)
 				os.Exit(1)
 			}
 		},
