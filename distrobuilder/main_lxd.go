@@ -54,7 +54,12 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 			}
 
 			if cleanup != nil {
-				defer cleanup()
+				c.global.overlayCleanup = cleanup
+
+				defer func() {
+					cleanup()
+					c.global.overlayCleanup = nil
+				}()
 			}
 
 			return c.run(cmd, args, overlayDir)
@@ -95,7 +100,12 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 			}
 
 			if cleanup != nil {
-				defer cleanup()
+				c.global.overlayCleanup = cleanup
+
+				defer func() {
+					cleanup()
+					c.global.overlayCleanup = nil
+				}()
 			}
 
 			if c.flagVM {
