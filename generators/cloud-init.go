@@ -16,15 +16,15 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// CloudInitGenerator represents the cloud-init generator.
-type CloudInitGenerator struct{}
+type cloudInit struct {
+	common
+}
 
 // RunLXC disables cloud-init.
-func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
+func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
 	// With OpenRC:
 	// Remove all symlinks to /etc/init.d/cloud-{init-local,config,init,final} in /etc/runlevels/*
-	fullPath := filepath.Join(sourceDir, "etc", "runlevels")
+	fullPath := filepath.Join(g.sourceDir, "etc", "runlevels")
 
 	if lxd.PathExists(fullPath) {
 		err := filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
@@ -51,7 +51,7 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 	re := regexp.MustCompile(`^[KS]\d+cloud-(?:config|final|init|init-local)$`)
 
 	for i := 0; i <= 6; i++ {
-		fullPath := filepath.Join(sourceDir, fmt.Sprintf("/etc/rc.d/rc%d.d", i))
+		fullPath := filepath.Join(g.sourceDir, fmt.Sprintf("/etc/rc.d/rc%d.d", i))
 
 		if !lxd.PathExists(fullPath) {
 			continue
@@ -74,15 +74,15 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 	}
 
 	// With systemd:
-	if !lxd.PathExists(filepath.Join(sourceDir, "/etc/cloud")) {
-		err := os.MkdirAll(filepath.Join(sourceDir, "/etc/cloud"), 0755)
+	if !lxd.PathExists(filepath.Join(g.sourceDir, "/etc/cloud")) {
+		err := os.MkdirAll(filepath.Join(g.sourceDir, "/etc/cloud"), 0755)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Create file /etc/cloud/cloud-init.disabled
-	f, err := os.Create(filepath.Join(sourceDir, "/etc/cloud/cloud-init.disabled"))
+	f, err := os.Create(filepath.Join(g.sourceDir, "/etc/cloud/cloud-init.disabled"))
 	if err != nil {
 		return err
 	}
@@ -92,9 +92,8 @@ func (g CloudInitGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCIma
 }
 
 // RunLXD creates cloud-init template files.
-func (g CloudInitGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
-	templateDir := filepath.Join(cacheDir, "templates")
+func (g *cloudInit) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+	templateDir := filepath.Join(g.cacheDir, "templates")
 
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
@@ -104,7 +103,7 @@ func (g CloudInitGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDIma
 	var content string
 	properties := make(map[string]string)
 
-	switch defFile.Name {
+	switch g.defFile.Name {
 	case "user-data":
 		content = `{{ config_get("user.user-data", properties.default) }}
 `
@@ -130,10 +129,10 @@ config:
         control: auto{% else %}{{ config_get("user.network-config", "") }}{% endif %}
 `
 	default:
-		return fmt.Errorf("Unknown cloud-init configuration: %s", defFile.Name)
+		return fmt.Errorf("Unknown cloud-init configuration: %s", g.defFile.Name)
 	}
 
-	template := fmt.Sprintf("cloud-init-%s.tpl", defFile.Name)
+	template := fmt.Sprintf("cloud-init-%s.tpl", g.defFile.Name)
 
 	file, err := os.Create(filepath.Join(templateDir, template))
 	if err != nil {
@@ -142,8 +141,8 @@ config:
 
 	defer file.Close()
 
-	if defFile.Content != "" {
-		content = defFile.Content
+	if g.defFile.Content != "" {
+		content = g.defFile.Content
 	}
 
 	// Append final new line if missing
@@ -151,7 +150,7 @@ config:
 		content += "\n"
 	}
 
-	if defFile.Pongo {
+	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(content)
 		if err != nil {
 			return err
@@ -165,17 +164,17 @@ config:
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to write to content to %s template", defFile.Name)
+		return errors.Wrapf(err, "Failed to write to content to %s template", g.defFile.Name)
 	}
 
-	if len(defFile.Template.Properties) > 0 {
-		properties = defFile.Template.Properties
+	if len(g.defFile.Template.Properties) > 0 {
+		properties = g.defFile.Template.Properties
 	}
 
-	targetPath := filepath.Join("/var/lib/cloud/seed/nocloud-net", defFile.Name)
+	targetPath := filepath.Join("/var/lib/cloud/seed/nocloud-net", g.defFile.Name)
 
-	if defFile.Path != "" {
-		targetPath = defFile.Path
+	if g.defFile.Path != "" {
+		targetPath = g.defFile.Path
 	}
 
 	// Add to LXD templates
@@ -189,7 +188,6 @@ config:
 }
 
 // Run does nothing.
-func (g CloudInitGenerator) Run(cacheDir, sourceDir string,
-	defFile shared.DefinitionFile) error {
+func (g *cloudInit) Run() error {
 	return nil
 }

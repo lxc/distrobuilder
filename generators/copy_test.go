@@ -19,12 +19,16 @@ func TestCopyGeneratorRun(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator := Get("copy")
-	require.Equal(t, CopyGenerator{}, generator)
+	generator, err := Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Source: "copy_test",
+		Path:   "copy_test_dir",
+	})
+	require.IsType(t, &copy{}, generator)
+	require.NoError(t, err)
 
 	defer os.RemoveAll("copy_test")
 
-	err := os.Mkdir("copy_test", os.ModePerm)
+	err = os.Mkdir("copy_test", os.ModePerm)
 	require.Nil(t, err)
 	src1, err := os.Create(filepath.Join("copy_test", "src1"))
 	require.Nil(t, err)
@@ -40,10 +44,7 @@ func TestCopyGeneratorRun(t *testing.T) {
 	require.Nil(t, err)
 
 	// <src> is a directory -> contents copied
-	err = generator.Run(cacheDir, rootfsDir, shared.DefinitionFile{
-		Source: "copy_test",
-		Path:   "copy_test_dir",
-	})
+	err = generator.Run()
 	require.Nil(t, err)
 
 	require.DirExists(t, filepath.Join(rootfsDir, "copy_test_dir"))
@@ -81,11 +82,15 @@ func TestCopyGeneratorRun(t *testing.T) {
 	// <src> as wildcard
 	_, err = src1.Seek(0, 0)
 	_, err = src2.Seek(0, 0)
-	err = generator.Run(cacheDir, rootfsDir, shared.DefinitionFile{
+	generator, err = Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test/src*",
 		Path:   "copy_test_wildcard",
 	})
-	require.Nil(t, err)
+	require.IsType(t, &copy{}, generator)
+	require.NoError(t, err)
+
+	err = generator.Run()
+	require.NoError(t, err)
 
 	require.DirExists(t, filepath.Join(rootfsDir, "copy_test_wildcard"))
 	require.FileExists(t, filepath.Join(rootfsDir, "copy_test_wildcard", "src1"))
@@ -119,10 +124,14 @@ func TestCopyGeneratorRun(t *testing.T) {
 
 	// <src> is a file -> file copied to <dest>
 	_, err = src1.Seek(0, 0)
-	err = generator.Run(cacheDir, rootfsDir, shared.DefinitionFile{
+	generator, err = Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test/src1",
 	})
-	require.Nil(t, err)
+	require.IsType(t, &copy{}, generator)
+	require.NoError(t, err)
+
+	err = generator.Run()
+	require.NoError(t, err)
 
 	require.FileExists(t, filepath.Join(rootfsDir, "copy_test", "src1"))
 
@@ -142,11 +151,15 @@ func TestCopyGeneratorRun(t *testing.T) {
 	// <src> is a file -> file copied to <dest>/
 	_, err = src1.Seek(0, 0)
 	require.Nil(t, err)
-	err = generator.Run(cacheDir, rootfsDir, shared.DefinitionFile{
+	generator, err = Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test/src1",
 		Path:   "/hello/world/",
 	})
-	require.Nil(t, err)
+	require.IsType(t, &copy{}, generator)
+	require.NoError(t, err)
+
+	err = generator.Run()
+	require.NoError(t, err)
 
 	require.DirExists(t, filepath.Join(rootfsDir, "hello", "world"))
 	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world", "src1"))

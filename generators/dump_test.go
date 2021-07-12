@@ -19,17 +19,17 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator := Get("dump")
-	require.Equal(t, DumpGenerator{}, generator)
+	generator, err := Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Path:    "/hello/world",
+		Content: "hello {{ lxc.CreateMessage }}",
+		Pongo:   true,
+	})
+	require.IsType(t, &dump{}, generator)
+	require.NoError(t, err)
 
-	err := generator.RunLXC(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXC{
+	err = generator.RunLXC(nil, shared.DefinitionTargetLXC{
 		CreateMessage: "message",
-	},
-		shared.DefinitionFile{
-			Path:    "/hello/world",
-			Content: "hello {{ lxc.CreateMessage }}",
-			Pongo:   true,
-		})
+	})
 	require.NoError(t, err)
 
 	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world"))
@@ -43,13 +43,16 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 
 	require.Equal(t, "hello message\n", buffer.String())
 
-	err = generator.RunLXC(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXC{
+	generator, err = Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Path:    "/hello/world",
+		Content: "hello {{ lxc.CreateMessage }}",
+	})
+	require.IsType(t, &dump{}, generator)
+	require.NoError(t, err)
+
+	err = generator.RunLXC(nil, shared.DefinitionTargetLXC{
 		CreateMessage: "message",
-	},
-		shared.DefinitionFile{
-			Path:    "/hello/world",
-			Content: "hello {{ lxc.CreateMessage }}",
-		})
+	})
 	require.NoError(t, err)
 
 	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world"))
@@ -71,19 +74,18 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator := Get("dump")
-	require.Equal(t, DumpGenerator{}, generator)
+	generator, err := Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Path:    "/hello/world",
+		Content: "hello {{ lxd.VM.Filesystem }}",
+		Pongo:   true,
+	})
+	require.IsType(t, &dump{}, generator)
+	require.NoError(t, err)
 
-	err := generator.RunLXD(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXD{
+	err = generator.RunLXD(nil, shared.DefinitionTargetLXD{
 		VM: shared.DefinitionTargetLXDVM{
 			Filesystem: "ext4",
-		},
-	},
-		shared.DefinitionFile{
-			Path:    "/hello/world",
-			Content: "hello {{ lxd.VM.Filesystem }}",
-			Pongo:   true,
-		})
+		}})
 	require.NoError(t, err)
 
 	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world"))
@@ -99,15 +101,17 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 
 	file.Close()
 
-	err = generator.RunLXD(cacheDir, rootfsDir, nil, shared.DefinitionTargetLXD{
+	generator, err = Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Path:    "/hello/world",
+		Content: "hello {{ lxd.VM.Filesystem }}",
+	})
+	require.IsType(t, &dump{}, generator)
+	require.NoError(t, err)
+
+	err = generator.RunLXD(nil, shared.DefinitionTargetLXD{
 		VM: shared.DefinitionTargetLXDVM{
 			Filesystem: "ext4",
-		},
-	},
-		shared.DefinitionFile{
-			Path:    "/hello/world",
-			Content: "hello {{ lxd.VM.Filesystem }}",
-		})
+		}})
 	require.NoError(t, err)
 
 	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world"))

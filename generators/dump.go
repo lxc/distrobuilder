@@ -11,16 +11,16 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// DumpGenerator represents the Remove generator.
-type DumpGenerator struct{}
+type dump struct {
+	common
+}
 
 // RunLXC dumps content to a file.
-func (g DumpGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
-	content := defFile.Content
+func (g *dump) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
+	content := g.defFile.Content
 
-	if defFile.Pongo {
-		tpl, err := pongo2.FromString(defFile.Content)
+	if g.defFile.Pongo {
+		tpl, err := pongo2.FromString(g.defFile.Content)
 		if err != nil {
 			return err
 		}
@@ -31,25 +31,24 @@ func (g DumpGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 		}
 	}
 
-	err := g.run(cacheDir, sourceDir, defFile, content)
+	err := g.run(content)
 	if err != nil {
 		return err
 	}
 
-	if defFile.Templated {
-		return img.AddTemplate(defFile.Path)
+	if g.defFile.Templated {
+		return img.AddTemplate(g.defFile.Path)
 	}
 
 	return nil
 }
 
 // RunLXD dumps content to a file.
-func (g DumpGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
-	content := defFile.Content
+func (g *dump) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+	content := g.defFile.Content
 
-	if defFile.Pongo {
-		tpl, err := pongo2.FromString(defFile.Content)
+	if g.defFile.Pongo {
+		tpl, err := pongo2.FromString(g.defFile.Content)
 		if err != nil {
 			return err
 		}
@@ -60,16 +59,16 @@ func (g DumpGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 		}
 	}
 
-	return g.run(cacheDir, sourceDir, defFile, content)
+	return g.run(content)
 }
 
 // Run dumps content to a file.
-func (g DumpGenerator) Run(cacheDir, sourceDir string, defFile shared.DefinitionFile) error {
-	return g.run(cacheDir, sourceDir, defFile, defFile.Content)
+func (g *dump) Run() error {
+	return g.run(g.defFile.Content)
 }
 
-func (g DumpGenerator) run(cacheDir, sourceDir string, defFile shared.DefinitionFile, content string) error {
-	path := filepath.Join(sourceDir, defFile.Path)
+func (g *dump) run(content string) error {
+	path := filepath.Join(g.sourceDir, g.defFile.Path)
 
 	// Create any missing directory
 	err := os.MkdirAll(filepath.Dir(path), 0755)
@@ -95,5 +94,5 @@ func (g DumpGenerator) run(cacheDir, sourceDir string, defFile shared.Definition
 		return err
 	}
 
-	return updateFileAccess(file, defFile)
+	return updateFileAccess(file, g.defFile)
 }

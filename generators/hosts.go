@@ -12,20 +12,20 @@ import (
 	"github.com/lxc/lxd/shared/api"
 )
 
-// HostsGenerator represents the hosts generator.
-type HostsGenerator struct{}
+type hosts struct {
+	common
+}
 
 // RunLXC creates a LXC specific entry in the hosts file.
-func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
+func (g *hosts) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
 
 	// Skip if the file doesn't exist
-	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
+	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil
 	}
 
 	// Read the current content
-	content, err := ioutil.ReadFile(filepath.Join(sourceDir, defFile.Path))
+	content, err := ioutil.ReadFile(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 		content = append([]byte("127.0.1.1\tLXC_NAME\n"), content...)
 	}
 
-	f, err := os.Create(filepath.Join(sourceDir, defFile.Path))
+	f, err := os.Create(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
 		return err
 	}
@@ -51,19 +51,18 @@ func (g HostsGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
 	}
 
 	// Add hostname path to LXC's templates file
-	return img.AddTemplate(defFile.Path)
+	return img.AddTemplate(g.defFile.Path)
 }
 
 // RunLXD creates a hosts template.
-func (g HostsGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
+func (g *hosts) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
 
 	// Skip if the file doesn't exist
-	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
+	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil
 	}
 
-	templateDir := filepath.Join(cacheDir, "templates")
+	templateDir := filepath.Join(g.cacheDir, "templates")
 
 	// Create templates path
 	err := os.MkdirAll(templateDir, 0755)
@@ -72,7 +71,7 @@ func (g HostsGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 	}
 
 	// Read the current content
-	content, err := ioutil.ReadFile(filepath.Join(sourceDir, defFile.Path))
+	content, err := ioutil.ReadFile(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
 		return err
 	}
@@ -91,14 +90,14 @@ func (g HostsGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 		return err
 	}
 
-	img.Metadata.Templates[defFile.Path] = &api.ImageMetadataTemplate{
+	img.Metadata.Templates[g.defFile.Path] = &api.ImageMetadataTemplate{
 		Template:   "hosts.tpl",
-		Properties: defFile.Template.Properties,
-		When:       defFile.Template.When,
+		Properties: g.defFile.Template.Properties,
+		When:       g.defFile.Template.When,
 	}
 
-	if len(defFile.Template.When) == 0 {
-		img.Metadata.Templates[defFile.Path].When = []string{
+	if len(g.defFile.Template.When) == 0 {
+		img.Metadata.Templates[g.defFile.Path].When = []string{
 			"create",
 			"copy",
 		}
@@ -108,7 +107,6 @@ func (g HostsGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
 }
 
 // Run does nothing.
-func (g HostsGenerator) Run(cacheDir, sourceDir string,
-	defFile shared.DefinitionFile) error {
+func (g *hosts) Run() error {
 	return nil
 }

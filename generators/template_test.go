@@ -18,8 +18,14 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator := Get("template")
-	require.Equal(t, TemplateGenerator{}, generator)
+	generator, err := Load("template", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Generator: "template",
+		Name:      "template",
+		Content:   "==test==",
+		Path:      "/root/template",
+	})
+	require.IsType(t, &template{}, generator)
+	require.NoError(t, err)
 
 	definition := shared.Definition{
 		Image: shared.DefinitionImage{
@@ -30,18 +36,12 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 
 	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
 
-	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "root"), 0755)
+	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs", "root"), 0755)
 	require.NoError(t, err)
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "root", "template"), "--test--")
 
-	err = generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{},
-		shared.DefinitionFile{
-			Generator: "template",
-			Name:      "template",
-			Content:   "==test==",
-			Path:      "/root/template",
-		})
+	err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
 	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "templates", "template.tpl"), "==test==\n")
@@ -55,8 +55,14 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator := Get("template")
-	require.Equal(t, TemplateGenerator{}, generator)
+	generator, err := Load("template", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Generator: "template",
+		Name:      "test-default-when",
+		Content:   "==test==",
+		Path:      "test-default-when",
+	})
+	require.IsType(t, &template{}, generator)
+	require.NoError(t, err)
 
 	definition := shared.Definition{
 		Image: shared.DefinitionImage{
@@ -67,25 +73,22 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 
 	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
 
-	err := generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{},
-		shared.DefinitionFile{
-			Generator: "template",
-			Name:      "test-default-when",
-			Content:   "==test==",
-			Path:      "test-default-when",
-		})
+	err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
 	require.NoError(t, err)
 
-	err = generator.RunLXD(cacheDir, rootfsDir, image, shared.DefinitionTargetLXD{},
-		shared.DefinitionFile{
-			Generator: "template",
-			Name:      "test-when",
-			Content:   "==test==",
-			Path:      "test-when",
-			Template: shared.DefinitionFileTemplate{
-				When: []string{"create"},
-			},
-		})
+	generator, err = Load("template", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Generator: "template",
+		Name:      "test-when",
+		Content:   "==test==",
+		Path:      "test-when",
+		Template: shared.DefinitionFileTemplate{
+			When: []string{"create"},
+		},
+	})
+	require.IsType(t, &template{}, generator)
+	require.NoError(t, err)
+
+	err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
 	require.NoError(t, err)
 
 	testvalue := []string{"create", "copy"}

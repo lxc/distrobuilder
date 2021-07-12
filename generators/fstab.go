@@ -9,19 +9,18 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// FstabGenerator represents the fstab generator.
-type FstabGenerator struct{}
+type fstab struct {
+	common
+}
 
 // RunLXC doesn't support the fstab generator.
-func (g FstabGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
+func (g *fstab) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
 	return fmt.Errorf("fstab generator not supported for LXC")
 }
 
 // RunLXD writes to /etc/fstab.
-func (g FstabGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
-	f, err := os.Create(filepath.Join(sourceDir, "etc/fstab"))
+func (g *fstab) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+	f, err := os.Create(filepath.Join(g.sourceDir, "etc/fstab"))
 	if err != nil {
 		return err
 	}
@@ -48,6 +47,6 @@ LABEL=UEFI    /boot/efi vfat  defaults  0 0
 }
 
 // Run does nothing.
-func (g FstabGenerator) Run(string, string, shared.DefinitionFile) error {
+func (g *fstab) Run() error {
 	return nil
 }

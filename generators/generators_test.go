@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/lxc/distrobuilder/shared"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,14 +22,13 @@ func teardown(cacheDir string) {
 }
 
 func TestGet(t *testing.T) {
-	generator := Get("hostname")
-	require.Equal(t, HostnameGenerator{}, generator)
+	generator, err := Load("hostname", nil, "", "", shared.DefinitionFile{})
+	require.IsType(t, &hostname{}, generator)
+	require.NoError(t, err)
 
-	generator = Get("hosts")
-	require.Equal(t, HostsGenerator{}, generator)
-
-	generator = Get("")
+	generator, err = Load("", nil, "", "", shared.DefinitionFile{})
 	require.Nil(t, generator)
+	require.Error(t, err)
 }
 
 func createTestFile(t *testing.T, path, content string) {

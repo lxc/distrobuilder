@@ -12,24 +12,22 @@ import (
 	lxd "github.com/lxc/lxd/shared"
 )
 
-// CopyGenerator represents the Copy generator.
-type CopyGenerator struct{}
+type copy struct {
+	common
+}
 
 // RunLXC copies a file to the container.
-func (g CopyGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
-	return g.Run(cacheDir, sourceDir, defFile)
+func (g *copy) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
+	return g.Run()
 }
 
 // RunLXD copies a file to the container.
-func (g CopyGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
-	return g.Run(cacheDir, sourceDir, defFile)
+func (g *copy) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+	return g.Run()
 }
 
 // Run copies a file to the container.
-func (g CopyGenerator) Run(cacheDir, sourceDir string,
-	defFile shared.DefinitionFile) error {
+func (g *copy) Run() error {
 	// First check if the input is a file or a directory.
 	// Then check whether the destination finishes in a "/" or not
 	// Afterwards, the rules for copying can be applied. See doc/generators.md
@@ -38,10 +36,10 @@ func (g CopyGenerator) Run(cacheDir, sourceDir string,
 	// relative to the root if destination file is missing
 	var destPath, srcPath string
 	var files []string
-	srcPath = defFile.Source
-	destPath = filepath.Join(sourceDir, defFile.Source)
-	if defFile.Path != "" {
-		destPath = filepath.Join(sourceDir, defFile.Path)
+	srcPath = g.defFile.Source
+	destPath = filepath.Join(g.sourceDir, g.defFile.Source)
+	if g.defFile.Path != "" {
+		destPath = filepath.Join(g.sourceDir, g.defFile.Path)
 	}
 
 	dirFiles, err := ioutil.ReadDir(filepath.Dir(srcPath))
@@ -68,14 +66,14 @@ func (g CopyGenerator) Run(cacheDir, sourceDir string,
 			}
 			return err
 		}
-		err = copy(srcPath, destPath, defFile)
+		err = g.doCopy(srcPath, destPath, g.defFile)
 	case 1:
-		err = copy(srcPath, destPath, defFile)
+		err = g.doCopy(srcPath, destPath, g.defFile)
 	default:
 		// Make sure that we are copying to a directory
-		defFile.Path = defFile.Path + "/"
+		g.defFile.Path = g.defFile.Path + "/"
 		for _, f := range files {
-			err = copy(f, destPath, defFile)
+			err = g.doCopy(f, destPath, g.defFile)
 			if err != nil {
 				break
 			}
@@ -84,7 +82,7 @@ func (g CopyGenerator) Run(cacheDir, sourceDir string,
 	return err
 }
 
-func copy(srcPath, destPath string, defFile shared.DefinitionFile) error {
+func (g *copy) doCopy(srcPath, destPath string, defFile shared.DefinitionFile) error {
 	in, err := os.Stat(srcPath)
 	if err != nil {
 		return err
@@ -96,13 +94,13 @@ func copy(srcPath, destPath string, defFile shared.DefinitionFile) error {
 		if strings.HasSuffix(defFile.Path, "/") {
 			destPath = filepath.Join(destPath, filepath.Base(srcPath))
 		}
-		err := copyFile(srcPath, destPath, defFile)
+		err := g.copyFile(srcPath, destPath, defFile)
 		if err != nil {
 			return err
 		}
 
 	case os.ModeDir:
-		err := copyDir(srcPath, destPath, defFile)
+		err := g.copyDir(srcPath, destPath, defFile)
 		if err != nil {
 			return err
 		}
@@ -113,7 +111,7 @@ func copy(srcPath, destPath string, defFile shared.DefinitionFile) error {
 	return nil
 }
 
-func copyDir(srcPath, destPath string, defFile shared.DefinitionFile) error {
+func (g *copy) copyDir(srcPath, destPath string, defFile shared.DefinitionFile) error {
 	err := filepath.Walk(srcPath, func(src string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -130,7 +128,7 @@ func copyDir(srcPath, destPath string, defFile shared.DefinitionFile) error {
 
 		switch fi.Mode() & os.ModeType {
 		case 0, os.ModeSymlink:
-			err = copyFile(src, dest, defFile)
+			err = g.copyFile(src, dest, defFile)
 			if err != nil {
 				return err
 			}
@@ -148,7 +146,7 @@ func copyDir(srcPath, destPath string, defFile shared.DefinitionFile) error {
 	return err
 }
 
-func copyFile(src, dest string, defFile shared.DefinitionFile) error {
+func (g *copy) copyFile(src, dest string, defFile shared.DefinitionFile) error {
 	// Let's make sure that we can create the file
 	dir := filepath.Dir(dest)
 	_, err := os.Stat(dir)

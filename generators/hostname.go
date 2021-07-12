@@ -12,20 +12,20 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// HostnameGenerator represents the Hostname generator.
-type HostnameGenerator struct{}
+type hostname struct {
+	common
+}
 
 // RunLXC creates a hostname template.
-func (g HostnameGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImage,
-	target shared.DefinitionTargetLXC, defFile shared.DefinitionFile) error {
+func (g *hostname) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
 
 	// Skip if the file doesn't exist
-	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
+	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil
 	}
 
 	// Create new hostname file
-	file, err := os.Create(filepath.Join(sourceDir, defFile.Path))
+	file, err := os.Create(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
 		return err
 	}
@@ -38,19 +38,18 @@ func (g HostnameGenerator) RunLXC(cacheDir, sourceDir string, img *image.LXCImag
 	}
 
 	// Add hostname path to LXC's templates file
-	return img.AddTemplate(defFile.Path)
+	return img.AddTemplate(g.defFile.Path)
 }
 
 // RunLXD creates a hostname template.
-func (g HostnameGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImage,
-	target shared.DefinitionTargetLXD, defFile shared.DefinitionFile) error {
+func (g *hostname) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
 
 	// Skip if the file doesn't exist
-	if !lxd.PathExists(filepath.Join(sourceDir, defFile.Path)) {
+	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil
 	}
 
-	templateDir := filepath.Join(cacheDir, "templates")
+	templateDir := filepath.Join(g.cacheDir, "templates")
 
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
@@ -69,14 +68,14 @@ func (g HostnameGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 	}
 
 	// Add to LXD templates
-	img.Metadata.Templates[defFile.Path] = &api.ImageMetadataTemplate{
+	img.Metadata.Templates[g.defFile.Path] = &api.ImageMetadataTemplate{
 		Template:   "hostname.tpl",
-		Properties: defFile.Template.Properties,
-		When:       defFile.Template.When,
+		Properties: g.defFile.Template.Properties,
+		When:       g.defFile.Template.When,
 	}
 
-	if len(defFile.Template.When) == 0 {
-		img.Metadata.Templates[defFile.Path].When = []string{
+	if len(g.defFile.Template.When) == 0 {
+		img.Metadata.Templates[g.defFile.Path].When = []string{
 			"create",
 			"copy",
 		}
@@ -86,7 +85,6 @@ func (g HostnameGenerator) RunLXD(cacheDir, sourceDir string, img *image.LXDImag
 }
 
 // Run does nothing.
-func (g HostnameGenerator) Run(cacheDir, sourceDir string,
-	defFile shared.DefinitionFile) error {
+func (g *hostname) Run() error {
 	return nil
 }
