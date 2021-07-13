@@ -118,7 +118,7 @@ func (m *pacman) setupTrustedKeys() error {
 func (m *pacman) setMirrorlist() error {
 	f, err := os.Create(filepath.Join("etc", "pacman.d", "mirrorlist"))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create file %q", filepath.Join("etc", "pacman.d", "mirrorlist"))
 	}
 	defer f.Close()
 
@@ -132,7 +132,7 @@ func (m *pacman) setMirrorlist() error {
 
 	_, err = f.WriteString(mirror)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to write to %q", filepath.Join("etc", "pacman.d", "mirrorlist"))
 	}
 
 	return nil

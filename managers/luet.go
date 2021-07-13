@@ -1,12 +1,12 @@
 package managers
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -50,11 +50,11 @@ func (m *luet) manageRepository(repoAction shared.DefinitionPackagesRepository) 
 	var targetFile string
 
 	if repoAction.Name == "" {
-		return fmt.Errorf("Invalid repository name")
+		return errors.New("Invalid repository name")
 	}
 
 	if repoAction.URL == "" {
-		return fmt.Errorf("Invalid repository url")
+		return errors.New("Invalid repository url")
 	}
 
 	if strings.HasSuffix(repoAction.Name, ".yml") {
@@ -66,20 +66,20 @@ func (m *luet) manageRepository(repoAction shared.DefinitionPackagesRepository) 
 	if !lxd.PathExists(filepath.Dir(targetFile)) {
 		err := os.MkdirAll(filepath.Dir(targetFile), 0755)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create directory %q", filepath.Dir(targetFile))
 		}
 	}
 
 	f, err := os.OpenFile(targetFile, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to open file %q", targetFile)
 	}
 	defer f.Close()
 
 	// NOTE: repo.URL is not an URL but the content of the file.
 	_, err = f.WriteString(repoAction.URL)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to write string to %q", targetFile)
 	}
 
 	return nil

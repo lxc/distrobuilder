@@ -1,9 +1,8 @@
 package shared
 
 import (
-	"fmt"
-
 	"github.com/lxc/lxd/shared/osarch"
+	"github.com/pkg/errors"
 )
 
 var alpineLinuxArchitectureNames = map[int]string{
@@ -88,7 +87,7 @@ func GetArch(distro, arch string) (string, error) {
 
 	archMap, ok := distroArchitecture[distro]
 	if !ok {
-		return "unknown", fmt.Errorf("Architecture map isn't supported: %s", distro)
+		return "unknown", errors.Errorf("Architecture map isn't supported: %s", distro)
 	}
 
 	archID, err := osarch.ArchitectureId(arch)

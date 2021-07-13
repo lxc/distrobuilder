@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
@@ -27,7 +29,7 @@ func (g *hosts) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 	// Read the current content
 	content, err := ioutil.ReadFile(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to read file %q", filepath.Join(g.sourceDir, g.defFile.Path))
 	}
 
 	// Replace hostname with placeholder
@@ -40,18 +42,23 @@ func (g *hosts) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 
 	f, err := os.Create(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create file %q", filepath.Join(g.sourceDir, g.defFile.Path))
 	}
 	defer f.Close()
 
 	// Overwrite the file
 	_, err = f.Write(content)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to write to file %q", filepath.Join(g.sourceDir, g.defFile.Path))
 	}
 
 	// Add hostname path to LXC's templates file
-	return img.AddTemplate(g.defFile.Path)
+	err = img.AddTemplate(g.defFile.Path)
+	if err != nil {
+		errors.Wrap(err, "Failed to add template")
+	}
+
+	return nil
 }
 
 // RunLXD creates a hosts template.
@@ -67,13 +74,13 @@ func (g *hosts) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) e
 	// Create templates path
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create directory %q", templateDir)
 	}
 
 	// Read the current content
 	content, err := ioutil.ReadFile(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to read file %q", filepath.Join(g.sourceDir, g.defFile.Path))
 	}
 
 	// Replace hostname with placeholder
@@ -87,7 +94,7 @@ func (g *hosts) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) e
 	// Write the template
 	err = ioutil.WriteFile(filepath.Join(templateDir, "hosts.tpl"), content, 0644)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to write file %q", filepath.Join(templateDir, "hosts.tpl"))
 	}
 
 	img.Metadata.Templates[g.defFile.Path] = &api.ImageMetadataTemplate{
@@ -103,7 +110,7 @@ func (g *hosts) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) e
 		}
 	}
 
-	return err
+	return nil
 }
 
 // Run does nothing.

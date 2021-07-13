@@ -48,7 +48,7 @@ func (l *LXCImage) AddTemplate(path string) error {
 	file, err := os.OpenFile(filepath.Join(metaDir, "templates"),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to open file %q", filepath.Join(metaDir, "templates"))
 	}
 	defer file.Close()
 
@@ -64,17 +64,17 @@ func (l *LXCImage) AddTemplate(path string) error {
 func (l *LXCImage) Build() error {
 	err := l.createMetadata()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to create metadata")
 	}
 
 	err = l.packMetadata()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to pack metadata")
 	}
 
 	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar"), "xz", l.sourceDir, ".")
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to pack %q", filepath.Join(l.targetDir, "rootfs.tar"))
 	}
 
 	return nil
@@ -105,22 +105,22 @@ func (l *LXCImage) createMetadata() error {
 			case "all":
 				err := l.writeConfig(i, filepath.Join(metaDir, "config"), c.Content)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "Failed to write config %q", filepath.Join(metaDir, "config"))
 				}
 
 				err = l.writeConfig(i, filepath.Join(metaDir, "config-user"), c.Content)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "Failed to write config %q", filepath.Join(metaDir, "config-user"))
 				}
 			case "system":
 				err := l.writeConfig(i, filepath.Join(metaDir, "config"), c.Content)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "Failed to write config %q", filepath.Join(metaDir, "config"))
 				}
 			case "user":
 				err := l.writeConfig(i, filepath.Join(metaDir, "config-user"), c.Content)
 				if err != nil {
-					return err
+					return errors.Wrapf(err, "Failed to write config %q", filepath.Join(metaDir, "config-user"))
 				}
 			}
 		}
@@ -174,7 +174,7 @@ func (l *LXCImage) packMetadata() error {
 	// Get all config and config-user files
 	configs, err := filepath.Glob(filepath.Join(l.cacheDir, "metadata", "config*"))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to match file pattern")
 	}
 
 	for _, c := range configs {
@@ -201,19 +201,19 @@ func (l *LXCImage) writeMetadata(filename, content string, appendContent bool) e
 	if appendContent {
 		file, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to open file %q", filename)
 		}
 	} else {
 		file, err = os.Create(filename)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create file %q", filename)
 		}
 	}
 	defer file.Close()
 
 	out, err := shared.RenderTemplate(content, l.definition)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to render template")
 	}
 
 	// Append final new line if missing
@@ -224,7 +224,7 @@ func (l *LXCImage) writeMetadata(filename, content string, appendContent bool) e
 	// Write the content
 	_, err = file.WriteString(out)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to write string")
 	}
 
 	return nil

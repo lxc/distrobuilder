@@ -1,14 +1,14 @@
 package sources
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/lxc/distrobuilder/shared"
-	"go.uber.org/zap"
 )
 
 // ErrUnknownDownloader represents the unknown downloader error
-var ErrUnknownDownloader = fmt.Errorf("Unknown downloader")
+var ErrUnknownDownloader = errors.New("Unknown downloader")
 
 type downloader interface {
 	init(logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string)

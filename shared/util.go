@@ -37,19 +37,19 @@ func Copy(src, dest string) error {
 
 	srcFile, err := os.Open(src)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to open file %q", src)
 	}
 	defer srcFile.Close()
 
 	destFile, err := os.Create(dest)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create file %q", dest)
 	}
 	defer destFile.Close()
 
 	_, err = io.Copy(destFile, srcFile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to copy file")
 	}
 
 	return destFile.Sync()
@@ -74,13 +74,13 @@ func RunCommand(name string, arg ...string) error {
 func RunScript(content string) error {
 	fd, err := unix.MemfdCreate("tmp", 0)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to create memfd")
 	}
 	defer unix.Close(fd)
 
 	_, err = unix.Write(int(fd), []byte(content))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to write to memfd")
 	}
 
 	fdPath := fmt.Sprintf("/proc/self/fd/%d", fd)
@@ -159,7 +159,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 
 		err := cmd.Run()
 		if err != nil {
-			return false, fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
+			return false, errors.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
 		}
 	}
 
@@ -202,7 +202,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 			}
 		}
 
-		return false, fmt.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
+		return false, errors.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
 	}
 
 	return true, nil
@@ -252,7 +252,7 @@ func Pack(filename, compression, path string, args ...string) error {
 	if err != nil {
 		// Clean up incomplete tarball
 		os.Remove(filename)
-		return err
+		return errors.Wrap(err, "Failed to create tarball")
 	}
 
 	return compressTarball(filename, compression)
@@ -262,7 +262,7 @@ func Pack(filename, compression, path string, args ...string) error {
 func PackUpdate(filename, compression, path string, args ...string) error {
 	err := RunCommand("tar", append([]string{"--xattrs", "-uf", filename, "-C", path}, args...)...)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to update tarball")
 	}
 
 	return compressTarball(filename, compression)
@@ -276,7 +276,10 @@ func compressTarball(filename, compression string) error {
 		defer os.Remove(filename)
 		fallthrough
 	case "bzip2", "xz", "lzip", "lzma", "gzip":
-		return RunCommand(compression, "-f", filename)
+		err := RunCommand(compression, "-f", filename)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to compress tarball %q", filename)
+		}
 	}
 
 	// Do not compress

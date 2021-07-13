@@ -297,7 +297,7 @@ func (s *oraclelinux) getISO(URL string, architecture string) (string, error) {
 	}
 
 	if len(isos) == 0 {
-		return "", fmt.Errorf("No isos found")
+		return "", errors.New("No isos found")
 	}
 
 	return isos[len(isos)-1], nil
@@ -320,7 +320,7 @@ func (s *oraclelinux) getUpdates(URL string) ([]string, error) {
 	}
 
 	if len(updates) == 0 {
-		return nil, errors.Errorf("No updates found")
+		return nil, errors.New("No updates found")
 	}
 
 	return updates, nil

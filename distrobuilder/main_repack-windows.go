@@ -48,7 +48,7 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to get overlay directory")
 			}
 
 			if cleanup != nil {
@@ -78,7 +78,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		detectedVersion := detectWindowsVersion(filepath.Base(args[0]))
 
 		if detectedVersion == "" {
-			return fmt.Errorf("Failed to detect Windows version. Please provide the version using the --windows-version flag")
+			return errors.Errorf("Failed to detect Windows version. Please provide the version using the --windows-version flag")
 		}
 
 		c.flagWindowsVersion = detectedVersion
@@ -86,14 +86,14 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		supportedVersions := []string{"w10", "2k19", "2k12", "2k16"}
 
 		if !lxd.StringInSlice(c.flagWindowsVersion, supportedVersions) {
-			return fmt.Errorf("Version must be one of %v", supportedVersions)
+			return errors.Errorf("Version must be one of %v", supportedVersions)
 		}
 	}
 
 	// Check dependencies
 	err := c.checkDependencies()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to check dependencies")
 	}
 
 	// if an error is returned, disable the usage message
@@ -102,14 +102,14 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	// Clean up cache directory before doing anything
 	err = os.RemoveAll(c.global.flagCacheDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to remove directory %q", c.global.flagCacheDir)
 	}
 
 	success := false
 
 	err = os.Mkdir(c.global.flagCacheDir, 0755)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create directory %q", c.global.flagCacheDir)
 	}
 	defer func() {
 		if c.global.flagCleanup && !success {
@@ -122,7 +122,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	// Create source path
 	err = os.MkdirAll(c.global.sourceDir, 0755)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create directory %q", c.global.sourceDir)
 	}
 
 	logger.Info("Mounting Windows ISO")
@@ -130,7 +130,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	// Mount ISO
 	_, err = lxd.RunCommand("mount", "-o", "loop", args[0], c.global.sourceDir)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to mount %q at %q", args[0], c.global.sourceDir)
 	}
 
 	success = true
@@ -154,12 +154,12 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		if !lxd.PathExists(virtioISOPath) {
 			err := os.MkdirAll(filepath.Dir(virtioISOPath), 0755)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to create directory %q", filepath.Dir(virtioISOPath))
 			}
 
 			f, err := os.Create(virtioISOPath)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to create file %q", virtioISOPath)
 			}
 			defer f.Close()
 
@@ -169,7 +169,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 			_, err = lxd.DownloadFileHash(&client, "", nil, nil, "virtio-win.iso", virtioURL, "", nil, f)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to download %q", virtioURL)
 			}
 
 			f.Close()
@@ -179,7 +179,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	if !lxd.PathExists(driverPath) {
 		err := os.MkdirAll(driverPath, 0755)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create directory %q", driverPath)
 		}
 	}
 
@@ -188,7 +188,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	// Mount driver ISO
 	_, err := lxd.RunCommand("mount", "-o", "loop", virtioISOPath, driverPath)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to mount %q at %q", virtioISOPath, driverPath)
 	}
 	defer unix.Unmount(driverPath, 0)
 
@@ -229,11 +229,11 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	}
 
 	if bootWim == "" {
-		return fmt.Errorf("Unable to find boot.wim")
+		return errors.Errorf("Unable to find boot.wim")
 	}
 
 	if installWim == "" {
-		return fmt.Errorf("Unable to find install.wim")
+		return errors.Errorf("Unable to find install.wim")
 	}
 
 	var buf bytes.Buffer
@@ -278,7 +278,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 	_, err = lxd.RunCommand("genisoimage", "--allow-limited-size", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to generate ISO")
 	}
 
 	return nil
@@ -294,7 +294,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	if !lxd.PathExists(wimPath) {
 		err := os.MkdirAll(wimPath, 0755)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create directory %q", wimPath)
 		}
 	}
 
@@ -316,19 +316,19 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	}
 
 	if dirs["filerepository"] == "" {
-		return fmt.Errorf("Failed to determine windows/system32/driverstore/filerepository path")
+		return errors.Errorf("Failed to determine windows/system32/driverstore/filerepository path")
 	}
 
 	if dirs["inf"] == "" {
-		return fmt.Errorf("Failed to determine windows/inf path")
+		return errors.Errorf("Failed to determine windows/inf path")
 	}
 
 	if dirs["config"] == "" {
-		return fmt.Errorf("Failed to determine windows/system32/config path")
+		return errors.Errorf("Failed to determine windows/system32/config path")
 	}
 
 	if dirs["drivers"] == "" {
-		return fmt.Errorf("Failed to determine windows/system32/drivers path")
+		return errors.Errorf("Failed to determine windows/system32/drivers path")
 	}
 
 	logger.Infow("Modifying WIM file", "file", filepath.Base(path), "index", index)
@@ -341,7 +341,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 
 	_, err = lxd.RunCommand("wimlib-imagex", "unmount", wimPath, "--commit")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to unmount WIM image")
 	}
 
 	success = true
@@ -354,7 +354,7 @@ func (c *cmdRepackWindows) checkDependencies() error {
 	for _, dep := range dependencies {
 		_, err := exec.LookPath(dep)
 		if err != nil {
-			return fmt.Errorf("Required tool %q is missing", dep)
+			return errors.Errorf("Required tool %q is missing", dep)
 		}
 	}
 
@@ -481,7 +481,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 		if !lxd.PathExists(targetBasePath) {
 			err := os.MkdirAll(targetBasePath, 0755)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to create directory %q", targetBasePath)
 			}
 		}
 
@@ -530,7 +530,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 				_, ok := ctx["classGuid"]
 				if !ok {
-					return fmt.Errorf("Failed to determine classGUID for driver %q", driver)
+					return errors.Errorf("Failed to determine classGUID for driver %q", driver)
 				}
 			}
 

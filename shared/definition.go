@@ -1,7 +1,6 @@
 package shared
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -236,25 +235,25 @@ func (d *Definition) SetValue(key string, value string) error {
 	// Walk through the definition and find the field with the given key
 	field, err := getFieldByTag(reflect.ValueOf(d).Elem(), reflect.TypeOf(d).Elem(), key)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get field by tag")
 	}
 
 	// Fail if the field cannot be set
 	if !field.CanSet() {
-		return fmt.Errorf("Cannot set value for %s", key)
+		return errors.Errorf("Cannot set value for %s", key)
 	}
 
 	switch field.Kind() {
 	case reflect.Bool:
 		v, err := strconv.ParseBool(value)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to parse bool %q", value)
 		}
 		field.SetBool(v)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		v, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to parse int %q", value)
 		}
 		field.SetInt(v)
 	case reflect.String:
@@ -262,11 +261,11 @@ func (d *Definition) SetValue(key string, value string) error {
 	case reflect.Uint, reflect.Uintptr, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		v, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to parse uint %q", value)
 		}
 		field.SetUint(v)
 	default:
-		return fmt.Errorf("Unsupported type '%s'", field.Kind())
+		return errors.Errorf("Unsupported type '%s'", field.Kind())
 	}
 
 	return nil
@@ -343,7 +342,7 @@ func (d *Definition) Validate() error {
 		"rockylinux-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
-		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
+		return errors.Errorf("source.downloader must be one of %v", validDownloaders)
 	}
 
 	if d.Packages.Manager != "" {
@@ -362,35 +361,35 @@ func (d *Definition) Validate() error {
 			"luet",
 		}
 		if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
-			return fmt.Errorf("packages.manager must be one of %v", validManagers)
+			return errors.Errorf("packages.manager must be one of %v", validManagers)
 		}
 
 		if d.Packages.CustomManager != nil {
-			return fmt.Errorf("cannot have both packages.manager and packages.custom-manager set")
+			return errors.New("cannot have both packages.manager and packages.custom-manager set")
 		}
 	} else {
 		if d.Packages.CustomManager == nil {
-			return fmt.Errorf("packages.manager or packages.custom-manager needs to be set")
+			return errors.New("packages.manager or packages.custom-manager needs to be set")
 		}
 
 		if d.Packages.CustomManager.Clean.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires a clean command")
+			return errors.New("packages.custom-manager requires a clean command")
 		}
 
 		if d.Packages.CustomManager.Install.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires an install command")
+			return errors.New("packages.custom-manager requires an install command")
 		}
 
 		if d.Packages.CustomManager.Remove.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires a remove command")
+			return errors.New("packages.custom-manager requires a remove command")
 		}
 
 		if d.Packages.CustomManager.Refresh.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires a refresh command")
+			return errors.New("packages.custom-manager requires a refresh command")
 		}
 
 		if d.Packages.CustomManager.Update.Command == "" {
-			return fmt.Errorf("packages.custom-manager requires an update command")
+			return errors.New("packages.custom-manager requires an update command")
 		}
 	}
 
@@ -409,7 +408,7 @@ func (d *Definition) Validate() error {
 
 	for _, file := range d.Files {
 		if !shared.StringInSlice(strings.TrimSpace(file.Generator), validGenerators) {
-			return fmt.Errorf("files.*.generator must be one of %v", validGenerators)
+			return errors.Errorf("files.*.generator must be one of %v", validGenerators)
 		}
 	}
 
@@ -429,7 +428,7 @@ func (d *Definition) Validate() error {
 	architectureMap := strings.TrimSpace(d.Mappings.ArchitectureMap)
 	if architectureMap != "" {
 		if !shared.StringInSlice(architectureMap, validMappings) {
-			return fmt.Errorf("mappings.architecture_map must be one of %v", validMappings)
+			return errors.Errorf("mappings.architecture_map must be one of %v", validMappings)
 		}
 	}
 
@@ -442,7 +441,7 @@ func (d *Definition) Validate() error {
 
 	for _, action := range d.Actions {
 		if !shared.StringInSlice(action.Trigger, validTriggers) {
-			return fmt.Errorf("actions.*.trigger must be one of %v", validTriggers)
+			return errors.Errorf("actions.*.trigger must be one of %v", validTriggers)
 		}
 	}
 
@@ -453,14 +452,14 @@ func (d *Definition) Validate() error {
 
 	for _, set := range d.Packages.Sets {
 		if !shared.StringInSlice(set.Action, validPackageActions) {
-			return fmt.Errorf("packages.*.set.*.action must be one of %v", validPackageActions)
+			return errors.Errorf("packages.*.set.*.action must be one of %v", validPackageActions)
 		}
 	}
 
 	// Mapped architecture (distro name)
 	archMapped, err := d.getMappedArchitecture()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get mapped architecture")
 	}
 
 	d.Image.ArchitectureMapped = archMapped
@@ -468,19 +467,19 @@ func (d *Definition) Validate() error {
 	// Kernel architecture and personality
 	archID, err := lxdarch.ArchitectureId(d.Image.Architecture)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get architecture ID")
 	}
 
 	archName, err := lxdarch.ArchitectureName(archID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get architecture name")
 	}
 
 	d.Image.ArchitectureKernel = archName
 
 	archPersonality, err := lxdarch.ArchitecturePersonality(archID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get architecture personality")
 	}
 
 	d.Image.ArchitecturePersonality = archPersonality

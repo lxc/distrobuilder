@@ -1,7 +1,7 @@
 package managers
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -48,7 +48,7 @@ func (m *equo) manageRepository(repoAction shared.DefinitionPackagesRepository) 
 		return m.enmanRepoCaller(repoAction)
 	}
 
-	return fmt.Errorf("Invalid repository Type")
+	return errors.New("Invalid repository Type")
 }
 
 func (m *equo) enmanRepoCaller(repo shared.DefinitionPackagesRepository) error {
@@ -57,7 +57,7 @@ func (m *equo) enmanRepoCaller(repo shared.DefinitionPackagesRepository) error {
 	}
 
 	if repo.Name == "" && repo.URL == "" {
-		return fmt.Errorf("Missing both repository url and repository name")
+		return errors.New("Missing both repository url and repository name")
 	}
 
 	if repo.URL != "" {
@@ -71,11 +71,11 @@ func (m *equo) enmanRepoCaller(repo shared.DefinitionPackagesRepository) error {
 
 func (m *equo) equoRepoCaller(repo shared.DefinitionPackagesRepository) error {
 	if repo.Name == "" {
-		return fmt.Errorf("Invalid repository name")
+		return errors.New("Invalid repository name")
 	}
 
 	if repo.URL == "" {
-		return fmt.Errorf("Invalid repository url")
+		return errors.New("Invalid repository url")
 	}
 
 	return shared.RunCommand("equo", "repo", "add", "--repo", repo.URL, "--pkg", repo.URL,

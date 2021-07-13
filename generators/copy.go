@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
@@ -44,12 +46,12 @@ func (g *copy) Run() error {
 
 	dirFiles, err := ioutil.ReadDir(filepath.Dir(srcPath))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to read directory %q", filepath.Dir(srcPath))
 	}
 	for _, f := range dirFiles {
 		match, err := filepath.Match(srcPath, filepath.Join(filepath.Dir(srcPath), f.Name()))
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to match pattern")
 		}
 		if match {
 			files = append(files, filepath.Join(filepath.Dir(srcPath), f.Name()))
@@ -61,10 +63,7 @@ func (g *copy) Run() error {
 		// Look for the literal file
 		_, err = os.Stat(srcPath)
 		if err != nil {
-			if os.IsNotExist(err) {
-				err = fmt.Errorf("File '%s' doesn't exist", srcPath)
-			}
-			return err
+			return errors.Wrapf(err, "Failed to stat file %q", srcPath)
 		}
 		err = g.doCopy(srcPath, destPath, g.defFile)
 	case 1:
@@ -79,13 +78,17 @@ func (g *copy) Run() error {
 			}
 		}
 	}
-	return err
+	if err != nil {
+		return errors.Wrap(err, "Failed to copy file(s)")
+	}
+
+	return nil
 }
 
 func (g *copy) doCopy(srcPath, destPath string, defFile shared.DefinitionFile) error {
 	in, err := os.Stat(srcPath)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to stat file %q", srcPath)
 	}
 
 	switch in.Mode() & os.ModeType {
@@ -96,16 +99,16 @@ func (g *copy) doCopy(srcPath, destPath string, defFile shared.DefinitionFile) e
 		}
 		err := g.copyFile(srcPath, destPath, defFile)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to copy file %q to %q", srcPath, destPath)
 		}
 
 	case os.ModeDir:
 		err := g.copyDir(srcPath, destPath, defFile)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to copy file %q to %q", srcPath, destPath)
 		}
 	default:
-		return fmt.Errorf("File type of %s not supported", srcPath)
+		return errors.Errorf("File type of %q not supported", srcPath)
 	}
 
 	return nil
@@ -119,31 +122,34 @@ func (g *copy) copyDir(srcPath, destPath string, defFile shared.DefinitionFile) 
 
 		rel, err := filepath.Rel(srcPath, src)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to get relative path of %q", srcPath)
 		}
 		dest := filepath.Join(destPath, rel)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to join path elements")
 		}
 
 		switch fi.Mode() & os.ModeType {
 		case 0, os.ModeSymlink:
 			err = g.copyFile(src, dest, defFile)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to copy file %q to %q", src, dest)
 			}
 		case os.ModeDir:
 			err := os.MkdirAll(dest, os.ModePerm)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to create directory %q", dest)
 			}
 		default:
-			fmt.Printf("File type of %s not supported, skipping", src)
+			fmt.Printf("File type of %q not supported, skipping", src)
 		}
 		return nil
 	})
+	if err != nil {
+		return errors.Wrapf(err, "Failed to walk file tree of %q", srcPath)
+	}
 
-	return err
+	return nil
 }
 
 func (g *copy) copyFile(src, dest string, defFile shared.DefinitionFile) error {
@@ -154,18 +160,24 @@ func (g *copy) copyFile(src, dest string, defFile shared.DefinitionFile) error {
 		err = os.MkdirAll(dir, os.ModePerm)
 	}
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create directory %q", dir)
 	}
 
 	err = lxd.FileCopy(src, dest)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to copy file %q to %q", src, dest)
 	}
 
 	out, err := os.Open(dest)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to open file %q", dest)
 	}
 	defer out.Close()
-	return updateFileAccess(out, defFile)
+
+	err = updateFileAccess(out, defFile)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to update file access of %q", dest)
+	}
+
+	return nil
 }

@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
+
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -15,14 +17,14 @@ type fstab struct {
 
 // RunLXC doesn't support the fstab generator.
 func (g *fstab) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
-	return fmt.Errorf("fstab generator not supported for LXC")
+	return errors.New("fstab generator not supported for LXC")
 }
 
 // RunLXD writes to /etc/fstab.
 func (g *fstab) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
 	f, err := os.Create(filepath.Join(g.sourceDir, "etc/fstab"))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create file %q", filepath.Join(g.sourceDir, "etc/fstab"))
 	}
 	defer f.Close()
 
@@ -43,7 +45,11 @@ LABEL=UEFI    /boot/efi vfat  defaults  0 0
 	}
 
 	_, err = f.WriteString(fmt.Sprintf(content, fs, options))
-	return err
+	if err != nil {
+		return errors.Wrapf(err, "Failed to write string to file %q", filepath.Join(g.sourceDir, "etc/fstab"))
+	}
+
+	return nil
 }
 
 // Run does nothing.

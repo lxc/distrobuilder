@@ -86,7 +86,7 @@ func (s *archlinux) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to unpack file %q", filepath.Join(fpath, fname))
 	}
 
 	// Move everything inside 'root.<architecture>' (which was is the tarball) to its
@@ -131,7 +131,7 @@ func (s *archlinux) getLatestRelease(URL string, arch string) (string, error) {
 	}
 
 	if len(releases) == 0 {
-		return "", errors.Errorf("Failed to determine latest release")
+		return "", errors.New("Failed to determine latest release")
 	}
 
 	// Sort releases in case they're out-of-order

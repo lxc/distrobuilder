@@ -70,9 +70,9 @@ func (s *plamolinux) Run() error {
 	}
 
 	if len(matches) == 0 {
-		return fmt.Errorf("Couldn't find any matching package")
+		return errors.New("Couldn't find any matching package")
 	} else if len(matches) > 1 {
-		return fmt.Errorf("Found more than one matching package")
+		return errors.New("Found more than one matching package")
 	}
 
 	err = shared.RunCommand("tar", "-pxJf", matches[0], "-C", pkgDir, "sbin/")
@@ -128,7 +128,7 @@ func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignor
 	}
 
 	if doc == nil {
-		return "", errors.Errorf("Empty HTML document")
+		return "", errors.New("Empty HTML document")
 	}
 
 	nodes := htmlquery.Find(doc, `//a/@href`)
