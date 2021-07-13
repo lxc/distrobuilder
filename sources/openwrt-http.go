@@ -140,7 +140,7 @@ func (s *openwrt) Run() error {
 				return errors.Wrap(err, `Failed to verify sha256sums`)
 			}
 			if !valid {
-				return errors.Errorf(`Invalid signature for "sha256sums"`)
+				return errors.New(`Invalid signature for "sha256sums"`)
 			}
 		} else {
 			// Force gpg checks when using http

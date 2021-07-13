@@ -223,7 +223,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		// Create and set target directory if provided
 		err := os.MkdirAll(args[1], 0755)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create directory %q", args[1])
 		}
 		c.targetDir = args[1]
 	} else {
@@ -231,7 +231,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		var err error
 		c.targetDir, err = os.Getwd()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to get working directory")
 		}
 	}
 	if isRunningBuildDir {
@@ -243,20 +243,20 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// Create source directory if it doesn't exist
 	err := os.MkdirAll(c.sourceDir, 0755)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create directory %q", c.sourceDir)
 	}
 
 	// Get the image definition
 	c.definition, err = getDefinition(args[0], c.flagOptions)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get definition")
 	}
 
 	// Create cache directory if we also plan on creating LXC or LXD images
 	if !isRunningBuildDir {
 		err = os.MkdirAll(c.flagCacheDir, 0755)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create directory %q", c.flagCacheDir)
 		}
 	}
 
@@ -312,7 +312,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		// running build-lxd.
 		ok, err := cmd.Flags().GetBool("vm")
 		if err != nil {
-			return err
+			return errors.Wrapf(err, `Failed to get bool value of "vm"`)
 		}
 
 		if ok {
@@ -371,7 +371,7 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	// resolve path
 	c.sourceDir, err = filepath.Abs(args[1])
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to get absolute path of %q", args[1])
 	}
 
 	c.targetDir = "."
@@ -382,7 +382,7 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	// Get the image definition
 	c.definition, err = getDefinition(args[0], c.flagOptions)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to get definition")
 	}
 
 	return nil

@@ -78,7 +78,7 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 			}
 
 			if hash == "" {
-				return "", fmt.Errorf("Hash mismatch for %s: %s != %v", imagePath, result, hashes)
+				return "", errors.Errorf("Hash mismatch for %s: %s != %v", imagePath, result, hashes)
 			}
 		}
 
@@ -161,5 +161,5 @@ func downloadChecksum(targetDir string, URL string, fname string, hashFunc hash.
 		return checksum, nil
 	}
 
-	return nil, fmt.Errorf("Could not find checksum")
+	return nil, errors.New("Could not find checksum")
 }

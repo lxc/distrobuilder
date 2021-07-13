@@ -52,7 +52,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 
 	data, err := yaml.Marshal(l.Metadata)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to marshal yaml")
 	}
 
 	_, err = file.Write(data)
@@ -86,7 +86,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 			rawImage,
 			qcowImage)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create qcow2 image %q", qcowImage)
 		}
 		defer func() {
 			os.RemoveAll(rawImage)
@@ -100,7 +100,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 			// Rename image to rootfs.img
 			err = os.Rename(qcowImage, filepath.Join(filepath.Dir(qcowImage), "rootfs.img"))
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Failed to rename image %q -> %q", qcowImage, filepath.Join(filepath.Dir(qcowImage), "rootfs.img"))
 			}
 
 			err = shared.Pack(targetTarball, "", l.cacheDir, "rootfs.img")
@@ -110,7 +110,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 				"", l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
 		}
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to pack tarball %q", targetTarball)
 		}
 		defer func() {
 			if vm {
@@ -121,7 +121,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 		// Add the metadata to the tarball which is located in the cache directory
 		err = shared.PackUpdate(targetTarball, compression, l.cacheDir, paths...)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to add metadata to tarball %q", targetTarball)
 		}
 	} else {
 		if vm {
@@ -161,17 +161,17 @@ func (l *LXDImage) createMetadata() error {
 	l.Metadata.Properties["description"], err = shared.RenderTemplate(
 		l.definition.Image.Description, l.definition)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to render template")
 	}
 
 	l.Metadata.Properties["name"], err = shared.RenderTemplate(
 		l.definition.Image.Name, l.definition)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to render template")
 	}
 
 	l.Metadata.ExpiryDate = shared.GetExpiryDate(time.Now(),
 		l.definition.Image.Expiry).Unix()
 
-	return err
+	return nil
 }

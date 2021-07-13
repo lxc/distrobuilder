@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/flosch/pongo2"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -22,22 +23,25 @@ func (g *dump) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) er
 	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(g.defFile.Content)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to parse template")
 		}
 
 		content, err = tpl.Execute(pongo2.Context{"lxc": target})
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to execute template")
 		}
 	}
 
 	err := g.run(content)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to dump content")
 	}
 
 	if g.defFile.Templated {
-		return img.AddTemplate(g.defFile.Path)
+		err = img.AddTemplate(g.defFile.Path)
+		if err != nil {
+			return errors.Wrap(err, "Failed to add template")
+		}
 	}
 
 	return nil
@@ -50,12 +54,12 @@ func (g *dump) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) er
 	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(g.defFile.Content)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to parse template")
 		}
 
 		content, err = tpl.Execute(pongo2.Context{"lxd": target})
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to execute template")
 		}
 	}
 
@@ -73,13 +77,13 @@ func (g *dump) run(content string) error {
 	// Create any missing directory
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create directory %q", filepath.Dir(path))
 	}
 
 	// Open the target file (create if needed)
 	file, err := os.Create(path)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create file %q", path)
 	}
 	defer file.Close()
 
@@ -91,8 +95,13 @@ func (g *dump) run(content string) error {
 	// Write the content
 	_, err = file.WriteString(content)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to write string to file %q", path)
 	}
 
-	return updateFileAccess(file, g.defFile)
+	err = updateFileAccess(file, g.defFile)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to update file access of %q", path)
+	}
+
+	return nil
 }

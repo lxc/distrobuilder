@@ -111,7 +111,7 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 	checksumStr := strings.TrimSpace(strings.Split(string(checksum), " ")[0])
 
 	if result != checksumStr {
-		return fmt.Errorf("Hash mismatch for %s: %s != %s", imagePath, result, checksumStr)
+		return errors.Errorf("Hash mismatch for %s: %s != %s", imagePath, result, checksumStr)
 	}
 
 	return nil

@@ -1,7 +1,7 @@
 package managers
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -49,15 +49,15 @@ func (m *zypper) load() error {
 
 func (m *zypper) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
 	if repoAction.Type != "" && repoAction.Type != "zypper" {
-		return fmt.Errorf("Invalid repository Type")
+		return errors.New("Invalid repository Type")
 	}
 
 	if repoAction.Name == "" {
-		return fmt.Errorf("Invalid repository name")
+		return errors.New("Invalid repository name")
 	}
 
 	if repoAction.URL == "" {
-		return fmt.Errorf("Invalid repository url")
+		return errors.New("Invalid repository url")
 	}
 
 	return shared.RunCommand("zypper", "ar", "--refresh", "--check", repoAction.URL, repoAction.Name)

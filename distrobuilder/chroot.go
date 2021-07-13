@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 )
@@ -20,7 +21,7 @@ func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), 
 		}
 
 		if stat.Type == unix.XFS_SUPER_MAGIC {
-			return nil, "", fmt.Errorf("overlay not supported on xfs")
+			return nil, "", errors.Errorf("overlay not supported on xfs")
 		}
 	}
 

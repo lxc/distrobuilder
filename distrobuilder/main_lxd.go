@@ -41,7 +41,7 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 			if c.flagVM {
 				err := c.checkVMDependencies()
 				if err != nil {
-					return err
+					return errors.Wrap(err, "Failed to check VM dependencies")
 				}
 			}
 
@@ -50,7 +50,7 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to get overlay directory")
 			}
 
 			if cleanup != nil {
@@ -87,7 +87,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 			if c.flagVM {
 				err := c.checkVMDependencies()
 				if err != nil {
-					return err
+					return errors.Wrap(err, "Failed to check VM dependencies")
 				}
 			}
 
@@ -96,7 +96,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to get overlay directory")
 			}
 
 			if cleanup != nil {
@@ -114,7 +114,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 
 			err = c.runPack(cmd, args, overlayDir)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to pack image")
 			}
 
 			return c.run(cmd, args, overlayDir)
@@ -218,12 +218,12 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		err := os.Mkdir(vmDir, 0755)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create directory %q", vmDir)
 		}
 
 		imgFilename, err := shared.RenderTemplate(fmt.Sprintf("%s.raw", c.global.definition.Image.Name), c.global.definition)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to render template")
 		}
 
 		imgFile := filepath.Join(c.global.flagCacheDir, imgFilename)
@@ -329,12 +329,12 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	if c.flagVM {
 		_, err := lxd.RunCommand("umount", "-R", vmDir)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to unmount %q", vmDir)
 		}
 
 		err = vm.umountImage()
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to unmount image")
 		}
 	}
 
@@ -352,7 +352,7 @@ func (c *cmdLXD) checkVMDependencies() error {
 	for _, dep := range dependencies {
 		_, err := exec.LookPath(dep)
 		if err != nil {
-			return fmt.Errorf("Required tool %q is missing", dep)
+			return errors.Errorf("Required tool %q is missing", dep)
 		}
 	}
 

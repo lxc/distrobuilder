@@ -30,13 +30,13 @@ func (g *template) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create directory %q", templateDir)
 	}
 	template := fmt.Sprintf("%s.tpl", g.defFile.Name)
 
 	file, err := os.Create(filepath.Join(templateDir, template))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create file %q", filepath.Join(templateDir, template))
 	}
 
 	defer file.Close()
@@ -51,12 +51,12 @@ func (g *template) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(content)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to parse template")
 		}
 
 		content, err = tpl.Execute(pongo2.Context{"lxd": target})
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to execute template")
 		}
 	}
 
@@ -79,7 +79,7 @@ func (g *template) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 		}
 	}
 
-	return err
+	return nil
 }
 
 // Run does nothing.

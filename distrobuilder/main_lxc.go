@@ -25,7 +25,7 @@ func (c *cmdLXC) commandBuild() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to get overlay directory")
 			}
 
 			if cleanup != nil {
@@ -52,7 +52,7 @@ func (c *cmdLXC) commandPack() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to get overlay directory")
 			}
 
 			if cleanup != nil {
@@ -66,7 +66,7 @@ func (c *cmdLXC) commandPack() *cobra.Command {
 
 			err = c.runPack(cmd, args, overlayDir)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to pack image")
 			}
 
 			return c.run(cmd, args, overlayDir)
@@ -137,14 +137,14 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		err = generator.RunLXC(img, c.global.definition.Targets.LXC)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to run generator %q", file.Generator)
 		}
 	}
 
 	exitChroot, err := shared.SetupChroot(overlayDir,
 		c.global.definition.Environment, nil)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to setup chroot in %q", overlayDir)
 	}
 
 	addSystemdGenerator()

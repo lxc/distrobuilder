@@ -69,7 +69,7 @@ func (s *funtoo) Run() error {
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
 		len(s.definition.Source.Keys) == 0 {
-		return fmt.Errorf("GPG keys are required if downloading from HTTP")
+		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
 	var fpath string
@@ -125,7 +125,7 @@ func (s *funtoo) getReleaseDates(URL string) ([]string, error) {
 	}
 
 	if len(dirs) == 0 {
-		return nil, errors.Errorf("Failed to get release dates")
+		return nil, errors.New("Failed to get release dates")
 	}
 
 	// Sort dirs in case they're out-of-order

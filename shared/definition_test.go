@@ -477,7 +477,7 @@ func TestDefinitionSetValue(t *testing.T) {
 
 	// Index out of bounds
 	err = d.SetValue("actions.3.trigger", "post-files")
-	require.EqualError(t, err, "Index out of range")
+	require.EqualError(t, err, "Failed to get field by tag: Index out of range")
 
 	// Nonsense
 	err = d.SetValue("image", "[foo: bar]")

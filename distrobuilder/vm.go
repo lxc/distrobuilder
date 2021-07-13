@@ -28,7 +28,7 @@ func newVM(imageFile, rootfsDir, fs string, size uint64) (*vm, error) {
 	}
 
 	if !lxd.StringInSlice(fs, []string{"btrfs", "ext4"}) {
-		return nil, fmt.Errorf("Unsupported fs: %s", fs)
+		return nil, errors.Errorf("Unsupported fs: %s", fs)
 	}
 
 	if size == 0 {
@@ -88,7 +88,7 @@ func (v *vm) createPartitions() error {
 	for _, cmd := range args {
 		err := shared.RunCommand("sgdisk", append([]string{v.imageFile}, cmd...)...)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to create partitions")
 		}
 	}
 
@@ -103,7 +103,7 @@ func (v *vm) mountImage() error {
 
 	stdout, err := lxd.RunCommand("losetup", "-P", "-f", "--show", v.imageFile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to setup loop device")
 	}
 
 	v.loopDevice = strings.TrimSpace(stdout)
@@ -113,7 +113,7 @@ func (v *vm) mountImage() error {
 
 	out, err := lxd.RunCommand("lsblk", "--raw", "--output", "MAJ:MIN", "--noheadings", v.loopDevice)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to list block devices")
 	}
 
 	deviceNumbers := strings.Split(out, "\n")
@@ -123,19 +123,19 @@ func (v *vm) mountImage() error {
 
 		major, err := strconv.Atoi(fields[0])
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to parse %q", fields[0])
 		}
 
 		minor, err := strconv.Atoi(fields[1])
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to parse %q", fields[1])
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
 
 		err = unix.Mknod(v.getUEFIDevFile(), unix.S_IFBLK|0644, int(dev))
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create block device %q", v.getUEFIDevFile())
 		}
 	}
 
@@ -144,19 +144,19 @@ func (v *vm) mountImage() error {
 
 		major, err := strconv.Atoi(fields[0])
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to parse %q", fields[0])
 		}
 
 		minor, err := strconv.Atoi(fields[1])
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to parse %q", fields[1])
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
 
 		err = unix.Mknod(v.getRootfsDevFile(), unix.S_IFBLK|0644, int(dev))
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to create block device %q", v.getRootfsDevFile())
 		}
 	}
 
@@ -171,21 +171,21 @@ func (v *vm) umountImage() error {
 
 	err := shared.RunCommand("losetup", "-d", v.loopDevice)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to setup loop device")
 	}
 
 	// Make sure that p1 and p2 are also removed.
 	if lxd.PathExists(v.getUEFIDevFile()) {
 		err := os.Remove(v.getUEFIDevFile())
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to remove file %q", v.getUEFIDevFile())
 		}
 	}
 
 	if lxd.PathExists(v.getRootfsDevFile()) {
 		err := os.Remove(v.getRootfsDevFile())
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to remove file %q", v.getRootfsDevFile())
 		}
 	}
 
@@ -196,20 +196,20 @@ func (v *vm) umountImage() error {
 
 func (v *vm) createRootFS() error {
 	if v.loopDevice == "" {
-		return fmt.Errorf("Disk image not mounted")
+		return errors.Errorf("Disk image not mounted")
 	}
 
 	switch v.rootFS {
 	case "btrfs":
 		err := shared.RunCommand("mkfs.btrfs", "-f", "-L", "rootfs", v.getRootfsDevFile())
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Failed to create btrfs filesystem")
 		}
 
 		// Create the root subvolume as well
 		err = shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "Failed to mount %q at %q", v.getRootfsDevFile(), v.rootfsDir)
 		}
 		defer shared.RunCommand("umount", v.rootfsDir)
 
@@ -223,7 +223,7 @@ func (v *vm) createRootFS() error {
 
 func (v *vm) createUEFIFS() error {
 	if v.loopDevice == "" {
-		return fmt.Errorf("Disk image not mounted")
+		return errors.New("Disk image not mounted")
 	}
 
 	return shared.RunCommand("mkfs.vfat", "-F", "32", "-n", "UEFI", v.getUEFIDevFile())
@@ -231,7 +231,7 @@ func (v *vm) createUEFIFS() error {
 
 func (v *vm) getRootfsPartitionUUID() (string, error) {
 	if v.loopDevice == "" {
-		return "", fmt.Errorf("Disk image not mounted")
+		return "", errors.New("Disk image not mounted")
 	}
 
 	stdout, err := lxd.RunCommand("blkid", "-s", "PARTUUID", "-o", "value", v.getRootfsDevFile())
@@ -244,7 +244,7 @@ func (v *vm) getRootfsPartitionUUID() (string, error) {
 
 func (v *vm) getUEFIPartitionUUID() (string, error) {
 	if v.loopDevice == "" {
-		return "", fmt.Errorf("Disk image not mounted")
+		return "", errors.New("Disk image not mounted")
 	}
 
 	stdout, err := lxd.RunCommand("blkid", "-s", "PARTUUID", "-o", "value", v.getUEFIDevFile())
@@ -257,7 +257,7 @@ func (v *vm) getUEFIPartitionUUID() (string, error) {
 
 func (v *vm) mountRootPartition() error {
 	if v.loopDevice == "" {
-		return fmt.Errorf("Disk image not mounted")
+		return errors.New("Disk image not mounted")
 	}
 
 	switch v.rootFS {
@@ -273,14 +273,14 @@ func (v *vm) mountRootPartition() error {
 
 func (v *vm) mountUEFIPartition() error {
 	if v.loopDevice == "" {
-		return fmt.Errorf("Disk image not mounted")
+		return errors.New("Disk image not mounted")
 	}
 
 	mountpoint := filepath.Join(v.rootfsDir, "boot", "efi")
 
 	err := os.MkdirAll(mountpoint, 0755)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to create directory %q", mountpoint)
 	}
 
 	return shared.RunCommand("mount", v.getUEFIDevFile(), mountpoint)
