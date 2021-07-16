@@ -33,9 +33,18 @@ func (s *gentoo) Run() error {
 		topLevelArch = "s390"
 	}
 
-	baseURL := fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s",
-		s.definition.Source.URL, topLevelArch,
-		s.definition.Image.ArchitectureMapped)
+	var baseURL string
+
+	if s.definition.Source.Variant == "default" {
+		baseURL = fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s",
+			s.definition.Source.URL, topLevelArch,
+			s.definition.Image.ArchitectureMapped)
+	} else {
+		baseURL = fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s-%s",
+			s.definition.Source.URL, topLevelArch,
+			s.definition.Image.ArchitectureMapped, s.definition.Source.Variant)
+	}
+
 	fname, err := s.getLatestBuild(baseURL, s.definition.Image.ArchitectureMapped, s.definition.Source.Variant)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get latest build")
@@ -109,30 +118,30 @@ func (s *gentoo) getLatestBuild(baseURL, arch, variant string) (string, error) {
 
 	// Look for .tar.xz
 	if variant != "" {
-		regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-%s-.*.tar.xz<", arch, variant))
+		regex = regexp.MustCompile(fmt.Sprintf(`"stage3-%s-%s-.*.tar.xz">`, arch, variant))
 	} else {
-		regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-.*.tar.xz<", arch))
+		regex = regexp.MustCompile(fmt.Sprintf(`"stage3-%s-.*.tar.xz">`, arch))
 	}
 
 	// Find all stage3 related files
 	matches := regex.FindAllString(string(body), -1)
 	if len(matches) > 0 {
 		// Take the first match since they're all the same anyway
-		return strings.Trim(matches[0], "<>"), nil
+		return strings.Trim(matches[0], `<>"`), nil
 	}
 
 	// Look for .tar.bz2
 	if variant != "" {
-		regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-%s-.*.tar.bz2<", arch, variant))
+		regex = regexp.MustCompile(fmt.Sprintf(`"stage3-%s-%s-.*.tar.bz2">`, arch, variant))
 	} else {
-		regex = regexp.MustCompile(fmt.Sprintf(">stage3-%s-.*.tar.bz2<", arch))
+		regex = regexp.MustCompile(fmt.Sprintf(`">stage3-%s-.*.tar.bz2">`, arch))
 	}
 
 	// Find all stage3 related files
 	matches = regex.FindAllString(string(body), -1)
 	if len(matches) > 0 {
 		// Take the first match since they're all the same anyway
-		return strings.Trim(matches[0], "<>"), nil
+		return strings.Trim(matches[0], `<>"`), nil
 	}
 
 	return "", errors.New("Failed to get match")
