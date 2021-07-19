@@ -35,14 +35,14 @@ func (s *gentoo) Run() error {
 
 	var baseURL string
 
-	if s.definition.Source.Variant == "default" {
-		baseURL = fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s",
-			s.definition.Source.URL, topLevelArch,
-			s.definition.Image.ArchitectureMapped)
-	} else {
+	if s.definition.Source.Variant == "systemd" {
 		baseURL = fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s-%s",
 			s.definition.Source.URL, topLevelArch,
 			s.definition.Image.ArchitectureMapped, s.definition.Source.Variant)
+	} else {
+		baseURL = fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s",
+			s.definition.Source.URL, topLevelArch,
+			s.definition.Image.ArchitectureMapped)
 	}
 
 	fname, err := s.getLatestBuild(baseURL, s.definition.Image.ArchitectureMapped, s.definition.Source.Variant)
