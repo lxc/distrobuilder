@@ -77,12 +77,10 @@ func (s *oraclelinux) Run() error {
 }
 
 func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error {
-	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
-	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
-	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
-	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
-
-	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
+	isoDir := filepath.Join(s.cacheDir, "iso")
+	squashfsDir := filepath.Join(s.cacheDir, "squashfs")
+	roRootDir := filepath.Join(s.cacheDir, "rootfs.ro")
+	tempRootDir := filepath.Join(s.cacheDir, "rootfs")
 
 	for _, dir := range []string{isoDir, squashfsDir, roRootDir} {
 		err := os.MkdirAll(dir, 0755)

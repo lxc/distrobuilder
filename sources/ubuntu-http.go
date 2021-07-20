@@ -70,12 +70,9 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 		return errors.Wrapf(err, "Failed to convert %q", lines[len(lines)-2])
 	}
 
-	imageDir := filepath.Join(os.TempDir(), "distrobuilder", "image")
-	snapsDir := filepath.Join(os.TempDir(), "distrobuilder", "snaps")
+	imageDir := filepath.Join(s.cacheDir, "image")
+	snapsDir := filepath.Join(s.cacheDir, "snaps")
 	baseImageDir := fmt.Sprintf("%s.base", rootfsDir)
-
-	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
-	defer os.RemoveAll(filepath.Join(baseImageDir, "rootfs"))
 
 	for _, d := range []string{imageDir, snapsDir, baseImageDir} {
 		err = os.MkdirAll(d, 0755)

@@ -172,14 +172,13 @@ func (s *openwrt) Run() error {
 		return errors.Wrapf(err, "Failed to download %q", lxdOpenWrtTarball)
 	}
 
-	tempScriptsDir := filepath.Join(os.TempDir(), "distrobuilder", "fixes", "lxd-openwrt-master")
+	tempScriptsDir := filepath.Join(s.cacheDir, "fixes", "lxd-openwrt-master")
 	tempSDKDir := filepath.Join(tempScriptsDir, "build_dir")
 
 	err = os.MkdirAll(tempSDKDir, 0755)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create directory %q", tempSDKDir)
 	}
-	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
 
 	err = os.MkdirAll(tempScriptsDir, 0755)
 	if err != nil {
@@ -192,7 +191,7 @@ func (s *openwrt) Run() error {
 		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
 
-	err = lxd.Unpack(filepath.Join(fpath, "master.tar.gz"), filepath.Join(os.TempDir(), "distrobuilder", "fixes"), false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, "master.tar.gz"), filepath.Join(s.cacheDir, "fixes"), false, false, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, "master.tar.gz"))
 	}
