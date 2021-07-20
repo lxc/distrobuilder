@@ -324,6 +324,7 @@ func (d *Definition) Validate() error {
 		"alt-http",
 		"apertis-http",
 		"archlinux-http",
+		"busybox",
 		"centos-http",
 		"springdalelinux-http",
 		"debootstrap",
