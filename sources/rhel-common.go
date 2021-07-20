@@ -20,12 +20,10 @@ type commonRHEL struct {
 }
 
 func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(string) error) error {
-	isoDir := filepath.Join(os.TempDir(), "distrobuilder", "iso")
-	squashfsDir := filepath.Join(os.TempDir(), "distrobuilder", "squashfs")
-	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
-	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
-
-	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
+	isoDir := filepath.Join(c.cacheDir, "iso")
+	squashfsDir := filepath.Join(c.cacheDir, "squashfs")
+	roRootDir := filepath.Join(c.cacheDir, "rootfs.ro")
+	tempRootDir := filepath.Join(c.cacheDir, "rootfs")
 
 	for _, dir := range []string{isoDir, squashfsDir, roRootDir} {
 		err := os.MkdirAll(dir, 0755)
@@ -142,7 +140,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 }
 
 func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
-	installDir, err := ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
+	installDir, err := ioutil.TempDir(c.cacheDir, "temp_")
 	if err != nil {
 		return errors.Wrap(err, "Failed to create temporary directory")
 	}
@@ -158,7 +156,7 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 	rootfsFile := filepath.Join(installDir, "LiveOS", "rootfs.img")
 
 	if lxd.PathExists(rootfsFile) {
-		rootfsDir, err = ioutil.TempDir(filepath.Join(os.TempDir(), "distrobuilder"), "temp_")
+		rootfsDir, err = ioutil.TempDir(c.cacheDir, "temp_")
 		if err != nil {
 			return errors.Wrap(err, "Failed to create temporary directory")
 		}
@@ -182,15 +180,13 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 }
 
 func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() error) error {
-	roRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs.ro")
-	tempRootDir := filepath.Join(os.TempDir(), "distrobuilder", "rootfs")
+	roRootDir := filepath.Join(c.cacheDir, "rootfs.ro")
+	tempRootDir := filepath.Join(c.cacheDir, "rootfs")
 
 	err := os.MkdirAll(roRootDir, 0755)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to create directory %q", roRootDir)
 	}
-
-	defer os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder"))
 
 	if strings.HasSuffix(filePath, ".raw.xz") {
 		// Uncompress raw image
