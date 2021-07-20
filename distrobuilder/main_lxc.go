@@ -91,10 +91,14 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 		return errors.Wrapf(err, "Failed to load manager %q", c.global.definition.Packages.Manager)
 	}
 
+	c.global.logger.Info("Managing repositories")
+
 	err = manager.ManageRepositories(imageTargets)
 	if err != nil {
 		return errors.Wrap(err, "Failed to manage repositories")
 	}
+
+	c.global.logger.Infow("Running hooks", "trigger", "post-unpack")
 
 	// Run post unpack hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
@@ -104,11 +108,15 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 		}
 	}
 
+	c.global.logger.Info("Managing packages")
+
 	// Install/remove/update packages
 	err = manager.ManagePackages(imageTargets)
 	if err != nil {
 		return errors.Wrap(err, "Failed to manage packages")
 	}
+
+	c.global.logger.Infow("Running hooks", "trigger", "post-packages")
 
 	// Run post packages hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {
@@ -127,6 +135,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	for _, file := range c.global.definition.Files {
 		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, shared.ImageTargetUndefined|shared.ImageTargetAll|shared.ImageTargetContainer) {
+			c.global.logger.Infow("Skipping generator", "generator", file.Generator)
 			continue
 		}
 
@@ -134,6 +143,8 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		if err != nil {
 			return errors.Wrapf(err, "Failed to load generator %q", file.Generator)
 		}
+
+		c.global.logger.Infow("Running generator", "generator", file.Generator)
 
 		err = generator.RunLXC(img, c.global.definition.Targets.LXC)
 		if err != nil {
@@ -148,6 +159,8 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 	}
 
 	addSystemdGenerator()
+
+	c.global.logger.Infow("Running hooks", "trigger", "post-files")
 
 	// Run post files hook
 	for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetAll|shared.ImageTargetContainer) {
