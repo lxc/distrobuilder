@@ -10,7 +10,7 @@ import (
 func TestArchLinuxGetLatestRelease(t *testing.T) {
 	var src archlinux
 
-	release, err := src.getLatestRelease("https://mirrors.evowise.com/archlinux/iso/", "x86_64")
+	release, err := src.getLatestRelease("https://archive.archlinux.org/iso/", "x86_64")
 	require.NoError(t, err)
 	require.Regexp(t, regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}$`), release)
 }
