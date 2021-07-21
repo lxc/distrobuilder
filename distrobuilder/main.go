@@ -611,6 +611,7 @@ fix_systemd_override_unit() {
 	[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no" >> "${dropin_dir}/zzz-lxc-service.conf"
 	[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no" >> "${dropin_dir}/zzz-lxc-service.conf"
 	[ "${systemd_version}" -ge 239 ] && echo "NoNewPrivileges=no" >> "${dropin_dir}/zzz-lxc-service.conf"
+	[ "${systemd_version}" -ge 249 ] && echo "LoadCredential=" >> "${dropin_dir}/zzz-lxc-service.conf"
 
 	# Additional settings for privileged containers
 	if grep -q 4294967295 /proc/self/uid_map; then
