@@ -27,6 +27,7 @@ var downloaders = map[string]func() downloader{
 	"alt-http":             func() downloader { return &altLinux{} },
 	"apertis-http":         func() downloader { return &apertis{} },
 	"archlinux-http":       func() downloader { return &archlinux{} },
+	"busybox":              func() downloader { return &busybox{} },
 	"centos-http":          func() downloader { return &centOS{} },
 	"debootstrap":          func() downloader { return &debootstrap{} },
 	"docker-http":          func() downloader { return &docker{} },
