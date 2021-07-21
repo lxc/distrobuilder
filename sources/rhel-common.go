@@ -166,7 +166,7 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 		if err != nil {
 			return errors.Wrapf(err, "Failed to mount %q", rootfsFile)
 		}
-		defer unix.Unmount(rootfsFile, 0)
+		defer unix.Unmount(rootfsDir, 0)
 	}
 
 	// Since rootfs is read-only, we need to copy it to a temporary rootfs
