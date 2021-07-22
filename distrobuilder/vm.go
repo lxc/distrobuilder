@@ -171,7 +171,7 @@ func (v *vm) umountImage() error {
 
 	err := shared.RunCommand("losetup", "-d", v.loopDevice)
 	if err != nil {
-		return errors.Wrap(err, "Failed to setup loop device")
+		return errors.Wrap(err, "Failed to detach loop device")
 	}
 
 	// Make sure that p1 and p2 are also removed.
