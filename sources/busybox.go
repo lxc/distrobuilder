@@ -66,7 +66,7 @@ make defconfig
 sed -ri 's/# CONFIG_STATIC .*/CONFIG_STATIC=y/g' .config
 make
 
-mkdir "${rootfs_dir}/bin"
+mkdir -p "${rootfs_dir}/bin"
 mv ./busybox "${rootfs_dir}/bin/busybox"
 `, tempRootDir, s.rootfsDir))
 	if err != nil {
