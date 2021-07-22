@@ -218,7 +218,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 	err = shared.RunCommand("mount", "-o", fmt.Sprintf("ro,loop,offset=%d", offset*512),
 		rawFilePath, roRootDir)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to mount %q", fmt.Sprintf("ro,loop,offset=%d", offset*512))
+		return errors.Wrapf(err, "Failed to mount %q", rawFilePath)
 	}
 
 	// Since roRootDir is read-only, we need to copy it to a temporary rootfs
