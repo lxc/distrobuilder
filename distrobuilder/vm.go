@@ -165,7 +165,7 @@ func (v *vm) mountImage() error {
 
 func (v *vm) umountImage() error {
 	// If loopDevice is empty, the image probably isn't mounted.
-	if v.loopDevice == "" {
+	if v.loopDevice == "" || !lxd.PathExists(v.loopDevice) {
 		return nil
 	}
 
