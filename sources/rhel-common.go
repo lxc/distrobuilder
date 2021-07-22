@@ -220,6 +220,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 	if err != nil {
 		return errors.Wrapf(err, "Failed to mount %q", rawFilePath)
 	}
+	defer unix.Unmount(roRootDir, 0)
 
 	// Since roRootDir is read-only, we need to copy it to a temporary rootfs
 	// directory in order to create the minimal rootfs.
