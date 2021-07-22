@@ -281,7 +281,7 @@ func (s *openwrt) Run() error {
 
 	for scanner.Scan() {
 		if strings.HasPrefix(scanner.Text(), "dir=") {
-			newContent.WriteString("dir=/tmp/distrobuilder\n")
+			newContent.WriteString(fmt.Sprintf("dir=%s\n", s.cacheDir))
 			continue
 		}
 
