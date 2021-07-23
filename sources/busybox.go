@@ -38,8 +38,6 @@ func (s *busybox) Run() error {
 		return errors.Wrapf(err, "Failed to download %q", tarball)
 	}
 
-	s.logger.Debugw("Run", "fpath", fpath)
-
 	tempRootDir := filepath.Join(s.cacheDir, "rootfs")
 
 	err = os.MkdirAll(tempRootDir, 0755)
