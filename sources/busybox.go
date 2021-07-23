@@ -38,37 +38,38 @@ func (s *busybox) Run() error {
 		return errors.Wrapf(err, "Failed to download %q", tarball)
 	}
 
-	s.logger.Debugw("Run", "fpath", fpath)
+	sourceDir := filepath.Join(s.cacheDir, "src")
 
-	tempRootDir := filepath.Join(s.cacheDir, "rootfs")
-
-	err = os.MkdirAll(tempRootDir, 0755)
+	err = os.MkdirAll(sourceDir, 0755)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create directory %q", tempRootDir)
+		return errors.Wrapf(err, "Failed to create directory %q", sourceDir)
 	}
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(fpath, fname), tempRootDir, false, false, nil)
+	err = lxd.Unpack(filepath.Join(fpath, fname), sourceDir, false, false, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to unpack %q", fname)
 	}
 
-	tempRootDir = filepath.Join(tempRootDir, fmt.Sprintf("busybox-%s", s.definition.Image.Release))
+	sourceDir = filepath.Join(sourceDir, fmt.Sprintf("busybox-%s", s.definition.Image.Release))
 
 	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
 set -eux
 
-tmp_rootfs_dir=%s
+source_dir=%s
 rootfs_dir=%s
 
-cd "${tmp_rootfs_dir}"
+cwd="$(pwd)"
+
+cd "${source_dir}"
 make defconfig
 sed -ri 's/# CONFIG_STATIC .*/CONFIG_STATIC=y/g' .config
 make
 
+cd "${cwd}"
 mkdir -p "${rootfs_dir}/bin"
-mv ./busybox "${rootfs_dir}/bin/busybox"
-`, tempRootDir, s.rootfsDir))
+mv ${source_dir}/busybox "${rootfs_dir}/bin/busybox"
+`, sourceDir, s.rootfsDir))
 	if err != nil {
 		return errors.Wrap(err, "Failed to build busybox")
 	}
