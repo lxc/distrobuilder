@@ -61,13 +61,16 @@ set -eux
 tmp_rootfs_dir=%s
 rootfs_dir=%s
 
+cwd="$(pwd)"
+
 cd "${tmp_rootfs_dir}"
 make defconfig
 sed -ri 's/# CONFIG_STATIC .*/CONFIG_STATIC=y/g' .config
 make
 
+cd "${cwd}"
 mkdir -p "${rootfs_dir}/bin"
-mv ./busybox "${rootfs_dir}/bin/busybox"
+mv ${tmp_rootfs_dir}/busybox "${rootfs_dir}/bin/busybox"
 `, tempRootDir, s.rootfsDir))
 	if err != nil {
 		return errors.Wrap(err, "Failed to build busybox")
