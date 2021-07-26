@@ -31,24 +31,24 @@ func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), 
 
 	err := os.Mkdir(upperDir, 0755)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrapf(err, "Failed to create directory %q", upperDir)
 	}
 
 	err = os.Mkdir(overlayDir, 0755)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrapf(err, "Failed to create directory %q", overlayDir)
 	}
 
 	err = os.Mkdir(workDir, 0755)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrapf(err, "Failed to create directory %q", workDir)
 	}
 
 	opts := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", sourceDir, upperDir, workDir)
 
 	err = unix.Mount("overlay", overlayDir, "overlay", 0, opts)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "Failed to mount overlay")
 	}
 
 	cleanup := func() {
