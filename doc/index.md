@@ -23,7 +23,6 @@ Available Commands:
   build-dir      Build plain rootfs
   build-lxc      Build LXC image from scratch
   build-lxd      Build LXD image from scratch
-  completion     generate the autocompletion script for the specified shell
   help           Help about any command
   pack-lxc       Create LXC image from existing rootfs
   pack-lxd       Create LXD image from existing rootfs
