@@ -62,18 +62,18 @@ To compile `distrobuilder` from source, first install the Go programming languag
     sudo pacman -S go debootstrap rsync gnupg squashfs-tools git --needed
     ```
 
-Second, download the source code of the `distrobuilder` repository (this repository). The source will be placed in `$HOME/go/src/github.com/lxc/distrobuilder/`
+Second, download the source code of the `distrobuilder` repository (this repository).
 
 ```
-go get -d -v github.com/lxc/distrobuilder/distrobuilder
+git clone https://github.com/lxc/distrobuilder
 ```
 
 Third, enter the directory with the source code of `distrobuilder` and run `make` to compile the source code. This will generate the executable program `distrobuilder`, and it will be located at `$HOME/go/bin/distrobuilder`.
 
 ```
-cd $HOME/go/src/github.com/lxc/distrobuilder
+cd ./distrobuilder
+unset GO111MODULE
 make
-cd
 ```
 
 Finally, you can run `distrobuilder` as follows. You may also add to your $PATH the directory `$HOME/go/bin/` so that you do not need to run the command with the full path.
