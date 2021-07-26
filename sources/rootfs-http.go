@@ -21,6 +21,8 @@ func (s *rootfs) Run() error {
 		return errors.Wrapf(err, "Failed to download %q", s.definition.Source.URL)
 	}
 
+	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, path.Base(s.definition.Source.URL)))
+
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, path.Base(s.definition.Source.URL)), s.rootfsDir, false, false, nil)
 	if err != nil {

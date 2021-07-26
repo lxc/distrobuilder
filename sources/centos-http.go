@@ -110,9 +110,10 @@ func (s *centOS) Run() error {
 
 	source := filepath.Join(fpath, s.fname)
 
+	s.logger.Infow("Unpacking image", "file", source)
+
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
 		err = s.unpackRaw(source, s.rootfsDir, s.rawRunner)
-
 	} else {
 		err = s.unpackISO(source, s.rootfsDir, s.isoRunner)
 	}

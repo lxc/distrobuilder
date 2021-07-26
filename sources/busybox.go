@@ -45,6 +45,8 @@ func (s *busybox) Run() error {
 		return errors.Wrapf(err, "Failed to create directory %q", sourceDir)
 	}
 
+	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
+
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), sourceDir, false, false, nil)
 	if err != nil {

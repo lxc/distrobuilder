@@ -50,6 +50,8 @@ func (s *sabayon) Run() error {
 		return errors.Wrapf(err, "Failed to download %q", url.String())
 	}
 
+	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
+
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
