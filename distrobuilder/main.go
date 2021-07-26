@@ -126,6 +126,7 @@ func main() {
 			}
 		},
 		PersistentPostRunE: globalCmd.postRun,
+		CompletionOptions:  cobra.CompletionOptions{DisableDefaultCmd: true},
 	}
 
 	app.PersistentFlags().BoolVar(&globalCmd.flagCleanup, "cleanup", true,
