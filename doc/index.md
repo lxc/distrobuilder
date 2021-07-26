@@ -23,20 +23,24 @@ Available Commands:
   build-dir      Build plain rootfs
   build-lxc      Build LXC image from scratch
   build-lxd      Build LXD image from scratch
+  completion     generate the autocompletion script for the specified shell
   help           Help about any command
   pack-lxc       Create LXC image from existing rootfs
   pack-lxd       Create LXD image from existing rootfs
   repack-windows Repack Windows ISO with drivers included
 
 Flags:
-      --cache-dir   Cache directory
-      --cleanup     Clean up cache directory (default true)
-  -h, --help        help for distrobuilder
-  -o, --options     Override options (list of key=value)
-  -t, --timeout     Timeout in seconds
-      --version     Print version number
+      --cache-dir         Cache directory
+      --cleanup           Clean up cache directory (default true)
+      --debug             Enable debug output
+      --disable-overlay   Disable the use of filesystem overlays
+  -h, --help              help for distrobuilder
+  -o, --options           Override options (list of key=value)
+  -t, --timeout           Timeout in seconds
+      --version           Print version number
 
 Use "distrobuilder [command] --help" for more information about a command.
+
 ```
 
 ## Installing from package
@@ -62,18 +66,18 @@ To compile `distrobuilder` from source, first install the Go programming languag
     sudo pacman -S go debootstrap rsync gnupg squashfs-tools git --needed
     ```
 
-Second, download the source code of the `distrobuilder` repository (this repository). The source will be placed in `$HOME/go/src/github.com/lxc/distrobuilder/`
+Second, download the source code of the `distrobuilder` repository (this repository).
 
 ```
-go get -d -v github.com/lxc/distrobuilder/distrobuilder
+git clone https://github.com/lxc/distrobuilder
 ```
 
 Third, enter the directory with the source code of `distrobuilder` and run `make` to compile the source code. This will generate the executable program `distrobuilder`, and it will be located at `$HOME/go/bin/distrobuilder`.
 
 ```
-cd $HOME/go/src/github.com/lxc/distrobuilder
+cd ./distrobuilder
+unset GO111MODULE
 make
-cd
 ```
 
 Finally, you can run `distrobuilder` as follows. You may also add to your $PATH the directory `$HOME/go/bin/` so that you do not need to run the command with the full path.
