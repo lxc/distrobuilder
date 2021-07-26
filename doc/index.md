@@ -75,7 +75,6 @@ Third, enter the directory with the source code of `distrobuilder` and run `make
 
 ```
 cd ./distrobuilder
-unset GO111MODULE
 make
 ```
 

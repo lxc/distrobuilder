@@ -1,5 +1,6 @@
 VERSION=$(shell grep "var Version" shared/version/version.go | cut -d'"' -f2)
 ARCHIVE=distrobuilder-$(VERSION).tar
+GO111MODULE=on
 
 .PHONY: default check dist
 
