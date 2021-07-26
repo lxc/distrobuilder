@@ -62,6 +62,8 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 		return errors.Wrapf(err, "Failed to remove directory %q", rootfsDir)
 	}
 
+	c.logger.Infow("Unpacking root image", "file", rootfsImage)
+
 	err = c.unpackRootfsImage(rootfsImage, tempRootDir)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to unpack %q", rootfsImage)

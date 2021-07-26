@@ -34,6 +34,8 @@ func (s *springdalelinux) Run() error {
 		return errors.Wrapf(err, "Error downloading %q", baseURL+s.fname)
 	}
 
+	s.logger.Infow("Unpacking ISO", "file", filepath.Join(fpath, s.fname))
+
 	err = s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, s.fname))

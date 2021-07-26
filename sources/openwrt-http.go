@@ -185,16 +185,22 @@ func (s *openwrt) Run() error {
 		return errors.Wrapf(err, "Failed to create directory %q", tempScriptsDir)
 	}
 
+	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
+
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
 
+	s.logger.Infow("Unpacking repository tarball", "file", filepath.Join(fpath, "master.tar.gz"))
+
 	err = lxd.Unpack(filepath.Join(fpath, "master.tar.gz"), filepath.Join(s.cacheDir, "fixes"), false, false, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, "master.tar.gz"))
 	}
+
+	s.logger.Infow("Unpacking sdk", "file", filepath.Join(fpath, sdk))
 
 	err = lxd.Unpack(filepath.Join(fpath, sdk), tempSDKDir, false, false, nil)
 	if err != nil {

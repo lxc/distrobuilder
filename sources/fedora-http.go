@@ -42,11 +42,15 @@ func (s *fedora) Run() error {
 		return errors.Wrapf(err, "Failed to download %q", sourceURL)
 	}
 
+	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
+
 	// Unpack the base image
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
+
+	s.logger.Info("Unpacking layers")
 
 	// Unpack the rest of the image (/bin, /sbin, /usr, etc.)
 	err = s.unpackLayers(s.rootfsDir)
@@ -90,6 +94,8 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 	// remove files not relevant to the image.
 	for _, manifest := range manifests {
 		for _, layer := range manifest.Layers {
+			s.logger.Infow("Unpacking layer", "file", filepath.Join(rootfsDir, layer))
+
 			err := lxd.Unpack(filepath.Join(rootfsDir, layer), rootfsDir, false, false, nil)
 			if err != nil {
 				return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(rootfsDir, layer))

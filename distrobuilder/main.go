@@ -280,6 +280,8 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return errors.Wrapf(err, "Failed to load downloader %q", c.definition.Source.Downloader)
 	}
 
+	c.logger.Info("Downloading source")
+
 	err = downloader.Run()
 	if err != nil {
 		return errors.Wrap(err, "Error while downloading source")
@@ -328,10 +330,14 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return errors.Wrapf(err, "Failed to load manager %q", c.definition.Packages.Manager)
 	}
 
+	c.logger.Info("Managing repositories")
+
 	err = manager.ManageRepositories(imageTargets)
 	if err != nil {
 		return errors.Wrap(err, "Failed to manage repositories")
 	}
+
+	c.logger.Infow("Running hooks", "trigger", "post-unpack")
 
 	// Run post unpack hook
 	for _, hook := range c.definition.GetRunnableActions("post-unpack", imageTargets) {
@@ -341,11 +347,15 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	c.logger.Info("Managing packages")
+
 	// Install/remove/update packages
 	err = manager.ManagePackages(imageTargets)
 	if err != nil {
 		return errors.Wrap(err, "Failed to manage packages")
 	}
+
+	c.logger.Infow("Running hooks", "trigger", "post-packages")
 
 	// Run post packages hook
 	for _, hook := range c.definition.GetRunnableActions("post-packages", imageTargets) {

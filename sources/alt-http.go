@@ -30,7 +30,6 @@ func (s *altLinux) Run() error {
 
 	if !s.definition.Source.SkipVerification {
 		if len(s.definition.Source.Keys) != 0 {
-
 			checksumFile = baseURL + "SHA256SUM"
 
 			fpath, err := shared.DownloadHash(s.definition.Image, checksumFile+".asc", "", nil)
@@ -66,6 +65,8 @@ func (s *altLinux) Run() error {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to download %q", baseURL+fname)
 	}
+
+	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)

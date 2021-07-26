@@ -66,6 +66,8 @@ func (s *apertis) Run() error {
 		return errors.Wrapf(err, "Failed to download %q", baseURL+fname)
 	}
 
+	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
+
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
