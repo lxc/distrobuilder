@@ -23,20 +23,24 @@ Available Commands:
   build-dir      Build plain rootfs
   build-lxc      Build LXC image from scratch
   build-lxd      Build LXD image from scratch
+  completion     generate the autocompletion script for the specified shell
   help           Help about any command
   pack-lxc       Create LXC image from existing rootfs
   pack-lxd       Create LXD image from existing rootfs
   repack-windows Repack Windows ISO with drivers included
 
 Flags:
-      --cache-dir   Cache directory
-      --cleanup     Clean up cache directory (default true)
-  -h, --help        help for distrobuilder
-  -o, --options     Override options (list of key=value)
-  -t, --timeout     Timeout in seconds
-      --version     Print version number
+      --cache-dir         Cache directory
+      --cleanup           Clean up cache directory (default true)
+      --debug             Enable debug output
+      --disable-overlay   Disable the use of filesystem overlays
+  -h, --help              help for distrobuilder
+  -o, --options           Override options (list of key=value)
+  -t, --timeout           Timeout in seconds
+      --version           Print version number
 
 Use "distrobuilder [command] --help" for more information about a command.
+
 ```
 
 ## Installing from package
