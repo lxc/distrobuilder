@@ -141,11 +141,18 @@ func TestLXCBuild(t *testing.T) {
 	err := os.MkdirAll(filepath.Join(lxcCacheDir(), "rootfs"), 0755)
 	require.NoError(t, err)
 
-	err = image.Build()
+	err = image.Build("xz")
 	require.NoError(t, err)
 	defer func() {
 		os.Remove("meta.tar.xz")
 		os.Remove("rootfs.tar.xz")
+	}()
+
+	err = image.Build("gzip")
+	require.NoError(t, err)
+	defer func() {
+		os.Remove("meta.tar.gz")
+		os.Remove("rootfs.tar.gz")
 	}()
 }
 
