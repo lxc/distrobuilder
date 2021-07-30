@@ -31,7 +31,13 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 	c.cmdBuild = &cobra.Command{
 		Use:   "build-lxd <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION]",
 		Short: "Build LXD image from scratch",
-		Args:  cobra.RangeArgs(1, 2),
+		Long: fmt.Sprintf(`Build LXD image from scratch
+
+%s
+
+%s
+`, typeDescription, compressionDescription),
+		Args: cobra.RangeArgs(1, 2),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if !lxd.StringInSlice(c.flagType, []string{"split", "unified"}) {
 				return errors.New("--type needs to be one of ['split', 'unified']")
@@ -77,7 +83,13 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 	c.cmdPack = &cobra.Command{
 		Use:   "pack-lxd <filename|-> <source dir> [target dir] [--type=TYPE] [--compression=COMPRESSION]",
 		Short: "Create LXD image from existing rootfs",
-		Args:  cobra.RangeArgs(2, 3),
+		Long: fmt.Sprintf(`Create LXD image from existing rootfs
+
+%s
+
+%s
+`, typeDescription, compressionDescription),
+		Args: cobra.RangeArgs(2, 3),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if !lxd.StringInSlice(c.flagType, []string{"split", "unified"}) {
 				return errors.New("--type needs to be one of ['split', 'unified']")

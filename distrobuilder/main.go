@@ -75,6 +75,24 @@ import (
 	"github.com/lxc/distrobuilder/sources"
 )
 
+var typeDescription = `Depending on the type, it either outputs a unified (single tarball)
+or split image (tarball + squashfs or qcow2 image). The --type flag can take one of the
+following values:
+  - split (default)
+  - unified
+`
+
+var compressionDescription = `The compression can be set with the --compression flag. I can take one of the
+following values:
+  - bzip2
+  - gzip
+  - lzip
+  - lzma
+  - lzop
+  - xz (default)
+  - zstd
+`
+
 type cmdGlobal struct {
 	flagCleanup        bool
 	flagCacheDir       string

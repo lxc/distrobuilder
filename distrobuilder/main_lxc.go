@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -20,8 +22,12 @@ type cmdLXC struct {
 
 func (c *cmdLXC) commandBuild() *cobra.Command {
 	c.cmdBuild = &cobra.Command{
-		Use:     "build-lxc <filename|-> [target dir] [--compression=COMPRESSION]",
-		Short:   "Build LXC image from scratch",
+		Use:   "build-lxc <filename|-> [target dir] [--compression=COMPRESSION]",
+		Short: "Build LXC image from scratch",
+		Long: fmt.Sprintf(`Build LXC image from scratch
+
+%s
+`, compressionDescription),
 		Args:    cobra.RangeArgs(1, 2),
 		PreRunE: c.global.preRunBuild,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -50,8 +56,12 @@ func (c *cmdLXC) commandBuild() *cobra.Command {
 
 func (c *cmdLXC) commandPack() *cobra.Command {
 	c.cmdPack = &cobra.Command{
-		Use:     "pack-lxc <filename|-> <source dir> [target dir] [--compression=COMPRESSION]",
-		Short:   "Create LXC image from existing rootfs",
+		Use:   "pack-lxc <filename|-> <source dir> [target dir] [--compression=COMPRESSION]",
+		Short: "Create LXC image from existing rootfs",
+		Long: fmt.Sprintf(`Create LXC image from existing rootfs
+
+%s
+`, compressionDescription),
 		Args:    cobra.RangeArgs(2, 3),
 		PreRunE: c.global.preRunPack,
 		RunE: func(cmd *cobra.Command, args []string) error {
