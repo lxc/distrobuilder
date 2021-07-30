@@ -271,8 +271,8 @@ func PackUpdate(filename, compression, path string, args ...string) error {
 // compressTarball compresses a tarball, or not.
 func compressTarball(filename, compression string) error {
 	switch compression {
-	case "lzop":
-		// lzo does not remove the uncompressed file per default
+	case "lzop", "zstd":
+		// Remove the uncompressed file as the compress fails to do so.
 		defer os.Remove(filename)
 		fallthrough
 	case "bzip2", "xz", "lzip", "lzma", "gzip":

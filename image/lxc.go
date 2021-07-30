@@ -61,7 +61,7 @@ func (l *LXCImage) AddTemplate(path string) error {
 }
 
 // Build creates a LXC image.
-func (l *LXCImage) Build() error {
+func (l *LXCImage) Build(compression string) error {
 	err := l.createMetadata()
 	if err != nil {
 		return errors.Wrap(err, "Failed to create metadata")
@@ -72,7 +72,7 @@ func (l *LXCImage) Build() error {
 		return errors.Wrap(err, "Failed to pack metadata")
 	}
 
-	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar"), "xz", l.sourceDir, ".")
+	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar"), compression, l.sourceDir, ".")
 	if err != nil {
 		return errors.Wrapf(err, "Failed to pack %q", filepath.Join(l.targetDir, "rootfs.tar"))
 	}

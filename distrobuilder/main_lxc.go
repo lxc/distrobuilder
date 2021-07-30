@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -14,12 +16,18 @@ type cmdLXC struct {
 	cmdBuild *cobra.Command
 	cmdPack  *cobra.Command
 	global   *cmdGlobal
+
+	flagCompression string
 }
 
 func (c *cmdLXC) commandBuild() *cobra.Command {
 	c.cmdBuild = &cobra.Command{
-		Use:     "build-lxc <filename|-> [target dir]",
-		Short:   "Build LXC image from scratch",
+		Use:   "build-lxc <filename|-> [target dir] [--compression=COMPRESSION]",
+		Short: "Build LXC image from scratch",
+		Long: fmt.Sprintf(`Build LXC image from scratch
+
+%s
+`, compressionDescription),
 		Args:    cobra.RangeArgs(1, 2),
 		PreRunE: c.global.preRunBuild,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -40,13 +48,20 @@ func (c *cmdLXC) commandBuild() *cobra.Command {
 			return c.run(cmd, args, overlayDir)
 		},
 	}
+
+	c.cmdBuild.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use"+"``")
+
 	return c.cmdBuild
 }
 
 func (c *cmdLXC) commandPack() *cobra.Command {
 	c.cmdPack = &cobra.Command{
-		Use:     "pack-lxc <filename|-> <source dir> [target dir]",
-		Short:   "Create LXC image from existing rootfs",
+		Use:   "pack-lxc <filename|-> <source dir> [target dir] [--compression=COMPRESSION]",
+		Short: "Create LXC image from existing rootfs",
+		Long: fmt.Sprintf(`Create LXC image from existing rootfs
+
+%s
+`, compressionDescription),
 		Args:    cobra.RangeArgs(2, 3),
 		PreRunE: c.global.preRunPack,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -72,6 +87,9 @@ func (c *cmdLXC) commandPack() *cobra.Command {
 			return c.run(cmd, args, overlayDir)
 		},
 	}
+
+	c.cmdPack.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use"+"``")
+
 	return c.cmdPack
 }
 
@@ -173,7 +191,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	exitChroot()
 
-	err = img.Build()
+	err = img.Build(c.flagCompression)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create LXC image")
 	}

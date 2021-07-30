@@ -107,7 +107,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 		} else {
 			// Add the rootfs to the tarball, prefix all files with "rootfs"
 			err = shared.Pack(targetTarball,
-				"", l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
+				compression, l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
 		}
 		if err != nil {
 			return errors.Wrapf(err, "Failed to pack tarball %q", targetTarball)
@@ -130,7 +130,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 			// Create rootfs as squashfs.
 			err = shared.RunCommand("mksquashfs", l.sourceDir,
 				filepath.Join(l.targetDir, "rootfs.squashfs"), "-noappend", "-comp",
-				"xz", "-b", "1M", "-no-progress", "-no-recovery")
+				compression, "-b", "1M", "-no-progress", "-no-recovery")
 		}
 		if err != nil {
 			return errors.Wrap(err, "Failed to create squashfs or copy image")
