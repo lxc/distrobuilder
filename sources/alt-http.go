@@ -18,7 +18,12 @@ type altLinux struct {
 }
 
 func (s *altLinux) Run() error {
-	baseURL := fmt.Sprintf("%s/%s/cloud/", s.definition.Source.URL, s.definition.Image.Release)
+	baseURL := fmt.Sprintf(
+		"%s/%s/cloud/%s/",
+		s.definition.Source.URL,
+		s.definition.Image.Release,
+		s.definition.Image.ArchitectureMapped,
+	)
 	fname := fmt.Sprintf("alt-%s-rootfs-systemd-%s.tar.xz", strings.ToLower(s.definition.Image.Release), s.definition.Image.ArchitectureMapped)
 
 	url, err := url.Parse(baseURL)
