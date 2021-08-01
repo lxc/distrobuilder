@@ -35,11 +35,11 @@ func (s *altLinux) Run() error {
 
 	if !s.definition.Source.SkipVerification {
 		if len(s.definition.Source.Keys) != 0 {
-			checksumFile = baseURL + "SHA256SUM"
+			checksumFile = baseURL + "SHA256SUMS"
 
-			fpath, err := shared.DownloadHash(s.definition.Image, checksumFile+".asc", "", nil)
+			fpath, err := shared.DownloadHash(s.definition.Image, checksumFile+".gpg", "", nil)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to download %q", checksumFile+".asc")
+				return errors.Wrapf(err, "Failed to download %q", checksumFile+".gpg")
 			}
 
 			_, err = shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
@@ -48,15 +48,15 @@ func (s *altLinux) Run() error {
 			}
 
 			valid, err := shared.VerifyFile(
-				filepath.Join(fpath, "SHA256SUM"),
-				filepath.Join(fpath, "SHA256SUM.asc"),
+				filepath.Join(fpath, "SHA256SUMS"),
+				filepath.Join(fpath, "SHA256SUMS.gpg"),
 				s.definition.Source.Keys,
 				s.definition.Source.Keyserver)
 			if err != nil {
 				return errors.Wrap(err, "Failed to verify file")
 			}
 			if !valid {
-				return errors.Errorf("Invalid signature for %q", "SHA256SUM")
+				return errors.Errorf("Invalid signature for %q", "SHA256SUMS")
 			}
 		} else {
 			// Force gpg checks when using http
