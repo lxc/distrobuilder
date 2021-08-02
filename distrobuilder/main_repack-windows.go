@@ -46,6 +46,28 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			defer unix.Unmount(c.global.sourceDir, 0)
 
+			sourceDir := filepath.Dir(args[0])
+			targetDir := filepath.Dir(args[1])
+
+			// If either the source or the target are located on a FUSE filesystem, disable overlay
+			// as it doesn't play well with wimlib-imagex.
+			for _, dir := range []string{sourceDir, targetDir} {
+				var stat unix.Statfs_t
+
+				err := unix.Statfs(dir, &stat)
+				if err != nil {
+					c.global.logger.Warnw("Failed to get directory information", "directory", dir, "err", err)
+					continue
+				}
+
+				// Since there's no magic number for virtiofs, we need to check FUSE_SUPER_MAGIC (which is not defined in the unix package).
+				if stat.Type == 0x65735546 {
+					c.global.logger.Warnw("FUSE filesystem detected, disabling overlay")
+					c.global.flagDisableOverlay = true
+					break
+				}
+			}
+
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
 				return errors.Wrap(err, "Failed to get overlay directory")
