@@ -140,8 +140,6 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir string) error {
 	logger := c.global.logger
 
-	defer unix.Unmount(c.global.sourceDir, 0)
-
 	driverPath := filepath.Join(c.global.flagCacheDir, "drivers")
 	virtioISOPath := c.flagDrivers
 
