@@ -121,26 +121,9 @@ func (s *openwrt) Run() error {
 	if !s.definition.Source.SkipVerification {
 		if len(s.definition.Source.Keys) != 0 {
 			checksumFile = baseURL + "sha256sums"
-			fpath, err := shared.DownloadHash(s.definition.Image, checksumFile+".asc", "", nil)
-			if err != nil {
-				return errors.Wrapf(err, "Failed to download %q", checksumFile+".asc")
-			}
-
-			_, err = shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
+			_, err := shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
 			if err != nil {
 				return errors.Wrapf(err, "Failed to download %q", checksumFile)
-			}
-
-			valid, err := shared.VerifyFile(
-				filepath.Join(fpath, "sha256sums"),
-				filepath.Join(fpath, "sha256sums.asc"),
-				s.definition.Source.Keys,
-				s.definition.Source.Keyserver)
-			if err != nil {
-				return errors.Wrap(err, `Failed to verify sha256sums`)
-			}
-			if !valid {
-				return errors.New(`Invalid signature for "sha256sums"`)
 			}
 		} else {
 			// Force gpg checks when using http
