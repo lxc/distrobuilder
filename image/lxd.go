@@ -105,9 +105,10 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 
 			err = shared.Pack(targetTarball, "", l.cacheDir, "rootfs.img")
 		} else {
-			// Add the rootfs to the tarball, prefix all files with "rootfs"
+			// Add the rootfs to the tarball, prefix all files with "rootfs".
+			// We intentionally don't set any compression here, as PackUpdate (further down) cannot deal with compressed tarballs.
 			err = shared.Pack(targetTarball,
-				compression, l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
+				"", l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
 		}
 		if err != nil {
 			return errors.Wrapf(err, "Failed to pack tarball %q", targetTarball)
