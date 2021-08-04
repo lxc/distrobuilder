@@ -296,7 +296,18 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 	logger.Info("Generating new ISO")
 
-	_, err = lxd.RunCommand("genisoimage", "--allow-limited-size", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
+	stdout, err := lxd.RunCommand("genisoimage", "--version")
+	if err != nil {
+		return errors.Wrap(err, "Failed to determine version of genisoimage")
+	}
+
+	version := strings.Split(stdout, "\n")[0]
+
+	if strings.HasPrefix(version, "mkisofs") {
+		_, err = lxd.RunCommand("genisoimage", "-iso-level", "3", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
+	} else {
+		_, err = lxd.RunCommand("genisoimage", "--allow-limited-size", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
+	}
 	if err != nil {
 		return errors.Wrap(err, "Failed to generate ISO")
 	}
