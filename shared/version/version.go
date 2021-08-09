@@ -1,4 +1,4 @@
 package version
 
 // Version contains the distrobuilder version number
-var Version = "1.2"
+var Version = "1.3"
