@@ -673,11 +673,13 @@ EOF
 
 # fix_systemd_sysctl overrides the systemd-sysctl.service to use "ExecStart=-" instead of "ExecStart=".
 fix_systemd_sysctl() {
+	cmd=/usr/lib/systemd/systemd-sysctl
+	! [ -e "${cmd}" ] && cmd=/lib/systemd/systemd-sysctl
 	mkdir -p /run/systemd/system/systemd-sysctl.service.d
 	cat <<-EOF > /run/systemd/system/systemd-sysctl.service.d/zzz-lxc-override.conf
 [Service]
 ExecStart=
-ExecStart=-/usr/lib/systemd/systemd-sysctl
+ExecStart=-${cmd}
 EOF
 }
 
