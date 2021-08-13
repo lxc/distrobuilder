@@ -61,10 +61,10 @@ func (s *plamolinux) Run() error {
 	if release < 7 {
 		pkgTool = "hdsetup"
 	} else {
-		pkgTool = "pkgtools7"
+		pkgTool = "pkgtools8"
 	}
 
-	matches, err := filepath.Glob(filepath.Join(pkgDir, fmt.Sprintf("%s-*.txz", pkgTool)))
+	matches, err := filepath.Glob(filepath.Join(pkgDir, fmt.Sprintf("%s-*.t*z*", pkgTool)))
 	if err != nil {
 		return errors.Wrap(err, "Failed to match pattern")
 	}
@@ -75,7 +75,7 @@ func (s *plamolinux) Run() error {
 		return errors.New("Found more than one matching package")
 	}
 
-	err = shared.RunCommand("tar", "-pxJf", matches[0], "-C", pkgDir, "sbin/")
+	err = shared.RunCommand("tar", "-pxf", matches[0], "-C", pkgDir, "sbin/")
 	if err != nil {
 		return errors.Wrapf(err, "Failed to unpack %q", matches[0])
 	}
@@ -103,6 +103,18 @@ if [ -d "${PKG_DIR}/sbin/installer_new" ]; then
     mv "${PKG_DIR}/sbin/installer_new" "${PKG_DIR}/sbin/installer"
 fi
 
+# Fix filename of pkgtools8 files
+pkg_scripts="installpkg installpkg2 installpkg2.mes makepkg updatepkg removepkg"
+for s in $pkg_scripts
+do
+    if [ -f "${PKG_DIR}/sbin/new_$s" ]; then
+        ( cd "${PKG_DIR}/sbin" && mv new_"$s" $s )
+    fi
+done
+
+# generate symblic link to static-zstd
+( cd "${PKG_DIR}/sbin" && ln -sf zstd-* zstd )
+
 # Don't call ldconfig
 sed -i "/ldconfig/!s@/sbin@${PKG_DIR}&@g" ${PKG_DIR}/sbin/installpkg*
 
@@ -110,7 +122,7 @@ sed -i "/ldconfig/!s@/sbin@${PKG_DIR}&@g" ${PKG_DIR}/sbin/installpkg*
 sed -i "/^export PATH/d" ${PKG_DIR}/sbin/installpkg*
 
 # Install all packages
-for pkg in $(ls -cr ${PKG_DIR}/*.t?z); do
+for pkg in $(ls -cr ${PKG_DIR}/*.t*z*); do
     installpkg -root ${ROOTFS_DIR} -priority ADD ${pkg}
 done
 `, pkgDir, rootfsDirAbs))
@@ -138,7 +150,7 @@ func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignor
 	for _, n := range nodes {
 		target := htmlquery.InnerText(n)
 
-		if strings.HasSuffix(target, ".txz") {
+		if strings.HasSuffix(target, ".txz") || strings.HasSuffix(target, ".tzst") {
 			pkgName := strings.Split(target, "-")[0]
 			if lxd.StringInSlice(pkgName, ignoredPkgs) {
 				continue
@@ -149,7 +161,7 @@ func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignor
 			if err != nil {
 				return "", errors.Wrapf(err, "Failed to download %q", fmt.Sprintf("%s/%s", URL, target))
 			}
-		} else if strings.HasSuffix(target, ".txz/") {
+		} else if strings.HasSuffix(target, ".txz/") || strings.HasSuffix(target, ".tzst/") {
 			// directory
 			u, err := url.Parse(URL)
 			if err != nil {
