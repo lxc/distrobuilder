@@ -711,20 +711,23 @@ if [ -e /etc/os-release ]; then
 	. /etc/os-release
 fi
 
-# Apply systemd overrides
-if [ "${systemd_version}" -ge 244 ]; then
-	fix_systemd_override_unit system/service
-else
-	# Setup per-unit overrides
-	find /lib/systemd /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(lib\|etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
-		fix_systemd_override_unit "${service_file}"
-	done
-fi
-
-# Workarounds for all containers
+# Workarounds for containers.
 if is_lxc_container; then
+	# Apply systemd overrides
+	if [ "${systemd_version}" -ge 244 ]; then
+		fix_systemd_override_unit system/service
+	else
+		# Setup per-unit overrides
+		find /lib/systemd /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(lib\|etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
+			fix_systemd_override_unit "${service_file}"
+		done
+	fi
+
+	# Ignore failures on some units.
 	fix_systemd_udev_trigger
 	fix_systemd_sysctl
+
+	# Mask some units.
 	fix_systemd_mask dev-hugepages.mount
 	fix_systemd_mask run-ribchester-general.mount
 	fix_systemd_mask systemd-hwdb-update.service
@@ -735,24 +738,26 @@ if is_lxc_container; then
 	if [ ! -e /dev/tty1 ]; then
 		fix_systemd_mask vconsole-setup-kludge@tty1.service
 	fi
+
+	# Workarounds for cloud containers
+	if { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
+		fix_nm_force_up eth0
+	fi
+
+	# Workarounds for privileged containers.
 	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
 		fix_ro_paths systemd-networkd.service
 		fix_ro_paths systemd-resolved.service
 	fi
-fi
 
-# Workarounds for cloud containers
-if is_lxc_container && { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
-	fix_nm_force_up eth0
-fi
+	# Workarounds for NetworkManager in containers
+	if [ "${nm_exists}" -eq 1 ]; then
+		if [ "${ID}" = "ol" ] || [ "${ID}" = "centos" ]; then
+			fix_nm_force_up eth0
+		fi
 
-# Workarounds for NetworkManager in containers
-if [ "${nm_exists}" -eq 1 ]; then
-	if [ "${ID}" = "ol" ] || [ "${ID}" = "centos" ]; then
-		fix_nm_force_up eth0
+		fix_nm_link_state eth0
 	fi
-
-	fix_nm_link_state eth0
 fi
 `
 	os.MkdirAll("/etc/systemd/system-generators", 0755)
