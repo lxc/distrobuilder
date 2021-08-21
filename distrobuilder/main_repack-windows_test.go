@@ -16,6 +16,26 @@ func Test_detectWindowsVersion(t *testing.T) {
 		want string
 	}{
 		{
+			"Windows 11 (1)",
+			args{"Windows 11.iso"},
+			"w11",
+		},
+		{
+			"Windows 11 (2)",
+			args{"Windows11.iso"},
+			"w11",
+		},
+		{
+			"Windows 11 (3)",
+			args{"Win11.iso"},
+			"w11",
+		},
+		{
+			"Windows 11 (4)",
+			args{"Windows_11.iso"},
+			"w11",
+		},
+		{
 			"Windows 10 (1)",
 			args{"Windows 10.iso"},
 			"w10",
