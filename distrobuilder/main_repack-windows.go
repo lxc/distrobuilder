@@ -105,11 +105,16 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 		c.flagWindowsVersion = detectedVersion
 	} else {
-		supportedVersions := []string{"w10", "2k19", "2k12", "2k16"}
+		supportedVersions := []string{"w11", "w10", "2k19", "2k12", "2k16"}
 
 		if !lxd.StringInSlice(c.flagWindowsVersion, supportedVersions) {
 			return errors.Errorf("Version must be one of %v", supportedVersions)
 		}
+	}
+
+	// FIXME: Windows 11 currently uses Windows 10 drivers, remove this once virtio w11 drivers exist.
+	if c.flagWindowsVersion == "w11" {
+		c.flagWindowsVersion = "w10"
 	}
 
 	// Check dependencies
@@ -656,6 +661,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 func detectWindowsVersion(fileName string) string {
 	aliases := map[string][]string{
+		"w11":  {"w11", "win11", "windows.?11"},
 		"w10":  {"w10", "win10", "windows.?10"},
 		"2k19": {"2k19", "w2k19", "win2k19", "windows.?server.?2019"},
 		"2k12": {"2k12", "w2k12", "win2k12", "windows.?server.?2012"},
