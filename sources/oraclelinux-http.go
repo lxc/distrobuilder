@@ -266,7 +266,7 @@ EOF
 
 	exitChroot()
 
-	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RunCommand("rsync", "-aHASX", "--devices", tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
 		return errors.Wrap(err, `Failed to run "rsync"`)
 	}

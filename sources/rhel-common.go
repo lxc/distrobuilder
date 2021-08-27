@@ -89,7 +89,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 		}
 
 		// Copy repo relevant files to the cdrom
-		err = shared.RunCommand("rsync", "-qa",
+		err = shared.RunCommand("rsync", "-aHASX", "--devices",
 			packagesDir,
 			repodataDir,
 			filepath.Join(tempRootDir, "mnt", "cdrom"))
@@ -111,7 +111,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 			}
 			gpgKeysPath += fmt.Sprintf("file:///mnt/cdrom/%s", filepath.Base(key))
 
-			err = shared.RunCommand("rsync", "-qa", key,
+			err = shared.RunCommand("rsync", "-aHASX", "--devices", key,
 				filepath.Join(tempRootDir, "mnt", "cdrom"))
 			if err != nil {
 				return errors.Wrap(err, `Failed to run "rsync"`)
@@ -133,7 +133,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 
 	exitChroot()
 
-	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RunCommand("rsync", "-aHASX", "--devices", tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
 		return errors.Wrap(err, `Failed to run "rsync"`)
 	}
@@ -173,7 +173,7 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 
 	// Since rootfs is read-only, we need to copy it to a temporary rootfs
 	// directory in order to create the minimal rootfs.
-	err = shared.RunCommand("rsync", "-qa", rootfsDir+"/", target)
+	err = shared.RunCommand("rsync", "-aHASX", "--devices", rootfsDir+"/", target)
 	if err != nil {
 		return errors.Wrap(err, `Failed to run "rsync"`)
 	}
@@ -226,7 +226,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 
 	// Since roRootDir is read-only, we need to copy it to a temporary rootfs
 	// directory in order to create the minimal rootfs.
-	err = shared.RunCommand("rsync", "-qa", roRootDir+"/", tempRootDir)
+	err = shared.RunCommand("rsync", "-aHASX", "--devices", roRootDir+"/", tempRootDir)
 	if err != nil {
 		return errors.Wrapf(err, `Failed to run "rsync"`)
 	}
@@ -245,7 +245,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 
 	exitChroot()
 
-	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RunCommand("rsync", "-aHASX", "--devices", tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
 		return errors.Wrap(err, `Failed to run "rsync"`)
 	}
