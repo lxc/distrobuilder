@@ -113,7 +113,7 @@ do
 done
 
 # generate symblic link to static-zstd
-( cd "${PKG_DIR}/sbin" && ln -sf zstd-* zstd )
+( cd "${PKG_DIR}/sbin/installer" && ln -sf zstd-* zstd )
 
 # Don't call ldconfig
 sed -i "/ldconfig/!s@/sbin@${PKG_DIR}&@g" ${PKG_DIR}/sbin/installpkg*
