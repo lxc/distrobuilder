@@ -93,7 +93,7 @@ PKG_DIR="%s"
 ROOTFS_DIR="%s"
 
 # Environment
-export PATH="${PKG_DIR}/sbin:${PATH}"
+export PATH="${PATH}:${PKG_DIR}/sbin:${PKG_DIR}/sbin/installer"
 export LC_ALL="C"
 export LANG="C"
 
