@@ -13,15 +13,18 @@ import (
 func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), string, error) {
 	var stat unix.Statfs_t
 
-	// Skip overlay on xfs
+	// Skip overlay on xfs and zfs
 	for _, dir := range []string{cacheDir, sourceDir} {
 		err := unix.Statfs(dir, &stat)
 		if err != nil {
 			return nil, "", err
 		}
 
-		if stat.Type == unix.XFS_SUPER_MAGIC {
+		switch stat.Type {
+		case unix.XFS_SUPER_MAGIC:
 			return nil, "", errors.Errorf("overlay not supported on xfs")
+		case 0x2fc12fc1:
+			return nil, "", errors.Errorf("overlay not supported on zfs")
 		}
 	}
 
