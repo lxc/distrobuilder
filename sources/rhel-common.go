@@ -89,12 +89,14 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 		}
 
 		// Copy repo relevant files to the cdrom
-		err = shared.RunCommand("rsync", "-qa",
-			packagesDir,
-			repodataDir,
-			filepath.Join(tempRootDir, "mnt", "cdrom"))
+		err = shared.RsyncLocal(packagesDir, filepath.Join(tempRootDir, "mnt", "cdrom"))
 		if err != nil {
-			return errors.WithMessage(err, `Failed to run "rsync"`)
+			return errors.Wrap(err, "Failed to copy Packages")
+		}
+
+		err = shared.RsyncLocal(repodataDir, filepath.Join(tempRootDir, "mnt", "cdrom"))
+		if err != nil {
+			return errors.Wrap(err, "Failed to copy repodata")
 		}
 
 		// Find all relevant GPG keys
@@ -111,8 +113,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 			}
 			gpgKeysPath += fmt.Sprintf("file:///mnt/cdrom/%s", filepath.Base(key))
 
-			err = shared.RunCommand("rsync", "-qa", key,
-				filepath.Join(tempRootDir, "mnt", "cdrom"))
+			err = shared.RsyncLocal(key, filepath.Join(tempRootDir, "mnt", "cdrom"))
 			if err != nil {
 				return errors.WithMessage(err, `Failed to run "rsync"`)
 			}
@@ -133,7 +134,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 
 	exitChroot()
 
-	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RsyncLocal(tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
 		return errors.WithMessage(err, `Failed to run "rsync"`)
 	}
@@ -173,7 +174,7 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 
 	// Since rootfs is read-only, we need to copy it to a temporary rootfs
 	// directory in order to create the minimal rootfs.
-	err = shared.RunCommand("rsync", "-qa", rootfsDir+"/", target)
+	err = shared.RsyncLocal(rootfsDir+"/", target)
 	if err != nil {
 		return errors.WithMessage(err, `Failed to run "rsync"`)
 	}
@@ -226,7 +227,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 
 	// Since roRootDir is read-only, we need to copy it to a temporary rootfs
 	// directory in order to create the minimal rootfs.
-	err = shared.RunCommand("rsync", "-qa", roRootDir+"/", tempRootDir)
+	err = shared.RsyncLocal(roRootDir+"/", tempRootDir)
 	if err != nil {
 		return errors.WithMessagef(err, `Failed to run "rsync"`)
 	}
@@ -245,7 +246,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 
 	exitChroot()
 
-	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RsyncLocal(tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
 		return errors.WithMessage(err, `Failed to run "rsync"`)
 	}
