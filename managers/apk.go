@@ -46,13 +46,13 @@ func (m *apk) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 
 	f, err := os.OpenFile(repoFile, os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open %q", repoFile)
+		return errors.WithMessagef(err, "Failed to open %q", repoFile)
 	}
 	defer f.Close()
 
 	_, err = f.WriteString(repoAction.URL + "\n")
 	if err != nil {
-		return errors.Wrap(err, "Failed to write string to file")
+		return errors.WithMessage(err, "Failed to write string to file")
 	}
 
 	return nil

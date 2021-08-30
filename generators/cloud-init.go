@@ -35,14 +35,14 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 			if lxd.StringInSlice(info.Name(), []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"}) {
 				err := os.Remove(path)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to remove file %q", path)
+					return errors.WithMessagef(err, "Failed to remove file %q", path)
 				}
 			}
 
 			return nil
 		})
 		if err != nil {
-			return errors.Wrapf(err, "Failed to walk file tree %q", fullPath)
+			return errors.WithMessagef(err, "Failed to walk file tree %q", fullPath)
 		}
 	}
 
@@ -65,7 +65,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 			if re.MatchString(info.Name()) {
 				err := os.Remove(path)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to remove file %q", path)
+					return errors.WithMessagef(err, "Failed to remove file %q", path)
 				}
 			}
 
@@ -79,7 +79,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 	if !lxd.PathExists(path) {
 		err := os.MkdirAll(path, 0755)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create directory %q", path)
+			return errors.WithMessagef(err, "Failed to create directory %q", path)
 		}
 	}
 
@@ -88,7 +88,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 
 	f, err := os.Create(path)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create file %q", path)
+		return errors.WithMessagef(err, "Failed to create file %q", path)
 	}
 	defer f.Close()
 
@@ -101,7 +101,7 @@ func (g *cloudInit) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLX
 
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create directory %q", templateDir)
+		return errors.WithMessagef(err, "Failed to create directory %q", templateDir)
 	}
 
 	var content string
@@ -141,7 +141,7 @@ config:
 
 	file, err := os.Create(path)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create file %q", path)
+		return errors.WithMessagef(err, "Failed to create file %q", path)
 	}
 
 	defer file.Close()
@@ -158,18 +158,18 @@ config:
 	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(content)
 		if err != nil {
-			return errors.Wrap(err, "Failed to parse template")
+			return errors.WithMessage(err, "Failed to parse template")
 		}
 
 		content, err = tpl.Execute(pongo2.Context{"lxd": target})
 		if err != nil {
-			return errors.Wrap(err, "Failed to execute template")
+			return errors.WithMessage(err, "Failed to execute template")
 		}
 	}
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to write to content to %s template", g.defFile.Name)
+		return errors.WithMessagef(err, "Failed to write to content to %s template", g.defFile.Name)
 	}
 
 	if len(g.defFile.Template.Properties) > 0 {

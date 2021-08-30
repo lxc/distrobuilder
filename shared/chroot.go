@@ -30,7 +30,7 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 	// Create a temporary mount path
 	err := os.MkdirAll(filepath.Join(rootfs, ".distrobuilder"), 0700)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create directory %q", filepath.Join(rootfs, ".distrobuilder"))
+		return errors.WithMessagef(err, "Failed to create directory %q", filepath.Join(rootfs, ".distrobuilder"))
 	}
 
 	for i, mount := range mounts {
@@ -41,12 +41,12 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 		if mount.IsDir {
 			err := os.MkdirAll(tmpTarget, 0755)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to create directory %q", tmpTarget)
+				return errors.WithMessagef(err, "Failed to create directory %q", tmpTarget)
 			}
 		} else {
 			f, err := os.Create(tmpTarget)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to create file %q", tmpTarget)
+				return errors.WithMessagef(err, "Failed to create file %q", tmpTarget)
 			}
 			f.Close()
 		}
@@ -54,7 +54,7 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 		// Mount to the temporary path
 		err := unix.Mount(mount.Source, tmpTarget, mount.FSType, mount.Flags, mount.Data)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to mount '%s'", mount.Source)
+			return errors.WithMessagef(err, "Failed to mount '%s'", mount.Source)
 		}
 	}
 
@@ -96,14 +96,14 @@ func moveMounts(mounts []ChrootMount) error {
 			// Get information on current target
 			fi, err := os.Lstat(targetDir)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to stat directory %q", targetDir)
+				return errors.WithMessagef(err, "Failed to stat directory %q", targetDir)
 			}
 
 			// If a symlink, resolve it
 			if fi.Mode()&os.ModeSymlink != 0 {
 				newTarget, err := os.Readlink(targetDir)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to get destination of %q", targetDir)
+					return errors.WithMessagef(err, "Failed to get destination of %q", targetDir)
 				}
 
 				targetDir = newTarget
@@ -113,19 +113,19 @@ func moveMounts(mounts []ChrootMount) error {
 		// Create parent paths if missing
 		err := os.MkdirAll(targetDir, 0755)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create directory %q", targetDir)
+			return errors.WithMessagef(err, "Failed to create directory %q", targetDir)
 		}
 
 		// Create target path
 		if mount.IsDir {
 			err = os.MkdirAll(target, 0755)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to create directory %q", target)
+				return errors.WithMessagef(err, "Failed to create directory %q", target)
 			}
 		} else {
 			f, err := os.Create(target)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to create file %q", target)
+				return errors.WithMessagef(err, "Failed to create file %q", target)
 			}
 			f.Close()
 		}
@@ -133,14 +133,14 @@ func moveMounts(mounts []ChrootMount) error {
 		// Move the mount to its destination
 		err = unix.Mount(tmpSource, target, "", unix.MS_MOVE, "")
 		if err != nil {
-			return errors.Wrapf(err, "Failed to mount '%s'", mount.Source)
+			return errors.WithMessagef(err, "Failed to mount '%s'", mount.Source)
 		}
 	}
 
 	// Cleanup our temporary path
 	err := os.RemoveAll(filepath.Join("/", ".distrobuilder"))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to remove directory %q", filepath.Join("/", ".distrobuilder"))
+		return errors.WithMessagef(err, "Failed to remove directory %q", filepath.Join("/", ".distrobuilder"))
 	}
 
 	return nil
@@ -151,12 +151,12 @@ func killChrootProcesses(rootfs string) error {
 	// List all files under /proc
 	proc, err := os.Open(filepath.Join(rootfs, "proc"))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open file %q", filepath.Join(rootfs, "proc"))
+		return errors.WithMessagef(err, "Failed to open file %q", filepath.Join(rootfs, "proc"))
 	}
 
 	dirs, err := proc.Readdirnames(0)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to read directory content of %q", filepath.Join(rootfs, "proc"))
+		return errors.WithMessagef(err, "Failed to read directory content of %q", filepath.Join(rootfs, "proc"))
 	}
 
 	// Get all processes and kill them
@@ -180,7 +180,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	// Mount the rootfs
 	err := unix.Mount(rootfs, rootfs, "", unix.MS_BIND, "")
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to mount '%s'", rootfs)
+		return nil, errors.WithMessagef(err, "Failed to mount '%s'", rootfs)
 	}
 
 	// Setup all other needed mounts
@@ -212,7 +212,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 		err = setupMounts(rootfs, mounts)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to mount filesystems")
+		return nil, errors.WithMessage(err, "Failed to mount filesystems")
 	}
 
 	// Chroot into the container's rootfs
@@ -236,13 +236,13 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	// Populate /dev directory instead of bind mounting it from the host
 	err = populateDev()
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to populate /dev")
+		return nil, errors.WithMessage(err, "Failed to populate /dev")
 	}
 
 	// Change permission for /dev/shm
 	err = unix.Chmod("/dev/shm", 01777)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to chmod /dev/shm")
+		return nil, errors.WithMessage(err, "Failed to chmod /dev/shm")
 	}
 
 	var env Environment
@@ -308,7 +308,7 @@ exit 101
 		if policyCleanup {
 			err = os.Remove("/usr/sbin/policy-rc.d")
 			if err != nil {
-				return errors.Wrapf(err, "Failed to remove %q", "/usr/sbin/policy-rc.d")
+				return errors.WithMessagef(err, "Failed to remove %q", "/usr/sbin/policy-rc.d")
 			}
 		}
 
@@ -318,17 +318,17 @@ exit 101
 		// Switch back to the host rootfs
 		err = root.Chdir()
 		if err != nil {
-			return errors.Wrap(err, "Failed to chdir")
+			return errors.WithMessage(err, "Failed to chdir")
 		}
 
 		err = unix.Chroot(".")
 		if err != nil {
-			return errors.Wrap(err, "Failed to chroot")
+			return errors.WithMessage(err, "Failed to chroot")
 		}
 
 		err = unix.Chdir(cwd)
 		if err != nil {
-			return errors.Wrap(err, "Failed to chdir")
+			return errors.WithMessage(err, "Failed to chdir")
 		}
 
 		// This will kill all processes in the chroot and allow to cleanly
@@ -343,7 +343,7 @@ exit 101
 		// Wipe $rootfs/dev
 		err := os.RemoveAll(devPath)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to remove directory %q", devPath)
+			return errors.WithMessagef(err, "Failed to remove directory %q", devPath)
 		}
 
 		ActiveChroots[rootfs] = nil
@@ -381,14 +381,14 @@ func populateDev() error {
 
 		err := unix.Mknod(d.Path, d.Mode, int(dev))
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create %q", d.Path)
+			return errors.WithMessagef(err, "Failed to create %q", d.Path)
 		}
 
 		// For some odd reason, unix.Mknod will not set the mode correctly.
 		// This fixes that.
 		err = unix.Chmod(d.Path, d.Mode)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to chmod %q", d.Path)
+			return errors.WithMessagef(err, "Failed to chmod %q", d.Path)
 		}
 	}
 
@@ -405,7 +405,7 @@ func populateDev() error {
 	for _, l := range symlinks {
 		err := os.Symlink(l.Target, l.Symlink)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create link %q -> %q", l.Symlink, l.Target)
+			return errors.WithMessagef(err, "Failed to create link %q -> %q", l.Symlink, l.Target)
 		}
 	}
 

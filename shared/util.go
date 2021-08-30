@@ -37,19 +37,19 @@ func Copy(src, dest string) error {
 
 	srcFile, err := os.Open(src)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open file %q", src)
+		return errors.WithMessagef(err, "Failed to open file %q", src)
 	}
 	defer srcFile.Close()
 
 	destFile, err := os.Create(dest)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create file %q", dest)
+		return errors.WithMessagef(err, "Failed to create file %q", dest)
 	}
 	defer destFile.Close()
 
 	_, err = io.Copy(destFile, srcFile)
 	if err != nil {
-		return errors.Wrap(err, "Failed to copy file")
+		return errors.WithMessage(err, "Failed to copy file")
 	}
 
 	return destFile.Sync()
@@ -74,13 +74,13 @@ func RunCommand(name string, arg ...string) error {
 func RunScript(content string) error {
 	fd, err := unix.MemfdCreate("tmp", 0)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create memfd")
+		return errors.WithMessage(err, "Failed to create memfd")
 	}
 	defer unix.Close(fd)
 
 	_, err = unix.Write(int(fd), []byte(content))
 	if err != nil {
-		return errors.Wrap(err, "Failed to write to memfd")
+		return errors.WithMessage(err, "Failed to write to memfd")
 	}
 
 	fdPath := fmt.Sprintf("/proc/self/fd/%d", fd)
@@ -101,7 +101,7 @@ func GetSignedContent(signedFile string, keys []string, keyserver string) ([]byt
 	out, err := exec.Command("gpg", "--homedir", gpgDir, "--keyring", keyring,
 		"--decrypt", signedFile).Output()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to get file content: %s", out)
+		return nil, errors.WithMessagef(err, "Failed to get file content: %s", out)
 	}
 
 	return out, nil
@@ -120,13 +120,13 @@ func VerifyFile(signedFile, signatureFile string, keys []string, keyserver strin
 		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
 			"--verify", signatureFile, signedFile)
 		if err != nil {
-			return false, errors.Wrapf(err, "Failed to verify: %s", out)
+			return false, errors.WithMessagef(err, "Failed to verify: %s", out)
 		}
 	} else {
 		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
 			"--verify", signedFile)
 		if err != nil {
-			return false, errors.Wrapf(err, "Failed to verify: %s", out)
+			return false, errors.WithMessagef(err, "Failed to verify: %s", out)
 		}
 	}
 
@@ -212,7 +212,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 	gpgDir, err := ioutil.TempDir(os.TempDir(), "distrobuilder.")
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to create gpg directory")
+		return "", errors.WithMessage(err, "Failed to create gpg directory")
 	}
 
 	err = os.MkdirAll(gpgDir, 0700)
@@ -240,7 +240,7 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 		filepath.Join(gpgDir, "distrobuilder.gpg"))
 	if err != nil {
 		os.RemoveAll(gpgDir)
-		return "", errors.Wrapf(err, "Failed to export keyring: %s", out)
+		return "", errors.WithMessagef(err, "Failed to export keyring: %s", out)
 	}
 
 	return filepath.Join(gpgDir, "distrobuilder.gpg"), nil
@@ -252,7 +252,7 @@ func Pack(filename, compression, path string, args ...string) error {
 	if err != nil {
 		// Clean up incomplete tarball
 		os.Remove(filename)
-		return errors.Wrap(err, "Failed to create tarball")
+		return errors.WithMessage(err, "Failed to create tarball")
 	}
 
 	return compressTarball(filename, compression)
@@ -262,7 +262,7 @@ func Pack(filename, compression, path string, args ...string) error {
 func PackUpdate(filename, compression, path string, args ...string) error {
 	err := RunCommand("tar", append([]string{"--xattrs", "-uf", filename, "-C", path}, args...)...)
 	if err != nil {
-		return errors.Wrap(err, "Failed to update tarball")
+		return errors.WithMessage(err, "Failed to update tarball")
 	}
 
 	return compressTarball(filename, compression)
@@ -278,7 +278,7 @@ func compressTarball(filename, compression string) error {
 	case "bzip2", "xz", "lzip", "lzma", "gzip":
 		err := RunCommand(compression, "-f", filename)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to compress tarball %q", filename)
+			return errors.WithMessagef(err, "Failed to compress tarball %q", filename)
 		}
 	}
 

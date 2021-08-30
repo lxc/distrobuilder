@@ -39,7 +39,7 @@ func (s *centOS) Run() error {
 	s.fname, err = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
 		s.definition.Source.Variant, s.definition.Image.ArchitectureMapped)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get release")
+		return errors.WithMessage(err, "Failed to get release")
 	}
 
 	fpath := shared.GetTargetDir(s.definition.Image)
@@ -54,7 +54,7 @@ func (s *centOS) Run() error {
 
 			err = s.unpackRaw(tarball, s.rootfsDir, s.rawRunner)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to unpack %q", tarball)
+				return errors.WithMessagef(err, "Failed to unpack %q", tarball)
 			}
 
 			return nil
@@ -63,7 +63,7 @@ func (s *centOS) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to parse URL %q", baseURL)
+		return errors.WithMessagef(err, "Failed to parse URL %q", baseURL)
 	}
 
 	checksumFile := ""
@@ -86,7 +86,7 @@ func (s *centOS) Run() error {
 
 			fpath, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to download %q", baseURL+checksumFile)
+				return errors.WithMessagef(err, "Failed to download %q", baseURL+checksumFile)
 			}
 
 			// Only verify file if possible.
@@ -94,7 +94,7 @@ func (s *centOS) Run() error {
 				valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
 					s.definition.Source.Keys, s.definition.Source.Keyserver)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to verify %q", checksumFile)
+					return errors.WithMessagef(err, "Failed to verify %q", checksumFile)
 				}
 				if !valid {
 					return errors.Errorf("Invalid signature for %q", checksumFile)
@@ -105,7 +105,7 @@ func (s *centOS) Run() error {
 
 	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", baseURL+s.fname)
+		return errors.WithMessagef(err, "Failed to download %q", baseURL+s.fname)
 	}
 
 	source := filepath.Join(fpath, s.fname)
@@ -118,7 +118,7 @@ func (s *centOS) Run() error {
 		err = s.unpackISO(source, s.rootfsDir, s.isoRunner)
 	}
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", source)
+		return errors.WithMessagef(err, "Failed to unpack %q", source)
 	}
 
 	return nil
@@ -151,7 +151,7 @@ if [ -e /rootfs/etc/yum.repos.d/CentOS-armhfp-kernel.repo ]; then
 fi
 `, s.majorVersion))
 	if err != nil {
-		return errors.Wrap(err, "Failed to run script")
+		return errors.WithMessage(err, "Failed to run script")
 	}
 
 	return nil
@@ -338,7 +338,7 @@ yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install $
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
-		return errors.Wrap(err, "Failed to run script")
+		return errors.WithMessage(err, "Failed to run script")
 	}
 
 	return nil
@@ -350,13 +350,13 @@ func (s *centOS) getRelease(URL, release, variant, arch string) (string, error) 
 
 	resp, err := http.Get(u)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to get URL %q", u)
+		return "", errors.WithMessagef(err, "Failed to get URL %q", u)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to read body")
+		return "", errors.WithMessage(err, "Failed to read body")
 	}
 
 	if len(releaseFields) == 3 && !strings.Contains(URL, "vault.centos.org") {

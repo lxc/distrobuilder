@@ -51,7 +51,7 @@ func (s *openwrt) Run() error {
 
 		matched, err := regexp.MatchString(`^\d+\.\d+$`, release)
 		if err != nil {
-			return errors.Wrap(err, "Failed to match release")
+			return errors.WithMessage(err, "Failed to match release")
 		}
 
 		if matched {
@@ -59,7 +59,7 @@ func (s *openwrt) Run() error {
 			// out the latest service release of the form '18.06.0'.
 			release, err = s.getLatestServiceRelease(baseURL, release)
 			if err != nil {
-				return errors.Wrap(err, "Failed to get latest service release")
+				return errors.WithMessage(err, "Failed to get latest service release")
 			}
 
 			releaseInFilename = strings.ToLower(release) + "-"
@@ -102,7 +102,7 @@ func (s *openwrt) Run() error {
 
 	resp, err := http.Head(baseURL)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to HEAD %q", baseURL)
+		return errors.WithMessagef(err, "Failed to HEAD %q", baseURL)
 	}
 
 	// Use fallback image "generic"
@@ -114,7 +114,7 @@ func (s *openwrt) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to parse %q", baseURL)
+		return errors.WithMessagef(err, "Failed to parse %q", baseURL)
 	}
 
 	checksumFile := ""
@@ -123,7 +123,7 @@ func (s *openwrt) Run() error {
 			checksumFile = baseURL + "sha256sums"
 			_, err := shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to download %q", checksumFile)
+				return errors.WithMessagef(err, "Failed to download %q", checksumFile)
 			}
 		} else {
 			// Force gpg checks when using http
@@ -135,24 +135,24 @@ func (s *openwrt) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", baseURL+fname)
+		return errors.WithMessagef(err, "Failed to download %q", baseURL+fname)
 	}
 
 	sdk, err := s.getSDK(baseURL, release)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get SDK")
+		return errors.WithMessage(err, "Failed to get SDK")
 	}
 
 	_, err = shared.DownloadHash(s.definition.Image, baseURL+sdk, checksumFile, sha256.New())
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", baseURL+sdk)
+		return errors.WithMessagef(err, "Failed to download %q", baseURL+sdk)
 	}
 
 	lxdOpenWrtTarball := "https://github.com/mikma/lxd-openwrt/archive/master.tar.gz"
 
 	_, err = shared.DownloadHash(s.definition.Image, lxdOpenWrtTarball, "", sha256.New())
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", lxdOpenWrtTarball)
+		return errors.WithMessagef(err, "Failed to download %q", lxdOpenWrtTarball)
 	}
 
 	tempScriptsDir := filepath.Join(s.cacheDir, "fixes", "lxd-openwrt-master")
@@ -160,12 +160,12 @@ func (s *openwrt) Run() error {
 
 	err = os.MkdirAll(tempSDKDir, 0755)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create directory %q", tempSDKDir)
+		return errors.WithMessagef(err, "Failed to create directory %q", tempSDKDir)
 	}
 
 	err = os.MkdirAll(tempScriptsDir, 0755)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create directory %q", tempScriptsDir)
+		return errors.WithMessagef(err, "Failed to create directory %q", tempScriptsDir)
 	}
 
 	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
@@ -173,26 +173,26 @@ func (s *openwrt) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
+		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
 
 	s.logger.Infow("Unpacking repository tarball", "file", filepath.Join(fpath, "master.tar.gz"))
 
 	err = lxd.Unpack(filepath.Join(fpath, "master.tar.gz"), filepath.Join(s.cacheDir, "fixes"), false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, "master.tar.gz"))
+		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, "master.tar.gz"))
 	}
 
 	s.logger.Infow("Unpacking sdk", "file", filepath.Join(fpath, sdk))
 
 	err = lxd.Unpack(filepath.Join(fpath, sdk), tempSDKDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, sdk))
+		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, sdk))
 	}
 
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return errors.Wrap(err, "Failed to get current working directory")
+		return errors.WithMessage(err, "Failed to get current working directory")
 	}
 	defer os.Chdir(currentDir)
 
@@ -219,12 +219,12 @@ func (s *openwrt) Run() error {
 
 	err = os.Chdir(tempScriptsDir)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to change the current working directory to %q", tempScriptsDir)
+		return errors.WithMessagef(err, "Failed to change the current working directory to %q", tempScriptsDir)
 	}
 
 	f, err := os.Open("build.sh")
 	if err != nil {
-		return errors.Wrap(err, `Failed to open "build.sh"`)
+		return errors.WithMessage(err, `Failed to open "build.sh"`)
 	}
 
 	var newContent strings.Builder
@@ -256,12 +256,12 @@ func (s *openwrt) Run() error {
 
 	err = ioutil.WriteFile("build.sh", []byte(newContent.String()), 0755)
 	if err != nil {
-		return errors.Wrap(err, `Failed to write to build.sh"`)
+		return errors.WithMessage(err, `Failed to write to build.sh"`)
 	}
 
 	f, err = os.Open("scripts/build_rootfs.sh")
 	if err != nil {
-		return errors.Wrap(err, `Failed to open "scripts/build_rootfs.sh"`)
+		return errors.WithMessage(err, `Failed to open "scripts/build_rootfs.sh"`)
 	}
 
 	newContent.Reset()
@@ -294,12 +294,12 @@ func (s *openwrt) Run() error {
 
 	err = ioutil.WriteFile("scripts/build_rootfs.sh", []byte(newContent.String()), 0755)
 	if err != nil {
-		return errors.Wrap(err, `Failed to write to "scripts/build_rootfs.sh"`)
+		return errors.WithMessage(err, `Failed to write to "scripts/build_rootfs.sh"`)
 	}
 
 	_, err = lxd.RunCommand("sh", "build.sh")
 	if err != nil {
-		return errors.Wrap(err, `Failed to run "build.sh"`)
+		return errors.WithMessage(err, `Failed to run "build.sh"`)
 	}
 
 	return nil
@@ -308,13 +308,13 @@ func (s *openwrt) Run() error {
 func (s *openwrt) getLatestServiceRelease(baseURL, release string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to GET %q", baseURL)
+		return "", errors.WithMessagef(err, "Failed to GET %q", baseURL)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to ready body")
+		return "", errors.WithMessage(err, "Failed to ready body")
 	}
 
 	regex := regexp.MustCompile(fmt.Sprintf(">(%s\\.\\d+)<", release))
@@ -330,13 +330,13 @@ func (s *openwrt) getLatestServiceRelease(baseURL, release string) (string, erro
 func (s *openwrt) getSDK(baseURL, release string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to GET %q", baseURL)
+		return "", errors.WithMessagef(err, "Failed to GET %q", baseURL)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to read body")
+		return "", errors.WithMessage(err, "Failed to read body")
 	}
 
 	if release == "snapshot" {

@@ -19,12 +19,12 @@ type pacman struct {
 func (m *pacman) load() error {
 	err := m.setMirrorlist()
 	if err != nil {
-		return errors.Wrap(err, "Failed to set mirrorlist")
+		return errors.WithMessage(err, "Failed to set mirrorlist")
 	}
 
 	err = m.setupTrustedKeys()
 	if err != nil {
-		return errors.Wrap(err, "Failed to setup trusted keys")
+		return errors.WithMessage(err, "Failed to setup trusted keys")
 	}
 
 	m.commands = managerCommands{
@@ -67,7 +67,7 @@ func (m *pacman) load() error {
 					return nil
 				}
 
-				return errors.Wrapf(err, "Failed to list directory '%s'", path)
+				return errors.WithMessagef(err, "Failed to list directory '%s'", path)
 			}
 
 			// Individually wipe all entries.
@@ -75,7 +75,7 @@ func (m *pacman) load() error {
 				entryPath := filepath.Join(path, entry.Name())
 				err := os.RemoveAll(entryPath)
 				if err != nil && !os.IsNotExist(err) {
-					return errors.Wrapf(err, "Failed to remove '%s'", entryPath)
+					return errors.WithMessagef(err, "Failed to remove '%s'", entryPath)
 				}
 			}
 
@@ -96,7 +96,7 @@ func (m *pacman) setupTrustedKeys() error {
 
 	err = shared.RunCommand("pacman-key", "--init")
 	if err != nil {
-		return errors.Wrap(err, "Error initializing with pacman-key")
+		return errors.WithMessage(err, "Error initializing with pacman-key")
 	}
 
 	var keyring string
@@ -109,7 +109,7 @@ func (m *pacman) setupTrustedKeys() error {
 
 	err = shared.RunCommand("pacman-key", "--populate", keyring)
 	if err != nil {
-		return errors.Wrap(err, "Error populating with pacman-key")
+		return errors.WithMessage(err, "Error populating with pacman-key")
 	}
 
 	return nil
@@ -118,7 +118,7 @@ func (m *pacman) setupTrustedKeys() error {
 func (m *pacman) setMirrorlist() error {
 	f, err := os.Create(filepath.Join("etc", "pacman.d", "mirrorlist"))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create file %q", filepath.Join("etc", "pacman.d", "mirrorlist"))
+		return errors.WithMessagef(err, "Failed to create file %q", filepath.Join("etc", "pacman.d", "mirrorlist"))
 	}
 	defer f.Close()
 
@@ -132,7 +132,7 @@ func (m *pacman) setMirrorlist() error {
 
 	_, err = f.WriteString(mirror)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to write to %q", filepath.Join("etc", "pacman.d", "mirrorlist"))
+		return errors.WithMessagef(err, "Failed to write to %q", filepath.Join("etc", "pacman.d", "mirrorlist"))
 	}
 
 	return nil

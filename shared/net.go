@@ -42,7 +42,7 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 
 		hashes, err = downloadChecksum(targetDir, checksum, file, hashFunc, hashLen)
 		if err != nil {
-			return "", errors.Wrap(err, "Error while downloading checksum")
+			return "", errors.WithMessage(err, "Error while downloading checksum")
 		}
 	}
 

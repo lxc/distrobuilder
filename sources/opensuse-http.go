@@ -37,35 +37,35 @@ func (s *opensuse) Run() error {
 	tarballPath, err := s.getPathToTarball(s.definition.Source.URL, s.definition.Image.Release,
 		s.definition.Image.ArchitectureMapped)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get tarball path")
+		return errors.WithMessage(err, "Failed to get tarball path")
 	}
 
 	resp, err := http.Head(tarballPath)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to HEAD %q", tarballPath)
+		return errors.WithMessagef(err, "Failed to HEAD %q", tarballPath)
 	}
 
 	baseURL, fname = path.Split(resp.Request.URL.String())
 
 	url, err := url.Parse(fmt.Sprintf("%s%s", baseURL, fname))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to parse %q", fmt.Sprintf("%s%s", baseURL, fname))
+		return errors.WithMessagef(err, "Failed to parse %q", fmt.Sprintf("%s%s", baseURL, fname))
 	}
 
 	fpath, err := shared.DownloadHash(s.definition.Image, url.String(), "", nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", url.String())
+		return errors.WithMessagef(err, "Failed to download %q", url.String())
 	}
 
 	_, err = shared.DownloadHash(s.definition.Image, url.String()+".sha256", "", nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", url.String()+".sha256")
+		return errors.WithMessagef(err, "Failed to download %q", url.String()+".sha256")
 	}
 
 	if !s.definition.Source.SkipVerification {
 		err = s.verifyTarball(filepath.Join(fpath, fname), s.definition)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to verify %q", filepath.Join(fpath, fname))
+			return errors.WithMessagef(err, "Failed to verify %q", filepath.Join(fpath, fname))
 		}
 	}
 
@@ -74,7 +74,7 @@ func (s *opensuse) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
+		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
 
 	return nil
@@ -93,12 +93,12 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 		checksum, err = ioutil.ReadFile(checksumPath)
 	}
 	if err != nil {
-		return errors.Wrap(err, "Failed to read checksum file")
+		return errors.WithMessage(err, "Failed to read checksum file")
 	}
 
 	image, err := os.Open(imagePath)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open %q", imagePath)
+		return errors.WithMessagef(err, "Failed to open %q", imagePath)
 	}
 	defer image.Close()
 
@@ -106,7 +106,7 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 
 	_, err = io.Copy(hash, image)
 	if err != nil {
-		return errors.Wrap(err, "Failed to copy tarball content")
+		return errors.WithMessage(err, "Failed to copy tarball content")
 	}
 
 	result := fmt.Sprintf("%x", hash.Sum(nil))
@@ -122,7 +122,7 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 func (s *opensuse) getPathToTarball(baseURL string, release string, arch string) (string, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to parse URL %q", baseURL)
+		return "", errors.WithMessagef(err, "Failed to parse URL %q", baseURL)
 	}
 
 	u.Path = path.Join(u.Path, "repositories", "Virtualization:", "containers:", "images:")
@@ -145,7 +145,7 @@ func (s *opensuse) getPathToTarball(baseURL string, release string, arch string)
 
 		tarballName, err := s.getTarballName(u, "tumbleweed", arch)
 		if err != nil {
-			return "", errors.Wrap(err, "Failed to get tarball name")
+			return "", errors.WithMessage(err, "Failed to get tarball name")
 		}
 
 		u.Path = path.Join(u.Path, tarballName)
@@ -165,7 +165,7 @@ func (s *opensuse) getPathToTarball(baseURL string, release string, arch string)
 
 		tarballName, err := s.getTarballName(u, "leap", arch)
 		if err != nil {
-			return "", errors.Wrap(err, "Failed to get tarball name")
+			return "", errors.WithMessage(err, "Failed to get tarball name")
 		}
 
 		u.Path = path.Join(u.Path, tarballName)
@@ -177,7 +177,7 @@ func (s *opensuse) getPathToTarball(baseURL string, release string, arch string)
 func (s *opensuse) getTarballName(u *url.URL, release, arch string) (string, error) {
 	doc, err := htmlquery.LoadURL(u.String())
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to load URL %q", u.String())
+		return "", errors.WithMessagef(err, "Failed to load URL %q", u.String())
 	}
 
 	if doc == nil {

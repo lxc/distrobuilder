@@ -39,7 +39,7 @@ func (s *funtoo) Run() error {
 
 	releaseDates, err := s.getReleaseDates(baseURL)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get release dates")
+		return errors.WithMessage(err, "Failed to get release dates")
 	}
 
 	var fname string
@@ -52,7 +52,7 @@ func (s *funtoo) Run() error {
 
 		resp, err := http.Head(tarball)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to call HEAD on %q", tarball)
+			return errors.WithMessagef(err, "Failed to call HEAD on %q", tarball)
 		}
 
 		if resp.StatusCode == http.StatusNotFound {
@@ -64,7 +64,7 @@ func (s *funtoo) Run() error {
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to parse URL %q", tarball)
+		return errors.WithMessagef(err, "Failed to parse URL %q", tarball)
 	}
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
@@ -76,14 +76,14 @@ func (s *funtoo) Run() error {
 
 	fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", tarball)
+		return errors.WithMessagef(err, "Failed to download %q", tarball)
 	}
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
 		_, err = shared.DownloadHash(s.definition.Image, tarball+".gpg", "", nil)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to download %q", tarball+".gpg")
+			return errors.WithMessagef(err, "Failed to download %q", tarball+".gpg")
 		}
 
 		valid, err := shared.VerifyFile(
@@ -92,7 +92,7 @@ func (s *funtoo) Run() error {
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return errors.Wrap(err, "Failed to verify file")
+			return errors.WithMessage(err, "Failed to verify file")
 		}
 		if !valid {
 			return errors.Errorf("Invalid signature for %q", filepath.Join(fpath, fname))
@@ -104,7 +104,7 @@ func (s *funtoo) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
+		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
 
 	return nil
@@ -113,7 +113,7 @@ func (s *funtoo) Run() error {
 func (s *funtoo) getReleaseDates(URL string) ([]string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to load URL %q", URL)
+		return nil, errors.WithMessagef(err, "Failed to load URL %q", URL)
 	}
 
 	re := regexp.MustCompile(`^\d{4}\-\d{2}\-\d{2}/?$`)

@@ -47,7 +47,7 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 			if c.flagVM {
 				err := c.checkVMDependencies()
 				if err != nil {
-					return errors.Wrap(err, "Failed to check VM dependencies")
+					return errors.WithMessage(err, "Failed to check VM dependencies")
 				}
 			}
 
@@ -56,7 +56,7 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return errors.Wrap(err, "Failed to get overlay directory")
+				return errors.WithMessage(err, "Failed to get overlay directory")
 			}
 
 			if cleanup != nil {
@@ -99,7 +99,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 			if c.flagVM {
 				err := c.checkVMDependencies()
 				if err != nil {
-					return errors.Wrap(err, "Failed to check VM dependencies")
+					return errors.WithMessage(err, "Failed to check VM dependencies")
 				}
 			}
 
@@ -108,7 +108,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return errors.Wrap(err, "Failed to get overlay directory")
+				return errors.WithMessage(err, "Failed to get overlay directory")
 			}
 
 			if cleanup != nil {
@@ -126,7 +126,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 
 			err = c.runPack(cmd, args, overlayDir)
 			if err != nil {
-				return errors.Wrap(err, "Failed to pack image")
+				return errors.WithMessage(err, "Failed to pack image")
 			}
 
 			return c.run(cmd, args, overlayDir)
@@ -144,7 +144,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(overlayDir, c.global.definition.Environment, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to setup chroot")
+		return errors.WithMessagef(err, "Failed to setup chroot")
 	}
 	// Unmount everything and exit the chroot
 	defer exitChroot()
@@ -159,14 +159,14 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	manager, err := managers.Load(c.global.definition.Packages.Manager, c.global.logger, *c.global.definition)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to load manager %q", c.global.definition.Packages.Manager)
+		return errors.WithMessagef(err, "Failed to load manager %q", c.global.definition.Packages.Manager)
 	}
 
 	c.global.logger.Info("Managing repositories")
 
 	err = manager.ManageRepositories(imageTargets)
 	if err != nil {
-		return errors.Wrap(err, "Failed to manage repositories")
+		return errors.WithMessage(err, "Failed to manage repositories")
 	}
 
 	c.global.logger.Infow("Running hooks", "trigger", "post-unpack")
@@ -175,7 +175,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return errors.Wrap(err, "Failed to run post-unpack")
+			return errors.WithMessage(err, "Failed to run post-unpack")
 		}
 	}
 
@@ -184,7 +184,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	// Install/remove/update packages
 	err = manager.ManagePackages(imageTargets)
 	if err != nil {
-		return errors.Wrap(err, "Failed to manage packages")
+		return errors.WithMessage(err, "Failed to manage packages")
 	}
 
 	c.global.logger.Info("Running hooks", "trigger", "post-packages")
@@ -193,7 +193,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return errors.Wrap(err, "Failed to run post-packages")
+			return errors.WithMessage(err, "Failed to run post-packages")
 		}
 	}
 
@@ -219,14 +219,14 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, overlayDir, file)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to load generator %q", file.Generator)
+			return errors.WithMessagef(err, "Failed to load generator %q", file.Generator)
 		}
 
 		c.global.logger.Infow("Running generator", "generator", file.Generator)
 
 		err = generator.RunLXD(img, c.global.definition.Targets.LXD)
 		if err != nil {
-			return errors.Wrap(err, "Failed to create LXD data")
+			return errors.WithMessage(err, "Failed to create LXD data")
 		}
 	}
 
@@ -240,63 +240,63 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		err := os.Mkdir(vmDir, 0755)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create directory %q", vmDir)
+			return errors.WithMessagef(err, "Failed to create directory %q", vmDir)
 		}
 
 		imgFilename, err := shared.RenderTemplate(fmt.Sprintf("%s.raw", c.global.definition.Image.Name), c.global.definition)
 		if err != nil {
-			return errors.Wrap(err, "Failed to render template")
+			return errors.WithMessage(err, "Failed to render template")
 		}
 
 		imgFile := filepath.Join(c.global.flagCacheDir, imgFilename)
 
 		vm, err = newVM(imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
 		if err != nil {
-			return errors.Wrap(err, "Failed to instanciate VM")
+			return errors.WithMessage(err, "Failed to instanciate VM")
 		}
 
 		err = vm.createEmptyDiskImage()
 		if err != nil {
-			return errors.Wrap(err, "Failed to create disk image")
+			return errors.WithMessage(err, "Failed to create disk image")
 		}
 
 		err = vm.createPartitions()
 		if err != nil {
-			return errors.Wrap(err, "Failed to create partitions")
+			return errors.WithMessage(err, "Failed to create partitions")
 		}
 
 		err = vm.mountImage()
 		if err != nil {
-			return errors.Wrap(err, "Failed to mount image")
+			return errors.WithMessage(err, "Failed to mount image")
 		}
 		defer vm.umountImage()
 
 		err = vm.createRootFS()
 		if err != nil {
-			return errors.Wrap(err, "Failed to create root filesystem")
+			return errors.WithMessage(err, "Failed to create root filesystem")
 		}
 
 		err = vm.mountRootPartition()
 		if err != nil {
-			return errors.Wrap(err, "failed to mount root partion")
+			return errors.WithMessage(err, "failed to mount root partion")
 		}
 		defer lxd.RunCommand("umount", "-R", vmDir)
 
 		err = vm.createUEFIFS()
 		if err != nil {
-			return errors.Wrap(err, "Failed to create UEFI filesystem")
+			return errors.WithMessage(err, "Failed to create UEFI filesystem")
 		}
 
 		err = vm.mountUEFIPartition()
 		if err != nil {
-			return errors.Wrap(err, "Failed to mount UEFI partition")
+			return errors.WithMessage(err, "Failed to mount UEFI partition")
 		}
 
 		// We cannot use LXD's rsync package as that uses the --delete flag which
 		// causes an issue due to the boot/efi directory being present.
 		err = shared.RunCommand("rsync", "-a", "-HA", "--sparse", "--devices", "--checksum", "--numeric-ids", overlayDir+"/", vmDir)
 		if err != nil {
-			return errors.Wrap(err, "Failed to copy rootfs")
+			return errors.WithMessage(err, "Failed to copy rootfs")
 		}
 
 		rootfsDir = vmDir
@@ -331,7 +331,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	exitChroot, err := shared.SetupChroot(rootfsDir,
 		c.global.definition.Environment, mounts)
 	if err != nil {
-		return errors.Wrap(err, "Failed to chroot")
+		return errors.WithMessage(err, "Failed to chroot")
 	}
 
 	addSystemdGenerator()
@@ -343,7 +343,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		err := shared.RunScript(action.Action)
 		if err != nil {
 			exitChroot()
-			return errors.Wrap(err, "Failed to run post-files")
+			return errors.WithMessage(err, "Failed to run post-files")
 		}
 	}
 
@@ -353,18 +353,18 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	if c.flagVM {
 		_, err := lxd.RunCommand("umount", "-R", vmDir)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to unmount %q", vmDir)
+			return errors.WithMessagef(err, "Failed to unmount %q", vmDir)
 		}
 
 		err = vm.umountImage()
 		if err != nil {
-			return errors.Wrap(err, "Failed to unmount image")
+			return errors.WithMessage(err, "Failed to unmount image")
 		}
 	}
 
 	err = img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create LXD image")
+		return errors.WithMessage(err, "Failed to create LXD image")
 	}
 
 	return nil

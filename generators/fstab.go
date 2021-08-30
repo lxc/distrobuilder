@@ -24,7 +24,7 @@ func (g *fstab) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 func (g *fstab) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
 	f, err := os.Create(filepath.Join(g.sourceDir, "etc/fstab"))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create file %q", filepath.Join(g.sourceDir, "etc/fstab"))
+		return errors.WithMessagef(err, "Failed to create file %q", filepath.Join(g.sourceDir, "etc/fstab"))
 	}
 	defer f.Close()
 
@@ -46,7 +46,7 @@ LABEL=UEFI    /boot/efi vfat  defaults  0 0
 
 	_, err = f.WriteString(fmt.Sprintf(content, fs, options))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to write string to file %q", filepath.Join(g.sourceDir, "etc/fstab"))
+		return errors.WithMessagef(err, "Failed to write string to file %q", filepath.Join(g.sourceDir, "etc/fstab"))
 	}
 
 	return nil

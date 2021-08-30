@@ -28,7 +28,7 @@ func (c *cmdBuildDir) command() *cobra.Command {
 
 				generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, c.global.targetDir, file)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to load generator %q", file.Generator)
+					return errors.WithMessagef(err, "Failed to load generator %q", file.Generator)
 				}
 
 				c.global.logger.Infow("Running generator", "generator", file.Generator)

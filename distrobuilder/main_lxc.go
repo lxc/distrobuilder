@@ -33,7 +33,7 @@ func (c *cmdLXC) commandBuild() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return errors.Wrap(err, "Failed to get overlay directory")
+				return errors.WithMessage(err, "Failed to get overlay directory")
 			}
 
 			if cleanup != nil {
@@ -67,7 +67,7 @@ func (c *cmdLXC) commandPack() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return errors.Wrap(err, "Failed to get overlay directory")
+				return errors.WithMessage(err, "Failed to get overlay directory")
 			}
 
 			if cleanup != nil {
@@ -81,7 +81,7 @@ func (c *cmdLXC) commandPack() *cobra.Command {
 
 			err = c.runPack(cmd, args, overlayDir)
 			if err != nil {
-				return errors.Wrap(err, "Failed to pack image")
+				return errors.WithMessage(err, "Failed to pack image")
 			}
 
 			return c.run(cmd, args, overlayDir)
@@ -97,7 +97,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(overlayDir, c.global.definition.Environment, nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to setup chroot")
+		return errors.WithMessage(err, "Failed to setup chroot")
 	}
 	// Unmount everything and exit the chroot
 	defer exitChroot()
@@ -106,14 +106,14 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	manager, err := managers.Load(c.global.definition.Packages.Manager, c.global.logger, *c.global.definition)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to load manager %q", c.global.definition.Packages.Manager)
+		return errors.WithMessagef(err, "Failed to load manager %q", c.global.definition.Packages.Manager)
 	}
 
 	c.global.logger.Info("Managing repositories")
 
 	err = manager.ManageRepositories(imageTargets)
 	if err != nil {
-		return errors.Wrap(err, "Failed to manage repositories")
+		return errors.WithMessage(err, "Failed to manage repositories")
 	}
 
 	c.global.logger.Infow("Running hooks", "trigger", "post-unpack")
@@ -122,7 +122,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return errors.Wrap(err, "Failed to run post-unpack")
+			return errors.WithMessage(err, "Failed to run post-unpack")
 		}
 	}
 
@@ -131,7 +131,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	// Install/remove/update packages
 	err = manager.ManagePackages(imageTargets)
 	if err != nil {
-		return errors.Wrap(err, "Failed to manage packages")
+		return errors.WithMessage(err, "Failed to manage packages")
 	}
 
 	c.global.logger.Infow("Running hooks", "trigger", "post-packages")
@@ -140,7 +140,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return errors.Wrap(err, "Failed to run post-packages")
+			return errors.WithMessage(err, "Failed to run post-packages")
 		}
 	}
 
@@ -159,21 +159,21 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, overlayDir, file)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to load generator %q", file.Generator)
+			return errors.WithMessagef(err, "Failed to load generator %q", file.Generator)
 		}
 
 		c.global.logger.Infow("Running generator", "generator", file.Generator)
 
 		err = generator.RunLXC(img, c.global.definition.Targets.LXC)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to run generator %q", file.Generator)
+			return errors.WithMessagef(err, "Failed to run generator %q", file.Generator)
 		}
 	}
 
 	exitChroot, err := shared.SetupChroot(overlayDir,
 		c.global.definition.Environment, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to setup chroot in %q", overlayDir)
+		return errors.WithMessagef(err, "Failed to setup chroot in %q", overlayDir)
 	}
 
 	addSystemdGenerator()
@@ -185,7 +185,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		err := shared.RunScript(action.Action)
 		if err != nil {
 			exitChroot()
-			return errors.Wrap(err, "Failed to run post-files")
+			return errors.WithMessage(err, "Failed to run post-files")
 		}
 	}
 
@@ -193,7 +193,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	err = img.Build(c.flagCompression)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create LXC image")
+		return errors.WithMessage(err, "Failed to create LXC image")
 	}
 
 	return nil

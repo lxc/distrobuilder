@@ -35,14 +35,14 @@ func (s *busybox) Run() error {
 		fpath, err = shared.DownloadHash(s.definition.Image, tarball, tarball+".sha256", sha256.New())
 	}
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", tarball)
+		return errors.WithMessagef(err, "Failed to download %q", tarball)
 	}
 
 	sourceDir := filepath.Join(s.cacheDir, "src")
 
 	err = os.MkdirAll(sourceDir, 0755)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create directory %q", sourceDir)
+		return errors.WithMessagef(err, "Failed to create directory %q", sourceDir)
 	}
 
 	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
@@ -50,7 +50,7 @@ func (s *busybox) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), sourceDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", fname)
+		return errors.WithMessagef(err, "Failed to unpack %q", fname)
 	}
 
 	sourceDir = filepath.Join(sourceDir, fmt.Sprintf("busybox-%s", s.definition.Image.Release))
@@ -73,14 +73,14 @@ mkdir -p "${rootfs_dir}/bin"
 mv ${source_dir}/busybox "${rootfs_dir}/bin/busybox"
 `, sourceDir, s.rootfsDir))
 	if err != nil {
-		return errors.Wrap(err, "Failed to build busybox")
+		return errors.WithMessage(err, "Failed to build busybox")
 	}
 
 	var buf bytes.Buffer
 
 	err = lxd.RunCommandWithFds(os.Stdin, &buf, filepath.Join(s.rootfsDir, "bin", "busybox"), "--list-full")
 	if err != nil {
-		return errors.Wrap(err, "Failed to install busybox")
+		return errors.WithMessage(err, "Failed to install busybox")
 	}
 
 	scanner := bufio.NewScanner(&buf)
@@ -96,21 +96,21 @@ mv ${source_dir}/busybox "${rootfs_dir}/bin/busybox"
 
 		err = os.MkdirAll(filepath.Dir(path), 0755)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create directory %q", filepath.Dir(path))
+			return errors.WithMessagef(err, "Failed to create directory %q", filepath.Dir(path))
 		}
 
 		s.logger.Debugf("Creating symlink %q -> %q", path, "/bin/busybox")
 
 		err = os.Symlink("/bin/busybox", path)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create symlink %q -> /bin/busybox", path)
+			return errors.WithMessagef(err, "Failed to create symlink %q -> /bin/busybox", path)
 		}
 	}
 
 	for _, path := range []string{"dev", "mnt", "proc", "root", "sys", "tmp"} {
 		err := os.Mkdir(filepath.Join(s.rootfsDir, path), 0755)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create directory %q", filepath.Join(s.rootfsDir, path))
+			return errors.WithMessagef(err, "Failed to create directory %q", filepath.Join(s.rootfsDir, path))
 		}
 	}
 

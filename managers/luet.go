@@ -66,20 +66,20 @@ func (m *luet) manageRepository(repoAction shared.DefinitionPackagesRepository) 
 	if !lxd.PathExists(filepath.Dir(targetFile)) {
 		err := os.MkdirAll(filepath.Dir(targetFile), 0755)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create directory %q", filepath.Dir(targetFile))
+			return errors.WithMessagef(err, "Failed to create directory %q", filepath.Dir(targetFile))
 		}
 	}
 
 	f, err := os.OpenFile(targetFile, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to open file %q", targetFile)
+		return errors.WithMessagef(err, "Failed to open file %q", targetFile)
 	}
 	defer f.Close()
 
 	// NOTE: repo.URL is not an URL but the content of the file.
 	_, err = f.WriteString(repoAction.URL)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to write string to %q", targetFile)
+		return errors.WithMessagef(err, "Failed to write string to %q", targetFile)
 	}
 
 	return nil

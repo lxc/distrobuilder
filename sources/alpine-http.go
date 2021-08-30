@@ -47,7 +47,7 @@ func (s *alpineLinux) Run() error {
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to parse URL %q", tarball)
+		return errors.WithMessagef(err, "Failed to parse URL %q", tarball)
 	}
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
@@ -63,7 +63,7 @@ func (s *alpineLinux) Run() error {
 		fpath, err = shared.DownloadHash(s.definition.Image, tarball, tarball+".sha256", sha256.New())
 	}
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", tarball)
+		return errors.WithMessagef(err, "Failed to download %q", tarball)
 	}
 
 	// Force gpg checks when using http
@@ -75,7 +75,7 @@ func (s *alpineLinux) Run() error {
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to download %q", tarball+".asc")
+			return errors.WithMessagef(err, "Failed to download %q", tarball+".asc")
 		}
 		if !valid {
 			return errors.Errorf("Invalid signature for %q", filepath.Join(fpath, fname))
@@ -87,7 +87,7 @@ func (s *alpineLinux) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", fname)
+		return errors.WithMessagef(err, "Failed to unpack %q", fname)
 	}
 
 	// Handle edge builds
@@ -95,19 +95,19 @@ func (s *alpineLinux) Run() error {
 		// Upgrade to edge
 		exitChroot, err := shared.SetupChroot(s.rootfsDir, s.definition.Environment, nil)
 		if err != nil {
-			return errors.Wrap(err, "Failed to set up chroot")
+			return errors.WithMessage(err, "Failed to set up chroot")
 		}
 
 		err = shared.RunCommand("sed", "-i", "-e", "s/v[[:digit:]]\\.[[:digit:]]\\+/edge/g", "/etc/apk/repositories")
 		if err != nil {
 			exitChroot()
-			return errors.Wrap(err, "Failed to edit apk repositories")
+			return errors.WithMessage(err, "Failed to edit apk repositories")
 		}
 
 		err = shared.RunCommand("apk", "upgrade", "--update-cache", "--available")
 		if err != nil {
 			exitChroot()
-			return errors.Wrap(err, "Failed to upgrade edge build")
+			return errors.WithMessage(err, "Failed to upgrade edge build")
 		}
 
 		exitChroot()
@@ -116,7 +116,7 @@ func (s *alpineLinux) Run() error {
 	// Fix bad permissions in Alpine tarballs
 	err = os.Chmod(s.rootfsDir, 0755)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to chmod %q", s.rootfsDir)
+		return errors.WithMessagef(err, "Failed to chmod %q", s.rootfsDir)
 	}
 
 	return nil
