@@ -42,7 +42,7 @@ func (s *rockylinux) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to parse URL %q", baseURL)
+		return errors.WithMessagef(err, "Failed to parse URL %q", baseURL)
 	}
 
 	checksumFile := ""
@@ -57,21 +57,21 @@ func (s *rockylinux) Run() error {
 
 			_, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to download %q", baseURL+checksumFile)
+				return errors.WithMessagef(err, "Failed to download %q", baseURL+checksumFile)
 			}
 		}
 	}
 
 	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", baseURL+s.fname)
+		return errors.WithMessagef(err, "Failed to download %q", baseURL+s.fname)
 	}
 
 	s.logger.Infow("Unpacking ISO", "file", filepath.Join(fpath, s.fname))
 
 	err = s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
 	if err != nil {
-		return errors.Wrap(err, "Failed to unpack ISO")
+		return errors.WithMessage(err, "Failed to unpack ISO")
 	}
 
 	return nil
@@ -158,7 +158,7 @@ yum ${yum_args} --installroot=/rootfs -y --releasever="${RELEASE}" --skip-broken
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
-		return errors.Wrap(err, "Failed to run ISO script")
+		return errors.WithMessage(err, "Failed to run ISO script")
 	}
 
 	return nil
@@ -169,13 +169,13 @@ func (s *rockylinux) getRelease(URL, release, variant, arch string) (string, err
 
 	resp, err := http.Get(u)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to GET %q", u)
+		return "", errors.WithMessagef(err, "Failed to GET %q", u)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "Failed to read body")
+		return "", errors.WithMessage(err, "Failed to read body")
 	}
 
 	re := s.getRegexes(arch, variant, release)

@@ -28,7 +28,7 @@ func (s *altLinux) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to parse URL %q", baseURL)
+		return errors.WithMessagef(err, "Failed to parse URL %q", baseURL)
 	}
 
 	checksumFile := ""
@@ -39,12 +39,12 @@ func (s *altLinux) Run() error {
 
 			fpath, err := shared.DownloadHash(s.definition.Image, checksumFile+".gpg", "", nil)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to download %q", checksumFile+".gpg")
+				return errors.WithMessagef(err, "Failed to download %q", checksumFile+".gpg")
 			}
 
 			_, err = shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to download %q", checksumFile)
+				return errors.WithMessagef(err, "Failed to download %q", checksumFile)
 			}
 
 			valid, err := shared.VerifyFile(
@@ -53,7 +53,7 @@ func (s *altLinux) Run() error {
 				s.definition.Source.Keys,
 				s.definition.Source.Keyserver)
 			if err != nil {
-				return errors.Wrap(err, "Failed to verify file")
+				return errors.WithMessage(err, "Failed to verify file")
 			}
 			if !valid {
 				return errors.Errorf("Invalid signature for %q", "SHA256SUMS")
@@ -68,7 +68,7 @@ func (s *altLinux) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", baseURL+fname)
+		return errors.WithMessagef(err, "Failed to download %q", baseURL+fname)
 	}
 
 	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
@@ -76,7 +76,7 @@ func (s *altLinux) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", fname)
+		return errors.WithMessagef(err, "Failed to unpack %q", fname)
 	}
 
 	return nil

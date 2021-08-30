@@ -28,14 +28,14 @@ func (s *sabayon) Run() error {
 
 	resp, err := http.Head(tarballPath)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to HEAD %q", tarballPath)
+		return errors.WithMessagef(err, "Failed to HEAD %q", tarballPath)
 	}
 
 	baseURL, fname = path.Split(resp.Request.URL.String())
 
 	url, err := url.Parse(fmt.Sprintf("%s/%s", baseURL, fname))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to parse URL %q", fmt.Sprintf("%s/%s", baseURL, fname))
+		return errors.WithMessagef(err, "Failed to parse URL %q", fmt.Sprintf("%s/%s", baseURL, fname))
 	}
 
 	var fpath string
@@ -47,7 +47,7 @@ func (s *sabayon) Run() error {
 		fpath, err = shared.DownloadHash(s.definition.Image, url.String(), url.String()+".md5", md5.New())
 	}
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", url.String())
+		return errors.WithMessagef(err, "Failed to download %q", url.String())
 	}
 
 	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
@@ -55,7 +55,7 @@ func (s *sabayon) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, fname))
+		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, fname))
 	}
 
 	return nil

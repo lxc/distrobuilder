@@ -83,7 +83,7 @@ func Load(managerName string, logger *zap.SugaredLogger, definition shared.Defin
 
 	err := d.load()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to load manager %q", managerName)
+		return nil, errors.WithMessagef(err, "Failed to load manager %q", managerName)
 	}
 
 	return &Manager{def: definition, mgr: d}, nil
@@ -109,20 +109,20 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 
 	err := m.mgr.refresh()
 	if err != nil {
-		return errors.Wrap(err, "Failed to refresh")
+		return errors.WithMessage(err, "Failed to refresh")
 	}
 
 	if m.def.Packages.Update {
 		err = m.mgr.update()
 		if err != nil {
-			return errors.Wrap(err, "Failed to update")
+			return errors.WithMessage(err, "Failed to update")
 		}
 
 		// Run post update hook
 		for _, action := range m.def.GetRunnableActions("post-update", imageTarget) {
 			err = shared.RunScript(action.Action)
 			if err != nil {
-				return errors.Wrap(err, "Failed to run post-update")
+				return errors.WithMessage(err, "Failed to run post-update")
 			}
 		}
 	}
@@ -134,14 +134,14 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 			err = m.mgr.remove(set.Packages, set.Flags)
 		}
 		if err != nil {
-			return errors.Wrapf(err, "Failed to %s packages", set.Action)
+			return errors.WithMessagef(err, "Failed to %s packages", set.Action)
 		}
 	}
 
 	if m.def.Packages.Cleanup {
 		err = m.mgr.clean()
 		if err != nil {
-			return errors.Wrap(err, "Failed to clean up packages")
+			return errors.WithMessage(err, "Failed to clean up packages")
 		}
 	}
 
@@ -164,18 +164,18 @@ func (m *Manager) ManageRepositories(imageTarget shared.ImageTarget) error {
 		// Run template on repo.URL
 		repo.URL, err = shared.RenderTemplate(repo.URL, m.def)
 		if err != nil {
-			return errors.Wrap(err, "Failed to render template")
+			return errors.WithMessage(err, "Failed to render template")
 		}
 
 		// Run template on repo.Key
 		repo.Key, err = shared.RenderTemplate(repo.Key, m.def)
 		if err != nil {
-			return errors.Wrap(err, "Failed to render template")
+			return errors.WithMessage(err, "Failed to render template")
 		}
 
 		err = m.mgr.manageRepository(repo)
 		if err != nil {
-			return errors.Wrapf(err, "Error for repository %s", repo.Name)
+			return errors.WithMessagef(err, "Error for repository %s", repo.Name)
 		}
 	}
 

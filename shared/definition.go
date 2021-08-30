@@ -235,7 +235,7 @@ func (d *Definition) SetValue(key string, value string) error {
 	// Walk through the definition and find the field with the given key
 	field, err := getFieldByTag(reflect.ValueOf(d).Elem(), reflect.TypeOf(d).Elem(), key)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get field by tag")
+		return errors.WithMessage(err, "Failed to get field by tag")
 	}
 
 	// Fail if the field cannot be set
@@ -247,13 +247,13 @@ func (d *Definition) SetValue(key string, value string) error {
 	case reflect.Bool:
 		v, err := strconv.ParseBool(value)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to parse bool %q", value)
+			return errors.WithMessagef(err, "Failed to parse bool %q", value)
 		}
 		field.SetBool(v)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		v, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to parse int %q", value)
+			return errors.WithMessagef(err, "Failed to parse int %q", value)
 		}
 		field.SetInt(v)
 	case reflect.String:
@@ -261,7 +261,7 @@ func (d *Definition) SetValue(key string, value string) error {
 	case reflect.Uint, reflect.Uintptr, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		v, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to parse uint %q", value)
+			return errors.WithMessagef(err, "Failed to parse uint %q", value)
 		}
 		field.SetUint(v)
 	default:
@@ -460,7 +460,7 @@ func (d *Definition) Validate() error {
 	// Mapped architecture (distro name)
 	archMapped, err := d.getMappedArchitecture()
 	if err != nil {
-		return errors.Wrap(err, "Failed to get mapped architecture")
+		return errors.WithMessage(err, "Failed to get mapped architecture")
 	}
 
 	d.Image.ArchitectureMapped = archMapped
@@ -468,19 +468,19 @@ func (d *Definition) Validate() error {
 	// Kernel architecture and personality
 	archID, err := lxdarch.ArchitectureId(d.Image.Architecture)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get architecture ID")
+		return errors.WithMessage(err, "Failed to get architecture ID")
 	}
 
 	archName, err := lxdarch.ArchitectureName(archID)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get architecture name")
+		return errors.WithMessage(err, "Failed to get architecture name")
 	}
 
 	d.Image.ArchitectureKernel = archName
 
 	archPersonality, err := lxdarch.ArchitecturePersonality(archID)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get architecture personality")
+		return errors.WithMessage(err, "Failed to get architecture personality")
 	}
 
 	d.Image.ArchitecturePersonality = archPersonality
@@ -536,7 +536,7 @@ func (d *Definition) getMappedArchitecture() (string, error) {
 		var err error
 		arch, err = GetArch(d.Mappings.ArchitectureMap, d.Image.Architecture)
 		if err != nil {
-			return "", errors.Wrap(err, "Failed to translate the architecture name")
+			return "", errors.WithMessage(err, "Failed to translate the architecture name")
 		}
 	} else if len(d.Mappings.Architectures) > 0 {
 		// Translate the architecture using a user specified mapping

@@ -14,12 +14,12 @@ func updateFileAccess(file *os.File, defFile shared.DefinitionFile) error {
 	if defFile.Mode != "" {
 		mode, err := strconv.ParseUint(defFile.Mode, 8, 64)
 		if err != nil {
-			return errors.Wrap(err, "Failed to parse file mode")
+			return errors.WithMessage(err, "Failed to parse file mode")
 		}
 
 		err = file.Chmod(os.FileMode(mode))
 		if err != nil {
-			return errors.Wrap(err, "Failed to change file mode")
+			return errors.WithMessage(err, "Failed to change file mode")
 		}
 	}
 
@@ -27,12 +27,12 @@ func updateFileAccess(file *os.File, defFile shared.DefinitionFile) error {
 	if defFile.GID != "" {
 		gid, err := strconv.Atoi(defFile.GID)
 		if err != nil {
-			return errors.Wrap(err, "Failed to parse GID")
+			return errors.WithMessage(err, "Failed to parse GID")
 		}
 
 		err = file.Chown(-1, gid)
 		if err != nil {
-			return errors.Wrap(err, "Failed to change GID")
+			return errors.WithMessage(err, "Failed to change GID")
 		}
 	}
 
@@ -40,12 +40,12 @@ func updateFileAccess(file *os.File, defFile shared.DefinitionFile) error {
 	if defFile.UID != "" {
 		uid, err := strconv.Atoi(defFile.UID)
 		if err != nil {
-			return errors.Wrap(err, "Failed to parse UID")
+			return errors.WithMessage(err, "Failed to parse UID")
 		}
 
 		err = file.Chown(uid, -1)
 		if err != nil {
-			return errors.Wrap(err, "Failed to change UID")
+			return errors.WithMessage(err, "Failed to change UID")
 		}
 	}
 

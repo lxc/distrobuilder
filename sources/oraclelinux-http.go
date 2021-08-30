@@ -32,7 +32,7 @@ func (s *oraclelinux) Run() error {
 
 	updates, err := s.getUpdates(baseURL)
 	if err != nil {
-		return errors.Wrap(err, "Failed to get updates")
+		return errors.WithMessage(err, "Failed to get updates")
 	}
 
 	var latestUpdate string
@@ -65,14 +65,14 @@ func (s *oraclelinux) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, source, "", nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", source)
+		return errors.WithMessagef(err, "Failed to download %q", source)
 	}
 
 	s.logger.Infow("Unpacking ISO", "file", filepath.Join(fpath, fname))
 
 	err = s.unpackISO(latestUpdate[1:], filepath.Join(fpath, fname), s.rootfsDir)
 	if err != nil {
-		return errors.Wrap(err, "Failed to unpack ISO")
+		return errors.WithMessage(err, "Failed to unpack ISO")
 	}
 
 	return nil
@@ -87,14 +87,14 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	for _, dir := range []string{isoDir, squashfsDir, roRootDir} {
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to create %q", dir)
+			return errors.WithMessagef(err, "Failed to create %q", dir)
 		}
 	}
 
 	// this is easier than doing the whole loop thing ourselves
 	err := shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to mount %q", filePath)
+		return errors.WithMessagef(err, "Failed to mount %q", filePath)
 	}
 	defer unix.Unmount(isoDir, 0)
 
@@ -106,7 +106,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 		// mount squashfs.img
 		err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to mount %q", squashfsImage)
+			return errors.WithMessagef(err, "Failed to mount %q", squashfsImage)
 		}
 		defer unix.Unmount(squashfsDir, 0)
 
@@ -119,14 +119,14 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	// itself
 	err = os.RemoveAll(rootfsDir)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to remove %q", rootfsDir)
+		return errors.WithMessagef(err, "Failed to remove %q", rootfsDir)
 	}
 
 	s.logger.Infow("Unpacking root image", "file", rootfsImage)
 
 	err = s.unpackRootfsImage(rootfsImage, tempRootDir)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", rootfsImage)
+		return errors.WithMessagef(err, "Failed to unpack %q", rootfsImage)
 	}
 
 	// Determine rpm and yum packages
@@ -134,7 +134,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 
 	doc, err := htmlquery.LoadURL(fmt.Sprintf("%s/index.html", baseURL))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to load URL %q", fmt.Sprintf("%s/index.html", baseURL))
+		return errors.WithMessagef(err, "Failed to load URL %q", fmt.Sprintf("%s/index.html", baseURL))
 	}
 
 	regexRpm := regexp.MustCompile(`^getPackage/rpm-\d+.+\.rpm$`)
@@ -169,13 +169,13 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 		for _, elem := range array {
 			f, err := os.Create(elem[0])
 			if err != nil {
-				return errors.Wrapf(err, "Failed to create file %q", elem[0])
+				return errors.WithMessagef(err, "Failed to create file %q", elem[0])
 			}
 			defer f.Close()
 
 			_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, elem[0], elem[1], "", nil, f)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to download %q", elem[1])
+				return errors.WithMessagef(err, "Failed to download %q", elem[1])
 			}
 			f.Close()
 		}
@@ -184,13 +184,13 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to setup chroot")
+		return errors.WithMessage(err, "Failed to setup chroot")
 	}
 
 	if !lxd.PathExists("/bin") && lxd.PathExists("/usr/bin") {
 		err = os.Symlink("/usr/bin", "/bin")
 		if err != nil {
-			return errors.Wrap(err, "Failed to create /bin symlink")
+			return errors.WithMessage(err, "Failed to create /bin symlink")
 		}
 	}
 
@@ -261,14 +261,14 @@ EOF
 `, s.majorVersion, s.architecture))
 	if err != nil {
 		exitChroot()
-		return errors.Wrap(err, "Failed to run script")
+		return errors.WithMessage(err, "Failed to run script")
 	}
 
 	exitChroot()
 
 	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
-		return errors.Wrap(err, `Failed to run "rsync"`)
+		return errors.WithMessage(err, `Failed to run "rsync"`)
 	}
 
 	return nil
@@ -287,7 +287,7 @@ func (s *oraclelinux) getISO(URL string, architecture string) (string, error) {
 
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to load URL %q", URL)
+		return "", errors.WithMessagef(err, "Failed to load URL %q", URL)
 	}
 
 	var isos []string
@@ -310,7 +310,7 @@ func (s *oraclelinux) getUpdates(URL string) ([]string, error) {
 
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to load URL %q", URL)
+		return nil, errors.WithMessagef(err, "Failed to load URL %q", URL)
 	}
 
 	var updates []string

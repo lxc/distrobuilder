@@ -49,7 +49,7 @@ func (s *debootstrap) Run() error {
 	if len(s.definition.Source.Keys) > 0 {
 		keyring, err := shared.CreateGPGKeyring(s.definition.Source.Keyserver, s.definition.Source.Keys)
 		if err != nil {
-			return errors.Wrap(err, "Failed to create GPG keyring")
+			return errors.WithMessage(err, "Failed to create GPG keyring")
 		}
 		defer os.RemoveAll(path.Dir(keyring))
 
@@ -75,7 +75,7 @@ func (s *debootstrap) Run() error {
 	if !lxd.PathExists(scriptPath) && s.definition.Source.SameAs != "" {
 		err := os.Symlink(s.definition.Source.SameAs, scriptPath)
 		if err != nil {
-			return errors.Wrap(err, "Failed to create symlink")
+			return errors.WithMessage(err, "Failed to create symlink")
 		}
 
 		defer os.Remove(scriptPath)
@@ -83,7 +83,7 @@ func (s *debootstrap) Run() error {
 
 	err := shared.RunCommand("debootstrap", args...)
 	if err != nil {
-		return errors.Wrap(err, `Failed to run "debootstrap"`)
+		return errors.WithMessage(err, `Failed to run "debootstrap"`)
 	}
 
 	return nil

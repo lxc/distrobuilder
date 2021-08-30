@@ -31,14 +31,14 @@ func (s *springdalelinux) Run() error {
 
 	_, err := shared.DownloadHash(s.definition.Image, baseURL+s.fname, "", nil)
 	if err != nil {
-		return errors.Wrapf(err, "Error downloading %q", baseURL+s.fname)
+		return errors.WithMessagef(err, "Error downloading %q", baseURL+s.fname)
 	}
 
 	s.logger.Infow("Unpacking ISO", "file", filepath.Join(fpath, s.fname))
 
 	err = s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack %q", filepath.Join(fpath, s.fname))
+		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, s.fname))
 	}
 
 	return nil
@@ -180,7 +180,7 @@ yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install $
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
-		return errors.Wrap(err, "Failed to run ISO script")
+		return errors.WithMessage(err, "Failed to run ISO script")
 	}
 
 	return nil

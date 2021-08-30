@@ -33,7 +33,7 @@ func (s *archlinux) Run() error {
 		// Get latest release
 		release, err = s.getLatestRelease(s.definition.Source.URL, s.definition.Image.ArchitectureMapped)
 		if err != nil {
-			return errors.Wrap(err, "Failed to get latest release")
+			return errors.WithMessage(err, "Failed to get latest release")
 		}
 	}
 
@@ -53,7 +53,7 @@ func (s *archlinux) Run() error {
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to parse URL %q", tarball)
+		return errors.WithMessagef(err, "Failed to parse URL %q", tarball)
 	}
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
@@ -63,7 +63,7 @@ func (s *archlinux) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to download %q", tarball)
+		return errors.WithMessagef(err, "Failed to download %q", tarball)
 	}
 
 	// Force gpg checks when using http
@@ -76,7 +76,7 @@ func (s *archlinux) Run() error {
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to verify %q", fname)
+			return errors.WithMessagef(err, "Failed to verify %q", fname)
 		}
 		if !valid {
 			return errors.Errorf("Invalid signature for %q", fname)
@@ -88,7 +88,7 @@ func (s *archlinux) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to unpack file %q", filepath.Join(fpath, fname))
+		return errors.WithMessagef(err, "Failed to unpack file %q", filepath.Join(fpath, fname))
 	}
 
 	// Move everything inside 'root.<architecture>' (which was is the tarball) to its
@@ -96,13 +96,13 @@ func (s *archlinux) Run() error {
 	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(s.rootfsDir,
 		"root."+s.definition.Image.ArchitectureMapped)))
 	if err != nil {
-		return errors.Wrap(err, "Failed to get files")
+		return errors.WithMessage(err, "Failed to get files")
 	}
 
 	for _, file := range files {
 		err = os.Rename(file, filepath.Join(s.rootfsDir, path.Base(file)))
 		if err != nil {
-			return errors.Wrapf(err, "Failed to rename file %q", file)
+			return errors.WithMessagef(err, "Failed to rename file %q", file)
 		}
 	}
 
@@ -110,7 +110,7 @@ func (s *archlinux) Run() error {
 
 	err = os.RemoveAll(path)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to remove %q", path)
+		return errors.WithMessagef(err, "Failed to remove %q", path)
 	}
 
 	return nil
@@ -119,7 +119,7 @@ func (s *archlinux) Run() error {
 func (s *archlinux) getLatestRelease(URL string, arch string) (string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed to load URL %q", URL)
+		return "", errors.WithMessagef(err, "Failed to load URL %q", URL)
 	}
 
 	re := regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}/?$`)

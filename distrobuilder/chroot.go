@@ -13,15 +13,18 @@ import (
 func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), string, error) {
 	var stat unix.Statfs_t
 
-	// Skip overlay on xfs
+	// Skip overlay on xfs and zfs
 	for _, dir := range []string{cacheDir, sourceDir} {
 		err := unix.Statfs(dir, &stat)
 		if err != nil {
 			return nil, "", err
 		}
 
-		if stat.Type == unix.XFS_SUPER_MAGIC {
+		switch stat.Type {
+		case unix.XFS_SUPER_MAGIC:
 			return nil, "", errors.Errorf("overlay not supported on xfs")
+		case 0x2fc12fc1:
+			return nil, "", errors.Errorf("overlay not supported on zfs")
 		}
 	}
 
@@ -31,24 +34,24 @@ func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), 
 
 	err := os.Mkdir(upperDir, 0755)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "Failed to create directory %q", upperDir)
+		return nil, "", errors.WithMessagef(err, "Failed to create directory %q", upperDir)
 	}
 
 	err = os.Mkdir(overlayDir, 0755)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "Failed to create directory %q", overlayDir)
+		return nil, "", errors.WithMessagef(err, "Failed to create directory %q", overlayDir)
 	}
 
 	err = os.Mkdir(workDir, 0755)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "Failed to create directory %q", workDir)
+		return nil, "", errors.WithMessagef(err, "Failed to create directory %q", workDir)
 	}
 
 	opts := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", sourceDir, upperDir, workDir)
 
 	err = unix.Mount("overlay", overlayDir, "overlay", 0, opts)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "Failed to mount overlay")
+		return nil, "", errors.WithMessage(err, "Failed to mount overlay")
 	}
 
 	cleanup := func() {

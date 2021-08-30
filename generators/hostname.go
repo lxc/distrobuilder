@@ -27,20 +27,20 @@ func (g *hostname) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC
 	// Create new hostname file
 	file, err := os.Create(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create file %q", filepath.Join(g.sourceDir, g.defFile.Path))
+		return errors.WithMessagef(err, "Failed to create file %q", filepath.Join(g.sourceDir, g.defFile.Path))
 	}
 	defer file.Close()
 
 	// Write LXC specific string to the hostname file
 	_, err = file.WriteString("LXC_NAME\n")
 	if err != nil {
-		return errors.Wrap(err, "Failed to write to hostname file")
+		return errors.WithMessage(err, "Failed to write to hostname file")
 	}
 
 	// Add hostname path to LXC's templates file
 	err = img.AddTemplate(g.defFile.Path)
 	if err != nil {
-		return errors.Wrap(err, "Failed to add template")
+		return errors.WithMessage(err, "Failed to add template")
 	}
 
 	return nil
@@ -58,18 +58,18 @@ func (g *hostname) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create directory %q", templateDir)
+		return errors.WithMessagef(err, "Failed to create directory %q", templateDir)
 	}
 
 	file, err := os.Create(filepath.Join(templateDir, "hostname.tpl"))
 	if err != nil {
-		return errors.Wrapf(err, "Failed to create file %q", filepath.Join(templateDir, "hostname.tpl"))
+		return errors.WithMessagef(err, "Failed to create file %q", filepath.Join(templateDir, "hostname.tpl"))
 	}
 	defer file.Close()
 
 	_, err = file.WriteString("{{ container.name }}\n")
 	if err != nil {
-		return errors.Wrap(err, "Failed to write to hostname file")
+		return errors.WithMessage(err, "Failed to write to hostname file")
 	}
 
 	// Add to LXD templates
