@@ -87,7 +87,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	}
 	defer unix.Unmount(imageDir, 0)
 
-	err = shared.RunCommand("rsync", "-qa", filepath.Join(imageDir, "system-data"), rootfsDir)
+	err = shared.RsyncLocal(filepath.Join(imageDir, "system-data"), rootfsDir)
 	if err != nil {
 		return errors.WithMessage(err, `Failed to run "rsync"`)
 	}

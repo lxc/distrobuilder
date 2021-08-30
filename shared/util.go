@@ -455,3 +455,13 @@ func getChecksum(fname string, hashLen int, r io.Reader) []string {
 
 	return nil
 }
+
+// RsyncLocal copies src to dest using rsync.
+func RsyncLocal(src string, dest string) error {
+	err := RunCommand("rsync", "-aHASX", "--devices", src, dest)
+	if err != nil {
+		errors.WithMessagef(err, "Failed to copy %q to %q", src, dest)
+	}
+
+	return nil
+}

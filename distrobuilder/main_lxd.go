@@ -294,7 +294,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		// We cannot use LXD's rsync package as that uses the --delete flag which
 		// causes an issue due to the boot/efi directory being present.
-		err = shared.RunCommand("rsync", "-a", "-HA", "--sparse", "--devices", "--checksum", "--numeric-ids", overlayDir+"/", vmDir)
+		err = shared.RsyncLocal(overlayDir+"/", vmDir)
 		if err != nil {
 			return errors.WithMessage(err, "Failed to copy rootfs")
 		}

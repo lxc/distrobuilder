@@ -266,7 +266,7 @@ EOF
 
 	exitChroot()
 
-	err = shared.RunCommand("rsync", "-qa", tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RsyncLocal(tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
 		return errors.WithMessage(err, `Failed to run "rsync"`)
 	}

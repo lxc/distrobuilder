@@ -456,7 +456,7 @@ func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
 		overlayDir = filepath.Join(c.flagCacheDir, "overlay")
 
 		// Use rsync if overlay doesn't work
-		err = shared.RunCommand("rsync", "-a", c.sourceDir+"/", overlayDir)
+		err = shared.RsyncLocal(c.sourceDir+"/", overlayDir)
 		if err != nil {
 			return "", nil, errors.WithMessage(err, "Failed to copy image content")
 		}
@@ -468,7 +468,7 @@ func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
 			overlayDir = filepath.Join(c.flagCacheDir, "overlay")
 
 			// Use rsync if overlay doesn't work
-			err = shared.RunCommand("rsync", "-a", c.sourceDir+"/", overlayDir)
+			err = shared.RsyncLocal(c.sourceDir+"/", overlayDir)
 			if err != nil {
 				return "", nil, errors.WithMessage(err, "Failed to copy image content")
 			}
