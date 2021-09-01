@@ -1,2 +1,3 @@
 site_name: "distrobuilder - system container image builder"
 theme: readthedocs
+docs_dir: doc
