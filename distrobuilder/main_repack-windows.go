@@ -105,7 +105,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 		c.flagWindowsVersion = detectedVersion
 	} else {
-		supportedVersions := []string{"w11", "w10", "2k19", "2k12", "2k16"}
+		supportedVersions := []string{"w11", "w10", "2k19", "2k12", "2k16", "2k22"}
 
 		if !lxd.StringInSlice(c.flagWindowsVersion, supportedVersions) {
 			return errors.Errorf("Version must be one of %v", supportedVersions)
@@ -115,6 +115,11 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	// FIXME: Windows 11 currently uses Windows 10 drivers, remove this once virtio w11 drivers exist.
 	if c.flagWindowsVersion == "w11" {
 		c.flagWindowsVersion = "w10"
+	}
+
+	// FIXME: Windows Server 2022 currently uses Windows Server 2019 drivers, remove this once virtio 2k22 drivers exist.
+	if c.flagWindowsVersion == "2k22" {
+		c.flagWindowsVersion = "2k19"
 	}
 
 	// Check dependencies
@@ -666,6 +671,7 @@ func detectWindowsVersion(fileName string) string {
 		"2k19": {"2k19", "w2k19", "win2k19", "windows.?server.?2019"},
 		"2k12": {"2k12", "w2k12", "win2k12", "windows.?server.?2012"},
 		"2k16": {"2k16", "w2k16", "win2k16", "windows.?server.?2016"},
+		"2k22": {"2k22", "w2k22", "win2k22", "windows.?server.?2022"},
 	}
 
 	for k, v := range aliases {
