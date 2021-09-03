@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -30,7 +30,7 @@ func (s *apertis) Run() error {
 
 	resp, err := http.Head(baseURL)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to HEAD %q", baseURL)
+		return fmt.Errorf("Failed to HEAD %q: %w", baseURL, err)
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
@@ -42,7 +42,7 @@ func (s *apertis) Run() error {
 	} else {
 		exactRelease, err = s.getLatestRelease(baseURL, release)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to get latest release")
+			return fmt.Errorf("Failed to get latest release: %w", err)
 		}
 	}
 
@@ -53,7 +53,7 @@ func (s *apertis) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse %q", baseURL)
+		return fmt.Errorf("Failed to parse %q: %w", baseURL, err)
 	}
 
 	// Force gpg checks when using http
@@ -63,7 +63,7 @@ func (s *apertis) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, "", nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", baseURL+fname)
+		return fmt.Errorf("Failed to download %q: %w", baseURL+fname, err)
 	}
 
 	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
@@ -71,7 +71,7 @@ func (s *apertis) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", fname)
+		return fmt.Errorf("Failed to unpack %q: %w", fname, err)
 	}
 
 	return nil
@@ -80,13 +80,13 @@ func (s *apertis) Run() error {
 func (s *apertis) getLatestRelease(baseURL, release string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to GET %q", baseURL)
+		return "", fmt.Errorf("Failed to GET %q: %w", baseURL, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.WithMessage(err, "Failed to ready body")
+		return "", fmt.Errorf("Failed to ready body: %w", err)
 	}
 
 	regex := regexp.MustCompile(fmt.Sprintf(">(%s\\.\\d+)/<", release))

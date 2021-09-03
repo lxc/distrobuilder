@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -77,26 +76,26 @@ func yumManageRepository(repoAction shared.DefinitionPackagesRepository) error {
 	if !lxd.PathExists(filepath.Dir(targetFile)) {
 		err := os.MkdirAll(filepath.Dir(targetFile), 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", filepath.Dir(targetFile))
+			return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(targetFile), err)
 		}
 	}
 
 	f, err := os.Create(targetFile)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create file %q", targetFile)
+		return fmt.Errorf("Failed to create file %q: %w", targetFile, err)
 	}
 	defer f.Close()
 
 	_, err = f.WriteString(repoAction.URL)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write to file %q", targetFile)
+		return fmt.Errorf("Failed to write to file %q: %w", targetFile, err)
 	}
 
 	// Append final new line if missing
 	if !strings.HasSuffix(repoAction.URL, "\n") {
 		_, err = f.WriteString("\n")
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to write to file %q", targetFile)
+			return fmt.Errorf("Failed to write to file %q: %w", targetFile, err)
 		}
 	}
 

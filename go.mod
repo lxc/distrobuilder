@@ -20,13 +20,12 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/heroku/docker-registry-client v0.0.0-20190909225348-afc9e1acc3d5 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
-	github.com/klauspost/compress v1.13.4 // indirect
+	github.com/klauspost/compress v1.13.5 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
-	github.com/lxc/lxd v0.0.0-20210830022849-8fbbbdee9c64
+	github.com/lxc/lxd v0.0.0-20210903031644-ed907d5a9137
 	github.com/mudler/docker-companion v0.4.6-0.20201209184016-2d26fc9143d4
 	github.com/openSUSE/umoci v0.4.5 // indirect
 	github.com/opencontainers/runc v1.0.2 // indirect
-	github.com/pkg/errors v0.9.1
 	github.com/rootless-containers/proto/go-proto v0.0.0-20210829182612-43763522b879 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
@@ -35,8 +34,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.0
-	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
-	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf
+	golang.org/x/sys v0.0.0-20210903071746-97244b99971b
 	gopkg.in/antchfx/htmlquery.v1 v1.2.2
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
 	gopkg.in/yaml.v2 v2.4.0

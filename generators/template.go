@@ -8,7 +8,6 @@ import (
 
 	"github.com/flosch/pongo2"
 	"github.com/lxc/lxd/shared/api"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -30,13 +29,13 @@ func (g *template) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", templateDir)
+		return fmt.Errorf("Failed to create directory %q: %w", templateDir, err)
 	}
 	template := fmt.Sprintf("%s.tpl", g.defFile.Name)
 
 	file, err := os.Create(filepath.Join(templateDir, template))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create file %q", filepath.Join(templateDir, template))
+		return fmt.Errorf("Failed to create file %q: %w", filepath.Join(templateDir, template), err)
 	}
 
 	defer file.Close()
@@ -51,18 +50,18 @@ func (g *template) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(content)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to parse template")
+			return fmt.Errorf("Failed to parse template: %w", err)
 		}
 
 		content, err = tpl.Execute(pongo2.Context{"lxd": target})
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to execute template")
+			return fmt.Errorf("Failed to execute template: %w", err)
 		}
 	}
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write to content to %s template", g.defFile.Name)
+		return fmt.Errorf("Failed to write to content to %s template: %w", g.defFile.Name, err)
 	}
 
 	// Add to LXD templates

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,7 +9,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -28,7 +28,7 @@ func newVM(imageFile, rootfsDir, fs string, size uint64) (*vm, error) {
 	}
 
 	if !lxd.StringInSlice(fs, []string{"btrfs", "ext4"}) {
-		return nil, errors.Errorf("Unsupported fs: %s", fs)
+		return nil, fmt.Errorf("Unsupported fs: %s", fs)
 	}
 
 	if size == 0 {
@@ -61,18 +61,18 @@ func (v *vm) getUEFIDevFile() string {
 func (v *vm) createEmptyDiskImage() error {
 	f, err := os.Create(v.imageFile)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to open %s", v.imageFile)
+		return fmt.Errorf("Failed to open %s: %w", v.imageFile, err)
 	}
 	defer f.Close()
 
 	err = f.Chmod(0600)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to chmod %s", v.imageFile)
+		return fmt.Errorf("Failed to chmod %s: %w", v.imageFile, err)
 	}
 
 	err = f.Truncate(int64(v.size))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create sparse file %s", v.imageFile)
+		return fmt.Errorf("Failed to create sparse file %s: %w", v.imageFile, err)
 	}
 
 	return nil
@@ -88,7 +88,7 @@ func (v *vm) createPartitions() error {
 	for _, cmd := range args {
 		err := shared.RunCommand("sgdisk", append([]string{v.imageFile}, cmd...)...)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to create partitions")
+			return fmt.Errorf("Failed to create partitions: %w", err)
 		}
 	}
 
@@ -103,7 +103,7 @@ func (v *vm) mountImage() error {
 
 	stdout, err := lxd.RunCommand("losetup", "-P", "-f", "--show", v.imageFile)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to setup loop device")
+		return fmt.Errorf("Failed to setup loop device: %w", err)
 	}
 
 	v.loopDevice = strings.TrimSpace(stdout)
@@ -113,7 +113,7 @@ func (v *vm) mountImage() error {
 
 	out, err := lxd.RunCommand("lsblk", "--raw", "--output", "MAJ:MIN", "--noheadings", v.loopDevice)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to list block devices")
+		return fmt.Errorf("Failed to list block devices: %w", err)
 	}
 
 	deviceNumbers := strings.Split(out, "\n")
@@ -123,19 +123,19 @@ func (v *vm) mountImage() error {
 
 		major, err := strconv.Atoi(fields[0])
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to parse %q", fields[0])
+			return fmt.Errorf("Failed to parse %q: %w", fields[0], err)
 		}
 
 		minor, err := strconv.Atoi(fields[1])
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to parse %q", fields[1])
+			return fmt.Errorf("Failed to parse %q: %w", fields[1], err)
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
 
 		err = unix.Mknod(v.getUEFIDevFile(), unix.S_IFBLK|0644, int(dev))
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create block device %q", v.getUEFIDevFile())
+			return fmt.Errorf("Failed to create block device %q: %w", v.getUEFIDevFile(), err)
 		}
 	}
 
@@ -144,19 +144,19 @@ func (v *vm) mountImage() error {
 
 		major, err := strconv.Atoi(fields[0])
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to parse %q", fields[0])
+			return fmt.Errorf("Failed to parse %q: %w", fields[0], err)
 		}
 
 		minor, err := strconv.Atoi(fields[1])
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to parse %q", fields[1])
+			return fmt.Errorf("Failed to parse %q: %w", fields[1], err)
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
 
 		err = unix.Mknod(v.getRootfsDevFile(), unix.S_IFBLK|0644, int(dev))
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create block device %q", v.getRootfsDevFile())
+			return fmt.Errorf("Failed to create block device %q: %w", v.getRootfsDevFile(), err)
 		}
 	}
 
@@ -171,21 +171,21 @@ func (v *vm) umountImage() error {
 
 	err := shared.RunCommand("losetup", "-d", v.loopDevice)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to detach loop device")
+		return fmt.Errorf("Failed to detach loop device: %w", err)
 	}
 
 	// Make sure that p1 and p2 are also removed.
 	if lxd.PathExists(v.getUEFIDevFile()) {
 		err := os.Remove(v.getUEFIDevFile())
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to remove file %q", v.getUEFIDevFile())
+			return fmt.Errorf("Failed to remove file %q: %w", v.getUEFIDevFile(), err)
 		}
 	}
 
 	if lxd.PathExists(v.getRootfsDevFile()) {
 		err := os.Remove(v.getRootfsDevFile())
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to remove file %q", v.getRootfsDevFile())
+			return fmt.Errorf("Failed to remove file %q: %w", v.getRootfsDevFile(), err)
 		}
 	}
 
@@ -196,20 +196,20 @@ func (v *vm) umountImage() error {
 
 func (v *vm) createRootFS() error {
 	if v.loopDevice == "" {
-		return errors.Errorf("Disk image not mounted")
+		return errors.New("Disk image not mounted")
 	}
 
 	switch v.rootFS {
 	case "btrfs":
 		err := shared.RunCommand("mkfs.btrfs", "-f", "-L", "rootfs", v.getRootfsDevFile())
 		if err != nil {
-			return errors.WithMessage(err, "Failed to create btrfs filesystem")
+			return fmt.Errorf("Failed to create btrfs filesystem: %w", err)
 		}
 
 		// Create the root subvolume as well
 		err = shared.RunCommand("mount", v.getRootfsDevFile(), v.rootfsDir)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to mount %q at %q", v.getRootfsDevFile(), v.rootfsDir)
+			return fmt.Errorf("Failed to mount %q at %q: %w", v.getRootfsDevFile(), v.rootfsDir, err)
 		}
 		defer shared.RunCommand("umount", v.rootfsDir)
 
@@ -280,7 +280,7 @@ func (v *vm) mountUEFIPartition() error {
 
 	err := os.MkdirAll(mountpoint, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", mountpoint)
+		return fmt.Errorf("Failed to create directory %q: %w", mountpoint, err)
 	}
 
 	return shared.RunCommand("mount", v.getUEFIDevFile(), mountpoint)

@@ -11,7 +11,6 @@ import (
 
 	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )
 
@@ -28,14 +27,14 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 	for _, dir := range []string{isoDir, squashfsDir, roRootDir} {
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", dir)
+			return fmt.Errorf("Failed to create directory %q: %w", dir, err)
 		}
 	}
 
 	// this is easier than doing the whole loop thing ourselves
 	err := shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to mount %q", filePath)
+		return fmt.Errorf("Failed to mount %q: %w", filePath, err)
 	}
 	defer unix.Unmount(isoDir, 0)
 
@@ -46,7 +45,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 		// mount squashfs.img
 		err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to mount %q", squashfsImage)
+			return fmt.Errorf("Failed to mount %q: %w", squashfsImage, err)
 		}
 		defer unix.Unmount(squashfsDir, 0)
 
@@ -59,14 +58,14 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 	// itself
 	err = os.RemoveAll(rootfsDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to remove directory %q", rootfsDir)
+		return fmt.Errorf("Failed to remove directory %q: %w", rootfsDir, err)
 	}
 
 	c.logger.Infow("Unpacking root image", "file", rootfsImage)
 
 	err = c.unpackRootfsImage(rootfsImage, tempRootDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", rootfsImage)
+		return fmt.Errorf("Failed to unpack %q: %w", rootfsImage, err)
 	}
 
 	gpgKeysPath := ""
@@ -85,24 +84,24 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 		// Create cdrom repo for yum
 		err = os.MkdirAll(filepath.Join(tempRootDir, "mnt", "cdrom"), 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", filepath.Join(tempRootDir, "mnt", "cdrom"))
+			return fmt.Errorf("Failed to create directory %q: %w", filepath.Join(tempRootDir, "mnt", "cdrom"), err)
 		}
 
 		// Copy repo relevant files to the cdrom
 		err = shared.RsyncLocal(packagesDir, filepath.Join(tempRootDir, "mnt", "cdrom"))
 		if err != nil {
-			return errors.Wrap(err, "Failed to copy Packages")
+			return fmt.Errorf("Failed to copy Packages: %w", err)
 		}
 
 		err = shared.RsyncLocal(repodataDir, filepath.Join(tempRootDir, "mnt", "cdrom"))
 		if err != nil {
-			return errors.Wrap(err, "Failed to copy repodata")
+			return fmt.Errorf("Failed to copy repodata: %w", err)
 		}
 
 		// Find all relevant GPG keys
 		gpgKeys, err := filepath.Glob(filepath.Join(isoDir, "RPM-GPG-KEY-*"))
 		if err != nil {
-			return errors.WithMessage(err, "Failed to match gpg keys")
+			return fmt.Errorf("Failed to match gpg keys: %w", err)
 		}
 
 		// Copy the keys to the cdrom
@@ -115,7 +114,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 
 			err = shared.RsyncLocal(key, filepath.Join(tempRootDir, "mnt", "cdrom"))
 			if err != nil {
-				return errors.WithMessage(err, `Failed to run "rsync"`)
+				return fmt.Errorf(`Failed to run "rsync": %w`, err)
 			}
 		}
 	}
@@ -123,20 +122,20 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to setup chroot")
+		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
 
 	err = scriptRunner(gpgKeysPath)
 	if err != nil {
 		exitChroot()
-		return errors.WithMessage(err, "Failed to run script")
+		return fmt.Errorf("Failed to run script: %w", err)
 	}
 
 	exitChroot()
 
 	err = shared.RsyncLocal(tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
-		return errors.WithMessage(err, `Failed to run "rsync"`)
+		return fmt.Errorf(`Failed to run "rsync": %w`, err)
 	}
 
 	return nil
@@ -145,13 +144,13 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 	installDir, err := ioutil.TempDir(c.cacheDir, "temp_")
 	if err != nil {
-		return errors.WithMessage(err, "Failed to create temporary directory")
+		return fmt.Errorf("Failed to create temporary directory: %w", err)
 	}
 	defer os.RemoveAll(installDir)
 
 	err = shared.RunCommand("mount", "-o", "ro", imageFile, installDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to mount %q", imageFile)
+		return fmt.Errorf("Failed to mount %q: %w", imageFile, err)
 	}
 	defer unix.Unmount(installDir, 0)
 
@@ -161,13 +160,13 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 	if lxd.PathExists(rootfsFile) {
 		rootfsDir, err = ioutil.TempDir(c.cacheDir, "temp_")
 		if err != nil {
-			return errors.WithMessage(err, "Failed to create temporary directory")
+			return fmt.Errorf("Failed to create temporary directory: %w", err)
 		}
 		defer os.RemoveAll(rootfsDir)
 
 		err = shared.RunCommand("mount", "-o", "ro", rootfsFile, rootfsDir)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to mount %q", rootfsFile)
+			return fmt.Errorf("Failed to mount %q: %w", rootfsFile, err)
 		}
 		defer unix.Unmount(rootfsDir, 0)
 	}
@@ -176,7 +175,7 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 	// directory in order to create the minimal rootfs.
 	err = shared.RsyncLocal(rootfsDir+"/", target)
 	if err != nil {
-		return errors.WithMessage(err, `Failed to run "rsync"`)
+		return fmt.Errorf(`Failed to run "rsync": %w`, err)
 	}
 
 	return nil
@@ -188,14 +187,14 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 
 	err := os.MkdirAll(roRootDir, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", roRootDir)
+		return fmt.Errorf("Failed to create directory %q: %w", roRootDir, err)
 	}
 
 	if strings.HasSuffix(filePath, ".raw.xz") {
 		// Uncompress raw image
 		err := shared.RunCommand("unxz", filePath)
 		if err != nil {
-			return errors.WithMessage(err, `Failed to run "unxz"`)
+			return fmt.Errorf(`Failed to run "unxz": %w`, err)
 		}
 	}
 
@@ -206,7 +205,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 
 	err = lxd.RunCommandWithFds(nil, &buf, "fdisk", "-l", "-o", "Start", rawFilePath)
 	if err != nil {
-		return errors.WithMessage(err, `Failed to run "fdisk"`)
+		return fmt.Errorf(`Failed to run "fdisk": %w`, err)
 	}
 
 	output := strings.Split(buf.String(), "\n")
@@ -214,14 +213,14 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 
 	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to convert %q", offsetStr)
+		return fmt.Errorf("Failed to convert %q: %w", offsetStr, err)
 	}
 
 	// Mount the partition read-only since we don't want to accidently modify it.
 	err = shared.RunCommand("mount", "-o", fmt.Sprintf("ro,loop,offset=%d", offset*512),
 		rawFilePath, roRootDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to mount %q", rawFilePath)
+		return fmt.Errorf("Failed to mount %q: %w", rawFilePath, err)
 	}
 	defer unix.Unmount(roRootDir, 0)
 
@@ -229,26 +228,26 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 	// directory in order to create the minimal rootfs.
 	err = shared.RsyncLocal(roRootDir+"/", tempRootDir)
 	if err != nil {
-		return errors.WithMessagef(err, `Failed to run "rsync"`)
+		return fmt.Errorf(`Failed to run "rsync": %w`, err)
 	}
 
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to setup chroot")
+		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
 
 	err = scriptRunner()
 	if err != nil {
 		exitChroot()
-		return errors.WithMessage(err, "Failed to run script")
+		return fmt.Errorf("Failed to run script: %w", err)
 	}
 
 	exitChroot()
 
 	err = shared.RsyncLocal(tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
-		return errors.WithMessage(err, `Failed to run "rsync"`)
+		return fmt.Errorf(`Failed to run "rsync": %w`, err)
 	}
 
 	return nil

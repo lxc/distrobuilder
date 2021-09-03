@@ -1,6 +1,8 @@
 package shared
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -8,7 +10,6 @@ import (
 
 	"github.com/lxc/lxd/shared"
 	lxdarch "github.com/lxc/lxd/shared/osarch"
-	"github.com/pkg/errors"
 )
 
 // ImageTarget represents the image target.
@@ -235,25 +236,25 @@ func (d *Definition) SetValue(key string, value string) error {
 	// Walk through the definition and find the field with the given key
 	field, err := getFieldByTag(reflect.ValueOf(d).Elem(), reflect.TypeOf(d).Elem(), key)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get field by tag")
+		return fmt.Errorf("Failed to get field by tag: %w", err)
 	}
 
 	// Fail if the field cannot be set
 	if !field.CanSet() {
-		return errors.Errorf("Cannot set value for %s", key)
+		return fmt.Errorf("Cannot set value for %s", key)
 	}
 
 	switch field.Kind() {
 	case reflect.Bool:
 		v, err := strconv.ParseBool(value)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to parse bool %q", value)
+			return fmt.Errorf("Failed to parse bool %q: %w", value, err)
 		}
 		field.SetBool(v)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		v, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to parse int %q", value)
+			return fmt.Errorf("Failed to parse int %q: %w", value, err)
 		}
 		field.SetInt(v)
 	case reflect.String:
@@ -261,11 +262,11 @@ func (d *Definition) SetValue(key string, value string) error {
 	case reflect.Uint, reflect.Uintptr, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		v, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to parse uint %q", value)
+			return fmt.Errorf("Failed to parse uint %q: %w", value, err)
 		}
 		field.SetUint(v)
 	default:
-		return errors.Errorf("Unsupported type '%s'", field.Kind())
+		return fmt.Errorf("Unsupported type '%s'", field.Kind())
 	}
 
 	return nil
@@ -343,7 +344,7 @@ func (d *Definition) Validate() error {
 		"rockylinux-http",
 	}
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
-		return errors.Errorf("source.downloader must be one of %v", validDownloaders)
+		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
 	}
 
 	if d.Packages.Manager != "" {
@@ -362,7 +363,7 @@ func (d *Definition) Validate() error {
 			"luet",
 		}
 		if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
-			return errors.Errorf("packages.manager must be one of %v", validManagers)
+			return fmt.Errorf("packages.manager must be one of %v", validManagers)
 		}
 
 		if d.Packages.CustomManager != nil {
@@ -409,7 +410,7 @@ func (d *Definition) Validate() error {
 
 	for _, file := range d.Files {
 		if !shared.StringInSlice(strings.TrimSpace(file.Generator), validGenerators) {
-			return errors.Errorf("files.*.generator must be one of %v", validGenerators)
+			return fmt.Errorf("files.*.generator must be one of %v", validGenerators)
 		}
 	}
 
@@ -429,7 +430,7 @@ func (d *Definition) Validate() error {
 	architectureMap := strings.TrimSpace(d.Mappings.ArchitectureMap)
 	if architectureMap != "" {
 		if !shared.StringInSlice(architectureMap, validMappings) {
-			return errors.Errorf("mappings.architecture_map must be one of %v", validMappings)
+			return fmt.Errorf("mappings.architecture_map must be one of %v", validMappings)
 		}
 	}
 
@@ -442,7 +443,7 @@ func (d *Definition) Validate() error {
 
 	for _, action := range d.Actions {
 		if !shared.StringInSlice(action.Trigger, validTriggers) {
-			return errors.Errorf("actions.*.trigger must be one of %v", validTriggers)
+			return fmt.Errorf("actions.*.trigger must be one of %v", validTriggers)
 		}
 	}
 
@@ -453,14 +454,14 @@ func (d *Definition) Validate() error {
 
 	for _, set := range d.Packages.Sets {
 		if !shared.StringInSlice(set.Action, validPackageActions) {
-			return errors.Errorf("packages.*.set.*.action must be one of %v", validPackageActions)
+			return fmt.Errorf("packages.*.set.*.action must be one of %v", validPackageActions)
 		}
 	}
 
 	// Mapped architecture (distro name)
 	archMapped, err := d.getMappedArchitecture()
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get mapped architecture")
+		return fmt.Errorf("Failed to get mapped architecture: %w", err)
 	}
 
 	d.Image.ArchitectureMapped = archMapped
@@ -468,19 +469,19 @@ func (d *Definition) Validate() error {
 	// Kernel architecture and personality
 	archID, err := lxdarch.ArchitectureId(d.Image.Architecture)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get architecture ID")
+		return fmt.Errorf("Failed to get architecture ID: %w", err)
 	}
 
 	archName, err := lxdarch.ArchitectureName(archID)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get architecture name")
+		return fmt.Errorf("Failed to get architecture name: %w", err)
 	}
 
 	d.Image.ArchitectureKernel = archName
 
 	archPersonality, err := lxdarch.ArchitecturePersonality(archID)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get architecture personality")
+		return fmt.Errorf("Failed to get architecture personality: %w", err)
 	}
 
 	d.Image.ArchitecturePersonality = archPersonality
@@ -536,7 +537,7 @@ func (d *Definition) getMappedArchitecture() (string, error) {
 		var err error
 		arch, err = GetArch(d.Mappings.ArchitectureMap, d.Image.Architecture)
 		if err != nil {
-			return "", errors.WithMessage(err, "Failed to translate the architecture name")
+			return "", fmt.Errorf("Failed to translate the architecture name: %w", err)
 		}
 	} else if len(d.Mappings.Architectures) > 0 {
 		// Translate the architecture using a user specified mapping

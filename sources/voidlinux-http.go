@@ -2,6 +2,7 @@ package sources
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -25,7 +25,7 @@ func (s *voidlinux) Run() error {
 	baseURL := s.definition.Source.URL
 	fname, err := s.getLatestBuild(baseURL, s.definition.Image.ArchitectureMapped, s.definition.Source.Variant)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get latest build")
+		return fmt.Errorf("Failed to get latest build: %w", err)
 	}
 
 	if fname == "" {
@@ -38,7 +38,7 @@ func (s *voidlinux) Run() error {
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse URL %q", tarball)
+		return fmt.Errorf("Failed to parse URL %q: %w", tarball, err)
 	}
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
@@ -54,19 +54,19 @@ func (s *voidlinux) Run() error {
 		fpath, err = shared.DownloadHash(s.definition.Image, tarball, digests, sha256.New())
 	}
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", tarball)
+		return fmt.Errorf("Failed to download %q: %w", tarball, err)
 	}
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
 		_, err = shared.DownloadHash(s.definition.Image, digests, "", nil)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to download %q", digests)
+			return fmt.Errorf("Failed to download %q: %w", digests, err)
 		}
 
 		_, err = shared.DownloadHash(s.definition.Image, signatures, "", nil)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to download %q", signatures)
+			return fmt.Errorf("Failed to download %q: %w", signatures, err)
 		}
 
 		valid, err := shared.VerifyFile(
@@ -75,7 +75,7 @@ func (s *voidlinux) Run() error {
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return errors.WithMessagef(err, `Failed to verify "sha256sum.txt"`)
+			return fmt.Errorf(`Failed to verify "sha256sum.txt": %w`, err)
 		}
 		if !valid {
 			return errors.New(`Invalid signature for "sha256sum.txt"`)
@@ -87,7 +87,7 @@ func (s *voidlinux) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, fname))
+		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, fname), err)
 	}
 
 	return nil
@@ -96,13 +96,13 @@ func (s *voidlinux) Run() error {
 func (s *voidlinux) getLatestBuild(baseURL, arch, variant string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to GET %q", baseURL)
+		return "", fmt.Errorf("Failed to GET %q: %w", baseURL, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.WithMessage(err, "Failed to read body")
+		return "", fmt.Errorf("Failed to read body: %w", err)
 	}
 
 	// Look for .tar.xz

@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 	"gopkg.in/antchfx/htmlquery.v1"
 
@@ -32,7 +32,7 @@ func (s *oraclelinux) Run() error {
 
 	updates, err := s.getUpdates(baseURL)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get updates")
+		return fmt.Errorf("Failed to get updates: %w", err)
 	}
 
 	var latestUpdate string
@@ -65,14 +65,14 @@ func (s *oraclelinux) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, source, "", nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", source)
+		return fmt.Errorf("Failed to download %q: %w", source, err)
 	}
 
 	s.logger.Infow("Unpacking ISO", "file", filepath.Join(fpath, fname))
 
 	err = s.unpackISO(latestUpdate[1:], filepath.Join(fpath, fname), s.rootfsDir)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to unpack ISO")
+		return fmt.Errorf("Failed to unpack ISO: %w", err)
 	}
 
 	return nil
@@ -87,14 +87,14 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	for _, dir := range []string{isoDir, squashfsDir, roRootDir} {
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create %q", dir)
+			return fmt.Errorf("Failed to create %q: %w", dir, err)
 		}
 	}
 
 	// this is easier than doing the whole loop thing ourselves
 	err := shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to mount %q", filePath)
+		return fmt.Errorf("Failed to mount %q: %w", filePath, err)
 	}
 	defer unix.Unmount(isoDir, 0)
 
@@ -106,7 +106,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 		// mount squashfs.img
 		err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to mount %q", squashfsImage)
+			return fmt.Errorf("Failed to mount %q: %w", squashfsImage, err)
 		}
 		defer unix.Unmount(squashfsDir, 0)
 
@@ -119,14 +119,14 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	// itself
 	err = os.RemoveAll(rootfsDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to remove %q", rootfsDir)
+		return fmt.Errorf("Failed to remove %q: %w", rootfsDir, err)
 	}
 
 	s.logger.Infow("Unpacking root image", "file", rootfsImage)
 
 	err = s.unpackRootfsImage(rootfsImage, tempRootDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", rootfsImage)
+		return fmt.Errorf("Failed to unpack %q: %w", rootfsImage, err)
 	}
 
 	// Determine rpm and yum packages
@@ -134,7 +134,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 
 	doc, err := htmlquery.LoadURL(fmt.Sprintf("%s/index.html", baseURL))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to load URL %q", fmt.Sprintf("%s/index.html", baseURL))
+		return fmt.Errorf("Failed to load URL %q: %w", fmt.Sprintf("%s/index.html", baseURL), err)
 	}
 
 	regexRpm := regexp.MustCompile(`^getPackage/rpm-\d+.+\.rpm$`)
@@ -169,13 +169,13 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 		for _, elem := range array {
 			f, err := os.Create(elem[0])
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to create file %q", elem[0])
+				return fmt.Errorf("Failed to create file %q: %w", elem[0], err)
 			}
 			defer f.Close()
 
 			_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, elem[0], elem[1], "", nil, f)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to download %q", elem[1])
+				return fmt.Errorf("Failed to download %q: %w", elem[1], err)
 			}
 			f.Close()
 		}
@@ -184,13 +184,13 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to setup chroot")
+		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
 
 	if !lxd.PathExists("/bin") && lxd.PathExists("/usr/bin") {
 		err = os.Symlink("/usr/bin", "/bin")
 		if err != nil {
-			return errors.WithMessage(err, "Failed to create /bin symlink")
+			return fmt.Errorf("Failed to create /bin symlink: %w", err)
 		}
 	}
 
@@ -261,14 +261,14 @@ EOF
 `, s.majorVersion, s.architecture))
 	if err != nil {
 		exitChroot()
-		return errors.WithMessage(err, "Failed to run script")
+		return fmt.Errorf("Failed to run script: %w", err)
 	}
 
 	exitChroot()
 
 	err = shared.RsyncLocal(tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
-		return errors.WithMessage(err, `Failed to run "rsync"`)
+		return fmt.Errorf(`Failed to run "rsync": %w`, err)
 	}
 
 	return nil
@@ -282,12 +282,12 @@ func (s *oraclelinux) getISO(URL string, architecture string) (string, error) {
 	} else if architecture == "aarch64" {
 		re = regexp.MustCompile(fmt.Sprintf("%s-boot-uek(-\\d{8})?.iso", architecture))
 	} else {
-		return "", errors.Errorf("Unsupported architecture %q", architecture)
+		return "", fmt.Errorf("Unsupported architecture %q", architecture)
 	}
 
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to load URL %q", URL)
+		return "", fmt.Errorf("Failed to load URL %q: %w", URL, err)
 	}
 
 	var isos []string
@@ -310,7 +310,7 @@ func (s *oraclelinux) getUpdates(URL string) ([]string, error) {
 
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "Failed to load URL %q", URL)
+		return nil, fmt.Errorf("Failed to load URL %q: %w", URL, err)
 	}
 
 	var updates []string

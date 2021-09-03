@@ -1,11 +1,11 @@
 package sources
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	dcapi "github.com/mudler/docker-companion/api"
-	"github.com/pkg/errors"
 )
 
 type docker struct {
@@ -16,7 +16,7 @@ type docker struct {
 func (s *docker) Run() error {
 	absRootfsDir, err := filepath.Abs(s.rootfsDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to get absolute path of %s", s.rootfsDir)
+		return fmt.Errorf("Failed to get absolute path of %s: %w", s.rootfsDir, err)
 	}
 
 	// If DOCKER_REGISTRY_BASE is not set it's used default https://registry-1.docker.io
@@ -27,7 +27,7 @@ func (s *docker) Run() error {
 		KeepLayers:       false,
 	})
 	if err != nil {
-		return errors.WithMessage(err, "Failed to download an unpack image")
+		return fmt.Errorf("Failed to download an unpack image: %w", err)
 	}
 
 	return nil

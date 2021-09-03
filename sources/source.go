@@ -1,7 +1,8 @@
 package sources
 
 import (
-	"github.com/pkg/errors"
+	"errors"
+
 	"go.uber.org/zap"
 
 	"github.com/lxc/distrobuilder/shared"

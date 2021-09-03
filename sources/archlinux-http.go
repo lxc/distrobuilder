@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/lxc/distrobuilder/shared"
-	"github.com/pkg/errors"
 
 	lxd "github.com/lxc/lxd/shared"
 	"gopkg.in/antchfx/htmlquery.v1"
@@ -33,7 +33,7 @@ func (s *archlinux) Run() error {
 		// Get latest release
 		release, err = s.getLatestRelease(s.definition.Source.URL, s.definition.Image.ArchitectureMapped)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to get latest release")
+			return fmt.Errorf("Failed to get latest release: %w", err)
 		}
 	}
 
@@ -53,7 +53,7 @@ func (s *archlinux) Run() error {
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse URL %q", tarball)
+		return fmt.Errorf("Failed to parse URL %q: %w", tarball, err)
 	}
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
@@ -63,7 +63,7 @@ func (s *archlinux) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", tarball)
+		return fmt.Errorf("Failed to download %q: %w", tarball, err)
 	}
 
 	// Force gpg checks when using http
@@ -76,10 +76,10 @@ func (s *archlinux) Run() error {
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to verify %q", fname)
+			return fmt.Errorf("Failed to verify %q: %w", fname, err)
 		}
 		if !valid {
-			return errors.Errorf("Invalid signature for %q", fname)
+			return fmt.Errorf("Invalid signature for %q", fname)
 		}
 	}
 
@@ -88,7 +88,7 @@ func (s *archlinux) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack file %q", filepath.Join(fpath, fname))
+		return fmt.Errorf("Failed to unpack file %q: %w", filepath.Join(fpath, fname), err)
 	}
 
 	// Move everything inside 'root.<architecture>' (which was is the tarball) to its
@@ -96,13 +96,13 @@ func (s *archlinux) Run() error {
 	files, err := filepath.Glob(fmt.Sprintf("%s/*", filepath.Join(s.rootfsDir,
 		"root."+s.definition.Image.ArchitectureMapped)))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get files")
+		return fmt.Errorf("Failed to get files: %w", err)
 	}
 
 	for _, file := range files {
 		err = os.Rename(file, filepath.Join(s.rootfsDir, path.Base(file)))
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to rename file %q", file)
+			return fmt.Errorf("Failed to rename file %q: %w", file, err)
 		}
 	}
 
@@ -110,7 +110,7 @@ func (s *archlinux) Run() error {
 
 	err = os.RemoveAll(path)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to remove %q", path)
+		return fmt.Errorf("Failed to remove %q: %w", path, err)
 	}
 
 	return nil
@@ -119,7 +119,7 @@ func (s *archlinux) Run() error {
 func (s *archlinux) getLatestRelease(URL string, arch string) (string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to load URL %q", URL)
+		return "", fmt.Errorf("Failed to load URL %q: %w", URL, err)
 	}
 
 	re := regexp.MustCompile(`^\d{4}\.\d{2}\.\d{2}/?$`)

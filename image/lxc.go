@@ -8,7 +8,6 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -48,13 +47,13 @@ func (l *LXCImage) AddTemplate(path string) error {
 	file, err := os.OpenFile(filepath.Join(metaDir, "templates"),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to open file %q", filepath.Join(metaDir, "templates"))
+		return fmt.Errorf("Failed to open file %q: %w", filepath.Join(metaDir, "templates"), err)
 	}
 	defer file.Close()
 
 	_, err = file.WriteString(fmt.Sprintf("%v\n", path))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to write to template file")
+		return fmt.Errorf("Failed to write to template file: %w", err)
 	}
 
 	return nil
@@ -64,17 +63,17 @@ func (l *LXCImage) AddTemplate(path string) error {
 func (l *LXCImage) Build(compression string) error {
 	err := l.createMetadata()
 	if err != nil {
-		return errors.WithMessage(err, "Failed to create metadata")
+		return fmt.Errorf("Failed to create metadata: %w", err)
 	}
 
 	err = l.packMetadata()
 	if err != nil {
-		return errors.WithMessage(err, "Failed to pack metadata")
+		return fmt.Errorf("Failed to pack metadata: %w", err)
 	}
 
 	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar"), compression, l.sourceDir, ".")
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to pack %q", filepath.Join(l.targetDir, "rootfs.tar"))
+		return fmt.Errorf("Failed to pack %q: %w", filepath.Join(l.targetDir, "rootfs.tar"), err)
 	}
 
 	return nil
@@ -105,22 +104,22 @@ func (l *LXCImage) createMetadata() error {
 			case "all":
 				err := l.writeConfig(i, filepath.Join(metaDir, "config"), c.Content)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to write config %q", filepath.Join(metaDir, "config"))
+					return fmt.Errorf("Failed to write config %q: %w", filepath.Join(metaDir, "config"), err)
 				}
 
 				err = l.writeConfig(i, filepath.Join(metaDir, "config-user"), c.Content)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to write config %q", filepath.Join(metaDir, "config-user"))
+					return fmt.Errorf("Failed to write config %q: %w", filepath.Join(metaDir, "config-user"), err)
 				}
 			case "system":
 				err := l.writeConfig(i, filepath.Join(metaDir, "config"), c.Content)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to write config %q", filepath.Join(metaDir, "config"))
+					return fmt.Errorf("Failed to write config %q: %w", filepath.Join(metaDir, "config"), err)
 				}
 			case "user":
 				err := l.writeConfig(i, filepath.Join(metaDir, "config-user"), c.Content)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to write config %q", filepath.Join(metaDir, "config-user"))
+					return fmt.Errorf("Failed to write config %q: %w", filepath.Join(metaDir, "config-user"), err)
 				}
 			}
 		}
@@ -129,14 +128,14 @@ func (l *LXCImage) createMetadata() error {
 	err := l.writeMetadata(filepath.Join(metaDir, "create-message"),
 		l.definition.Targets.LXC.CreateMessage, false)
 	if err != nil {
-		return errors.WithMessage(err, "Error writing 'create-message'")
+		return fmt.Errorf("Error writing 'create-message': %w", err)
 	}
 
 	err = l.writeMetadata(filepath.Join(metaDir, "expiry"),
 		fmt.Sprint(shared.GetExpiryDate(time.Now(), l.definition.Image.Expiry).Unix()),
 		false)
 	if err != nil {
-		return errors.WithMessage(err, "Error writing 'expiry'")
+		return fmt.Errorf("Error writing 'expiry': %w", err)
 	}
 
 	var excludesUser string
@@ -156,13 +155,13 @@ func (l *LXCImage) createMetadata() error {
 				return nil
 			})
 		if err != nil {
-			return errors.WithMessage(err, "Error while walking /dev")
+			return fmt.Errorf("Error while walking /dev: %w", err)
 		}
 	}
 
 	err = l.writeMetadata(filepath.Join(metaDir, "excludes-user"), excludesUser, false)
 	if err != nil {
-		return errors.WithMessage(err, "Error writing 'excludes-user'")
+		return fmt.Errorf("Error writing 'excludes-user': %w", err)
 	}
 
 	return nil
@@ -174,7 +173,7 @@ func (l *LXCImage) packMetadata() error {
 	// Get all config and config-user files
 	configs, err := filepath.Glob(filepath.Join(l.cacheDir, "metadata", "config*"))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to match file pattern")
+		return fmt.Errorf("Failed to match file pattern: %w", err)
 	}
 
 	for _, c := range configs {
@@ -188,7 +187,7 @@ func (l *LXCImage) packMetadata() error {
 	err = shared.Pack(filepath.Join(l.targetDir, "meta.tar"), "xz",
 		filepath.Join(l.cacheDir, "metadata"), files...)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to create metadata")
+		return fmt.Errorf("Failed to create metadata: %w", err)
 	}
 
 	return nil
@@ -201,19 +200,19 @@ func (l *LXCImage) writeMetadata(filename, content string, appendContent bool) e
 	if appendContent {
 		file, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to open file %q", filename)
+			return fmt.Errorf("Failed to open file %q: %w", filename, err)
 		}
 	} else {
 		file, err = os.Create(filename)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create file %q", filename)
+			return fmt.Errorf("Failed to create file %q: %w", filename, err)
 		}
 	}
 	defer file.Close()
 
 	out, err := shared.RenderTemplate(content, l.definition)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to render template")
+		return fmt.Errorf("Failed to render template: %w", err)
 	}
 
 	// Append final new line if missing
@@ -224,7 +223,7 @@ func (l *LXCImage) writeMetadata(filename, content string, appendContent bool) e
 	// Write the content
 	_, err = file.WriteString(out)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to write string")
+		return fmt.Errorf("Failed to write string: %w", err)
 	}
 
 	return nil
@@ -237,7 +236,7 @@ func (l *LXCImage) writeConfig(compatLevel uint, filename, content string) error
 	}
 	err := l.writeMetadata(filename, content, true)
 	if err != nil {
-		return errors.WithMessagef(err, "Error writing '%s'", filepath.Base(filename))
+		return fmt.Errorf("Error writing '%s': %w", filepath.Base(filename), err)
 	}
 
 	return nil

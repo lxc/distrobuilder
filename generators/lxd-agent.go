@@ -2,13 +2,12 @@ package generators
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -30,13 +29,13 @@ func (g *lxdAgent) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 
 	fi, err := os.Lstat(initFile)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to stat file %q", initFile)
+		return fmt.Errorf("Failed to stat file %q: %w", initFile, err)
 	}
 
 	if fi.Mode()&os.ModeSymlink != 0 {
 		linkTarget, err := os.Readlink(initFile)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to read link %q", initFile)
+			return fmt.Errorf("Failed to read link %q: %w", initFile, err)
 		}
 
 		if strings.Contains(linkTarget, "systemd") {
@@ -94,12 +93,12 @@ WantedBy=multi-user.target
 
 	err := ioutil.WriteFile(path, []byte(lxdAgentServiceUnit), 0644)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write file %q", path)
+		return fmt.Errorf("Failed to write file %q: %w", path, err)
 	}
 
 	err = os.Symlink(path, filepath.Join(g.sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create symlink %q", filepath.Join(g.sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"))
+		return fmt.Errorf("Failed to create symlink %q: %w", filepath.Join(g.sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"), err)
 	}
 
 	lxdAgentSetupScript := `#!/bin/sh
@@ -147,7 +146,7 @@ chown -R root:root "${PREFIX}"
 
 	err = ioutil.WriteFile(path, []byte(lxdAgentSetupScript), 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write file %q", path)
+		return fmt.Errorf("Failed to write file %q: %w", path, err)
 	}
 
 	udevPath := filepath.Join("/", "lib", "udev", "rules.d")
@@ -159,7 +158,7 @@ chown -R root:root "${PREFIX}"
 	lxdAgentRules := `ACTION=="add", SYMLINK=="virtio-ports/org.linuxcontainers.lxd", TAG+="systemd", ACTION=="add", RUN+="/bin/systemctl start lxd-agent.service"`
 	err = ioutil.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-lxd-agent.rules"), []byte(lxdAgentRules), 0400)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write file %q", filepath.Join(g.sourceDir, udevPath, "99-lxd-agent.rules"))
+		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, udevPath, "99-lxd-agent.rules"), err)
 	}
 
 	return nil
@@ -187,12 +186,12 @@ depend() {
 
 	err := ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent"), []byte(lxdAgentScript), 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write file %q", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent"))
+		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent"), err)
 	}
 
 	err = os.Symlink("/etc/init.d/lxd-agent", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent"))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create symlink %q", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent"))
+		return fmt.Errorf("Failed to create symlink %q: %w", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent"), err)
 	}
 
 	lxdConfigShareMountScript := `#!/sbin/openrc-run
@@ -213,12 +212,12 @@ start_pre() {
 
 	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write file %q", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-9p"))
+		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-9p"), err)
 	}
 
 	err = os.Symlink("/etc/init.d/lxd-agent-9p", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-9p"))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create symlink %q", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-9p"))
+		return fmt.Errorf("Failed to create symlink %q: %w", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-9p"), err)
 	}
 
 	lxdConfigShareMountVirtioFSScript := `#!/sbin/openrc-run
@@ -238,12 +237,12 @@ start_pre() {
 
 	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write file %q", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-virtiofs"))
+		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-virtiofs"), err)
 	}
 
 	err = os.Symlink("/etc/init.d/lxd-agent-virtiofs", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-virtiofs"))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create symlink %q", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-virtiofs"))
+		return fmt.Errorf("Failed to create symlink %q: %w", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-virtiofs"), err)
 	}
 
 	return nil
@@ -263,7 +262,7 @@ exec lxd-agent
 
 	err := ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent"), []byte(lxdAgentScript), 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write file %q", filepath.Join(g.sourceDir, "/etc/init/lxd-agent"))
+		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init/lxd-agent"), err)
 	}
 
 	lxdConfigShareMountScript := `Description "LXD agent 9p mount"
@@ -292,7 +291,7 @@ exec mount -t 9p config /run/lxd_config/drive -o access=0,trans=virtio
 
 	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write file %q", filepath.Join(g.sourceDir, "/etc/init/lxd-agent-9p"))
+		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init/lxd-agent-9p"), err)
 	}
 
 	lxdConfigShareMountVirtioFSScript := `Description "LXD agent virtio-fs mount"
@@ -316,7 +315,7 @@ exec mount -t virtiofs config /run/lxd_config/drive
 
 	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write file %q", filepath.Join(g.sourceDir, "/etc/init/lxd-agent-virtiofs"))
+		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init/lxd-agent-virtiofs"), err)
 	}
 
 	return nil
@@ -325,7 +324,7 @@ exec mount -t virtiofs config /run/lxd_config/drive
 func (g *lxdAgent) getInitSystemFromInittab() error {
 	f, err := os.Open(filepath.Join(g.sourceDir, "etc", "inittab"))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to open file %q", filepath.Join(g.sourceDir, "etc", "inittab"))
+		return fmt.Errorf("Failed to open file %q: %w", filepath.Join(g.sourceDir, "etc", "inittab"), err)
 	}
 	defer f.Close()
 

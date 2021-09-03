@@ -1,10 +1,9 @@
 package generators
 
 import (
+	"fmt"
 	"os"
 	"strconv"
-
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -14,12 +13,12 @@ func updateFileAccess(file *os.File, defFile shared.DefinitionFile) error {
 	if defFile.Mode != "" {
 		mode, err := strconv.ParseUint(defFile.Mode, 8, 64)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to parse file mode")
+			return fmt.Errorf("Failed to parse file mode: %w", err)
 		}
 
 		err = file.Chmod(os.FileMode(mode))
 		if err != nil {
-			return errors.WithMessage(err, "Failed to change file mode")
+			return fmt.Errorf("Failed to change file mode: %w", err)
 		}
 	}
 
@@ -27,12 +26,12 @@ func updateFileAccess(file *os.File, defFile shared.DefinitionFile) error {
 	if defFile.GID != "" {
 		gid, err := strconv.Atoi(defFile.GID)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to parse GID")
+			return fmt.Errorf("Failed to parse GID: %w", err)
 		}
 
 		err = file.Chown(-1, gid)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to change GID")
+			return fmt.Errorf("Failed to change GID: %w", err)
 		}
 	}
 
@@ -40,12 +39,12 @@ func updateFileAccess(file *os.File, defFile shared.DefinitionFile) error {
 	if defFile.UID != "" {
 		uid, err := strconv.Atoi(defFile.UID)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to parse UID")
+			return fmt.Errorf("Failed to parse UID: %w", err)
 		}
 
 		err = file.Chown(uid, -1)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to change UID")
+			return fmt.Errorf("Failed to change UID: %w", err)
 		}
 	}
 

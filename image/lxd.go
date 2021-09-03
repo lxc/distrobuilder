@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/lxc/lxd/shared/api"
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -41,23 +40,23 @@ func NewLXDImage(sourceDir, targetDir, cacheDir string,
 func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 	err := l.createMetadata()
 	if err != nil {
-		return errors.WithMessage(err, "Failed to create metadata")
+		return fmt.Errorf("Failed to create metadata: %w", err)
 	}
 
 	file, err := os.Create(filepath.Join(l.cacheDir, "metadata.yaml"))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to create metadata.yaml")
+		return fmt.Errorf("Failed to create metadata.yaml: %w", err)
 	}
 	defer file.Close()
 
 	data, err := yaml.Marshal(l.Metadata)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to marshal yaml")
+		return fmt.Errorf("Failed to marshal yaml: %w", err)
 	}
 
 	_, err = file.Write(data)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to write metadata")
+		return fmt.Errorf("Failed to write metadata: %w", err)
 	}
 
 	paths := []string{"metadata.yaml"}
@@ -86,7 +85,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 			rawImage,
 			qcowImage)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create qcow2 image %q", qcowImage)
+			return fmt.Errorf("Failed to create qcow2 image %q: %w", qcowImage, err)
 		}
 		defer func() {
 			os.RemoveAll(rawImage)
@@ -100,7 +99,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 			// Rename image to rootfs.img
 			err = os.Rename(qcowImage, filepath.Join(filepath.Dir(qcowImage), "rootfs.img"))
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to rename image %q -> %q", qcowImage, filepath.Join(filepath.Dir(qcowImage), "rootfs.img"))
+				return fmt.Errorf("Failed to rename image %q -> %q: %w", qcowImage, filepath.Join(filepath.Dir(qcowImage), "rootfs.img"), err)
 			}
 
 			err = shared.Pack(targetTarball, "", l.cacheDir, "rootfs.img")
@@ -111,7 +110,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 				"", l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
 		}
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to pack tarball %q", targetTarball)
+			return fmt.Errorf("Failed to pack tarball %q: %w", targetTarball, err)
 		}
 		defer func() {
 			if vm {
@@ -122,7 +121,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 		// Add the metadata to the tarball which is located in the cache directory
 		err = shared.PackUpdate(targetTarball, compression, l.cacheDir, paths...)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to add metadata to tarball %q", targetTarball)
+			return fmt.Errorf("Failed to add metadata to tarball %q: %w", targetTarball, err)
 		}
 	} else {
 		if vm {
@@ -134,14 +133,14 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) error {
 				compression, "-b", "1M", "-no-progress", "-no-recovery")
 		}
 		if err != nil {
-			return errors.WithMessage(err, "Failed to create squashfs or copy image")
+			return fmt.Errorf("Failed to create squashfs or copy image: %w", err)
 		}
 
 		// Create metadata tarball.
 		err = shared.Pack(filepath.Join(l.targetDir, "lxd.tar"), compression,
 			l.cacheDir, paths...)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to create metadata tarball")
+			return fmt.Errorf("Failed to create metadata tarball: %w", err)
 		}
 	}
 
@@ -162,13 +161,13 @@ func (l *LXDImage) createMetadata() error {
 	l.Metadata.Properties["description"], err = shared.RenderTemplate(
 		l.definition.Image.Description, l.definition)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to render template")
+		return fmt.Errorf("Failed to render template: %w", err)
 	}
 
 	l.Metadata.Properties["name"], err = shared.RenderTemplate(
 		l.definition.Image.Name, l.definition)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to render template")
+		return fmt.Errorf("Failed to render template: %w", err)
 	}
 
 	l.Metadata.ExpiryDate = shared.GetExpiryDate(time.Now(),

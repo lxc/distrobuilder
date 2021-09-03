@@ -10,7 +10,6 @@ import (
 	"github.com/flosch/pongo2"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -35,14 +34,14 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 			if lxd.StringInSlice(info.Name(), []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"}) {
 				err := os.Remove(path)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to remove file %q", path)
+					return fmt.Errorf("Failed to remove file %q: %w", path, err)
 				}
 			}
 
 			return nil
 		})
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to walk file tree %q", fullPath)
+			return fmt.Errorf("Failed to walk file tree %q: %w", fullPath, err)
 		}
 	}
 
@@ -65,7 +64,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 			if re.MatchString(info.Name()) {
 				err := os.Remove(path)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to remove file %q", path)
+					return fmt.Errorf("Failed to remove file %q: %w", path, err)
 				}
 			}
 
@@ -79,7 +78,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 	if !lxd.PathExists(path) {
 		err := os.MkdirAll(path, 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", path)
+			return fmt.Errorf("Failed to create directory %q: %w", path, err)
 		}
 	}
 
@@ -88,7 +87,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 
 	f, err := os.Create(path)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create file %q", path)
+		return fmt.Errorf("Failed to create file %q: %w", path, err)
 	}
 	defer f.Close()
 
@@ -101,7 +100,7 @@ func (g *cloudInit) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLX
 
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", templateDir)
+		return fmt.Errorf("Failed to create directory %q: %w", templateDir, err)
 	}
 
 	var content string
@@ -133,7 +132,7 @@ config:
         control: auto{% else %}{{ config_get("user.network-config", "") }}{% endif %}
 `
 	default:
-		return errors.Errorf("Unknown cloud-init configuration: %s", g.defFile.Name)
+		return fmt.Errorf("Unknown cloud-init configuration: %s", g.defFile.Name)
 	}
 
 	template := fmt.Sprintf("cloud-init-%s.tpl", g.defFile.Name)
@@ -141,7 +140,7 @@ config:
 
 	file, err := os.Create(path)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create file %q", path)
+		return fmt.Errorf("Failed to create file %q: %w", path, err)
 	}
 
 	defer file.Close()
@@ -158,18 +157,18 @@ config:
 	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(content)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to parse template")
+			return fmt.Errorf("Failed to parse template: %w", err)
 		}
 
 		content, err = tpl.Execute(pongo2.Context{"lxd": target})
 		if err != nil {
-			return errors.WithMessage(err, "Failed to execute template")
+			return fmt.Errorf("Failed to execute template: %w", err)
 		}
 	}
 
 	_, err = file.WriteString(content)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write to content to %s template", g.defFile.Name)
+		return fmt.Errorf("Failed to write to content to %s template: %w", g.defFile.Name, err)
 	}
 
 	if len(g.defFile.Template.Properties) > 0 {

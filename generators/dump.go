@@ -1,12 +1,12 @@
 package generators
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/flosch/pongo2"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -23,24 +23,24 @@ func (g *dump) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) er
 	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(g.defFile.Content)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to parse template")
+			return fmt.Errorf("Failed to parse template: %w", err)
 		}
 
 		content, err = tpl.Execute(pongo2.Context{"lxc": target})
 		if err != nil {
-			return errors.WithMessage(err, "Failed to execute template")
+			return fmt.Errorf("Failed to execute template: %w", err)
 		}
 	}
 
 	err := g.run(content)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to dump content")
+		return fmt.Errorf("Failed to dump content: %w", err)
 	}
 
 	if g.defFile.Templated {
 		err = img.AddTemplate(g.defFile.Path)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to add template")
+			return fmt.Errorf("Failed to add template: %w", err)
 		}
 	}
 
@@ -54,12 +54,12 @@ func (g *dump) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) er
 	if g.defFile.Pongo {
 		tpl, err := pongo2.FromString(g.defFile.Content)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to parse template")
+			return fmt.Errorf("Failed to parse template: %w", err)
 		}
 
 		content, err = tpl.Execute(pongo2.Context{"lxd": target})
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to execute template")
+			return fmt.Errorf("Failed to execute template: %w", err)
 		}
 	}
 
@@ -77,13 +77,13 @@ func (g *dump) run(content string) error {
 	// Create any missing directory
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", filepath.Dir(path))
+		return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(path), err)
 	}
 
 	// Open the target file (create if needed)
 	file, err := os.Create(path)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create file %q", path)
+		return fmt.Errorf("Failed to create file %q: %w", path, err)
 	}
 	defer file.Close()
 
@@ -95,12 +95,12 @@ func (g *dump) run(content string) error {
 	// Write the content
 	_, err = file.WriteString(content)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to write string to file %q", path)
+		return fmt.Errorf("Failed to write string to file %q: %w", path, err)
 	}
 
 	err = updateFileAccess(file, g.defFile)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to update file access of %q", path)
+		return fmt.Errorf("Failed to update file access of %q: %w", path, err)
 	}
 
 	return nil
