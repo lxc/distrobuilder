@@ -2,6 +2,7 @@ package sources
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -38,7 +38,7 @@ func (s *alpineLinux) Run() error {
 	} else if len(releaseField) == 3 {
 		releaseShort = fmt.Sprintf("v%s.%s", releaseField[0], releaseField[1])
 	} else {
-		return errors.Errorf("Bad Alpine release: %s", releaseFull)
+		return fmt.Errorf("Bad Alpine release: %s", releaseFull)
 	}
 
 	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", releaseFull, s.definition.Image.ArchitectureMapped)
@@ -47,7 +47,7 @@ func (s *alpineLinux) Run() error {
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse URL %q", tarball)
+		return fmt.Errorf("Failed to parse URL %q: %w", tarball, err)
 	}
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
@@ -63,7 +63,7 @@ func (s *alpineLinux) Run() error {
 		fpath, err = shared.DownloadHash(s.definition.Image, tarball, tarball+".sha256", sha256.New())
 	}
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", tarball)
+		return fmt.Errorf("Failed to download %q: %w", tarball, err)
 	}
 
 	// Force gpg checks when using http
@@ -75,10 +75,10 @@ func (s *alpineLinux) Run() error {
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to download %q", tarball+".asc")
+			return fmt.Errorf("Failed to download %q: %w", tarball+".asc", err)
 		}
 		if !valid {
-			return errors.Errorf("Invalid signature for %q", filepath.Join(fpath, fname))
+			return fmt.Errorf("Invalid signature for %q", filepath.Join(fpath, fname))
 		}
 	}
 
@@ -87,7 +87,7 @@ func (s *alpineLinux) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", fname)
+		return fmt.Errorf("Failed to unpack %q: %w", fname, err)
 	}
 
 	// Handle edge builds
@@ -95,19 +95,19 @@ func (s *alpineLinux) Run() error {
 		// Upgrade to edge
 		exitChroot, err := shared.SetupChroot(s.rootfsDir, s.definition.Environment, nil)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to set up chroot")
+			return fmt.Errorf("Failed to set up chroot: %w", err)
 		}
 
 		err = shared.RunCommand("sed", "-i", "-e", "s/v[[:digit:]]\\.[[:digit:]]\\+/edge/g", "/etc/apk/repositories")
 		if err != nil {
 			exitChroot()
-			return errors.WithMessage(err, "Failed to edit apk repositories")
+			return fmt.Errorf("Failed to edit apk repositories: %w", err)
 		}
 
 		err = shared.RunCommand("apk", "upgrade", "--update-cache", "--available")
 		if err != nil {
 			exitChroot()
-			return errors.WithMessage(err, "Failed to upgrade edge build")
+			return fmt.Errorf("Failed to upgrade edge build: %w", err)
 		}
 
 		exitChroot()
@@ -116,7 +116,7 @@ func (s *alpineLinux) Run() error {
 	// Fix bad permissions in Alpine tarballs
 	err = os.Chmod(s.rootfsDir, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to chmod %q", s.rootfsDir)
+		return fmt.Errorf("Failed to chmod %q: %w", s.rootfsDir, err)
 	}
 
 	return nil

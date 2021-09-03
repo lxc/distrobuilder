@@ -2,6 +2,7 @@ package sources
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,8 +11,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -42,7 +41,7 @@ func (s *rockylinux) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse URL %q", baseURL)
+		return fmt.Errorf("Failed to parse URL %q: %w", baseURL, err)
 	}
 
 	checksumFile := ""
@@ -57,21 +56,21 @@ func (s *rockylinux) Run() error {
 
 			_, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to download %q", baseURL+checksumFile)
+				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
 			}
 		}
 	}
 
 	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", baseURL+s.fname)
+		return fmt.Errorf("Failed to download %q: %w", baseURL+s.fname, err)
 	}
 
 	s.logger.Infow("Unpacking ISO", "file", filepath.Join(fpath, s.fname))
 
 	err = s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to unpack ISO")
+		return fmt.Errorf("Failed to unpack ISO: %w", err)
 	}
 
 	return nil
@@ -158,7 +157,7 @@ yum ${yum_args} --installroot=/rootfs -y --releasever="${RELEASE}" --skip-broken
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to run ISO script")
+		return fmt.Errorf("Failed to run ISO script: %w", err)
 	}
 
 	return nil
@@ -169,13 +168,13 @@ func (s *rockylinux) getRelease(URL, release, variant, arch string) (string, err
 
 	resp, err := http.Get(u)
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to GET %q", u)
+		return "", fmt.Errorf("Failed to GET %q: %w", u, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.WithMessage(err, "Failed to read body")
+		return "", fmt.Errorf("Failed to read body: %w", err)
 	}
 
 	re := s.getRegexes(arch, variant, release)

@@ -1,10 +1,10 @@
 package managers
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/lxc/distrobuilder/shared"
-	"github.com/pkg/errors"
 )
 
 type apk struct {
@@ -46,13 +46,13 @@ func (m *apk) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 
 	f, err := os.OpenFile(repoFile, os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to open %q", repoFile)
+		return fmt.Errorf("Failed to open %q: %w", repoFile, err)
 	}
 	defer f.Close()
 
 	_, err = f.WriteString(repoAction.URL + "\n")
 	if err != nil {
-		return errors.WithMessage(err, "Failed to write string to file")
+		return fmt.Errorf("Failed to write string to file: %w", err)
 	}
 
 	return nil

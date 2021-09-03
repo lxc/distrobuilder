@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"path"
@@ -9,7 +10,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -25,12 +25,12 @@ func (s *plamolinux) Run() error {
 
 	release, err := strconv.Atoi(releaseStr)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to convert %q", releaseStr)
+		return fmt.Errorf("Failed to convert %q: %w", releaseStr, err)
 	}
 
 	u, err := url.Parse(s.definition.Source.URL)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse %q", s.definition.Source.URL)
+		return fmt.Errorf("Failed to parse %q: %w", s.definition.Source.URL, err)
 	}
 
 	mirrorPath := path.Join(u.Path, fmt.Sprintf("Plamo-%s.x", releaseStr),
@@ -51,7 +51,7 @@ func (s *plamolinux) Run() error {
 
 		pkgDir, err = s.downloadFiles(s.definition.Image, u.String(), ignoredPkgs)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to download packages")
+			return fmt.Errorf("Failed to download packages: %w", err)
 		}
 	}
 
@@ -66,7 +66,7 @@ func (s *plamolinux) Run() error {
 
 	matches, err := filepath.Glob(filepath.Join(pkgDir, fmt.Sprintf("%s-*.t*z*", pkgTool)))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to match pattern")
+		return fmt.Errorf("Failed to match pattern: %w", err)
 	}
 
 	if len(matches) == 0 {
@@ -77,12 +77,12 @@ func (s *plamolinux) Run() error {
 
 	err = shared.RunCommand("tar", "-pxf", matches[0], "-C", pkgDir, "sbin/")
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", matches[0])
+		return fmt.Errorf("Failed to unpack %q: %w", matches[0], err)
 	}
 
 	rootfsDirAbs, err := filepath.Abs(s.rootfsDir)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get absolute path")
+		return fmt.Errorf("Failed to get absolute path: %w", err)
 	}
 
 	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
@@ -127,7 +127,7 @@ for pkg in $(ls -cr ${PKG_DIR}/*.t*z*); do
 done
 `, pkgDir, rootfsDirAbs))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to run script")
+		return fmt.Errorf("Failed to run script: %w", err)
 	}
 
 	return nil
@@ -136,7 +136,7 @@ done
 func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignoredPkgs []string) (string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to load URL %q", URL)
+		return "", fmt.Errorf("Failed to load URL %q: %w", URL, err)
 	}
 
 	if doc == nil {
@@ -159,13 +159,13 @@ func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignor
 			// package
 			dir, err = shared.DownloadHash(def, fmt.Sprintf("%s/%s", URL, target), "", nil)
 			if err != nil {
-				return "", errors.WithMessagef(err, "Failed to download %q", fmt.Sprintf("%s/%s", URL, target))
+				return "", fmt.Errorf("Failed to download %q: %w", fmt.Sprintf("%s/%s", URL, target), err)
 			}
 		} else if strings.HasSuffix(target, ".txz/") || strings.HasSuffix(target, ".tzst/") {
 			// directory
 			u, err := url.Parse(URL)
 			if err != nil {
-				return "", errors.WithMessagef(err, "Failed to parse %q", URL)
+				return "", fmt.Errorf("Failed to parse %q: %w", URL, err)
 			}
 
 			u.Path = path.Join(u.Path, target)

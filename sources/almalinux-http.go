@@ -2,6 +2,7 @@ package sources
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,8 +12,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -36,7 +35,7 @@ func (s *almalinux) Run() error {
 	s.fname, err = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
 		s.definition.Source.Variant, s.definition.Image.ArchitectureMapped)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get release")
+		return fmt.Errorf("Failed to get release: %w", err)
 	}
 
 	fpath := shared.GetTargetDir(s.definition.Image)
@@ -56,7 +55,7 @@ func (s *almalinux) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse URL %q", baseURL)
+		return fmt.Errorf("Failed to parse URL %q: %w", baseURL, err)
 	}
 
 	checksumFile := ""
@@ -79,7 +78,7 @@ func (s *almalinux) Run() error {
 
 			fpath, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to download %q", baseURL+checksumFile)
+				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
 			}
 
 			// Only verify file if possible.
@@ -87,10 +86,10 @@ func (s *almalinux) Run() error {
 				valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
 					s.definition.Source.Keys, s.definition.Source.Keyserver)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to verify %q", checksumFile)
+					return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
 				}
 				if !valid {
-					return errors.Errorf("Invalid signature for %q", filepath.Join(fpath, checksumFile))
+					return fmt.Errorf("Invalid signature for %q", filepath.Join(fpath, checksumFile))
 				}
 			}
 		}
@@ -98,7 +97,7 @@ func (s *almalinux) Run() error {
 
 	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", baseURL+s.fname)
+		return fmt.Errorf("Failed to download %q: %w", baseURL+s.fname, err)
 	}
 
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
@@ -125,7 +124,7 @@ func (s *almalinux) rawRunner() error {
 	rm -rf /rootfs/var/cache/yum
 	`, s.majorVersion))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to run script")
+		return fmt.Errorf("Failed to run script: %w", err)
 	}
 
 	return nil
@@ -252,7 +251,7 @@ yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install $
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to run script")
+		return fmt.Errorf("Failed to run script: %w", err)
 	}
 
 	return nil
@@ -263,13 +262,13 @@ func (s *almalinux) getRelease(URL, release, variant, arch string) (string, erro
 
 	resp, err := http.Get(fullURL)
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to GET %q", fullURL)
+		return "", fmt.Errorf("Failed to GET %q: %w", fullURL, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.WithMessage(err, "Failed to read body")
+		return "", fmt.Errorf("Failed to read body: %w", err)
 	}
 
 	re := s.getRegexes(arch, variant, release)

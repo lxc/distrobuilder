@@ -1,7 +1,7 @@
 package managers
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )

@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/lxc/distrobuilder/generators"
@@ -28,7 +29,7 @@ func (c *cmdBuildDir) command() *cobra.Command {
 
 				generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, c.global.targetDir, file)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to load generator %q", file.Generator)
+					return fmt.Errorf("Failed to load generator %q: %w", file.Generator, err)
 				}
 
 				c.global.logger.Infow("Running generator", "generator", file.Generator)

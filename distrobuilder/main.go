@@ -54,6 +54,7 @@ import "C"
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -64,7 +65,6 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
@@ -242,7 +242,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		// Create and set target directory if provided
 		err := os.MkdirAll(args[1], 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", args[1])
+			return fmt.Errorf("Failed to create directory %q: %w", args[1], err)
 		}
 		c.targetDir = args[1]
 	} else {
@@ -250,7 +250,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		var err error
 		c.targetDir, err = os.Getwd()
 		if err != nil {
-			return errors.WithMessage(err, "Failed to get working directory")
+			return fmt.Errorf("Failed to get working directory: %w", err)
 		}
 	}
 	if isRunningBuildDir {
@@ -262,20 +262,20 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// Create source directory if it doesn't exist
 	err := os.MkdirAll(c.sourceDir, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", c.sourceDir)
+		return fmt.Errorf("Failed to create directory %q: %w", c.sourceDir, err)
 	}
 
 	// Get the image definition
 	c.definition, err = getDefinition(args[0], c.flagOptions)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get definition")
+		return fmt.Errorf("Failed to get definition: %w", err)
 	}
 
 	// Create cache directory if we also plan on creating LXC or LXD images
 	if !isRunningBuildDir {
 		err = os.MkdirAll(c.flagCacheDir, 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", c.flagCacheDir)
+			return fmt.Errorf("Failed to create directory %q: %w", c.flagCacheDir, err)
 		}
 	}
 
@@ -283,33 +283,33 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	for i, key := range c.definition.Source.Keys {
 		c.definition.Source.Keys[i], err = shared.RenderTemplate(key, c.definition)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to render source keys")
+			return fmt.Errorf("Failed to render source keys: %w", err)
 		}
 	}
 
 	// Run template on source URL
 	c.definition.Source.URL, err = shared.RenderTemplate(c.definition.Source.URL, c.definition)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to render source URL")
+		return fmt.Errorf("Failed to render source URL: %w", err)
 	}
 
 	// Load and run downloader
 	downloader, err := sources.Load(c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir, c.flagCacheDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to load downloader %q", c.definition.Source.Downloader)
+		return fmt.Errorf("Failed to load downloader %q: %w", c.definition.Source.Downloader, err)
 	}
 
 	c.logger.Info("Downloading source")
 
 	err = downloader.Run()
 	if err != nil {
-		return errors.WithMessage(err, "Error while downloading source")
+		return fmt.Errorf("Error while downloading source: %w", err)
 	}
 
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(c.sourceDir, c.definition.Environment, nil)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to setup chroot")
+		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
 	// Unmount everything and exit the chroot
 	defer exitChroot()
@@ -333,7 +333,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		// running build-lxd.
 		ok, err := cmd.Flags().GetBool("vm")
 		if err != nil {
-			return errors.WithMessagef(err, `Failed to get bool value of "vm"`)
+			return fmt.Errorf(`Failed to get bool value of "vm": %w`, err)
 		}
 
 		if ok {
@@ -346,14 +346,14 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	manager, err := managers.Load(c.definition.Packages.Manager, c.logger, *c.definition)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to load manager %q", c.definition.Packages.Manager)
+		return fmt.Errorf("Failed to load manager %q: %w", c.definition.Packages.Manager, err)
 	}
 
 	c.logger.Info("Managing repositories")
 
 	err = manager.ManageRepositories(imageTargets)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to manage repositories")
+		return fmt.Errorf("Failed to manage repositories: %w", err)
 	}
 
 	c.logger.Infow("Running hooks", "trigger", "post-unpack")
@@ -362,7 +362,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	for _, hook := range c.definition.GetRunnableActions("post-unpack", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to run post-unpack")
+			return fmt.Errorf("Failed to run post-unpack: %w", err)
 		}
 	}
 
@@ -371,7 +371,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// Install/remove/update packages
 	err = manager.ManagePackages(imageTargets)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to manage packages")
+		return fmt.Errorf("Failed to manage packages: %w", err)
 	}
 
 	c.logger.Infow("Running hooks", "trigger", "post-packages")
@@ -380,7 +380,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	for _, hook := range c.definition.GetRunnableActions("post-packages", imageTargets) {
 		err := shared.RunScript(hook.Action)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to run post-packages")
+			return fmt.Errorf("Failed to run post-packages: %w", err)
 		}
 	}
 
@@ -400,7 +400,7 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	// resolve path
 	c.sourceDir, err = filepath.Abs(args[1])
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to get absolute path of %q", args[1])
+		return fmt.Errorf("Failed to get absolute path of %q: %w", args[1], err)
 	}
 
 	c.targetDir = "."
@@ -411,7 +411,7 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	// Get the image definition
 	c.definition, err = getDefinition(args[0], c.flagOptions)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get definition")
+		return fmt.Errorf("Failed to get definition: %w", err)
 	}
 
 	return nil
@@ -458,7 +458,7 @@ func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
 		// Use rsync if overlay doesn't work
 		err = shared.RsyncLocal(c.sourceDir+"/", overlayDir)
 		if err != nil {
-			return "", nil, errors.WithMessage(err, "Failed to copy image content")
+			return "", nil, fmt.Errorf("Failed to copy image content: %w", err)
 		}
 	} else {
 		cleanup, overlayDir, err = getOverlay(c.logger, c.flagCacheDir, c.sourceDir)
@@ -470,7 +470,7 @@ func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
 			// Use rsync if overlay doesn't work
 			err = shared.RsyncLocal(c.sourceDir+"/", overlayDir)
 			if err != nil {
-				return "", nil, errors.WithMessage(err, "Failed to copy image content")
+				return "", nil, fmt.Errorf("Failed to copy image content: %w", err)
 			}
 		}
 	}
@@ -515,7 +515,7 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 
 		err := def.SetValue(parts[0], parts[1])
 		if err != nil {
-			return nil, errors.WithMessagef(err, "Failed to set option %s", o)
+			return nil, fmt.Errorf("Failed to set option %s: %w", o, err)
 		}
 	}
 

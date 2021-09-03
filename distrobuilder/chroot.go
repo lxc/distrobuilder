@@ -1,11 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"golang.org/x/sys/unix"
 )
@@ -22,9 +22,9 @@ func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), 
 
 		switch stat.Type {
 		case unix.XFS_SUPER_MAGIC:
-			return nil, "", errors.Errorf("overlay not supported on xfs")
+			return nil, "", errors.New("overlay not supported on xfs")
 		case 0x2fc12fc1:
-			return nil, "", errors.Errorf("overlay not supported on zfs")
+			return nil, "", errors.New("overlay not supported on zfs")
 		}
 	}
 
@@ -34,24 +34,24 @@ func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), 
 
 	err := os.Mkdir(upperDir, 0755)
 	if err != nil {
-		return nil, "", errors.WithMessagef(err, "Failed to create directory %q", upperDir)
+		return nil, "", fmt.Errorf("Failed to create directory %q: %w", upperDir, err)
 	}
 
 	err = os.Mkdir(overlayDir, 0755)
 	if err != nil {
-		return nil, "", errors.WithMessagef(err, "Failed to create directory %q", overlayDir)
+		return nil, "", fmt.Errorf("Failed to create directory %q: %w", overlayDir, err)
 	}
 
 	err = os.Mkdir(workDir, 0755)
 	if err != nil {
-		return nil, "", errors.WithMessagef(err, "Failed to create directory %q", workDir)
+		return nil, "", fmt.Errorf("Failed to create directory %q: %w", workDir, err)
 	}
 
 	opts := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", sourceDir, upperDir, workDir)
 
 	err = unix.Mount("overlay", overlayDir, "overlay", 0, opts)
 	if err != nil {
-		return nil, "", errors.WithMessage(err, "Failed to mount overlay")
+		return nil, "", fmt.Errorf("Failed to mount overlay: %w", err)
 	}
 
 	cleanup := func() {

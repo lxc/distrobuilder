@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/flosch/pongo2"
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
 
@@ -70,7 +70,7 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
-				return errors.WithMessage(err, "Failed to get overlay directory")
+				return fmt.Errorf("Failed to get overlay directory: %w", err)
 			}
 
 			if cleanup != nil {
@@ -100,7 +100,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		detectedVersion := detectWindowsVersion(filepath.Base(args[0]))
 
 		if detectedVersion == "" {
-			return errors.Errorf("Failed to detect Windows version. Please provide the version using the --windows-version flag")
+			return errors.New("Failed to detect Windows version. Please provide the version using the --windows-version flag")
 		}
 
 		c.flagWindowsVersion = detectedVersion
@@ -108,7 +108,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		supportedVersions := []string{"w11", "w10", "2k19", "2k12", "2k16", "2k22"}
 
 		if !lxd.StringInSlice(c.flagWindowsVersion, supportedVersions) {
-			return errors.Errorf("Version must be one of %v", supportedVersions)
+			return fmt.Errorf("Version must be one of %v", supportedVersions)
 		}
 	}
 
@@ -125,7 +125,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	// Check dependencies
 	err := c.checkDependencies()
 	if err != nil {
-		return errors.WithMessage(err, "Failed to check dependencies")
+		return fmt.Errorf("Failed to check dependencies: %w", err)
 	}
 
 	// if an error is returned, disable the usage message
@@ -134,14 +134,14 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	// Clean up cache directory before doing anything
 	err = os.RemoveAll(c.global.flagCacheDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to remove directory %q", c.global.flagCacheDir)
+		return fmt.Errorf("Failed to remove directory %q: %w", c.global.flagCacheDir, err)
 	}
 
 	success := false
 
 	err = os.Mkdir(c.global.flagCacheDir, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", c.global.flagCacheDir)
+		return fmt.Errorf("Failed to create directory %q: %w", c.global.flagCacheDir, err)
 	}
 	defer func() {
 		if c.global.flagCleanup && !success {
@@ -154,7 +154,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	// Create source path
 	err = os.MkdirAll(c.global.sourceDir, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", c.global.sourceDir)
+		return fmt.Errorf("Failed to create directory %q: %w", c.global.sourceDir, err)
 	}
 
 	logger.Info("Mounting Windows ISO")
@@ -162,7 +162,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	// Mount ISO
 	_, err = lxd.RunCommand("mount", "-o", "loop", args[0], c.global.sourceDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to mount %q at %q", args[0], c.global.sourceDir)
+		return fmt.Errorf("Failed to mount %q at %q: %w", args[0], c.global.sourceDir, err)
 	}
 
 	success = true
@@ -184,12 +184,12 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		if !lxd.PathExists(virtioISOPath) {
 			err := os.MkdirAll(filepath.Dir(virtioISOPath), 0755)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to create directory %q", filepath.Dir(virtioISOPath))
+				return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(virtioISOPath), err)
 			}
 
 			f, err := os.Create(virtioISOPath)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to create file %q", virtioISOPath)
+				return fmt.Errorf("Failed to create file %q: %w", virtioISOPath, err)
 			}
 			defer f.Close()
 
@@ -199,7 +199,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 			_, err = lxd.DownloadFileHash(&client, "", nil, nil, "virtio-win.iso", virtioURL, "", nil, f)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to download %q", virtioURL)
+				return fmt.Errorf("Failed to download %q: %w", virtioURL, err)
 			}
 
 			f.Close()
@@ -209,7 +209,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	if !lxd.PathExists(driverPath) {
 		err := os.MkdirAll(driverPath, 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", driverPath)
+			return fmt.Errorf("Failed to create directory %q: %w", driverPath, err)
 		}
 	}
 
@@ -218,7 +218,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	// Mount driver ISO
 	_, err := lxd.RunCommand("mount", "-o", "loop", virtioISOPath, driverPath)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to mount %q at %q", virtioISOPath, driverPath)
+		return fmt.Errorf("Failed to mount %q at %q: %w", virtioISOPath, driverPath, err)
 	}
 	defer unix.Unmount(driverPath, 0)
 
@@ -235,7 +235,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 	entries, err = ioutil.ReadDir(sourcesDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to read directory %q", sourcesDir)
+		return fmt.Errorf("Failed to read directory %q: %w", sourcesDir, err)
 	}
 
 	var bootWim string
@@ -259,18 +259,18 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	}
 
 	if bootWim == "" {
-		return errors.Errorf("Unable to find boot.wim")
+		return errors.New("Unable to find boot.wim")
 	}
 
 	if installWim == "" {
-		return errors.Errorf("Unable to find install.wim")
+		return errors.New("Unable to find install.wim")
 	}
 
 	var buf bytes.Buffer
 
 	err = lxd.RunCommandWithFds(nil, &buf, "wimlib-imagex", "info", installWim)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to retrieve wim file information")
+		return fmt.Errorf("Failed to retrieve wim file information: %w", err)
 	}
 
 	indexes := []int{}
@@ -284,7 +284,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 			index, err := strconv.Atoi(fields[len(fields)-1])
 			if err != nil {
-				return errors.WithMessage(err, "Failed to determine wim file indexes")
+				return fmt.Errorf("Failed to determine wim file indexes: %w", err)
 			}
 			indexes = append(indexes, index)
 		}
@@ -293,14 +293,14 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	// This injects the drivers into the installation process
 	err = c.modifyWim(bootWim, 2)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to modify index 2 of %q", filepath.Base(bootWim))
+		return fmt.Errorf("Failed to modify index 2 of %q: %w", filepath.Base(bootWim), err)
 	}
 
 	// This injects the drivers into the final OS
 	for _, idx := range indexes {
 		err = c.modifyWim(installWim, idx)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to modify index %d of %q", idx, filepath.Base(installWim))
+			return fmt.Errorf("Failed to modify index %d of %q: %w", idx, filepath.Base(installWim), err)
 		}
 	}
 
@@ -308,7 +308,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 	stdout, err := lxd.RunCommand("genisoimage", "--version")
 	if err != nil {
-		return errors.WithMessage(err, "Failed to determine version of genisoimage")
+		return fmt.Errorf("Failed to determine version of genisoimage: %w", err)
 	}
 
 	version := strings.Split(stdout, "\n")[0]
@@ -319,7 +319,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		_, err = lxd.RunCommand("genisoimage", "--allow-limited-size", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
 	}
 	if err != nil {
-		return errors.WithMessage(err, "Failed to generate ISO")
+		return fmt.Errorf("Failed to generate ISO: %w", err)
 	}
 
 	return nil
@@ -335,7 +335,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	if !lxd.PathExists(wimPath) {
 		err := os.MkdirAll(wimPath, 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", wimPath)
+			return fmt.Errorf("Failed to create directory %q: %w", wimPath, err)
 		}
 	}
 
@@ -343,7 +343,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 
 	_, err := lxd.RunCommand("wimlib-imagex", "mountrw", wimFile, strconv.Itoa(index), wimPath, "--allow-other")
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to mount %q", filepath.Base(wimFile))
+		return fmt.Errorf("Failed to mount %q: %w", filepath.Base(wimFile), err)
 	}
 	defer func() {
 		if !success {
@@ -353,23 +353,23 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 
 	dirs, err := c.getWindowsDirectories(wimPath)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get required windows directories")
+		return fmt.Errorf("Failed to get required windows directories: %w", err)
 	}
 
 	if dirs["filerepository"] == "" {
-		return errors.Errorf("Failed to determine windows/system32/driverstore/filerepository path")
+		return errors.New("Failed to determine windows/system32/driverstore/filerepository path")
 	}
 
 	if dirs["inf"] == "" {
-		return errors.Errorf("Failed to determine windows/inf path")
+		return errors.New("Failed to determine windows/inf path")
 	}
 
 	if dirs["config"] == "" {
-		return errors.Errorf("Failed to determine windows/system32/config path")
+		return errors.New("Failed to determine windows/system32/config path")
 	}
 
 	if dirs["drivers"] == "" {
-		return errors.Errorf("Failed to determine windows/system32/drivers path")
+		return errors.New("Failed to determine windows/system32/drivers path")
 	}
 
 	logger.Infow("Modifying WIM file", "file", filepath.Base(path), "index", index)
@@ -377,12 +377,12 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	// Create registry entries and copy files
 	err = c.injectDrivers(dirs)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to inject drivers")
+		return fmt.Errorf("Failed to inject drivers: %w", err)
 	}
 
 	_, err = lxd.RunCommand("wimlib-imagex", "unmount", wimPath, "--commit")
 	if err != nil {
-		return errors.WithMessage(err, "Failed to unmount WIM image")
+		return fmt.Errorf("Failed to unmount WIM image: %w", err)
 	}
 
 	success = true
@@ -395,7 +395,7 @@ func (c *cmdRepackWindows) checkDependencies() error {
 	for _, dep := range dependencies {
 		_, err := exec.LookPath(dep)
 		if err != nil {
-			return errors.Errorf("Required tool %q is missing", dep)
+			return fmt.Errorf("Required tool %q is missing", dep)
 		}
 	}
 
@@ -522,7 +522,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 		if !lxd.PathExists(targetBasePath) {
 			err := os.MkdirAll(targetBasePath, 0755)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to create directory %q", targetBasePath)
+				return fmt.Errorf("Failed to create directory %q: %w", targetBasePath, err)
 			}
 		}
 
@@ -536,7 +536,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 				err := shared.Copy(path, targetPath)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to copy %q to %q", filepath.Base(path), targetPath)
+					return fmt.Errorf("Failed to copy %q to %q: %w", filepath.Base(path), targetPath, err)
 				}
 			}
 
@@ -547,13 +547,13 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 				err = shared.Copy(path, target)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to copy %q to %q", filepath.Base(path), target)
+					return fmt.Errorf("Failed to copy %q to %q: %w", filepath.Base(path), target, err)
 				}
 
 				// Retrieve the ClassGuid which is needed for the Windows registry entries.
 				file, err := os.Open(path)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to open %s", path)
+					return fmt.Errorf("Failed to open %s: %w", path, err)
 				}
 
 				re := regexp.MustCompile(`(?i)^ClassGuid[ ]*=[ ]*(.+)$`)
@@ -571,7 +571,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 				_, ok := ctx["classGuid"]
 				if !ok {
-					return errors.Errorf("Failed to determine classGUID for driver %q", driver)
+					return fmt.Errorf("Failed to determine classGUID for driver %q", driver)
 				}
 			}
 
@@ -582,26 +582,26 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 				err = shared.Copy(path, target)
 				if err != nil {
-					return errors.WithMessagef(err, "Failed to copy %q to %q", filepath.Base(path), target)
+					return fmt.Errorf("Failed to copy %q to %q: %w", filepath.Base(path), target, err)
 				}
 			}
 
 			return nil
 		})
 		if err != nil {
-			return errors.WithMessage(err, "Failed to copy driver files")
+			return fmt.Errorf("Failed to copy driver files: %w", err)
 		}
 
 		// Update Windows DRIVERS registry
 		if info.DriversRegistry != "" {
 			tpl, err := pongo2.FromString(info.DriversRegistry)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to parse template for driver %q", driver)
+				return fmt.Errorf("Failed to parse template for driver %q: %w", driver, err)
 			}
 
 			out, err := tpl.Execute(ctx)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to render template for driver %q", driver)
+				return fmt.Errorf("Failed to render template for driver %q: %w", driver, err)
 			}
 
 			driversRegistry = fmt.Sprintf("%s\n\n%s", driversRegistry, out)
@@ -611,12 +611,12 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 		if info.SystemRegistry != "" {
 			tpl, err := pongo2.FromString(info.SystemRegistry)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to parse template for driver %q", driver)
+				return fmt.Errorf("Failed to parse template for driver %q: %w", driver, err)
 			}
 
 			out, err := tpl.Execute(ctx)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to render template for driver %q", driver)
+				return fmt.Errorf("Failed to render template for driver %q: %w", driver, err)
 			}
 
 			systemRegistry = fmt.Sprintf("%s\n\n%s", systemRegistry, out)
@@ -626,12 +626,12 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 		if info.SoftwareRegistry != "" {
 			tpl, err := pongo2.FromString(info.SoftwareRegistry)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to parse template for driver %q", driver)
+				return fmt.Errorf("Failed to parse template for driver %q: %w", driver, err)
 			}
 
 			out, err := tpl.Execute(ctx)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to render template for driver %q", driver)
+				return fmt.Errorf("Failed to render template for driver %q: %w", driver, err)
 			}
 
 			softwareRegistry = fmt.Sprintf("%s\n\n%s", softwareRegistry, out)
@@ -644,21 +644,21 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 	err := lxd.RunCommandWithFds(strings.NewReader(driversRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(dirs["config"], "DRIVERS"))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to edit Windows DRIVERS registry")
+		return fmt.Errorf("Failed to edit Windows DRIVERS registry: %w", err)
 	}
 
 	logger.Debugw("Updating Windows registry", "hivefile", "SYSTEM")
 
 	err = lxd.RunCommandWithFds(strings.NewReader(systemRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(dirs["config"], "SYSTEM"))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to edit Windows SYSTEM registry")
+		return fmt.Errorf("Failed to edit Windows SYSTEM registry: %w", err)
 	}
 
 	logger.Debugw("Updating Windows registry", "hivefile", "SOFTWARE")
 
 	err = lxd.RunCommandWithFds(strings.NewReader(softwareRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(dirs["config"], "SOFTWARE"))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to edit Windows SOFTWARE registry")
+		return fmt.Errorf("Failed to edit Windows SOFTWARE registry: %w", err)
 	}
 
 	return nil

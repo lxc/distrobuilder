@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,7 +11,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -39,7 +39,7 @@ func (s *funtoo) Run() error {
 
 	releaseDates, err := s.getReleaseDates(baseURL)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get release dates")
+		return fmt.Errorf("Failed to get release dates: %w", err)
 	}
 
 	var fname string
@@ -52,7 +52,7 @@ func (s *funtoo) Run() error {
 
 		resp, err := http.Head(tarball)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to call HEAD on %q", tarball)
+			return fmt.Errorf("Failed to call HEAD on %q: %w", tarball, err)
 		}
 
 		if resp.StatusCode == http.StatusNotFound {
@@ -64,7 +64,7 @@ func (s *funtoo) Run() error {
 
 	url, err := url.Parse(tarball)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse URL %q", tarball)
+		return fmt.Errorf("Failed to parse URL %q: %w", tarball, err)
 	}
 
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" &&
@@ -76,14 +76,14 @@ func (s *funtoo) Run() error {
 
 	fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", tarball)
+		return fmt.Errorf("Failed to download %q: %w", tarball, err)
 	}
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
 		_, err = shared.DownloadHash(s.definition.Image, tarball+".gpg", "", nil)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to download %q", tarball+".gpg")
+			return fmt.Errorf("Failed to download %q: %w", tarball+".gpg", err)
 		}
 
 		valid, err := shared.VerifyFile(
@@ -92,10 +92,10 @@ func (s *funtoo) Run() error {
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to verify file")
+			return fmt.Errorf("Failed to verify file: %w", err)
 		}
 		if !valid {
-			return errors.Errorf("Invalid signature for %q", filepath.Join(fpath, fname))
+			return fmt.Errorf("Invalid signature for %q", filepath.Join(fpath, fname))
 		}
 	}
 
@@ -104,7 +104,7 @@ func (s *funtoo) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, fname))
+		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, fname), err)
 	}
 
 	return nil
@@ -113,7 +113,7 @@ func (s *funtoo) Run() error {
 func (s *funtoo) getReleaseDates(URL string) ([]string, error) {
 	doc, err := htmlquery.LoadURL(URL)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "Failed to load URL %q", URL)
+		return nil, fmt.Errorf("Failed to load URL %q: %w", URL, err)
 	}
 
 	re := regexp.MustCompile(`^\d{4}\-\d{2}\-\d{2}/?$`)

@@ -1,9 +1,10 @@
 package managers
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -83,7 +84,7 @@ func Load(managerName string, logger *zap.SugaredLogger, definition shared.Defin
 
 	err := d.load()
 	if err != nil {
-		return nil, errors.WithMessagef(err, "Failed to load manager %q", managerName)
+		return nil, fmt.Errorf("Failed to load manager %q: %w", managerName, err)
 	}
 
 	return &Manager{def: definition, mgr: d}, nil
@@ -109,20 +110,20 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 
 	err := m.mgr.refresh()
 	if err != nil {
-		return errors.WithMessage(err, "Failed to refresh")
+		return fmt.Errorf("Failed to refresh: %w", err)
 	}
 
 	if m.def.Packages.Update {
 		err = m.mgr.update()
 		if err != nil {
-			return errors.WithMessage(err, "Failed to update")
+			return fmt.Errorf("Failed to update: %w", err)
 		}
 
 		// Run post update hook
 		for _, action := range m.def.GetRunnableActions("post-update", imageTarget) {
 			err = shared.RunScript(action.Action)
 			if err != nil {
-				return errors.WithMessage(err, "Failed to run post-update")
+				return fmt.Errorf("Failed to run post-update: %w", err)
 			}
 		}
 	}
@@ -134,14 +135,14 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 			err = m.mgr.remove(set.Packages, set.Flags)
 		}
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to %s packages", set.Action)
+			return fmt.Errorf("Failed to %s packages: %w", set.Action, err)
 		}
 	}
 
 	if m.def.Packages.Cleanup {
 		err = m.mgr.clean()
 		if err != nil {
-			return errors.WithMessage(err, "Failed to clean up packages")
+			return fmt.Errorf("Failed to clean up packages: %w", err)
 		}
 	}
 
@@ -164,18 +165,18 @@ func (m *Manager) ManageRepositories(imageTarget shared.ImageTarget) error {
 		// Run template on repo.URL
 		repo.URL, err = shared.RenderTemplate(repo.URL, m.def)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to render template")
+			return fmt.Errorf("Failed to render template: %w", err)
 		}
 
 		// Run template on repo.Key
 		repo.Key, err = shared.RenderTemplate(repo.Key, m.def)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to render template")
+			return fmt.Errorf("Failed to render template: %w", err)
 		}
 
 		err = m.mgr.manageRepository(repo)
 		if err != nil {
-			return errors.WithMessagef(err, "Error for repository %s", repo.Name)
+			return fmt.Errorf("Error for repository %s: %w", repo.Name, err)
 		}
 	}
 

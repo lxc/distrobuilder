@@ -2,13 +2,13 @@ package sources
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -28,7 +28,7 @@ func (s *altLinux) Run() error {
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse URL %q", baseURL)
+		return fmt.Errorf("Failed to parse URL %q: %w", baseURL, err)
 	}
 
 	checksumFile := ""
@@ -39,12 +39,12 @@ func (s *altLinux) Run() error {
 
 			fpath, err := shared.DownloadHash(s.definition.Image, checksumFile+".gpg", "", nil)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to download %q", checksumFile+".gpg")
+				return fmt.Errorf("Failed to download %q: %w", checksumFile+".gpg", err)
 			}
 
 			_, err = shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to download %q", checksumFile)
+				return fmt.Errorf("Failed to download %q: %w", checksumFile, err)
 			}
 
 			valid, err := shared.VerifyFile(
@@ -53,10 +53,10 @@ func (s *altLinux) Run() error {
 				s.definition.Source.Keys,
 				s.definition.Source.Keyserver)
 			if err != nil {
-				return errors.WithMessage(err, "Failed to verify file")
+				return fmt.Errorf("Failed to verify file: %w", err)
 			}
 			if !valid {
-				return errors.Errorf("Invalid signature for %q", "SHA256SUMS")
+				return fmt.Errorf("Invalid signature for %q", "SHA256SUMS")
 			}
 		} else {
 			// Force gpg checks when using http
@@ -68,7 +68,7 @@ func (s *altLinux) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", baseURL+fname)
+		return fmt.Errorf("Failed to download %q: %w", baseURL+fname, err)
 	}
 
 	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
@@ -76,7 +76,7 @@ func (s *altLinux) Run() error {
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", fname)
+		return fmt.Errorf("Failed to unpack %q: %w", fname, err)
 	}
 
 	return nil

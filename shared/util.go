@@ -16,7 +16,6 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 	"gopkg.in/flosch/pongo2.v3"
 	yaml "gopkg.in/yaml.v2"
@@ -37,19 +36,19 @@ func Copy(src, dest string) error {
 
 	srcFile, err := os.Open(src)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to open file %q", src)
+		return fmt.Errorf("Failed to open file %q: %w", src, err)
 	}
 	defer srcFile.Close()
 
 	destFile, err := os.Create(dest)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create file %q", dest)
+		return fmt.Errorf("Failed to create file %q: %w", dest, err)
 	}
 	defer destFile.Close()
 
 	_, err = io.Copy(destFile, srcFile)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to copy file")
+		return fmt.Errorf("Failed to copy file: %w", err)
 	}
 
 	return destFile.Sync()
@@ -74,13 +73,13 @@ func RunCommand(name string, arg ...string) error {
 func RunScript(content string) error {
 	fd, err := unix.MemfdCreate("tmp", 0)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to create memfd")
+		return fmt.Errorf("Failed to create memfd: %w", err)
 	}
 	defer unix.Close(fd)
 
 	_, err = unix.Write(int(fd), []byte(content))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to write to memfd")
+		return fmt.Errorf("Failed to write to memfd: %w", err)
 	}
 
 	fdPath := fmt.Sprintf("/proc/self/fd/%d", fd)
@@ -101,7 +100,7 @@ func GetSignedContent(signedFile string, keys []string, keyserver string) ([]byt
 	out, err := exec.Command("gpg", "--homedir", gpgDir, "--keyring", keyring,
 		"--decrypt", signedFile).Output()
 	if err != nil {
-		return nil, errors.WithMessagef(err, "Failed to get file content: %s", out)
+		return nil, fmt.Errorf("Failed to get file content: %s: %w", out, err)
 	}
 
 	return out, nil
@@ -120,13 +119,13 @@ func VerifyFile(signedFile, signatureFile string, keys []string, keyserver strin
 		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
 			"--verify", signatureFile, signedFile)
 		if err != nil {
-			return false, errors.WithMessagef(err, "Failed to verify: %s", out)
+			return false, fmt.Errorf("Failed to verify: %s: %w", out, err)
 		}
 	} else {
 		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
 			"--verify", signedFile)
 		if err != nil {
-			return false, errors.WithMessagef(err, "Failed to verify: %s", out)
+			return false, fmt.Errorf("Failed to verify: %s: %w", out, err)
 		}
 	}
 
@@ -159,7 +158,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 
 		err := cmd.Run()
 		if err != nil {
-			return false, errors.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
+			return false, fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
 		}
 	}
 
@@ -202,7 +201,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 			}
 		}
 
-		return false, errors.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
+		return false, fmt.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
 	}
 
 	return true, nil
@@ -212,7 +211,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 	gpgDir, err := ioutil.TempDir(os.TempDir(), "distrobuilder.")
 	if err != nil {
-		return "", errors.WithMessage(err, "Failed to create gpg directory")
+		return "", fmt.Errorf("Failed to create gpg directory: %w", err)
 	}
 
 	err = os.MkdirAll(gpgDir, 0700)
@@ -240,7 +239,7 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 		filepath.Join(gpgDir, "distrobuilder.gpg"))
 	if err != nil {
 		os.RemoveAll(gpgDir)
-		return "", errors.WithMessagef(err, "Failed to export keyring: %s", out)
+		return "", fmt.Errorf("Failed to export keyring: %s: %w", out, err)
 	}
 
 	return filepath.Join(gpgDir, "distrobuilder.gpg"), nil
@@ -252,7 +251,7 @@ func Pack(filename, compression, path string, args ...string) error {
 	if err != nil {
 		// Clean up incomplete tarball
 		os.Remove(filename)
-		return errors.WithMessage(err, "Failed to create tarball")
+		return fmt.Errorf("Failed to create tarball: %w", err)
 	}
 
 	return compressTarball(filename, compression)
@@ -262,7 +261,7 @@ func Pack(filename, compression, path string, args ...string) error {
 func PackUpdate(filename, compression, path string, args ...string) error {
 	err := RunCommand("tar", append([]string{"--xattrs", "-uf", filename, "-C", path}, args...)...)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to update tarball")
+		return fmt.Errorf("Failed to update tarball: %w", err)
 	}
 
 	return compressTarball(filename, compression)
@@ -278,7 +277,7 @@ func compressTarball(filename, compression string) error {
 	case "bzip2", "xz", "lzip", "lzma", "gzip":
 		err := RunCommand(compression, "-f", filename)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to compress tarball %q", filename)
+			return fmt.Errorf("Failed to compress tarball %q: %w", filename, err)
 		}
 	}
 
@@ -460,7 +459,7 @@ func getChecksum(fname string, hashLen int, r io.Reader) []string {
 func RsyncLocal(src string, dest string) error {
 	err := RunCommand("rsync", "-aHASX", "--devices", src, dest)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to copy %q to %q", src, dest)
+		return fmt.Errorf("Failed to copy %q to %q: %w", src, dest, err)
 	}
 
 	return nil

@@ -1,12 +1,12 @@
 package generators
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -27,20 +27,20 @@ func (g *hostname) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC
 	// Create new hostname file
 	file, err := os.Create(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create file %q", filepath.Join(g.sourceDir, g.defFile.Path))
+		return fmt.Errorf("Failed to create file %q: %w", filepath.Join(g.sourceDir, g.defFile.Path), err)
 	}
 	defer file.Close()
 
 	// Write LXC specific string to the hostname file
 	_, err = file.WriteString("LXC_NAME\n")
 	if err != nil {
-		return errors.WithMessage(err, "Failed to write to hostname file")
+		return fmt.Errorf("Failed to write to hostname file: %w", err)
 	}
 
 	// Add hostname path to LXC's templates file
 	err = img.AddTemplate(g.defFile.Path)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to add template")
+		return fmt.Errorf("Failed to add template: %w", err)
 	}
 
 	return nil
@@ -58,18 +58,18 @@ func (g *hostname) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 
 	err := os.MkdirAll(templateDir, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", templateDir)
+		return fmt.Errorf("Failed to create directory %q: %w", templateDir, err)
 	}
 
 	file, err := os.Create(filepath.Join(templateDir, "hostname.tpl"))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create file %q", filepath.Join(templateDir, "hostname.tpl"))
+		return fmt.Errorf("Failed to create file %q: %w", filepath.Join(templateDir, "hostname.tpl"), err)
 	}
 	defer file.Close()
 
 	_, err = file.WriteString("{{ container.name }}\n")
 	if err != nil {
-		return errors.WithMessage(err, "Failed to write to hostname file")
+		return fmt.Errorf("Failed to write to hostname file: %w", err)
 	}
 
 	// Add to LXD templates

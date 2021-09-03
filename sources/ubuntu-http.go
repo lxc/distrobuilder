@@ -2,6 +2,7 @@ package sources
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/gobuffalo/packr/v2"
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -32,7 +32,7 @@ type ubuntu struct {
 func (s *ubuntu) Run() error {
 	err := s.downloadImage(s.definition)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to download image")
+		return fmt.Errorf("Failed to download image: %w", err)
 	}
 
 	switch strings.ToLower(s.definition.Source.Variant) {
@@ -51,7 +51,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	if !lxd.PathExists(filepath.Join(s.fpath, strings.TrimSuffix(s.fname, ".xz"))) {
 		err := shared.RunCommand("unxz", "-k", filepath.Join(s.fpath, s.fname))
 		if err != nil {
-			return errors.WithMessagef(err, `Failed to run "unxz"`)
+			return fmt.Errorf(`Failed to run "unxz": %w`, err)
 		}
 	}
 
@@ -60,14 +60,14 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 
 	output, err := lxd.RunCommand("fdisk", "-l", "-o", "Start", f)
 	if err != nil {
-		return errors.WithMessage(err, `Failed to run "fdisk"`)
+		return fmt.Errorf(`Failed to run "fdisk": %w`, err)
 	}
 
 	lines := strings.Split(output, "\n")
 
 	offset, err := strconv.Atoi(lines[len(lines)-2])
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to convert %q", lines[len(lines)-2])
+		return fmt.Errorf("Failed to convert %q: %w", lines[len(lines)-2], err)
 	}
 
 	imageDir := filepath.Join(s.cacheDir, "image")
@@ -77,19 +77,19 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	for _, d := range []string{imageDir, snapsDir, baseImageDir} {
 		err = os.MkdirAll(d, 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", d)
+			return fmt.Errorf("Failed to create directory %q: %w", d, err)
 		}
 	}
 
 	err = shared.RunCommand("mount", "-o", fmt.Sprintf("loop,offset=%d", offset*512), f, imageDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to mount %q", fmt.Sprintf("loop,offset=%d", offset*512))
+		return fmt.Errorf("Failed to mount %q: %w", fmt.Sprintf("loop,offset=%d", offset*512), err)
 	}
 	defer unix.Unmount(imageDir, 0)
 
 	err = shared.RsyncLocal(filepath.Join(imageDir, "system-data"), rootfsDir)
 	if err != nil {
-		return errors.WithMessage(err, `Failed to run "rsync"`)
+		return fmt.Errorf(`Failed to run "rsync": %w`, err)
 	}
 
 	// Create all the needed paths and links
@@ -99,7 +99,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	for _, d := range dirs {
 		err := os.Mkdir(filepath.Join(rootfsDir, d), 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create directory %q", filepath.Join(rootfsDir, d))
+			return fmt.Errorf("Failed to create directory %q: %w", filepath.Join(rootfsDir, d), err)
 		}
 	}
 
@@ -124,7 +124,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	for _, l := range links {
 		err = os.Symlink(l.target, l.link)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to create symlink %q", l.link)
+			return fmt.Errorf("Failed to create symlink %q: %w", l.link, err)
 		}
 	}
 
@@ -133,22 +133,22 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	// Download the base Ubuntu image
 	coreImage, err := getLatestCoreBaseImage("https://images.linuxcontainers.org/images", baseDistro, s.definition.Image.ArchitectureMapped)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get latest core base image")
+		return fmt.Errorf("Failed to get latest core base image: %w", err)
 	}
 
 	_, err = shared.DownloadHash(s.definition.Image, coreImage, "", sha256.New())
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", coreImage)
+		return fmt.Errorf("Failed to download %q: %w", coreImage, err)
 	}
 
 	err = s.unpack(filepath.Join(s.fpath, "rootfs.tar.xz"), baseImageDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(s.fpath, "rootfs.tar.xz"))
+		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(s.fpath, "rootfs.tar.xz"), err)
 	}
 
 	exitChroot, err := shared.SetupChroot(baseImageDir, shared.DefinitionEnv{}, nil)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to create chroot")
+		return fmt.Errorf("Failed to create chroot: %w", err)
 	}
 
 	err = shared.RunScript(`#!/bin/sh
@@ -157,36 +157,36 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	`)
 	if err != nil {
 		exitChroot()
-		return errors.WithMessage(err, "Failed to run script")
+		return fmt.Errorf("Failed to run script: %w", err)
 	}
 
 	err = exitChroot()
 	if err != nil {
-		return errors.WithMessage(err, "Failed to exit chroot")
+		return fmt.Errorf("Failed to exit chroot: %w", err)
 	}
 
 	box := packr.New("ubuntu-core", "./data/ubuntu-core")
 
 	file, err := box.Resolve("init")
 	if err != nil {
-		return errors.WithMessage(err, `Failed to resolve "init"`)
+		return fmt.Errorf(`Failed to resolve "init": %w`, err)
 	}
 	defer file.Close()
 
 	target, err := os.Create(filepath.Join(rootfsDir, "bin", "init"))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create %q", filepath.Join(rootfsDir, "bin", "init"))
+		return fmt.Errorf("Failed to create %q: %w", filepath.Join(rootfsDir, "bin", "init"), err)
 	}
 	defer target.Close()
 
 	_, err = io.Copy(target, file)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to copy %q to %q", file.Name(), target.Name())
+		return fmt.Errorf("Failed to copy %q to %q: %w", file.Name(), target.Name(), err)
 	}
 
 	err = target.Chmod(0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to chmod %q", target.Name())
+		return fmt.Errorf("Failed to chmod %q: %w", target.Name(), err)
 	}
 
 	// Copy system binaries
@@ -220,12 +220,12 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	for _, b := range binaries {
 		err := lxd.FileCopy(b.source, b.target)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to copy %q to %q", b.source, b.target)
+			return fmt.Errorf("Failed to copy %q to %q: %w", b.source, b.target, err)
 		}
 
 		err = os.Chmod(b.target, 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to chmod %q", b.target)
+			return fmt.Errorf("Failed to chmod %q: %w", b.target, err)
 		}
 	}
 
@@ -246,7 +246,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	for _, p := range patterns {
 		matches, err := filepath.Glob(filepath.Join(baseImageDir, p))
 		if err != nil {
-			return errors.WithMessage(err, "Failed to match pattern")
+			return fmt.Errorf("Failed to match pattern: %w", err)
 		}
 
 		if len(matches) != 1 {
@@ -257,7 +257,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 
 		source, err := os.Readlink(matches[0])
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to read link %q", matches[0])
+			return fmt.Errorf("Failed to read link %q: %w", matches[0], err)
 		}
 
 		// Build absolute path
@@ -267,12 +267,12 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 
 		err = lxd.FileCopy(source, dest)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to copy %q to %q", source, dest)
+			return fmt.Errorf("Failed to copy %q to %q: %w", source, dest, err)
 		}
 
 		err = os.Chmod(dest, 0755)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to chmod %q", dest)
+			return fmt.Errorf("Failed to chmod %q: %w", dest, err)
 		}
 	}
 
@@ -296,19 +296,19 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 			s.fname, err = getLatestRelease(baseURL,
 				s.definition.Image.Release, s.definition.Image.ArchitectureMapped)
 			if err != nil {
-				return errors.WithMessage(err, "Failed to get latest release")
+				return fmt.Errorf("Failed to get latest release: %w", err)
 			}
 		}
 	case "core":
 		baseURL = fmt.Sprintf("%s/%s/stable/current/", s.definition.Source.URL, s.definition.Image.Release)
 		s.fname = fmt.Sprintf("ubuntu-core-%s-%s.img.xz", s.definition.Image.Release, s.definition.Image.ArchitectureMapped)
 	default:
-		return errors.Errorf("Unknown Ubuntu variant %q", s.definition.Image.Variant)
+		return fmt.Errorf("Unknown Ubuntu variant %q", s.definition.Image.Variant)
 	}
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to parse URL %q", baseURL)
+		return fmt.Errorf("Failed to parse URL %q: %w", baseURL, err)
 	}
 
 	var fpath string
@@ -323,12 +323,12 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 		checksumFile = baseURL + "SHA256SUMS"
 		fpath, err = shared.DownloadHash(s.definition.Image, baseURL+"SHA256SUMS.gpg", "", nil)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to download %q", baseURL+"SHA256SUMS.gpg")
+			return fmt.Errorf("Failed to download %q: %w", baseURL+"SHA256SUMS.gpg", err)
 		}
 
 		_, err = shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
 		if err != nil {
-			return errors.WithMessagef(err, "Failed to download %q", checksumFile)
+			return fmt.Errorf("Failed to download %q: %w", checksumFile, err)
 		}
 
 		valid, err := shared.VerifyFile(
@@ -337,7 +337,7 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 			s.definition.Source.Keys,
 			s.definition.Source.Keyserver)
 		if err != nil {
-			return errors.WithMessage(err, `Failed to verify "SHA256SUMS"`)
+			return fmt.Errorf(`Failed to verify "SHA256SUMS": %w`, err)
 		}
 		if !valid {
 			return errors.New(`Invalid signature for "SHA256SUMS"`)
@@ -346,7 +346,7 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 
 	s.fpath, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", baseURL+s.fname)
+		return fmt.Errorf("Failed to download %q: %w", baseURL+s.fname, err)
 	}
 
 	return nil
@@ -355,19 +355,19 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 func (s ubuntu) unpack(filePath, rootDir string) error {
 	err := os.RemoveAll(rootDir)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to remove directory %q", rootDir)
+		return fmt.Errorf("Failed to remove directory %q: %w", rootDir, err)
 	}
 
 	err = os.MkdirAll(rootDir, 0755)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to create directory %q", rootDir)
+		return fmt.Errorf("Failed to create directory %q: %w", rootDir, err)
 	}
 
 	s.logger.Infow("Unpacking file", "file", filePath)
 
 	err = lxd.Unpack(filePath, rootDir, false, false, nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", filePath)
+		return fmt.Errorf("Failed to unpack %q: %w", filePath, err)
 	}
 
 	return nil
@@ -376,13 +376,13 @@ func (s ubuntu) unpack(filePath, rootDir string) error {
 func getLatestRelease(baseURL, release, arch string) (string, error) {
 	resp, err := http.Get(baseURL)
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to GET %q", baseURL)
+		return "", fmt.Errorf("Failed to GET %q: %w", baseURL, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.WithMessage(err, "Failed to read body")
+		return "", fmt.Errorf("Failed to read body: %w", err)
 	}
 
 	regex := regexp.MustCompile(fmt.Sprintf("ubuntu-base-\\d{2}\\.\\d{2}(\\.\\d+)?-base-%s.tar.gz", arch))
@@ -398,18 +398,18 @@ func getLatestRelease(baseURL, release, arch string) (string, error) {
 func getLatestCoreBaseImage(baseURL, release, arch string) (string, error) {
 	u, err := url.Parse(fmt.Sprintf("%s/ubuntu/%s/%s/default", baseURL, release, arch))
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to parse URL %q", fmt.Sprintf("%s/ubuntu/%s/%s/default", baseURL, release, arch))
+		return "", fmt.Errorf("Failed to parse URL %q: %w", fmt.Sprintf("%s/ubuntu/%s/%s/default", baseURL, release, arch), err)
 	}
 
 	resp, err := http.Get(u.String())
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to GET %q", u.String())
+		return "", fmt.Errorf("Failed to GET %q: %w", u.String(), err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.WithMessage(err, "Failed to read body")
+		return "", fmt.Errorf("Failed to read body: %w", err)
 	}
 
 	regex := regexp.MustCompile(`\d{8}_\d{2}:\d{2}`)

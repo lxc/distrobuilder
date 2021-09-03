@@ -2,6 +2,7 @@ package sources
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"sort"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -28,7 +28,7 @@ func (s *fedora) Run() error {
 	// Get latest build
 	build, err := s.getLatestBuild(baseURL, s.definition.Image.Release)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to get latest build")
+		return fmt.Errorf("Failed to get latest build: %w", err)
 	}
 
 	fname := fmt.Sprintf("Fedora-Container-Base-%s-%s.%s.tar.xz",
@@ -39,7 +39,7 @@ func (s *fedora) Run() error {
 
 	fpath, err := shared.DownloadHash(s.definition.Image, sourceURL, "", nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to download %q", sourceURL)
+		return fmt.Errorf("Failed to download %q: %w", sourceURL, err)
 	}
 
 	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
@@ -47,7 +47,7 @@ func (s *fedora) Run() error {
 	// Unpack the base image
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(fpath, fname))
+		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, fname), err)
 	}
 
 	s.logger.Info("Unpacking layers")
@@ -55,7 +55,7 @@ func (s *fedora) Run() error {
 	// Unpack the rest of the image (/bin, /sbin, /usr, etc.)
 	err = s.unpackLayers(s.rootfsDir)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to unpack")
+		return fmt.Errorf("Failed to unpack: %w", err)
 	}
 
 	return nil
@@ -65,13 +65,13 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 	// Read manifest file which contains the path to the layers
 	file, err := os.Open(filepath.Join(rootfsDir, "manifest.json"))
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to open %q", filepath.Join(rootfsDir, "manifest.json"))
+		return fmt.Errorf("Failed to open %q: %w", filepath.Join(rootfsDir, "manifest.json"), err)
 	}
 	defer file.Close()
 
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
-		return errors.WithMessagef(err, "Failed to read file %q", file.Name())
+		return fmt.Errorf("Failed to read file %q: %w", file.Name(), err)
 	}
 
 	// Structure of the manifest excluding RepoTags
@@ -82,7 +82,7 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 
 	err = json.Unmarshal(data, &manifests)
 	if err != nil {
-		return errors.WithMessage(err, "Failed to unmarshal JSON data")
+		return fmt.Errorf("Failed to unmarshal JSON data: %w", err)
 	}
 
 	pathsToRemove := []string{
@@ -98,7 +98,7 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 
 			err := lxd.Unpack(filepath.Join(rootfsDir, layer), rootfsDir, false, false, nil)
 			if err != nil {
-				return errors.WithMessagef(err, "Failed to unpack %q", filepath.Join(rootfsDir, layer))
+				return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(rootfsDir, layer), err)
 			}
 
 			pathsToRemove = append(pathsToRemove,
@@ -111,14 +111,14 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 	// Clean up /tmp since there are unnecessary files there
 	files, err := filepath.Glob(filepath.Join(rootfsDir, "tmp", "*"))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to find matching files")
+		return fmt.Errorf("Failed to find matching files: %w", err)
 	}
 	pathsToRemove = append(pathsToRemove, files...)
 
 	// Clean up /root since there are unnecessary files there
 	files, err = filepath.Glob(filepath.Join(rootfsDir, "root", "*"))
 	if err != nil {
-		return errors.WithMessage(err, "Failed to find matching files")
+		return fmt.Errorf("Failed to find matching files: %w", err)
 	}
 	pathsToRemove = append(pathsToRemove, files...)
 
@@ -132,13 +132,13 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 func (s *fedora) getLatestBuild(URL, release string) (string, error) {
 	resp, err := http.Get(fmt.Sprintf("%s/%s", URL, release))
 	if err != nil {
-		return "", errors.WithMessagef(err, "Failed to GET %q", fmt.Sprintf("%s/%s", URL, release))
+		return "", fmt.Errorf("Failed to GET %q: %w", fmt.Sprintf("%s/%s", URL, release), err)
 	}
 	defer resp.Body.Close()
 
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.WithMessage(err, "Failed to read body")
+		return "", fmt.Errorf("Failed to read body: %w", err)
 	}
 
 	// Builds are formatted in one of two ways:

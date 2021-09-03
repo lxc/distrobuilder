@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-	"github.com/pkg/errors"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -49,7 +48,7 @@ func (s *debootstrap) Run() error {
 	if len(s.definition.Source.Keys) > 0 {
 		keyring, err := shared.CreateGPGKeyring(s.definition.Source.Keyserver, s.definition.Source.Keys)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to create GPG keyring")
+			return fmt.Errorf("Failed to create GPG keyring: %w", err)
 		}
 		defer os.RemoveAll(path.Dir(keyring))
 
@@ -75,7 +74,7 @@ func (s *debootstrap) Run() error {
 	if !lxd.PathExists(scriptPath) && s.definition.Source.SameAs != "" {
 		err := os.Symlink(s.definition.Source.SameAs, scriptPath)
 		if err != nil {
-			return errors.WithMessage(err, "Failed to create symlink")
+			return fmt.Errorf("Failed to create symlink: %w", err)
 		}
 
 		defer os.Remove(scriptPath)
@@ -83,7 +82,7 @@ func (s *debootstrap) Run() error {
 
 	err := shared.RunCommand("debootstrap", args...)
 	if err != nil {
-		return errors.WithMessage(err, `Failed to run "debootstrap"`)
+		return fmt.Errorf(`Failed to run "debootstrap": %w`, err)
 	}
 
 	return nil
