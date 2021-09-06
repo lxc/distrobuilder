@@ -1,14 +1,12 @@
 package sources
 
 import (
-	"bufio"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -138,168 +136,12 @@ func (s *openwrt) Run() error {
 		return fmt.Errorf("Failed to download %q: %w", baseURL+fname, err)
 	}
 
-	sdk, err := s.getSDK(baseURL, release)
-	if err != nil {
-		return fmt.Errorf("Failed to get SDK: %w", err)
-	}
-
-	_, err = shared.DownloadHash(s.definition.Image, baseURL+sdk, checksumFile, sha256.New())
-	if err != nil {
-		return fmt.Errorf("Failed to download %q: %w", baseURL+sdk, err)
-	}
-
-	lxdOpenWrtTarball := "https://github.com/mikma/lxd-openwrt/archive/master.tar.gz"
-
-	_, err = shared.DownloadHash(s.definition.Image, lxdOpenWrtTarball, "", sha256.New())
-	if err != nil {
-		return fmt.Errorf("Failed to download %q: %w", lxdOpenWrtTarball, err)
-	}
-
-	tempScriptsDir := filepath.Join(s.cacheDir, "fixes", "lxd-openwrt-master")
-	tempSDKDir := filepath.Join(tempScriptsDir, "build_dir")
-
-	err = os.MkdirAll(tempSDKDir, 0755)
-	if err != nil {
-		return fmt.Errorf("Failed to create directory %q: %w", tempSDKDir, err)
-	}
-
-	err = os.MkdirAll(tempScriptsDir, 0755)
-	if err != nil {
-		return fmt.Errorf("Failed to create directory %q: %w", tempScriptsDir, err)
-	}
-
 	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, fname), err)
-	}
-
-	s.logger.Infow("Unpacking repository tarball", "file", filepath.Join(fpath, "master.tar.gz"))
-
-	err = lxd.Unpack(filepath.Join(fpath, "master.tar.gz"), filepath.Join(s.cacheDir, "fixes"), false, false, nil)
-	if err != nil {
-		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, "master.tar.gz"), err)
-	}
-
-	s.logger.Infow("Unpacking sdk", "file", filepath.Join(fpath, sdk))
-
-	err = lxd.Unpack(filepath.Join(fpath, sdk), tempSDKDir, false, false, nil)
-	if err != nil {
-		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, sdk), err)
-	}
-
-	currentDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("Failed to get current working directory: %w", err)
-	}
-	defer os.Chdir(currentDir)
-
-	// Set environment used in the lxd-openwrt scripts
-	os.Setenv("OPENWRT_ROOTFS", filepath.Join(fpath, fname))
-
-	// Always use an absolute path
-	if strings.HasPrefix(s.rootfsDir, "/") {
-		os.Setenv("OPENWRT_ROOTFS_DIR", s.rootfsDir)
-	} else {
-		os.Setenv("OPENWRT_ROOTFS_DIR", filepath.Join(currentDir, s.rootfsDir))
-	}
-
-	os.Setenv("OPENWRT_SDK", fmt.Sprintf("build_dir/%s", strings.TrimSuffix(sdk, ".tar.xz")))
-
-	if s.definition.Image.Architecture == "armv7l" {
-		os.Setenv("OPENWRT_ARCH", "aarch32")
-
-	} else {
-		os.Setenv("OPENWRT_ARCH", s.definition.Image.Architecture)
-	}
-
-	os.Setenv("OPENWRT_VERSION", release)
-
-	err = os.Chdir(tempScriptsDir)
-	if err != nil {
-		return fmt.Errorf("Failed to change the current working directory to %q: %w", tempScriptsDir, err)
-	}
-
-	f, err := os.Open("build.sh")
-	if err != nil {
-		return fmt.Errorf(`Failed to open "build.sh": %w`, err)
-	}
-
-	var newContent strings.Builder
-	scanner := bufio.NewScanner(f)
-
-	for scanner.Scan() {
-		if strings.HasPrefix(scanner.Text(), "arch_lxd=") {
-			newContent.WriteString("arch_lxd=${OPENWRT_ARCH}\n")
-			continue
-		}
-
-		if strings.HasPrefix(scanner.Text(), "ver=") {
-			newContent.WriteString("ver=${OPENWRT_VERSION}\nreadonly rootfs=${OPENWRT_ROOTFS}\nreadonly sdk=${OPENWRT_SDK}\n")
-			continue
-		}
-
-		if scanner.Text() == "download_rootfs" {
-			continue
-		}
-
-		if scanner.Text() == "download_sdk" {
-			continue
-		}
-
-		newContent.WriteString(scanner.Text() + "\n")
-	}
-
-	f.Close()
-
-	err = ioutil.WriteFile("build.sh", []byte(newContent.String()), 0755)
-	if err != nil {
-		return fmt.Errorf(`Failed to write to build.sh": %w`, err)
-	}
-
-	f, err = os.Open("scripts/build_rootfs.sh")
-	if err != nil {
-		return fmt.Errorf(`Failed to open "scripts/build_rootfs.sh": %w`, err)
-	}
-
-	newContent.Reset()
-
-	scanner = bufio.NewScanner(f)
-
-	for scanner.Scan() {
-		if strings.HasPrefix(scanner.Text(), "dir=") {
-			newContent.WriteString(fmt.Sprintf("dir=%s\n", s.cacheDir))
-			continue
-		}
-
-		if strings.HasPrefix(scanner.Text(), "instroot=") {
-			newContent.WriteString("instroot=${OPENWRT_ROOTFS_DIR}\n")
-			continue
-		}
-
-		if scanner.Text() == "unpack" {
-			continue
-		}
-
-		if scanner.Text() == "pack" {
-			continue
-		}
-
-		newContent.WriteString(scanner.Text() + "\n")
-	}
-
-	f.Close()
-
-	err = ioutil.WriteFile("scripts/build_rootfs.sh", []byte(newContent.String()), 0755)
-	if err != nil {
-		return fmt.Errorf(`Failed to write to "scripts/build_rootfs.sh": %w`, err)
-	}
-
-	_, err = lxd.RunCommand("sh", "build.sh")
-	if err != nil {
-		return fmt.Errorf(`Failed to run "build.sh": %w`, err)
 	}
 
 	return nil
@@ -325,32 +167,4 @@ func (s *openwrt) getLatestServiceRelease(baseURL, release string) (string, erro
 	}
 
 	return "", errors.New("Failed to find latest service release")
-}
-
-func (s *openwrt) getSDK(baseURL, release string) (string, error) {
-	resp, err := http.Get(baseURL)
-	if err != nil {
-		return "", fmt.Errorf("Failed to GET %q: %w", baseURL, err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("Failed to read body: %w", err)
-	}
-
-	if release == "snapshot" {
-		release = ""
-	} else {
-		release = fmt.Sprintf("-%s", release)
-	}
-
-	regex := regexp.MustCompile(fmt.Sprintf(">(openwrt-sdk%s-.*\\.tar\\.xz)<", release))
-	releases := regex.FindAllStringSubmatch(string(body), -1)
-
-	if len(releases) > 0 {
-		return releases[len(releases)-1][1], nil
-	}
-
-	return "", errors.New("Failed to find SDK")
 }
