@@ -190,6 +190,8 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	exitChroot()
 
+	c.global.logger.Infow("Creating LXC image", "compression", c.flagCompression)
+
 	err = img.Build(c.flagCompression)
 	if err != nil {
 		return fmt.Errorf("Failed to create LXC image: %w", err)
