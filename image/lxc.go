@@ -71,7 +71,7 @@ func (l *LXCImage) Build(compression string) error {
 		return fmt.Errorf("Failed to pack metadata: %w", err)
 	}
 
-	err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar"), compression, l.sourceDir, ".")
+	_, err = shared.Pack(filepath.Join(l.targetDir, "rootfs.tar"), compression, l.sourceDir, ".")
 	if err != nil {
 		return fmt.Errorf("Failed to pack %q: %w", filepath.Join(l.targetDir, "rootfs.tar"), err)
 	}
@@ -184,7 +184,7 @@ func (l *LXCImage) packMetadata() error {
 		files = append(files, "templates")
 	}
 
-	err = shared.Pack(filepath.Join(l.targetDir, "meta.tar"), "xz",
+	_, err = shared.Pack(filepath.Join(l.targetDir, "meta.tar"), "xz",
 		filepath.Join(l.cacheDir, "metadata"), files...)
 	if err != nil {
 		return fmt.Errorf("Failed to create metadata: %w", err)

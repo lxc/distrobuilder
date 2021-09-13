@@ -76,36 +76,36 @@ func TestLXDBuild(t *testing.T) {
 
 func testLXDBuildSplitImage(t *testing.T, image *LXDImage) {
 	// Create split tarball and squashfs.
-	err := image.Build(false, "xz", false)
+	imageFile, rootfsFile, err := image.Build(false, "xz", false)
 	require.NoError(t, err)
-	defer func() {
-		os.Remove("lxd.tar.xz")
-		os.Remove("rootfs.squashfs")
-	}()
-
 	require.FileExists(t, "lxd.tar.xz")
 	require.FileExists(t, "rootfs.squashfs")
+	require.Equal(t, "rootfs.squashfs", filepath.Base(rootfsFile))
+	require.Equal(t, "lxd.tar.xz", filepath.Base(imageFile))
 
-	err = image.Build(false, "gzip", false)
+	os.Remove("lxd.tar.xz")
+	os.Remove("rootfs.squashfs")
+
+	imageFile, rootfsFile, err = image.Build(false, "gzip", false)
 	require.NoError(t, err)
-	defer func() {
-		os.Remove("lxd.tar.gz")
-		os.Remove("rootfs.squashfs")
-	}()
-
-	require.FileExists(t, "lxd.tar.xz")
+	require.FileExists(t, "lxd.tar.gz")
 	require.FileExists(t, "rootfs.squashfs")
+	require.Equal(t, "rootfs.squashfs", filepath.Base(rootfsFile))
+	require.Equal(t, "lxd.tar.gz", filepath.Base(imageFile))
+
+	os.Remove("lxd.tar.gz")
+	os.Remove("rootfs.squashfs")
 }
 
 func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 	// Create unified tarball with custom name.
-	err := image.Build(true, "xz", false)
+	_, _, err := image.Build(true, "xz", false)
 	require.NoError(t, err)
 	defer os.Remove("ubuntu-17.10-x86_64-testing.tar.xz")
 
 	require.FileExists(t, "ubuntu-17.10-x86_64-testing.tar.xz")
 
-	err = image.Build(true, "gzip", false)
+	_, _, err = image.Build(true, "gzip", false)
 	require.NoError(t, err)
 	defer os.Remove("ubuntu-17.10-x86_64-testing.tar.gz")
 
@@ -113,7 +113,7 @@ func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 
 	// Create unified tarball with default name.
 	image.definition.Image.Name = ""
-	err = image.Build(true, "xz", false)
+	_, _, err = image.Build(true, "xz", false)
 	require.NoError(t, err)
 	defer os.Remove("lxd.tar.xz")
 

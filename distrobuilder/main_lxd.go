@@ -364,7 +364,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	c.global.logger.Infow("Creating LXD image", "type", c.flagType, "vm", c.flagVM, "compression", c.flagCompression)
 
-	err = img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
+	_, _, err := img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
 		return fmt.Errorf("Failed to create LXD image: %w", err)
 	}
