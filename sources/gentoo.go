@@ -35,7 +35,7 @@ func (s *gentoo) Run() error {
 
 	var baseURL string
 
-	if s.definition.Source.Variant == "systemd" {
+	if s.definition.Source.Variant != "" {
 		baseURL = fmt.Sprintf("%s/releases/%s/autobuilds/current-stage3-%s-%s",
 			s.definition.Source.URL, topLevelArch,
 			s.definition.Image.ArchitectureMapped, s.definition.Source.Variant)
