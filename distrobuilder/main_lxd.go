@@ -3,11 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	client "github.com/lxc/lxd/client"
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/lxc/lxd/shared/api"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
 
@@ -22,14 +25,15 @@ type cmdLXD struct {
 	cmdPack  *cobra.Command
 	global   *cmdGlobal
 
-	flagType        string
-	flagCompression string
-	flagVM          bool
+	flagType          string
+	flagCompression   string
+	flagVM            bool
+	flagImportIntoLXD string
 }
 
 func (c *cmdLXD) commandBuild() *cobra.Command {
 	c.cmdBuild = &cobra.Command{
-		Use:   "build-lxd <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION]",
+		Use:   "build-lxd <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-lxd]",
 		Short: "Build LXD image from scratch",
 		Long: fmt.Sprintf(`Build LXD image from scratch
 
@@ -75,13 +79,15 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 	c.cmdBuild.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create"+"``")
 	c.cmdBuild.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use"+"``")
 	c.cmdBuild.Flags().BoolVar(&c.flagVM, "vm", false, "Create a qcow2 image for VMs"+"``")
+	c.cmdBuild.Flags().StringVar(&c.flagImportIntoLXD, "import-into-lxd", "", "Import built image into LXD"+"``")
+	c.cmdBuild.Flags().Lookup("import-into-lxd").NoOptDefVal = "-"
 
 	return c.cmdBuild
 }
 
 func (c *cmdLXD) commandPack() *cobra.Command {
 	c.cmdPack = &cobra.Command{
-		Use:   "pack-lxd <filename|-> <source dir> [target dir] [--type=TYPE] [--compression=COMPRESSION]",
+		Use:   "pack-lxd <filename|-> <source dir> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-lxd]",
 		Short: "Create LXD image from existing rootfs",
 		Long: fmt.Sprintf(`Create LXD image from existing rootfs
 
@@ -136,6 +142,8 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 	c.cmdPack.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create")
 	c.cmdPack.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use")
 	c.cmdPack.Flags().BoolVar(&c.flagVM, "vm", false, "Create a qcow2 image for VMs"+"``")
+	c.cmdPack.Flags().StringVar(&c.flagImportIntoLXD, "import-into-lxd", "", "Import built image into LXD"+"``")
+	c.cmdPack.Flags().Lookup("import-into-lxd").NoOptDefVal = "-"
 
 	return c.cmdPack
 }
@@ -364,9 +372,92 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	c.global.logger.Infow("Creating LXD image", "type", c.flagType, "vm", c.flagVM, "compression", c.flagCompression)
 
-	err = img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
+	imageFile, rootfsFile, err := img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
 		return fmt.Errorf("Failed to create LXD image: %w", err)
+	}
+
+	importFlag := cmd.Flags().Lookup("import-into-lxd")
+
+	if importFlag.Changed {
+		server, err := client.ConnectLXDUnix("", nil)
+		if err != nil {
+			return fmt.Errorf("Failed to connect to LXD: %w", err)
+		}
+
+		image := api.ImagesPost{
+			Filename: imageFile,
+		}
+
+		createArgs := &client.ImageCreateArgs{}
+
+		imageType := "container"
+
+		var meta io.ReadCloser
+		var rootfs io.ReadCloser
+
+		// Open meta
+		meta, err = os.Open(imageFile)
+		if err != nil {
+			return err
+		}
+		defer meta.Close()
+
+		// Open rootfs
+		if rootfsFile != "" {
+			rootfs, err = os.Open(rootfsFile)
+			if err != nil {
+				return err
+			}
+			defer rootfs.Close()
+
+			if filepath.Ext(rootfsFile) == ".qcow2" {
+				imageType = "virtual-machine"
+			}
+		}
+
+		createArgs = &client.ImageCreateArgs{
+			MetaFile:   meta,
+			MetaName:   filepath.Base(imageFile),
+			RootfsFile: rootfs,
+			RootfsName: filepath.Base(rootfsFile),
+			Type:       imageType,
+		}
+
+		op, err := server.CreateImage(image, createArgs)
+		if err != nil {
+			return fmt.Errorf("Failed to create image: %w", err)
+		}
+
+		err = op.Wait()
+		if err != nil {
+			return fmt.Errorf("Failed to create image: %w", err)
+		}
+
+		// Don't create alias if the flag value is equal to the NoOptDefVal (the default value if --import-into-lxd flag is set without any value).
+		if importFlag.Value.String() == importFlag.NoOptDefVal {
+			return nil
+		}
+
+		opAPI := op.Get()
+
+		alias := api.ImageAliasesPost{}
+		alias.Target = opAPI.Metadata["fingerprint"].(string)
+
+		alias.Name, err = shared.RenderTemplate(importFlag.Value.String(), c.global.definition)
+		if err != nil {
+			return fmt.Errorf("Failed to render %q: %w", importFlag.Value.String(), err)
+		}
+
+		alias.Description, err = shared.RenderTemplate(c.global.definition.Image.Description, c.global.definition)
+		if err != nil {
+			return fmt.Errorf("Failed to render %q: %w", c.global.definition.Image.Description, err)
+		}
+
+		err = server.CreateImageAlias(alias)
+		if err != nil {
+			return fmt.Errorf("Failed to create image alias: %w", err)
+		}
 	}
 
 	return nil

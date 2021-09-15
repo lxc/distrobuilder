@@ -246,29 +246,31 @@ func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
 }
 
 // Pack creates an uncompressed tarball.
-func Pack(filename, compression, path string, args ...string) error {
+func Pack(filename, compression, path string, args ...string) (string, error) {
 	err := RunCommand("tar", append([]string{"--xattrs", "-cf", filename, "-C", path}, args...)...)
 	if err != nil {
 		// Clean up incomplete tarball
 		os.Remove(filename)
-		return fmt.Errorf("Failed to create tarball: %w", err)
+		return "", fmt.Errorf("Failed to create tarball: %w", err)
 	}
 
 	return compressTarball(filename, compression)
 }
 
 // PackUpdate updates an existing tarball.
-func PackUpdate(filename, compression, path string, args ...string) error {
+func PackUpdate(filename, compression, path string, args ...string) (string, error) {
 	err := RunCommand("tar", append([]string{"--xattrs", "-uf", filename, "-C", path}, args...)...)
 	if err != nil {
-		return fmt.Errorf("Failed to update tarball: %w", err)
+		return "", fmt.Errorf("Failed to update tarball: %w", err)
 	}
 
 	return compressTarball(filename, compression)
 }
 
 // compressTarball compresses a tarball, or not.
-func compressTarball(filename, compression string) error {
+func compressTarball(filename, compression string) (string, error) {
+	fileExtension := ""
+
 	switch compression {
 	case "lzop", "zstd":
 		// Remove the uncompressed file as the compress fails to do so.
@@ -277,12 +279,32 @@ func compressTarball(filename, compression string) error {
 	case "bzip2", "xz", "lzip", "lzma", "gzip":
 		err := RunCommand(compression, "-f", filename)
 		if err != nil {
-			return fmt.Errorf("Failed to compress tarball %q: %w", filename, err)
+			return "", fmt.Errorf("Failed to compress tarball %q: %w", filename, err)
 		}
 	}
 
-	// Do not compress
-	return nil
+	switch compression {
+	case "lzop":
+		fileExtension = "lzo"
+	case "zstd":
+		fileExtension = "zst"
+	case "bzip2":
+		fileExtension = "bz2"
+	case "xz":
+		fileExtension = "xz"
+	case "lzip":
+		fileExtension = "lz"
+	case "lzma":
+		fileExtension = "lzma"
+	case "gzip":
+		fileExtension = "gz"
+	}
+
+	if fileExtension == "" {
+		return filename, nil
+	}
+
+	return fmt.Sprintf("%s.%s", filename, fileExtension), nil
 }
 
 //GetExpiryDate returns an expiry date based on the creationDate and format.
