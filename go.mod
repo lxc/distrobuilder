@@ -8,10 +8,13 @@ replace github.com/rootless-containers/proto v0.1.0 => github.com/rootless-conta
 
 exclude github.com/rootless-containers/proto v0.1.0
 
+exclude github.com/klauspost/compress v1.13.6
+
 require (
-	github.com/Microsoft/hcsshim v0.8.21 // indirect
+	github.com/Microsoft/hcsshim v0.8.22 // indirect
 	github.com/antchfx/xpath v1.2.0 // indirect
 	github.com/apex/log v1.9.0 // indirect
+	github.com/containerd/continuity v0.2.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/flosch/pongo2 v0.0.0-20200913210552-0d938eb266f3
 	github.com/fsouza/go-dockerclient v1.7.4 // indirect
@@ -22,7 +25,8 @@ require (
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/klauspost/compress v1.13.5 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
-	github.com/lxc/lxd v0.0.0-20210903031644-ed907d5a9137
+	github.com/lxc/lxd v0.0.0-20210915023210-55968b75c8d3
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mudler/docker-companion v0.4.6-0.20201209184016-2d26fc9143d4
 	github.com/openSUSE/umoci v0.4.5 // indirect
 	github.com/opencontainers/runc v1.0.2 // indirect
@@ -33,8 +37,9 @@ require (
 	github.com/vbatts/go-mtree v0.5.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
-	go.uber.org/zap v1.19.0
-	golang.org/x/sys v0.0.0-20210903071746-97244b99971b
+	go.uber.org/zap v1.19.1
+	golang.org/x/net v0.0.0-20210913180222-943fd674d43e // indirect
+	golang.org/x/sys v0.0.0-20210915083310-ed5796bab164
 	gopkg.in/antchfx/htmlquery.v1 v1.2.2
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
 	gopkg.in/yaml.v2 v2.4.0
