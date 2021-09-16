@@ -180,7 +180,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 	c.global.logger.Infow("Running hooks", "trigger", "post-files")
 
 	// Run post files hook
-	for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetAll|shared.ImageTargetContainer) {
+	for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetUndefined|shared.ImageTargetAll|shared.ImageTargetContainer) {
 		err := shared.RunScript(action.Action)
 		if err != nil {
 			exitChroot()
