@@ -13,10 +13,14 @@ Flags:
   -h, --help   help for build-dir
 
 Global Flags:
-      --cache-dir   Cache directory
-      --cleanup     Clean up cache directory (default true)
-  -o, --options     Override options (list of key=value)
-  -t, --timeout     Timeout in seconds
+      --cache-dir         Cache directory
+      --cleanup           Clean up cache directory (default true)
+      --debug             Enable debug output
+      --disable-overlay   Disable the use of filesystem overlays
+  -o, --options           Override options (list of key=value)
+  -t, --timeout           Timeout in seconds
+      --version           Print version number
+
 ```
 
 To build a plain rootfs, run `distrobuilder build-dir`.
@@ -36,17 +40,32 @@ distrobuilder pack-lxd def.yaml /path/to/rootfs /path/to/output
 $ distrobuilder build-lxc --help
 Build LXC image from scratch
 
+The compression can be set with the --compression flag. I can take one of the
+following values:
+  - bzip2
+  - gzip
+  - lzip
+  - lzma
+  - lzop
+  - xz (default)
+  - zstd
+
 Usage:
-  distrobuilder build-lxc <filename|-> [target dir] [flags]
+  distrobuilder build-lxc <filename|-> [target dir] [--compression=COMPRESSION] [flags]
 
 Flags:
-  -h, --help   help for build-lxc
+      --compression   Type of compression to use (default "xz")
+  -h, --help          help for build-lxc
 
 Global Flags:
-      --cache-dir   Cache directory
-      --cleanup     Clean up cache directory (default true)
-  -o, --options     Override options (list of key=value)
-  -t, --timeout     Timeout in seconds
+      --cache-dir         Cache directory
+      --cleanup           Clean up cache directory (default true)
+      --debug             Enable debug output
+      --disable-overlay   Disable the use of filesystem overlays
+  -o, --options           Override options (list of key=value)
+  -t, --timeout           Timeout in seconds
+      --version           Print version number
+
 ```
 
 Running the `build-lxc` subcommand creates a LXC image.
@@ -62,20 +81,41 @@ The rootfs won't be deleted afterwards.
 $ distrobuilder build-lxd --help
 Build LXD image from scratch
 
+Depending on the type, it either outputs a unified (single tarball)
+or split image (tarball + squashfs or qcow2 image). The --type flag can take one of the
+following values:
+  - split (default)
+  - unified
+
+
+The compression can be set with the --compression flag. I can take one of the
+following values:
+  - bzip2
+  - gzip
+  - lzip
+  - lzma
+  - lzop
+  - xz (default)
+  - zstd
+
 Usage:
-  distrobuilder build-lxd <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [flags]
+  distrobuilder build-lxd <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-lxd] [flags]
 
 Flags:
-      --compression   Type of compression to use (default "xz")
-  -h, --help          help for build-lxd
-      --type          Type of tarball to create (default "split")
-      --vm            Create a qcow2 image for VMs
+      --compression             Type of compression to use (default "xz")
+  -h, --help                    help for build-lxd
+      --import-into-lxd[="-"]   Import built image into LXD
+      --type                    Type of tarball to create (default "split")
+      --vm                      Create a qcow2 image for VMs
 
 Global Flags:
-      --cache-dir   Cache directory
-      --cleanup     Clean up cache directory (default true)
-  -o, --options     Override options (list of key=value)
-  -t, --timeout     Timeout in seconds
+      --cache-dir         Cache directory
+      --cleanup           Clean up cache directory (default true)
+      --debug             Enable debug output
+      --disable-overlay   Disable the use of filesystem overlays
+  -o, --options           Override options (list of key=value)
+  -t, --timeout           Timeout in seconds
+      --version           Print version number
 ```
 
 Running the `build-lxd` subcommand creates a LXD image.
@@ -89,6 +129,11 @@ See the [image section](image.md) for more on the image name.
 If `--compression` is set, the tarballs will use the provided compression instead of `xz`.
 
 Setting `--vm` will create a qcow2 image which is used for virtual machines.
+
+If `--import-into-lxd` is set, the resulting image is imported into LXD.
+It basically runs `lxc image import <image>`.
+Per default, it doesn't create an alias.
+This can be changed by calling it as `--import-into-lxd=<alias>`.
 
 After building the image, the rootfs will be destroyed.
 
