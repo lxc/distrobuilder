@@ -18,21 +18,21 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator, err := Load("template", nil, cacheDir, rootfsDir, shared.DefinitionFile{
-		Generator: "template",
-		Name:      "template",
-		Content:   "==test==",
-		Path:      "/root/template",
-	})
-	require.IsType(t, &template{}, generator)
-	require.NoError(t, err)
-
 	definition := shared.Definition{
 		Image: shared.DefinitionImage{
 			Distribution: "ubuntu",
 			Release:      "artful",
 		},
 	}
+
+	generator, err := Load("template", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Generator: "template",
+		Name:      "template",
+		Content:   "==test==",
+		Path:      "/root/template",
+	}, definition)
+	require.IsType(t, &template{}, generator)
+	require.NoError(t, err)
 
 	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
 
@@ -55,21 +55,21 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator, err := Load("template", nil, cacheDir, rootfsDir, shared.DefinitionFile{
-		Generator: "template",
-		Name:      "test-default-when",
-		Content:   "==test==",
-		Path:      "test-default-when",
-	})
-	require.IsType(t, &template{}, generator)
-	require.NoError(t, err)
-
 	definition := shared.Definition{
 		Image: shared.DefinitionImage{
 			Distribution: "ubuntu",
 			Release:      "artful",
 		},
 	}
+
+	generator, err := Load("template", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Generator: "template",
+		Name:      "test-default-when",
+		Content:   "==test==",
+		Path:      "test-default-when",
+	}, definition)
+	require.IsType(t, &template{}, generator)
+	require.NoError(t, err)
 
 	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
 
@@ -84,7 +84,7 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 		Template: shared.DefinitionFileTemplate{
 			When: []string{"create"},
 		},
-	})
+	}, definition)
 	require.IsType(t, &template{}, generator)
 	require.NoError(t, err)
 

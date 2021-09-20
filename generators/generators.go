@@ -15,7 +15,7 @@ var ErrNotSupported = errors.New("Not supported")
 var ErrUnknownGenerator = errors.New("Unknown generator")
 
 type generator interface {
-	init(logger *zap.SugaredLogger, cacheDir string, sourceDir string, defFile shared.DefinitionFile)
+	init(logger *zap.SugaredLogger, cacheDir string, sourceDir string, defFile shared.DefinitionFile, def shared.Definition)
 
 	Generator
 }
@@ -40,7 +40,7 @@ var generators = map[string]func() generator{
 }
 
 // Load loads and initializes a generator.
-func Load(generatorName string, logger *zap.SugaredLogger, cacheDir string, sourceDir string, defFile shared.DefinitionFile) (Generator, error) {
+func Load(generatorName string, logger *zap.SugaredLogger, cacheDir string, sourceDir string, defFile shared.DefinitionFile, def shared.Definition) (Generator, error) {
 	df, ok := generators[generatorName]
 	if !ok {
 		return nil, ErrUnknownGenerator
@@ -48,7 +48,7 @@ func Load(generatorName string, logger *zap.SugaredLogger, cacheDir string, sour
 
 	d := df()
 
-	d.init(logger, cacheDir, sourceDir, defFile)
+	d.init(logger, cacheDir, sourceDir, defFile, def)
 
 	return d, nil
 }
