@@ -380,7 +380,13 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	importFlag := cmd.Flags().Lookup("import-into-lxd")
 
 	if importFlag.Changed {
-		server, err := client.ConnectLXDUnix("", nil)
+		path := ""
+
+		if lxd.PathExists("/var/snap/lxd/common/lxd") {
+			path = "/var/snap/lxd/common/lxd/unix.socket"
+		}
+
+		server, err := client.ConnectLXDUnix(path, nil)
 		if err != nil {
 			return fmt.Errorf("Failed to connect to LXD: %w", err)
 		}
