@@ -27,7 +27,7 @@ func (c *cmdBuildDir) command() *cobra.Command {
 					continue
 				}
 
-				generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, c.global.targetDir, file)
+				generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, c.global.targetDir, file, *c.global.definition)
 				if err != nil {
 					return fmt.Errorf("Failed to load generator %q: %w", file.Generator, err)
 				}

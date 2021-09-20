@@ -22,7 +22,7 @@ func TestCopyGeneratorRun(t *testing.T) {
 	generator, err := Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test",
 		Path:   "copy_test_dir",
-	})
+	}, shared.Definition{})
 	require.IsType(t, &copy{}, generator)
 	require.NoError(t, err)
 
@@ -85,7 +85,7 @@ func TestCopyGeneratorRun(t *testing.T) {
 	generator, err = Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test/src*",
 		Path:   "copy_test_wildcard",
-	})
+	}, shared.Definition{})
 	require.IsType(t, &copy{}, generator)
 	require.NoError(t, err)
 
@@ -126,7 +126,7 @@ func TestCopyGeneratorRun(t *testing.T) {
 	_, err = src1.Seek(0, 0)
 	generator, err = Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test/src1",
-	})
+	}, shared.Definition{})
 	require.IsType(t, &copy{}, generator)
 	require.NoError(t, err)
 
@@ -154,7 +154,7 @@ func TestCopyGeneratorRun(t *testing.T) {
 	generator, err = Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test/src1",
 		Path:   "/hello/world/",
-	})
+	}, shared.Definition{})
 	require.IsType(t, &copy{}, generator)
 	require.NoError(t, err)
 

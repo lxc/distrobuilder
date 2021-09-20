@@ -156,7 +156,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 			continue
 		}
 
-		generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, overlayDir, file)
+		generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, overlayDir, file, *c.global.definition)
 		if err != nil {
 			return fmt.Errorf("Failed to load generator %q: %w", file.Generator, err)
 		}

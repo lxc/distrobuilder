@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/flosch/pongo2"
-
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -19,18 +17,6 @@ type dump struct {
 // RunLXC dumps content to a file.
 func (g *dump) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
 	content := g.defFile.Content
-
-	if g.defFile.Pongo {
-		tpl, err := pongo2.FromString(g.defFile.Content)
-		if err != nil {
-			return fmt.Errorf("Failed to parse template: %w", err)
-		}
-
-		content, err = tpl.Execute(pongo2.Context{"lxc": target})
-		if err != nil {
-			return fmt.Errorf("Failed to execute template: %w", err)
-		}
-	}
 
 	err := g.run(content)
 	if err != nil {
@@ -50,18 +36,6 @@ func (g *dump) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) er
 // RunLXD dumps content to a file.
 func (g *dump) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
 	content := g.defFile.Content
-
-	if g.defFile.Pongo {
-		tpl, err := pongo2.FromString(g.defFile.Content)
-		if err != nil {
-			return fmt.Errorf("Failed to parse template: %w", err)
-		}
-
-		content, err = tpl.Execute(pongo2.Context{"lxd": target})
-		if err != nil {
-			return fmt.Errorf("Failed to execute template: %w", err)
-		}
-	}
 
 	return g.run(content)
 }

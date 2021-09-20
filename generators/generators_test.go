@@ -22,11 +22,11 @@ func teardown(cacheDir string) {
 }
 
 func TestGet(t *testing.T) {
-	generator, err := Load("hostname", nil, "", "", shared.DefinitionFile{})
+	generator, err := Load("hostname", nil, "", "", shared.DefinitionFile{}, shared.Definition{})
 	require.IsType(t, &hostname{}, generator)
 	require.NoError(t, err)
 
-	generator, err = Load("", nil, "", "", shared.DefinitionFile{})
+	generator, err = Load("", nil, "", "", shared.DefinitionFile{}, shared.Definition{})
 	require.Nil(t, generator)
 	require.Error(t, err)
 }

@@ -21,7 +21,7 @@ func TestCloudInitGeneratorRunLXC(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator, err := Load("cloud-init", nil, cacheDir, rootfsDir, shared.DefinitionFile{})
+	generator, err := Load("cloud-init", nil, cacheDir, rootfsDir, shared.DefinitionFile{}, shared.Definition{})
 	require.IsType(t, &cloudInit{}, generator)
 	require.NoError(t, err)
 
@@ -140,7 +140,7 @@ config:
 		generator, err := Load("cloud-init", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 			Generator: "cloud-init",
 			Name:      tt.name,
-		})
+		}, shared.Definition{})
 		require.IsType(t, &cloudInit{}, generator)
 		require.NoError(t, err)
 

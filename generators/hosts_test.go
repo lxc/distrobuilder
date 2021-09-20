@@ -18,7 +18,7 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator, err := Load("hosts", nil, cacheDir, rootfsDir, shared.DefinitionFile{Path: "/etc/hosts"})
+	generator, err := Load("hosts", nil, cacheDir, rootfsDir, shared.DefinitionFile{Path: "/etc/hosts"}, shared.Definition{})
 	require.IsType(t, &hosts{}, generator)
 	require.NoError(t, err)
 
@@ -51,7 +51,7 @@ func TestHostsGeneratorRunLXD(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
-	generator, err := Load("hosts", nil, cacheDir, rootfsDir, shared.DefinitionFile{Path: "/etc/hosts"})
+	generator, err := Load("hosts", nil, cacheDir, rootfsDir, shared.DefinitionFile{Path: "/etc/hosts"}, shared.Definition{})
 	require.IsType(t, &hosts{}, generator)
 	require.NoError(t, err)
 

@@ -19,11 +19,19 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
+	def := shared.Definition{
+		Targets: shared.DefinitionTarget{
+			LXC: shared.DefinitionTargetLXC{
+				CreateMessage: "message",
+			},
+		},
+	}
+
 	generator, err := Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Path:    "/hello/world",
-		Content: "hello {{ lxc.CreateMessage }}",
+		Content: "hello {{ targets.lxc.create_message }}",
 		Pongo:   true,
-	})
+	}, def)
 	require.IsType(t, &dump{}, generator)
 	require.NoError(t, err)
 
@@ -45,8 +53,8 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 
 	generator, err = Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Path:    "/hello/world",
-		Content: "hello {{ lxc.CreateMessage }}",
-	})
+		Content: "hello {{ targets.lxc.create_message }}",
+	}, def)
 	require.IsType(t, &dump{}, generator)
 	require.NoError(t, err)
 
@@ -64,7 +72,7 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 	buffer.Reset()
 	io.Copy(&buffer, file)
 
-	require.Equal(t, "hello {{ lxc.CreateMessage }}\n", buffer.String())
+	require.Equal(t, "hello {{ targets.lxc.create_message }}\n", buffer.String())
 }
 
 func TestDumpGeneratorRunLXD(t *testing.T) {
@@ -74,11 +82,21 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	setup(t, cacheDir)
 	defer teardown(cacheDir)
 
+	def := shared.Definition{
+		Targets: shared.DefinitionTarget{
+			LXD: shared.DefinitionTargetLXD{
+				VM: shared.DefinitionTargetLXDVM{
+					Filesystem: "ext4",
+				},
+			},
+		},
+	}
+
 	generator, err := Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Path:    "/hello/world",
-		Content: "hello {{ lxd.VM.Filesystem }}",
+		Content: "hello {{ targets.lxd.vm.filesystem }}",
 		Pongo:   true,
-	})
+	}, def)
 	require.IsType(t, &dump{}, generator)
 	require.NoError(t, err)
 
@@ -103,8 +121,8 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 
 	generator, err = Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Path:    "/hello/world",
-		Content: "hello {{ lxd.VM.Filesystem }}",
-	})
+		Content: "hello {{ targets.lxd.vm.filesystem }}",
+	}, def)
 	require.IsType(t, &dump{}, generator)
 	require.NoError(t, err)
 
@@ -123,5 +141,5 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	buffer.Reset()
 	io.Copy(&buffer, file)
 
-	require.Equal(t, "hello {{ lxd.VM.Filesystem }}\n", buffer.String())
+	require.Equal(t, "hello {{ targets.lxd.vm.filesystem }}\n", buffer.String())
 }
