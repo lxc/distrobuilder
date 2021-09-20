@@ -103,7 +103,7 @@ type DefinitionPackagesCustomManager struct {
 // A DefinitionPackages represents a package handler.
 type DefinitionPackages struct {
 	Manager       string                           `yaml:"manager,omitempty"`
-	CustomManager *DefinitionPackagesCustomManager `yaml:"custom-manager,omitempty"`
+	CustomManager *DefinitionPackagesCustomManager `yaml:"custom_manager,omitempty"`
 	Update        bool                             `yaml:"update,omitempty"`
 	Cleanup       bool                             `yaml:"cleanup,omitempty"`
 	Sets          []DefinitionPackagesSet          `yaml:"sets,omitempty"`
@@ -149,7 +149,7 @@ type DefinitionTargetLXCConfig struct {
 
 // A DefinitionTargetLXC represents LXC specific files as part of the metadata.
 type DefinitionTargetLXC struct {
-	CreateMessage string                      `yaml:"create-message,omitempty"`
+	CreateMessage string                      `yaml:"create_message,omitempty"`
 	Config        []DefinitionTargetLXCConfig `yaml:"config,omitempty"`
 }
 
@@ -367,31 +367,31 @@ func (d *Definition) Validate() error {
 		}
 
 		if d.Packages.CustomManager != nil {
-			return errors.New("cannot have both packages.manager and packages.custom-manager set")
+			return errors.New("cannot have both packages.manager and packages.custom_manager set")
 		}
 	} else {
 		if d.Packages.CustomManager == nil {
-			return errors.New("packages.manager or packages.custom-manager needs to be set")
+			return errors.New("packages.manager or packages.custom_manager needs to be set")
 		}
 
 		if d.Packages.CustomManager.Clean.Command == "" {
-			return errors.New("packages.custom-manager requires a clean command")
+			return errors.New("packages.custom_manager requires a clean command")
 		}
 
 		if d.Packages.CustomManager.Install.Command == "" {
-			return errors.New("packages.custom-manager requires an install command")
+			return errors.New("packages.custom_manager requires an install command")
 		}
 
 		if d.Packages.CustomManager.Remove.Command == "" {
-			return errors.New("packages.custom-manager requires a remove command")
+			return errors.New("packages.custom_manager requires a remove command")
 		}
 
 		if d.Packages.CustomManager.Refresh.Command == "" {
-			return errors.New("packages.custom-manager requires a refresh command")
+			return errors.New("packages.custom_manager requires a refresh command")
 		}
 
 		if d.Packages.CustomManager.Update.Command == "" {
-			return errors.New("packages.custom-manager requires an update command")
+			return errors.New("packages.custom_manager requires an update command")
 		}
 	}
 

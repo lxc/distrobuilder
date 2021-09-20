@@ -90,7 +90,7 @@ func TestValidateDefinition(t *testing.T) {
 			false,
 		},
 		{
-			"valid Defintion with packages.custom-manager",
+			"valid Defintion with packages.custom_manager",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",
@@ -213,7 +213,7 @@ func TestValidateDefinition(t *testing.T) {
 			true,
 		},
 		{
-			"missing clean command in packages.custom-manager",
+			"missing clean command in packages.custom_manager",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",
@@ -228,11 +228,11 @@ func TestValidateDefinition(t *testing.T) {
 					CustomManager: &DefinitionPackagesCustomManager{},
 				},
 			},
-			"packages.custom-manager requires a clean command",
+			"packages.custom_manager requires a clean command",
 			true,
 		},
 		{
-			"missing install command in packages.custom-manager",
+			"missing install command in packages.custom_manager",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",
@@ -251,11 +251,11 @@ func TestValidateDefinition(t *testing.T) {
 					},
 				},
 			},
-			"packages.custom-manager requires an install command",
+			"packages.custom_manager requires an install command",
 			true,
 		},
 		{
-			"missing remove command in packages.custom-manager",
+			"missing remove command in packages.custom_manager",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",
@@ -277,11 +277,11 @@ func TestValidateDefinition(t *testing.T) {
 					},
 				},
 			},
-			"packages.custom-manager requires a remove command",
+			"packages.custom_manager requires a remove command",
 			true,
 		},
 		{
-			"missing refresh command in packages.custom-manager",
+			"missing refresh command in packages.custom_manager",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",
@@ -306,11 +306,11 @@ func TestValidateDefinition(t *testing.T) {
 					},
 				},
 			},
-			"packages.custom-manager requires a refresh command",
+			"packages.custom_manager requires a refresh command",
 			true,
 		},
 		{
-			"missing update command in packages.custom-manager",
+			"missing update command in packages.custom_manager",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",
@@ -338,11 +338,11 @@ func TestValidateDefinition(t *testing.T) {
 					},
 				},
 			},
-			"packages.custom-manager requires an update command",
+			"packages.custom_manager requires an update command",
 			true,
 		},
 		{
-			"package.manager and package.custom-manager set",
+			"package.manager and package.custom_manager set",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",
@@ -358,11 +358,11 @@ func TestValidateDefinition(t *testing.T) {
 					CustomManager: &DefinitionPackagesCustomManager{},
 				},
 			},
-			"cannot have both packages.manager and packages.custom-manager set",
+			"cannot have both packages.manager and packages.custom_manager set",
 			true,
 		},
 		{
-			"package.manager and package.custom-manager unset",
+			"package.manager and package.custom_manager unset",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",
@@ -375,7 +375,7 @@ func TestValidateDefinition(t *testing.T) {
 				},
 				Packages: DefinitionPackages{},
 			},
-			"packages.manager or packages.custom-manager needs to be set",
+			"packages.manager or packages.custom_manager needs to be set",
 			true,
 		},
 		{
