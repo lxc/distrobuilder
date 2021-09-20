@@ -5,7 +5,7 @@ The target section is for target dependent files.
 ```yaml
 targets:
     lxc:
-        create-message: <string>
+        create_message: <string>
         config:
             - type: <string>
               before: <uint>
@@ -20,7 +20,7 @@ targets:
 
 ## LXC
 
-The `create-message` field is a string which is displayed after new LXC container has been created.
+The `create_message` field is a string which is displayed after new LXC container has been created.
 This string is rendered using pongo2 and can include various fields from the definition file, e.g. `{{ image.description }}`.
 
 `config` is a list of container config options.

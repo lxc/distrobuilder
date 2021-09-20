@@ -50,7 +50,7 @@ This is useful if the desired package manager is not supported by distrobuilder.
 
 ```yaml
 packages:
-    custom-manager: # required
+    custom_manager: # required
         clean: # required
             cmd: <string>
             flags: <array>
