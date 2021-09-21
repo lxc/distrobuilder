@@ -30,6 +30,7 @@ files:
       gid: <string>
       uid: <string>
       pongo: <boolean>
+      source: <string>
       architectures: <array> # filter
       releases: <array> # filter
       variants: <array> # filter
@@ -38,6 +39,8 @@ files:
 Filters can be applied to each entry in `files`.
 Valid filters are `architecture`, `release` and `variant`.
 See filters for more information.
+
+If `pongo` is `true`, the values of `path`, `content`, and `source` are rendered using pongo2.
 
 ## cloud-init
 
@@ -48,16 +51,10 @@ Valid names are `user-data`, `meta-data`, `vendor-data` and `network-config`.
 The default `path` if not defined otherwise is `/var/lib/cloud/seed/nocloud-net/<name>`.
 Setting `path`, `content` or `template.properties` will override the default values.
 
-If `pongo` is true, the content will be processed using pongo2, and the context will be set appropriately (`{{ lxc.<variable> }}` or `{{ lxd.<variable> }}`).
-See  [targets](targets.md).
-
 ## dump
 
 The `dump` generator writes the provided `content` to a file set in `path`.
 If provided, it will set the `mode` (octal format), `gid` (integer) and/or `uid` (integer).
-
-If `pongo` is true, the content will be processed using pongo2, and the context will be set appropriately (`{{ lxc.<variable> }}` or `{{ lxd.<variable> }}`).
-See  [targets](targets.md).
 
 ## copy
 
@@ -107,9 +104,6 @@ The `when` key can be one or more of:
 * create (run at the time a new container is created from the image)
 * copy (run when a container is created from an existing one)
 * start (run every time the container is started)
-
-If `pongo` is true, the content will be processed using pongo2, and the context will be set appropriately (`{{ lxc.<variable> }}` or `{{ lxd.<variable> }}`).
-See  [targets](targets.md).
 
 See [LXD image format](https://lxd.readthedocs.io/en/latest/image-handling/#image-format) for more.
 
