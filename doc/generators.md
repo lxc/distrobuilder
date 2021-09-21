@@ -30,6 +30,7 @@ files:
       gid: <string>
       uid: <string>
       pongo: <boolean>
+      source: <string>
       architectures: <array> # filter
       releases: <array> # filter
       variants: <array> # filter
