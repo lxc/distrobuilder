@@ -486,3 +486,19 @@ func RsyncLocal(src string, dest string) error {
 
 	return nil
 }
+
+// Retry retries a function up to <attempts> times. This is especially useful for networking.
+func Retry(f func() error, attempts uint) error {
+	var err error
+
+	for i := uint(0); i < attempts; i++ {
+		err = f()
+		if err == nil {
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	return err
+}
