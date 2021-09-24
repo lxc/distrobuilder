@@ -40,7 +40,10 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 			hashLen = hashFunc.Size() * 2
 		}
 
-		hashes, err = downloadChecksum(targetDir, checksum, file, hashFunc, hashLen)
+		err := Retry(func() error {
+			hashes, err = downloadChecksum(targetDir, checksum, file, hashFunc, hashLen)
+			return err
+		}, 3)
 		if err != nil {
 			return "", fmt.Errorf("Error while downloading checksum: %w", err)
 		}
@@ -96,10 +99,10 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 	}
 
 	if checksum == "" {
-		_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, "", nil, image)
-		if err != nil && !strings.HasPrefix(err.Error(), "Hash mismatch") {
-			return "", err
-		}
+		err = Retry(func() error {
+			_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, "", nil, image)
+			return err
+		}, 3)
 	} else {
 		// Check all file hashes in case multiple have been provided.
 		for _, h := range hashes {
@@ -107,15 +110,17 @@ func DownloadHash(def DefinitionImage, file, checksum string, hashFunc hash.Hash
 				hashFunc.Reset()
 			}
 
-			_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, h, hashFunc, image)
+			err = Retry(func() error {
+				_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, h, hashFunc, image)
+				return err
+			}, 3)
 			if err == nil {
 				break
 			}
 		}
-
-		if err != nil {
-			return "", err
-		}
+	}
+	if err != nil {
+		return "", err
 	}
 
 	fmt.Println("")
