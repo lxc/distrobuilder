@@ -50,9 +50,21 @@ func (s *funtoo) Run() error {
 		fname = fmt.Sprintf("stage3-%s-%s-release-std-%s.tar.xz", s.definition.Image.ArchitectureMapped, s.definition.Image.Release, releaseDates[i])
 		tarball = fmt.Sprintf("%s/%s/%s", baseURL, releaseDates[i], fname)
 
-		resp, err := http.Head(tarball)
+		var (
+			resp *http.Response
+			err  error
+		)
+
+		err = shared.Retry(func() error {
+			resp, err = http.Head(tarball)
+			if err != nil {
+				return fmt.Errorf("Failed to call HEAD on %q: %w", tarball, err)
+			}
+
+			return nil
+		}, 3)
 		if err != nil {
-			return fmt.Errorf("Failed to call HEAD on %q: %w", tarball, err)
+			return nil
 		}
 
 		if resp.StatusCode == http.StatusNotFound {

@@ -374,9 +374,21 @@ func (s ubuntu) unpack(filePath, rootDir string) error {
 }
 
 func getLatestRelease(baseURL, release, arch string) (string, error) {
-	resp, err := http.Get(baseURL)
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	err = shared.Retry(func() error {
+		resp, err = http.Get(baseURL)
+		if err != nil {
+			return fmt.Errorf("Failed to GET %q: %w", baseURL, err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return "", fmt.Errorf("Failed to GET %q: %w", baseURL, err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
@@ -401,9 +413,18 @@ func getLatestCoreBaseImage(baseURL, release, arch string) (string, error) {
 		return "", fmt.Errorf("Failed to parse URL %q: %w", fmt.Sprintf("%s/ubuntu/%s/%s/default", baseURL, release, arch), err)
 	}
 
-	resp, err := http.Get(u.String())
+	var resp *http.Response
+
+	err = shared.Retry(func() error {
+		resp, err = http.Get(u.String())
+		if err != nil {
+			return fmt.Errorf("Failed to GET %q: %w", u.String(), err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return "", fmt.Errorf("Failed to GET %q: %w", u.String(), err)
+		return "", err
 	}
 	defer resp.Body.Close()
 

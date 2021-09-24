@@ -130,9 +130,21 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 }
 
 func (s *fedora) getLatestBuild(URL, release string) (string, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/%s", URL, release))
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	err = shared.Retry(func() error {
+		resp, err = http.Get(fmt.Sprintf("%s/%s", URL, release))
+		if err != nil {
+			return fmt.Errorf("Failed to GET %q: %w", fmt.Sprintf("%s/%s", URL, release), err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return "", fmt.Errorf("Failed to GET %q: %w", fmt.Sprintf("%s/%s", URL, release), err)
+		return "", err
 	}
 	defer resp.Body.Close()
 
