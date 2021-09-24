@@ -28,9 +28,21 @@ func (s *apertis) Run() error {
 	baseURL := fmt.Sprintf("%s/%s/%s",
 		s.definition.Source.URL, s.definition.Source.Variant, release)
 
-	resp, err := http.Head(baseURL)
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	err = shared.Retry(func() error {
+		resp, err = http.Head(baseURL)
+		if err != nil {
+			return fmt.Errorf("Failed to HEAD %q: %w", baseURL, err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return fmt.Errorf("Failed to HEAD %q: %w", baseURL, err)
+		return err
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
@@ -78,9 +90,21 @@ func (s *apertis) Run() error {
 }
 
 func (s *apertis) getLatestRelease(baseURL, release string) (string, error) {
-	resp, err := http.Get(baseURL)
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	err = shared.Retry(func() error {
+		resp, err = http.Get(baseURL)
+		if err != nil {
+			return fmt.Errorf("Failed to GET %q: %w", baseURL, err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return "", fmt.Errorf("Failed to GET %q: %w", baseURL, err)
+		return "", err
 	}
 	defer resp.Body.Close()
 

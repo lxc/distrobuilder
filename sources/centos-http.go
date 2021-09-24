@@ -347,9 +347,21 @@ func (s *centOS) getRelease(URL, release, variant, arch string) (string, error) 
 	releaseFields := strings.Split(release, ".")
 	u := URL + path.Join("/", strings.ToLower(release), "isos", arch)
 
-	resp, err := http.Get(u)
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	err = shared.Retry(func() error {
+		resp, err = http.Get(u)
+		if err != nil {
+			return fmt.Errorf("Failed to get URL %q: %w", u, err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return "", fmt.Errorf("Failed to get URL %q: %w", u, err)
+		return "", err
 	}
 	defer resp.Body.Close()
 

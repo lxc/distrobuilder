@@ -25,9 +25,21 @@ func (s *sabayon) Run() error {
 		s.definition.Image.ArchitectureMapped)
 	tarballPath := fmt.Sprintf("%s/%s", s.definition.Source.URL, fname)
 
-	resp, err := http.Head(tarballPath)
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	err = shared.Retry(func() error {
+		resp, err = http.Head(tarballPath)
+		if err != nil {
+			return fmt.Errorf("Failed to HEAD %q: %w", tarballPath, err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return fmt.Errorf("Failed to HEAD %q: %w", tarballPath, err)
+		return err
 	}
 
 	baseURL, fname = path.Split(resp.Request.URL.String())

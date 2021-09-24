@@ -260,9 +260,21 @@ rm -rf /rootfs/var/cache/yum
 func (s *almalinux) getRelease(URL, release, variant, arch string) (string, error) {
 	fullURL := URL + path.Join("/", strings.ToLower(release), "isos", arch)
 
-	resp, err := http.Get(fullURL)
+	var (
+		err  error
+		resp *http.Response
+	)
+
+	err = shared.Retry(func() error {
+		resp, err = http.Get(fullURL)
+		if err != nil {
+			return fmt.Errorf("Failed to GET %q: %w", fullURL, err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return "", fmt.Errorf("Failed to GET %q: %w", fullURL, err)
+		return "", err
 	}
 	defer resp.Body.Close()
 

@@ -105,9 +105,21 @@ func (s *gentoo) Run() error {
 }
 
 func (s *gentoo) getLatestBuild(baseURL, arch, variant string) (string, error) {
-	resp, err := http.Get(baseURL)
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	err = shared.Retry(func() error {
+		resp, err = http.Get(baseURL)
+		if err != nil {
+			return fmt.Errorf("Failed to GET %q: %w", baseURL, err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return "", fmt.Errorf("Failed to GET %q: %w", baseURL, err)
+		return "", err
 	}
 	defer resp.Body.Close()
 

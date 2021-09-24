@@ -40,9 +40,18 @@ func (s *opensuse) Run() error {
 		return fmt.Errorf("Failed to get tarball path: %w", err)
 	}
 
-	resp, err := http.Head(tarballPath)
+	var resp *http.Response
+
+	err = shared.Retry(func() error {
+		resp, err = http.Head(tarballPath)
+		if err != nil {
+			return fmt.Errorf("Failed to HEAD %q: %w", tarballPath, err)
+		}
+
+		return nil
+	}, 3)
 	if err != nil {
-		return fmt.Errorf("Failed to HEAD %q: %w", tarballPath, err)
+		return nil
 	}
 
 	baseURL, fname = path.Split(resp.Request.URL.String())

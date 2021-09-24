@@ -50,7 +50,19 @@ func (s *oraclelinux) Run() error {
 
 		fullURL := fmt.Sprintf("%s/%s", URL, fname)
 
-		resp, err := http.Head(fullURL)
+		var (
+			resp *http.Response
+			err  error
+		)
+
+		err = shared.Retry(func() error {
+			resp, err = http.Head(fullURL)
+			if err != nil {
+				return errors.New("")
+			}
+
+			return nil
+		}, 3)
 		if err != nil {
 			continue
 		}
