@@ -706,7 +706,6 @@ done
 
 # Determine distro name and release
 ID=""
-VERSION_ID=""
 if [ -e /etc/os-release ]; then
 	. /etc/os-release
 fi
