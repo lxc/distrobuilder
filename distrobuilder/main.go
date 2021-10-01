@@ -566,8 +566,8 @@ is_in_path() {
 ## Fix functions
 # fix_ro_paths avoids udevd issues with /sys and /proc being writable
 fix_ro_paths() {
-	mkdir -p /run/systemd/system/$1.d
-	cat <<-EOF > /run/systemd/system/$1.d/zzz-lxc-ropath.conf
+	mkdir -p "/run/systemd/system/$1.d"
+	cat <<-EOF > "/run/systemd/system/$1.d/zzz-lxc-ropath.conf"
 [Service]
 BindReadOnlyPaths=/sys /proc
 EOF
@@ -635,28 +635,30 @@ EOF
 fix_systemd_override_unit() {
 	dropin_dir="/run/systemd/${1}.d"
 	mkdir -p "${dropin_dir}"
-	echo "[Service]" > "${dropin_dir}/zzz-lxc-service.conf"
-	[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default" >> "${dropin_dir}/zzz-lxc-service.conf"
-	[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no" >> "${dropin_dir}/zzz-lxc-service.conf"
-	[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no" >> "${dropin_dir}/zzz-lxc-service.conf"
-	[ "${systemd_version}" -ge 239 ] && echo "NoNewPrivileges=no" >> "${dropin_dir}/zzz-lxc-service.conf"
-	[ "${systemd_version}" -ge 249 ] && echo "LoadCredential=" >> "${dropin_dir}/zzz-lxc-service.conf"
+	{
+		echo "[Service]";
+		[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default";
+		[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no";
+		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no";
+		[ "${systemd_version}" -ge 239 ] && echo "NoNewPrivileges=no";
+		[ "${systemd_version}" -ge 249 ] && echo "LoadCredential=";
 
-	# Additional settings for privileged containers
-	if grep -q 4294967295 /proc/self/uid_map; then
-		echo "ProtectHome=no" >> "${dropin_dir}/zzz-lxc-service.conf"
-		echo "ProtectSystem=no" >> "${dropin_dir}/zzz-lxc-service.conf"
-		echo "PrivateDevices=no" >> "${dropin_dir}/zzz-lxc-service.conf"
-		echo "PrivateTmp=no" >> "${dropin_dir}/zzz-lxc-service.conf"
-		[ "${systemd_version}" -ge 244 ] && echo "ProtectKernelLogs=no" >> "${dropin_dir}/zzz-lxc-service.conf"
-		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelModules=no" >> "${dropin_dir}/zzz-lxc-service.conf"
-		echo "ReadWritePaths=" >> "${dropin_dir}/zzz-lxc-service.conf"
-	fi
+		# Additional settings for privileged containers
+		if grep -q 4294967295 /proc/self/uid_map; then
+			echo "ProtectHome=no";
+			echo "ProtectSystem=no";
+			echo "PrivateDevices=no";
+			echo "PrivateTmp=no";
+			[ "${systemd_version}" -ge 244 ] && echo "ProtectKernelLogs=no";
+			[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelModules=no";
+			echo "ReadWritePaths=";
+		fi
+	} > "${dropin_dir}/zzz-lxc-service.conf"
 }
 
 # fix_systemd_mask masks the systemd unit
 fix_systemd_mask() {
-	ln -sf /dev/null /run/systemd/system/$1
+	ln -sf /dev/null "/run/systemd/system/$1"
 }
 
 # fix_systemd_udev_trigger overrides the systemd-udev-trigger.service to match the latest version
@@ -706,7 +708,6 @@ done
 
 # Determine distro name and release
 ID=""
-VERSION_ID=""
 if [ -e /etc/os-release ]; then
 	. /etc/os-release
 fi
