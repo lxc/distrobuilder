@@ -566,8 +566,8 @@ is_in_path() {
 ## Fix functions
 # fix_ro_paths avoids udevd issues with /sys and /proc being writable
 fix_ro_paths() {
-	mkdir -p /run/systemd/system/$1.d
-	cat <<-EOF > /run/systemd/system/$1.d/zzz-lxc-ropath.conf
+	mkdir -p "/run/systemd/system/$1.d"
+	cat <<-EOF > "/run/systemd/system/$1.d/zzz-lxc-ropath.conf"
 [Service]
 BindReadOnlyPaths=/sys /proc
 EOF
@@ -656,7 +656,7 @@ fix_systemd_override_unit() {
 
 # fix_systemd_mask masks the systemd unit
 fix_systemd_mask() {
-	ln -sf /dev/null /run/systemd/system/$1
+	ln -sf /dev/null "/run/systemd/system/$1"
 }
 
 # fix_systemd_udev_trigger overrides the systemd-udev-trigger.service to match the latest version
