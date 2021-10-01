@@ -637,13 +637,14 @@ fix_systemd_override_unit() {
 	mkdir -p "${dropin_dir}"
 	{
 		echo "[Service]";
-		[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default";
-		[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no";
-		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no";
 		[ "${systemd_version}" -ge 249 ] && echo "LoadCredential=";
 
-		# Additional settings for privileged containers
-		if grep -q 4294967295 /proc/self/uid_map; then
+		# systemd hardening features depending on mount namespace do not work
+		# on containers where security.nesting is disabled
+		if [ ! -d /dev/.lxc/proc ]; then
+			[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default";
+			[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no";
+			[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no";
 			echo "ProtectHome=no";
 			echo "ProtectSystem=no";
 			echo "PrivateDevices=no";
