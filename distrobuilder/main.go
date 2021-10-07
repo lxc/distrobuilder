@@ -640,6 +640,7 @@ fix_systemd_override_unit() {
 		[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default";
 		[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no";
 		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no";
+		[ "${systemd_version}" -ge 239 ] && echo "NoNewPrivileges=no";
 		[ "${systemd_version}" -ge 249 ] && echo "LoadCredential=";
 
 		# Additional settings for privileged containers
