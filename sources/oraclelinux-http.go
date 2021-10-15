@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
@@ -142,7 +143,13 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	}
 
 	// Determine rpm and yum packages
-	baseURL := fmt.Sprintf("https://yum.oracle.com/repo/OracleLinux/OL%s/%s/base/%s", s.majorVersion, latestUpdate, s.architecture)
+	var baseURL string
+
+	if s.majorVersion == "7" {
+		baseURL = fmt.Sprintf("https://yum.oracle.com/repo/OracleLinux/OL%s/%s/base/%s", s.majorVersion, latestUpdate, s.architecture)
+	} else {
+		baseURL = fmt.Sprintf("https://yum.oracle.com/repo/OracleLinux/OL%s/%s/baseos/base/%s", s.majorVersion, latestUpdate, s.architecture)
+	}
 
 	doc, err := htmlquery.LoadURL(fmt.Sprintf("%s/index.html", baseURL))
 	if err != nil {
@@ -152,26 +159,28 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	regexRpm := regexp.MustCompile(`^getPackage/rpm-\d+.+\.rpm$`)
 	regexYum := regexp.MustCompile(`^getPackage/yum-\d+.+\.rpm$`)
 
-	var yumPkg string
-	var rpmPkg string
+	var yumPkgs []string
+	var rpmPkgs []string
 
 	for _, a := range htmlquery.Find(doc, `//a/@href`) {
-		if rpmPkg == "" && regexRpm.MatchString(a.FirstChild.Data) {
-			rpmPkg = a.FirstChild.Data
+		if regexRpm.MatchString(a.FirstChild.Data) {
+			rpmPkgs = append(rpmPkgs, a.FirstChild.Data)
 			continue
 		}
 
-		if yumPkg == "" && regexYum.MatchString(a.FirstChild.Data) {
-			yumPkg = a.FirstChild.Data
+		if regexYum.MatchString(a.FirstChild.Data) {
+			yumPkgs = append(yumPkgs, a.FirstChild.Data)
 			continue
-		}
-
-		if rpmPkg != "" && yumPkg != "" {
-			break
 		}
 	}
 
-	if rpmPkg != "" && yumPkg != "" {
+	sort.Strings(yumPkgs)
+	sort.Strings(rpmPkgs)
+
+	if len(rpmPkgs) > 0 && len(yumPkgs) > 0 {
+		yumPkg := yumPkgs[len(yumPkgs)-1]
+		rpmPkg := rpmPkgs[len(rpmPkgs)-1]
+
 		array := [][]string{
 			{filepath.Join(tempRootDir, filepath.Base(rpmPkg)), fmt.Sprintf("%s/%s", baseURL, rpmPkg)},
 			{filepath.Join(tempRootDir, filepath.Base(yumPkg)), fmt.Sprintf("%s/%s", baseURL, yumPkg)},
@@ -210,6 +219,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 set -eux
 
 version="%s"
+latest_update="%s"
 arch="%s"
 
 # Create required files
@@ -218,9 +228,9 @@ touch /etc/mtab /etc/fstab
 mkdir -p /etc/yum.repos.d /rootfs
 
 if [ "${version}" = "7" ]; then
-	baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/latest/${arch}/
+	baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${latest_update}/base/${arch}/
 else
-	baseurl=http://yum.oracle.com/repo/OracleLinux/OL${version}/baseos/latest/${arch}/
+	baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${latest_update}/baseos/base/${arch}/
 fi
 
 if which dnf; then
@@ -270,7 +280,7 @@ gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle
 EOF
 
-`, s.majorVersion, s.architecture))
+`, s.majorVersion, latestUpdate, s.architecture))
 	if err != nil {
 		exitChroot()
 		return fmt.Errorf("Failed to run script: %w", err)
