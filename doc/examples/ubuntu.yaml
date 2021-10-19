@@ -84,6 +84,9 @@ files:
   - eoan
   - focal
   - groovy
+  - hirsute
+  - impish
+  - jammy
   types:
   - container
   variants:
@@ -103,6 +106,9 @@ files:
   - eoan
   - focal
   - groovy
+  - hirsute
+  - impish
+  - jammy
   types:
   - vm
   variants:
@@ -211,6 +217,9 @@ packages:
     - eoan
     - focal
     - groovy
+    - hirsute
+    - impish
+    - jammy
     types:
     - vm
 
@@ -222,6 +231,9 @@ packages:
     - eoan
     - focal
     - groovy
+    - hirsute
+    - impish
+    - jammy
     types:
     - vm
 
@@ -252,6 +264,7 @@ packages:
     - powerpc
     - powerpc64
     - ppc64el
+    - riscv64
 
 actions:
 - trigger: post-update
@@ -277,6 +290,9 @@ actions:
   - eoan
   - focal
   - groovy
+  - hirsute
+  - impish
+  - jammy
 
 - trigger: post-packages
   action: |-
