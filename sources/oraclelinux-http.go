@@ -229,8 +229,10 @@ mkdir -p /etc/yum.repos.d /rootfs
 
 if [ "${version}" = "7" ]; then
 	baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${latest_update}/base/${arch}/
+	baseurl_latest=https://yum.oracle.com/repo/OracleLinux/OL${version}/latest/${arch}/
 else
 	baseurl=https://yum.oracle.com/repo/OracleLinux/OL${version}/${latest_update}/baseos/base/${arch}/
+	baseurl_latest=https://yum.oracle.com/repo/OracleLinux/OL${version}/baseos/latest/${arch}/
 fi
 
 if which dnf; then
@@ -257,9 +259,25 @@ gpgcheck=1
 gpgkey=${gpgkey}
 EOF
 
+cat <<- EOF > /etc/yum.repos.d/base_latest.repo
+[latest]
+name=Oracle Linux
+baseurl=${baseurl_latest}
+enabled=1
+gpgcheck=1
+gpgkey=${gpgkey}
+EOF
+
 rm -rf /var/rootfs/*
 
-yum install --releasever=${version} --installroot=/rootfs -y --skip-broken basesystem oraclelinux-release yum
+yum install --disablerepo=latest --releasever=${version} --installroot=/rootfs -y basesystem oraclelinux-release
+
+if [ "${version}" = "7" ] && [ "${arch}" = "aarch64" ]; then
+	yum install --releasever=${version} --installroot=/rootfs -y libcom_err
+fi
+
+yum install --disablerepo=latest --releasever=${version} --installroot=/rootfs -y yum
+
 rm -rf /rootfs/var/cache/yum
 
 mkdir -p /rootfs/etc/yum.repos.d
@@ -269,7 +287,6 @@ if [ -f RPM-GPG-KEY-oracle ] && ! [ -f /rootfs/etc/pki/rpm-gpg/RPM-GPG-KEY-oracl
 	mkdir -p /rootfs/etc/pki/rpm-gpg/
 	cp RPM-GPG-KEY-oracle /rootfs/etc/pki/rpm-gpg/
 fi
-
 
 cat <<- EOF > /rootfs/etc/yum.repos.d/base.repo
 [base]
