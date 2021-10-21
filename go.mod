@@ -25,12 +25,14 @@ require (
 	github.com/lxc/lxd v0.0.0-20211014205534-1fe27515c001
 	github.com/mudler/docker-companion v0.4.6-0.20211015133729-bd4704fad372
 	github.com/opencontainers/umoci v0.4.8-0.20211009121349-9c76304c034d // indirect
+	github.com/remyoudompheng/go-misc v0.0.0-20190427085024-2d6ac652a50e // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli v1.22.5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.0.0-20211014222326-fd004c51d1d6 // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c
 	gopkg.in/antchfx/htmlquery.v1 v1.2.2

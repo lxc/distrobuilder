@@ -272,6 +272,9 @@ rm -rf /var/rootfs/*
 
 yum install --disablerepo=latest --releasever=${version} --installroot=/rootfs -y basesystem oraclelinux-release
 
+mkdir -p /rootfs/etc/yum.repos.d
+cp /etc/yum.repos.d/*.repo /rootfs/etc/yum.repos.d/
+
 if [ "${version}" = "7" ] && [ "${arch}" = "aarch64" ]; then
 	yum install --releasever=${version} --installroot=/rootfs -y libcom_err
 fi
@@ -279,9 +282,6 @@ fi
 yum install --disablerepo=latest --releasever=${version} --installroot=/rootfs -y yum
 
 rm -rf /rootfs/var/cache/yum
-
-mkdir -p /rootfs/etc/yum.repos.d
-cp /etc/yum.repos.d/base.repo /rootfs/etc/yum.repos.d/
 
 if [ -f RPM-GPG-KEY-oracle ] && ! [ -f /rootfs/etc/pki/rpm-gpg/RPM-GPG-KEY-oracle ]; then
 	mkdir -p /rootfs/etc/pki/rpm-gpg/
