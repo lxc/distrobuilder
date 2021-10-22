@@ -36,7 +36,7 @@ It needs to be one of
 * voidlinux-http
 
 The `url` field defines the URL or mirror of the rootfs image.
-Although this field is not required, most downloaders will need it.
+Although this field is not required, most downloaders will need it. The `rootfs-http` downloader also supports local image files when prefixed with `file://`, e.g. `url: file:///home/user/image.tar.gz` or `url: file:///home/user/image.squashfs`.
 
 The `keys` field is a list of GPG keys.
 These keys can be listed as fingerprints or armored keys.
