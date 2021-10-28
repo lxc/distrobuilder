@@ -37,7 +37,7 @@ func (s *rockylinux) Run() error {
 		return errors.New("Failed to get release")
 	}
 
-	fpath := shared.GetTargetDir(s.definition.Image)
+	fpath := s.getTargetDir()
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
@@ -54,14 +54,14 @@ func (s *rockylinux) Run() error {
 
 			checksumFile = "CHECKSUM"
 
-			_, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
+			_, err := s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
 				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
 			}
 		}
 	}
 
-	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
+	_, err = s.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", baseURL+s.fname, err)
 	}

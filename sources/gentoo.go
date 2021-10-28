@@ -65,9 +65,9 @@ func (s *gentoo) Run() error {
 	var fpath string
 
 	if s.definition.Source.SkipVerification {
-		fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
+		fpath, err = s.DownloadHash(s.definition.Image, tarball, "", nil)
 	} else {
-		fpath, err = shared.DownloadHash(s.definition.Image, tarball, tarball+".DIGESTS", sha512.New())
+		fpath, err = s.DownloadHash(s.definition.Image, tarball, tarball+".DIGESTS", sha512.New())
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", tarball, err)
@@ -75,12 +75,12 @@ func (s *gentoo) Run() error {
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
-		_, err = shared.DownloadHash(s.definition.Image, tarball+".DIGESTS.asc", "", nil)
+		_, err = s.DownloadHash(s.definition.Image, tarball+".DIGESTS.asc", "", nil)
 		if err != nil {
 			return fmt.Errorf("Failed to download %q: %w", tarball+".DIGESTS.asc", err)
 		}
 
-		valid, err := shared.VerifyFile(
+		valid, err := s.VerifyFile(
 			filepath.Join(fpath, fname+".DIGESTS.asc"),
 			"",
 			s.definition.Source.Keys,

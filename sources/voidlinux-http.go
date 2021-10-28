@@ -49,9 +49,9 @@ func (s *voidlinux) Run() error {
 	var fpath string
 
 	if s.definition.Source.SkipVerification {
-		fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
+		fpath, err = s.DownloadHash(s.definition.Image, tarball, "", nil)
 	} else {
-		fpath, err = shared.DownloadHash(s.definition.Image, tarball, digests, sha256.New())
+		fpath, err = s.DownloadHash(s.definition.Image, tarball, digests, sha256.New())
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", tarball, err)
@@ -59,17 +59,17 @@ func (s *voidlinux) Run() error {
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
-		_, err = shared.DownloadHash(s.definition.Image, digests, "", nil)
+		_, err = s.DownloadHash(s.definition.Image, digests, "", nil)
 		if err != nil {
 			return fmt.Errorf("Failed to download %q: %w", digests, err)
 		}
 
-		_, err = shared.DownloadHash(s.definition.Image, signatures, "", nil)
+		_, err = s.DownloadHash(s.definition.Image, signatures, "", nil)
 		if err != nil {
 			return fmt.Errorf("Failed to download %q: %w", signatures, err)
 		}
 
-		valid, err := shared.VerifyFile(
+		valid, err := s.VerifyFile(
 			filepath.Join(fpath, "sha256sum.txt"),
 			filepath.Join(fpath, "sha256sum.sig"),
 			s.definition.Source.Keys,

@@ -131,7 +131,7 @@ func (s *openwrt) Run() error {
 	if !s.definition.Source.SkipVerification {
 		if len(s.definition.Source.Keys) != 0 {
 			checksumFile = baseURL + "sha256sums"
-			_, err := shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
+			_, err := s.DownloadHash(s.definition.Image, checksumFile, "", nil)
 			if err != nil {
 				return fmt.Errorf("Failed to download %q: %w", checksumFile, err)
 			}
@@ -143,7 +143,7 @@ func (s *openwrt) Run() error {
 		}
 	}
 
-	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, checksumFile, sha256.New())
+	fpath, err := s.DownloadHash(s.definition.Image, baseURL+fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", baseURL+fname, err)
 	}

@@ -86,19 +86,19 @@ func (s *funtoo) Run() error {
 
 	var fpath string
 
-	fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
+	fpath, err = s.DownloadHash(s.definition.Image, tarball, "", nil)
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", tarball, err)
 	}
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
-		_, err = shared.DownloadHash(s.definition.Image, tarball+".gpg", "", nil)
+		_, err = s.DownloadHash(s.definition.Image, tarball+".gpg", "", nil)
 		if err != nil {
 			return fmt.Errorf("Failed to download %q: %w", tarball+".gpg", err)
 		}
 
-		valid, err := shared.VerifyFile(
+		valid, err := s.VerifyFile(
 			filepath.Join(fpath, fname),
 			filepath.Join(fpath, fname+".gpg"),
 			s.definition.Source.Keys,

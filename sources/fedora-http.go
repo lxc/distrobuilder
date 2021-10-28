@@ -37,7 +37,7 @@ func (s *fedora) Run() error {
 	// Download image
 	sourceURL := fmt.Sprintf("%s/%s/%s/images/%s", baseURL, s.definition.Image.Release, build, fname)
 
-	fpath, err := shared.DownloadHash(s.definition.Image, sourceURL, "", nil)
+	fpath, err := s.DownloadHash(s.definition.Image, sourceURL, "", nil)
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", sourceURL, err)
 	}

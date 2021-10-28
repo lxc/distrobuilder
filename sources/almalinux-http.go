@@ -38,7 +38,7 @@ func (s *almalinux) Run() error {
 		return fmt.Errorf("Failed to get release: %w", err)
 	}
 
-	fpath := shared.GetTargetDir(s.definition.Image)
+	fpath := s.getTargetDir()
 
 	// Skip download if raw image exists and has already been decompressed.
 	if strings.HasSuffix(s.fname, ".raw.xz") {
@@ -76,14 +76,14 @@ func (s *almalinux) Run() error {
 				}
 			}
 
-			fpath, err := shared.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
+			fpath, err := s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
 			if err != nil {
 				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
 			}
 
 			// Only verify file if possible.
 			if strings.HasSuffix(checksumFile, ".asc") {
-				valid, err := shared.VerifyFile(filepath.Join(fpath, checksumFile), "",
+				valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), "",
 					s.definition.Source.Keys, s.definition.Source.Keyserver)
 				if err != nil {
 					return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
@@ -95,7 +95,7 @@ func (s *almalinux) Run() error {
 		}
 	}
 
-	_, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
+	_, err = s.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", baseURL+s.fname, err)
 	}

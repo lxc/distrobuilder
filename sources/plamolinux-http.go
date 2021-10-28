@@ -157,7 +157,7 @@ func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignor
 			}
 
 			// package
-			dir, err = shared.DownloadHash(def, fmt.Sprintf("%s/%s", URL, target), "", nil)
+			dir, err = s.DownloadHash(def, fmt.Sprintf("%s/%s", URL, target), "", nil)
 			if err != nil {
 				return "", fmt.Errorf("Failed to download %q: %w", fmt.Sprintf("%s/%s", URL, target), err)
 			}

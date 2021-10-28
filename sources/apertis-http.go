@@ -73,7 +73,7 @@ func (s *apertis) Run() error {
 		return errors.New("Only HTTPS server is supported")
 	}
 
-	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, "", nil)
+	fpath, err := s.DownloadHash(s.definition.Image, baseURL+fname, "", nil)
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", baseURL+fname, err)
 	}

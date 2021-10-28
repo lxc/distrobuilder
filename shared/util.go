@@ -1,21 +1,15 @@
 package shared
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	lxd "github.com/lxc/lxd/shared"
 	"golang.org/x/sys/unix"
 	"gopkg.in/flosch/pongo2.v3"
 	yaml "gopkg.in/yaml.v2"
@@ -85,164 +79,6 @@ func RunScript(content string) error {
 	fdPath := fmt.Sprintf("/proc/self/fd/%d", fd)
 
 	return RunCommand(fdPath)
-}
-
-// GetSignedContent verifies the provided file, and returns its decrypted (plain) content.
-func GetSignedContent(signedFile string, keys []string, keyserver string) ([]byte, error) {
-	keyring, err := CreateGPGKeyring(keyserver, keys)
-	if err != nil {
-		return nil, err
-	}
-
-	gpgDir := path.Dir(keyring)
-	defer os.RemoveAll(gpgDir)
-
-	out, err := exec.Command("gpg", "--homedir", gpgDir, "--keyring", keyring,
-		"--decrypt", signedFile).Output()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to get file content: %s: %w", out, err)
-	}
-
-	return out, nil
-}
-
-// VerifyFile verifies a file using gpg.
-func VerifyFile(signedFile, signatureFile string, keys []string, keyserver string) (bool, error) {
-	keyring, err := CreateGPGKeyring(keyserver, keys)
-	if err != nil {
-		return false, err
-	}
-	gpgDir := path.Dir(keyring)
-	defer os.RemoveAll(gpgDir)
-
-	if signatureFile != "" {
-		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
-			"--verify", signatureFile, signedFile)
-		if err != nil {
-			return false, fmt.Errorf("Failed to verify: %s: %w", out, err)
-		}
-	} else {
-		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
-			"--verify", signedFile)
-		if err != nil {
-			return false, fmt.Errorf("Failed to verify: %s: %w", out, err)
-		}
-	}
-
-	return true, nil
-}
-
-func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
-	args := []string{"--homedir", gpgDir}
-
-	var fingerprints []string
-	var publicKeys []string
-
-	for _, k := range keys {
-		if strings.HasPrefix(strings.TrimSpace(k), "-----BEGIN PGP PUBLIC KEY BLOCK-----") {
-			publicKeys = append(publicKeys, strings.TrimSpace(k))
-		} else {
-			fingerprints = append(fingerprints, strings.TrimSpace(k))
-		}
-	}
-
-	for _, f := range publicKeys {
-		args := append(args, "--import")
-
-		cmd := exec.Command("gpg", args...)
-		cmd.Stdin = strings.NewReader(f)
-		cmd.Env = append(os.Environ(), "LANG=C.UTF-8")
-
-		var buffer bytes.Buffer
-		cmd.Stderr = &buffer
-
-		err := cmd.Run()
-		if err != nil {
-			return false, fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
-		}
-	}
-
-	if keyserver != "" {
-		args = append(args, "--keyserver", keyserver)
-	}
-
-	args = append(args, append([]string{"--recv-keys"}, fingerprints...)...)
-
-	_, out, err := lxd.RunCommandSplit(append(os.Environ(), "LANG=C.UTF-8"), nil, "gpg", args...)
-	if err != nil {
-		return false, err
-	}
-
-	// Verify output
-	var importedKeys []string
-	var missingKeys []string
-	lines := strings.Split(out, "\n")
-
-	for _, l := range lines {
-		if strings.HasPrefix(l, "gpg: key ") && (strings.HasSuffix(l, " imported") || strings.HasSuffix(l, " not changed")) {
-			key := strings.Split(l, " ")
-			importedKeys = append(importedKeys, strings.Split(key[2], ":")[0])
-		}
-	}
-
-	// Figure out which key(s) couldn't be imported
-	if len(importedKeys) < len(fingerprints) {
-		for _, j := range fingerprints {
-			found := false
-
-			for _, k := range importedKeys {
-				if strings.HasSuffix(j, k) {
-					found = true
-				}
-			}
-
-			if !found {
-				missingKeys = append(missingKeys, j)
-			}
-		}
-
-		return false, fmt.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
-	}
-
-	return true, nil
-}
-
-// CreateGPGKeyring creates a new GPG keyring.
-func CreateGPGKeyring(keyserver string, keys []string) (string, error) {
-	gpgDir, err := ioutil.TempDir(os.TempDir(), "distrobuilder.")
-	if err != nil {
-		return "", fmt.Errorf("Failed to create gpg directory: %w", err)
-	}
-
-	err = os.MkdirAll(gpgDir, 0700)
-	if err != nil {
-		return "", err
-	}
-
-	var ok bool
-
-	for i := 0; i < 3; i++ {
-		ok, err = recvGPGKeys(gpgDir, keyserver, keys)
-		if ok {
-			break
-		}
-
-		time.Sleep(2 * time.Second)
-	}
-
-	if !ok {
-		return "", err
-	}
-
-	// Export keys to support gpg1 and gpg2
-	out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--export", "--output",
-		filepath.Join(gpgDir, "distrobuilder.gpg"))
-	if err != nil {
-		os.RemoveAll(gpgDir)
-		return "", fmt.Errorf("Failed to export keyring: %s: %w", out, err)
-	}
-
-	return filepath.Join(gpgDir, "distrobuilder.gpg"), nil
 }
 
 // Pack creates an uncompressed tarball.
@@ -396,85 +232,6 @@ func SetEnvVariables(env Environment) Environment {
 	}
 
 	return oldEnv
-}
-
-// GetTargetDir returns the path to which source files are downloaded.
-func GetTargetDir(def DefinitionImage) string {
-	targetDir := filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s-%s", def.Distribution, def.Release, def.ArchitectureMapped))
-	targetDir = strings.Replace(targetDir, " ", "", -1)
-	targetDir = strings.ToLower(targetDir)
-
-	return targetDir
-}
-
-func getChecksum(fname string, hashLen int, r io.Reader) []string {
-	scanner := bufio.NewScanner(r)
-
-	var matches []string
-	var result []string
-
-	for scanner.Scan() {
-		if !strings.Contains(scanner.Text(), fname) {
-			continue
-		}
-
-		for _, s := range strings.Split(scanner.Text(), " ") {
-			m, _ := regexp.MatchString("[[:xdigit:]]+", s)
-			if !m {
-				continue
-			}
-
-			if hashLen == 0 || hashLen == len(strings.TrimSpace(s)) {
-				matches = append(matches, scanner.Text())
-			}
-		}
-	}
-
-	// Check common checksum file (pattern: "<hash> <filename>") with the exact filename
-	for _, m := range matches {
-		fields := strings.Split(m, " ")
-
-		if strings.TrimSpace(fields[len(fields)-1]) == fname {
-			result = append(result, strings.TrimSpace(fields[0]))
-		}
-	}
-
-	if len(result) > 0 {
-		return result
-	}
-
-	// Check common checksum file (pattern: "<hash> <filename>") which contains the filename
-	for _, m := range matches {
-		fields := strings.Split(m, " ")
-
-		if strings.Contains(strings.TrimSpace(fields[len(fields)-1]), fname) {
-			result = append(result, strings.TrimSpace(fields[0]))
-		}
-	}
-
-	if len(result) > 0 {
-		return result
-	}
-
-	// Special case: CentOS
-	for _, m := range matches {
-		for _, s := range strings.Split(m, " ") {
-			m, _ := regexp.MatchString("[[:xdigit:]]+", s)
-			if !m {
-				continue
-			}
-
-			if hashLen == 0 || hashLen == len(strings.TrimSpace(s)) {
-				result = append(result, s)
-			}
-		}
-	}
-
-	if len(result) > 0 {
-		return result
-	}
-
-	return nil
 }
 
 // RsyncLocal copies src to dest using rsync.
