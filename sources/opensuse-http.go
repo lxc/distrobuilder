@@ -95,7 +95,7 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 
 	checksumPath := imagePath + ".sha256"
 
-	valid, err := s.VerifyFile(checksumPath, "", s.definition.Source.Keys, s.definition.Source.Keyserver)
+	valid, err := s.VerifyFile(checksumPath, "")
 	if err == nil && valid {
 		checksum, err = s.GetSignedContent(checksumPath, s.definition.Source.Keys, s.definition.Source.Keyserver)
 	} else {

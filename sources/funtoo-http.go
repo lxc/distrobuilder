@@ -100,9 +100,7 @@ func (s *funtoo) Run() error {
 
 		valid, err := s.VerifyFile(
 			filepath.Join(fpath, fname),
-			filepath.Join(fpath, fname+".gpg"),
-			s.definition.Source.Keys,
-			s.definition.Source.Keyserver)
+			filepath.Join(fpath, fname+".gpg"))
 		if err != nil {
 			return fmt.Errorf("Failed to verify file: %w", err)
 		}

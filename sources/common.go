@@ -177,8 +177,8 @@ func (s *common) GetSignedContent(signedFile string, keys []string, keyserver st
 }
 
 // VerifyFile verifies a file using gpg.
-func (s *common) VerifyFile(signedFile, signatureFile string, keys []string, keyserver string) (bool, error) {
-	keyring, err := s.CreateGPGKeyring(keyserver, keys)
+func (s *common) VerifyFile(signedFile, signatureFile string) (bool, error) {
+	keyring, err := s.CreateGPGKeyring(s.definition.Source.Keyserver, s.definition.Source.Keys)
 	if err != nil {
 		return false, err
 	}

@@ -70,9 +70,7 @@ func (s *archlinux) Run() error {
 
 		valid, err := s.VerifyFile(
 			filepath.Join(fpath, fname),
-			filepath.Join(fpath, fname+".sig"),
-			s.definition.Source.Keys,
-			s.definition.Source.Keyserver)
+			filepath.Join(fpath, fname+".sig"))
 		if err != nil {
 			return fmt.Errorf("Failed to verify %q: %w", fname, err)
 		}

@@ -71,9 +71,7 @@ func (s *alpineLinux) Run() error {
 		s.DownloadHash(s.definition.Image, tarball+".asc", "", nil)
 		valid, err := s.VerifyFile(
 			filepath.Join(fpath, fname),
-			filepath.Join(fpath, fname+".asc"),
-			s.definition.Source.Keys,
-			s.definition.Source.Keyserver)
+			filepath.Join(fpath, fname+".asc"))
 		if err != nil {
 			return fmt.Errorf("Failed to download %q: %w", tarball+".asc", err)
 		}

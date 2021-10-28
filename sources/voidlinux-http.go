@@ -71,9 +71,7 @@ func (s *voidlinux) Run() error {
 
 		valid, err := s.VerifyFile(
 			filepath.Join(fpath, "sha256sum.txt"),
-			filepath.Join(fpath, "sha256sum.sig"),
-			s.definition.Source.Keys,
-			s.definition.Source.Keyserver)
+			filepath.Join(fpath, "sha256sum.sig"))
 		if err != nil {
 			return fmt.Errorf(`Failed to verify "sha256sum.txt": %w`, err)
 		}

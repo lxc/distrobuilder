@@ -82,9 +82,7 @@ func (s *gentoo) Run() error {
 
 		valid, err := s.VerifyFile(
 			filepath.Join(fpath, fname+".DIGESTS.asc"),
-			"",
-			s.definition.Source.Keys,
-			s.definition.Source.Keyserver)
+			"")
 		if err != nil {
 			return fmt.Errorf("Failed to verify %q: %w", filepath.Join(fpath, fname+".DIGESTS.asc"), err)
 		}

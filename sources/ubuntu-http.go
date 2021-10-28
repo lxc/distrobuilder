@@ -333,9 +333,7 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 
 		valid, err := s.VerifyFile(
 			filepath.Join(fpath, "SHA256SUMS"),
-			filepath.Join(fpath, "SHA256SUMS.gpg"),
-			s.definition.Source.Keys,
-			s.definition.Source.Keyserver)
+			filepath.Join(fpath, "SHA256SUMS.gpg"))
 		if err != nil {
 			return fmt.Errorf(`Failed to verify "SHA256SUMS": %w`, err)
 		}

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/stretchr/testify/require"
 )
@@ -81,12 +82,22 @@ func TestVerifyFile(t *testing.T) {
 
 	c := common{
 		sourcesDir: os.TempDir(),
+		definition: shared.Definition{
+			Source: shared.DefinitionSource{},
+		},
 	}
 
 	for i, tt := range tests {
 		log.Printf("Running test #%d: %s", i, tt.name)
-		valid, err := c.VerifyFile(tt.signedFile, tt.signatureFile, tt.keys,
-			tt.keyserver)
+
+		c.definition = shared.Definition{
+			Source: shared.DefinitionSource{
+				Keyserver: tt.keyserver,
+				Keys:      tt.keys,
+			},
+		}
+
+		valid, err := c.VerifyFile(tt.signedFile, tt.signatureFile)
 		if tt.shouldFail {
 			require.Error(t, err)
 			require.False(t, valid)
