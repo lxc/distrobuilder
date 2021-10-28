@@ -159,7 +159,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 
 // GetSignedContent verifies the provided file, and returns its decrypted (plain) content.
 func (s *common) GetSignedContent(signedFile string) ([]byte, error) {
-	keyring, err := s.CreateGPGKeyring(s.definition.Source.Keyserver, s.definition.Source.Keys)
+	keyring, err := s.CreateGPGKeyring()
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (s *common) GetSignedContent(signedFile string) ([]byte, error) {
 
 // VerifyFile verifies a file using gpg.
 func (s *common) VerifyFile(signedFile, signatureFile string) (bool, error) {
-	keyring, err := s.CreateGPGKeyring(s.definition.Source.Keyserver, s.definition.Source.Keys)
+	keyring, err := s.CreateGPGKeyring()
 	if err != nil {
 		return false, err
 	}
@@ -203,7 +203,7 @@ func (s *common) VerifyFile(signedFile, signatureFile string) (bool, error) {
 }
 
 // CreateGPGKeyring creates a new GPG keyring.
-func (s *common) CreateGPGKeyring(keyserver string, keys []string) (string, error) {
+func (s *common) CreateGPGKeyring() (string, error) {
 	err := os.MkdirAll(s.getTargetDir(), 0700)
 	if err != nil {
 		return "", err
@@ -222,7 +222,7 @@ func (s *common) CreateGPGKeyring(keyserver string, keys []string) (string, erro
 	var ok bool
 
 	for i := 0; i < 3; i++ {
-		ok, err = recvGPGKeys(gpgDir, keyserver, keys)
+		ok, err = recvGPGKeys(gpgDir, s.definition.Source.Keyserver, s.definition.Source.Keys)
 		if ok {
 			break
 		}

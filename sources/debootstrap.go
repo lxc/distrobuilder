@@ -56,7 +56,7 @@ func (s *debootstrap) Run() error {
 	}
 
 	if len(s.definition.Source.Keys) > 0 {
-		keyring, err := s.CreateGPGKeyring(s.definition.Source.Keyserver, s.definition.Source.Keys)
+		keyring, err := s.CreateGPGKeyring()
 		if err != nil {
 			return fmt.Errorf("Failed to create GPG keyring: %w", err)
 		}

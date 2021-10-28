@@ -111,17 +111,25 @@ func TestVerifyFile(t *testing.T) {
 func TestCreateGPGKeyring(t *testing.T) {
 	c := common{
 		sourcesDir: os.TempDir(),
+		definition: shared.Definition{
+			Source: shared.DefinitionSource{
+				Keyserver: "keyserver.ubuntu.com",
+				Keys:      []string{"0x5DE8949A899C8D99"},
+			},
+		},
 	}
 
-	keyring, err := c.CreateGPGKeyring("keyserver.ubuntu.com", []string{"0x5DE8949A899C8D99"})
+	keyring, err := c.CreateGPGKeyring()
 	require.NoError(t, err)
 
 	require.FileExists(t, keyring)
 	os.RemoveAll(path.Dir(keyring))
 
+	c.definition = shared.Definition{}
+
 	// This shouldn't fail, but the keyring file should not be created since
 	// there are no keys to be exported.
-	keyring, err = c.CreateGPGKeyring("", []string{})
+	keyring, err = c.CreateGPGKeyring()
 	require.NoError(t, err)
 
 	require.False(t, lxd.PathExists(keyring), "File should not exist")
