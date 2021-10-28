@@ -97,7 +97,7 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 
 	valid, err := s.VerifyFile(checksumPath, "")
 	if err == nil && valid {
-		checksum, err = s.GetSignedContent(checksumPath, s.definition.Source.Keys, s.definition.Source.Keyserver)
+		checksum, err = s.GetSignedContent(checksumPath)
 	} else {
 		checksum, err = ioutil.ReadFile(checksumPath)
 	}

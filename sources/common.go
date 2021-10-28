@@ -158,8 +158,8 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 }
 
 // GetSignedContent verifies the provided file, and returns its decrypted (plain) content.
-func (s *common) GetSignedContent(signedFile string, keys []string, keyserver string) ([]byte, error) {
-	keyring, err := s.CreateGPGKeyring(keyserver, keys)
+func (s *common) GetSignedContent(signedFile string) ([]byte, error) {
+	keyring, err := s.CreateGPGKeyring(s.definition.Source.Keyserver, s.definition.Source.Keys)
 	if err != nil {
 		return nil, err
 	}
