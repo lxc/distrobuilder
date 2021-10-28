@@ -179,7 +179,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		// Download vioscsi driver
 		virtioURL := "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/virtio-win.iso"
 
-		virtioISOPath = filepath.Join(os.TempDir(), "distrobuilder", "virtio-win.iso")
+		virtioISOPath = filepath.Join(c.global.flagSourcesDir, "windows", "virtio-win.iso")
 
 		if !lxd.PathExists(virtioISOPath) {
 			err := os.MkdirAll(filepath.Dir(virtioISOPath), 0755)
