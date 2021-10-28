@@ -10,11 +10,13 @@ type common struct {
 	definition shared.Definition
 	rootfsDir  string
 	cacheDir   string
+	sourcesDir string
 }
 
-func (s *common) init(logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string) {
+func (s *common) init(logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) {
 	s.logger = logger
 	s.definition = definition
 	s.rootfsDir = rootfsDir
 	s.cacheDir = cacheDir
+	s.sourcesDir = sourcesDir
 }

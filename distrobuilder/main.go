@@ -296,7 +296,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load and run downloader
-	downloader, err := sources.Load(c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir, c.flagCacheDir)
+	downloader, err := sources.Load(c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir, c.flagCacheDir, c.flagSourcesDir)
 	if err != nil {
 		return fmt.Errorf("Failed to load downloader %q: %w", c.definition.Source.Downloader, err)
 	}
