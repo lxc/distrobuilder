@@ -10,7 +10,9 @@ Usage:
   distrobuilder build-dir <filename|-> <target dir> [flags]
 
 Flags:
-  -h, --help   help for build-dir
+  -h, --help           help for build-dir
+      --keep-sources   Keep sources after build (default true)
+      --sources-dir    Sources directory for distribution tarballs (default "/tmp/distrobuilder")
 
 Global Flags:
       --cache-dir         Cache directory
@@ -54,8 +56,10 @@ Usage:
   distrobuilder build-lxc <filename|-> [target dir] [--compression=COMPRESSION] [flags]
 
 Flags:
-      --compression   Type of compression to use (default "xz")
-  -h, --help          help for build-lxc
+      --compression    Type of compression to use (default "xz")
+  -h, --help           help for build-lxc
+      --keep-sources   Keep sources after build (default true)
+      --sources-dir    Sources directory for distribution tarballs (default "/tmp/distrobuilder")
 
 Global Flags:
       --cache-dir         Cache directory
@@ -105,6 +109,8 @@ Flags:
       --compression             Type of compression to use (default "xz")
   -h, --help                    help for build-lxd
       --import-into-lxd[="-"]   Import built image into LXD
+      --keep-sources            Keep sources after build (default true)
+      --sources-dir             Sources directory for distribution tarballs (default "/tmp/distrobuilder")
       --type                    Type of tarball to create (default "split")
       --vm                      Create a qcow2 image for VMs
 
