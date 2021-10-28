@@ -101,6 +101,8 @@ type cmdGlobal struct {
 	flagTimeout        uint
 	flagVersion        bool
 	flagDisableOverlay bool
+	flagSourcesDir     string
+	flagKeepSources    bool
 
 	definition     *shared.Definition
 	sourceDir      string
@@ -439,7 +441,16 @@ func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 			c.logger.Info("Removing cache directory")
 		}
 
-		return os.RemoveAll(c.flagCacheDir)
+		os.RemoveAll(c.flagCacheDir)
+	}
+
+	// Clean up sources directory
+	if !c.flagKeepSources {
+		if hasLogger {
+			c.logger.Info("Removing sources directory")
+		}
+
+		os.RemoveAll(c.flagSourcesDir)
 	}
 
 	return nil
