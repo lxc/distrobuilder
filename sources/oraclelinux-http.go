@@ -76,7 +76,7 @@ func (s *oraclelinux) Run() error {
 
 	source := fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname)
 
-	fpath, err := shared.DownloadHash(s.definition.Image, source, "", nil)
+	fpath, err := s.DownloadHash(s.definition.Image, source, "", nil)
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", source, err)
 	}

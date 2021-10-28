@@ -61,12 +61,12 @@ func (s *opensuse) Run() error {
 		return fmt.Errorf("Failed to parse %q: %w", fmt.Sprintf("%s%s", baseURL, fname), err)
 	}
 
-	fpath, err := shared.DownloadHash(s.definition.Image, url.String(), "", nil)
+	fpath, err := s.DownloadHash(s.definition.Image, url.String(), "", nil)
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", url.String(), err)
 	}
 
-	_, err = shared.DownloadHash(s.definition.Image, url.String()+".sha256", "", nil)
+	_, err = s.DownloadHash(s.definition.Image, url.String()+".sha256", "", nil)
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", url.String()+".sha256", err)
 	}
@@ -95,9 +95,9 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 
 	checksumPath := imagePath + ".sha256"
 
-	valid, err := shared.VerifyFile(checksumPath, "", s.definition.Source.Keys, s.definition.Source.Keyserver)
+	valid, err := s.VerifyFile(checksumPath, "")
 	if err == nil && valid {
-		checksum, err = shared.GetSignedContent(checksumPath, s.definition.Source.Keys, s.definition.Source.Keyserver)
+		checksum, err = s.GetSignedContent(checksumPath)
 	} else {
 		checksum, err = ioutil.ReadFile(checksumPath)
 	}

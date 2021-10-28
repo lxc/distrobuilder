@@ -53,9 +53,9 @@ func (s *sabayon) Run() error {
 
 	// From sabayon currently we have only MD5 checksum for now.
 	if s.definition.Source.SkipVerification {
-		fpath, err = shared.DownloadHash(s.definition.Image, url.String(), "", nil)
+		fpath, err = s.DownloadHash(s.definition.Image, url.String(), "", nil)
 	} else {
-		fpath, err = shared.DownloadHash(s.definition.Image, url.String(), url.String()+".md5", md5.New())
+		fpath, err = s.DownloadHash(s.definition.Image, url.String(), url.String()+".md5", md5.New())
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", url.String(), err)

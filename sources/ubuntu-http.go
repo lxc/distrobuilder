@@ -136,7 +136,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 		return fmt.Errorf("Failed to get latest core base image: %w", err)
 	}
 
-	_, err = shared.DownloadHash(s.definition.Image, coreImage, "", sha256.New())
+	_, err = s.DownloadHash(s.definition.Image, coreImage, "", sha256.New())
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", coreImage, err)
 	}
@@ -321,21 +321,19 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 		}
 
 		checksumFile = baseURL + "SHA256SUMS"
-		fpath, err = shared.DownloadHash(s.definition.Image, baseURL+"SHA256SUMS.gpg", "", nil)
+		fpath, err = s.DownloadHash(s.definition.Image, baseURL+"SHA256SUMS.gpg", "", nil)
 		if err != nil {
 			return fmt.Errorf("Failed to download %q: %w", baseURL+"SHA256SUMS.gpg", err)
 		}
 
-		_, err = shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
+		_, err = s.DownloadHash(s.definition.Image, checksumFile, "", nil)
 		if err != nil {
 			return fmt.Errorf("Failed to download %q: %w", checksumFile, err)
 		}
 
-		valid, err := shared.VerifyFile(
+		valid, err := s.VerifyFile(
 			filepath.Join(fpath, "SHA256SUMS"),
-			filepath.Join(fpath, "SHA256SUMS.gpg"),
-			s.definition.Source.Keys,
-			s.definition.Source.Keyserver)
+			filepath.Join(fpath, "SHA256SUMS.gpg"))
 		if err != nil {
 			return fmt.Errorf(`Failed to verify "SHA256SUMS": %w`, err)
 		}
@@ -344,7 +342,7 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 		}
 	}
 
-	s.fpath, err = shared.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
+	s.fpath, err = s.DownloadHash(s.definition.Image, baseURL+s.fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", baseURL+s.fname, err)
 	}

@@ -25,9 +25,9 @@ func (s *springdalelinux) Run() error {
 		s.definition.Image.ArchitectureMapped)
 	s.fname = "boot.iso"
 
-	fpath := shared.GetTargetDir(s.definition.Image)
+	fpath := s.getTargetDir()
 
-	_, err := shared.DownloadHash(s.definition.Image, baseURL+s.fname, "", nil)
+	_, err := s.DownloadHash(s.definition.Image, baseURL+s.fname, "", nil)
 	if err != nil {
 		return fmt.Errorf("Error downloading %q: %w", baseURL+s.fname, err)
 	}

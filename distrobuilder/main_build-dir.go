@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -10,12 +12,12 @@ import (
 )
 
 type cmdBuildDir struct {
-	cmd    *cobra.Command
-	global *cmdGlobal
+	cmdBuild *cobra.Command
+	global   *cmdGlobal
 }
 
 func (c *cmdBuildDir) command() *cobra.Command {
-	cmd := &cobra.Command{
+	c.cmdBuild = &cobra.Command{
 		Use:   "build-dir <filename|-> <target dir>",
 		Short: "Build plain rootfs",
 		Args:  cobra.ExactArgs(2),
@@ -44,6 +46,8 @@ func (c *cmdBuildDir) command() *cobra.Command {
 		},
 	}
 
-	c.cmd = cmd
-	return cmd
+	c.cmdBuild.Flags().StringVar(&c.global.flagSourcesDir, "sources-dir", filepath.Join(os.TempDir(), "distrobuilder"), "Sources directory for distribution tarballs"+"``")
+	c.cmdBuild.Flags().BoolVar(&c.global.flagKeepSources, "keep-sources", true, "Keep sources after build"+"``")
+
+	return c.cmdBuild
 }

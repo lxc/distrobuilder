@@ -101,6 +101,8 @@ type cmdGlobal struct {
 	flagTimeout        uint
 	flagVersion        bool
 	flagDisableOverlay bool
+	flagSourcesDir     string
+	flagKeepSources    bool
 
 	definition     *shared.Definition
 	sourceDir      string
@@ -294,7 +296,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load and run downloader
-	downloader, err := sources.Load(c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir, c.flagCacheDir)
+	downloader, err := sources.Load(c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir, c.flagCacheDir, c.flagSourcesDir)
 	if err != nil {
 		return fmt.Errorf("Failed to load downloader %q: %w", c.definition.Source.Downloader, err)
 	}
@@ -439,7 +441,16 @@ func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 			c.logger.Info("Removing cache directory")
 		}
 
-		return os.RemoveAll(c.flagCacheDir)
+		os.RemoveAll(c.flagCacheDir)
+	}
+
+	// Clean up sources directory
+	if !c.flagKeepSources {
+		if hasLogger {
+			c.logger.Info("Removing sources directory")
+		}
+
+		os.RemoveAll(c.flagSourcesDir)
 	}
 
 	return nil

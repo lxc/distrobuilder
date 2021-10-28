@@ -11,8 +11,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/lxc/distrobuilder/shared"
-
 	lxd "github.com/lxc/lxd/shared"
 	"gopkg.in/antchfx/htmlquery.v1"
 )
@@ -61,20 +59,18 @@ func (s *archlinux) Run() error {
 		return errors.New("GPG keys are required if downloading from HTTP")
 	}
 
-	fpath, err := shared.DownloadHash(s.definition.Image, tarball, "", nil)
+	fpath, err := s.DownloadHash(s.definition.Image, tarball, "", nil)
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", tarball, err)
 	}
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
-		shared.DownloadHash(s.definition.Image, tarball+".sig", "", nil)
+		s.DownloadHash(s.definition.Image, tarball+".sig", "", nil)
 
-		valid, err := shared.VerifyFile(
+		valid, err := s.VerifyFile(
 			filepath.Join(fpath, fname),
-			filepath.Join(fpath, fname+".sig"),
-			s.definition.Source.Keys,
-			s.definition.Source.Keyserver)
+			filepath.Join(fpath, fname+".sig"))
 		if err != nil {
 			return fmt.Errorf("Failed to verify %q: %w", fname, err)
 		}

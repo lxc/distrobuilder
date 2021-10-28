@@ -28,10 +28,10 @@ func (s *busybox) Run() error {
 	)
 
 	if s.definition.Source.SkipVerification {
-		fpath, err = shared.DownloadHash(s.definition.Image, tarball, "", nil)
+		fpath, err = s.DownloadHash(s.definition.Image, tarball, "", nil)
 
 	} else {
-		fpath, err = shared.DownloadHash(s.definition.Image, tarball, tarball+".sha256", sha256.New())
+		fpath, err = s.DownloadHash(s.definition.Image, tarball, tarball+".sha256", sha256.New())
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", tarball, err)

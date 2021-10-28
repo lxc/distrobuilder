@@ -81,6 +81,8 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 	c.cmdBuild.Flags().BoolVar(&c.flagVM, "vm", false, "Create a qcow2 image for VMs"+"``")
 	c.cmdBuild.Flags().StringVar(&c.flagImportIntoLXD, "import-into-lxd", "", "Import built image into LXD"+"``")
 	c.cmdBuild.Flags().Lookup("import-into-lxd").NoOptDefVal = "-"
+	c.cmdBuild.Flags().StringVar(&c.global.flagSourcesDir, "sources-dir", filepath.Join(os.TempDir(), "distrobuilder"), "Sources directory for distribution tarballs"+"``")
+	c.cmdBuild.Flags().BoolVar(&c.global.flagKeepSources, "keep-sources", true, "Keep sources after build"+"``")
 
 	return c.cmdBuild
 }

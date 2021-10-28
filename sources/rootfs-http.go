@@ -6,7 +6,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
 )
 
@@ -28,7 +27,7 @@ func (s *rootfs) Run() error {
 		fpath = filepath.Dir(URL.Path)
 		filename = filepath.Base(URL.Path)
 	} else {
-		fpath, err = shared.DownloadHash(s.definition.Image, s.definition.Source.URL, "", nil)
+		fpath, err = s.DownloadHash(s.definition.Image, s.definition.Source.URL, "", nil)
 		if err != nil {
 			return fmt.Errorf("Failed to download %q: %w", s.
 				definition.Source.URL, err)

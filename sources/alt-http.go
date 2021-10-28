@@ -9,8 +9,6 @@ import (
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
-
-	"github.com/lxc/distrobuilder/shared"
 )
 
 type altLinux struct {
@@ -37,21 +35,19 @@ func (s *altLinux) Run() error {
 		if len(s.definition.Source.Keys) != 0 {
 			checksumFile = baseURL + "SHA256SUMS"
 
-			fpath, err := shared.DownloadHash(s.definition.Image, checksumFile+".gpg", "", nil)
+			fpath, err := s.DownloadHash(s.definition.Image, checksumFile+".gpg", "", nil)
 			if err != nil {
 				return fmt.Errorf("Failed to download %q: %w", checksumFile+".gpg", err)
 			}
 
-			_, err = shared.DownloadHash(s.definition.Image, checksumFile, "", nil)
+			_, err = s.DownloadHash(s.definition.Image, checksumFile, "", nil)
 			if err != nil {
 				return fmt.Errorf("Failed to download %q: %w", checksumFile, err)
 			}
 
-			valid, err := shared.VerifyFile(
+			valid, err := s.VerifyFile(
 				filepath.Join(fpath, "SHA256SUMS"),
-				filepath.Join(fpath, "SHA256SUMS.gpg"),
-				s.definition.Source.Keys,
-				s.definition.Source.Keyserver)
+				filepath.Join(fpath, "SHA256SUMS.gpg"))
 			if err != nil {
 				return fmt.Errorf("Failed to verify file: %w", err)
 			}
@@ -66,7 +62,7 @@ func (s *altLinux) Run() error {
 		}
 	}
 
-	fpath, err := shared.DownloadHash(s.definition.Image, baseURL+fname, checksumFile, sha256.New())
+	fpath, err := s.DownloadHash(s.definition.Image, baseURL+fname, checksumFile, sha256.New())
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", baseURL+fname, err)
 	}
