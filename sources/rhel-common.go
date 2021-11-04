@@ -19,20 +19,26 @@ type commonRHEL struct {
 }
 
 func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(string) error) error {
-	isoDir := filepath.Join(c.cacheDir, "iso")
-	squashfsDir := filepath.Join(c.cacheDir, "squashfs")
-	roRootDir := filepath.Join(c.cacheDir, "rootfs.ro")
-	tempRootDir := filepath.Join(c.cacheDir, "rootfs")
-
-	for _, dir := range []string{isoDir, squashfsDir, roRootDir} {
-		err := os.MkdirAll(dir, 0755)
-		if err != nil {
-			return fmt.Errorf("Failed to create directory %q: %w", dir, err)
-		}
+	isoDir, err := ioutil.TempDir(c.cacheDir, "temp_")
+	if err != nil {
+		return fmt.Errorf("Failed to create temporary directory: %w", err)
 	}
+	defer os.RemoveAll(isoDir)
+
+	squashfsDir, err := ioutil.TempDir(c.cacheDir, "temp_")
+	if err != nil {
+		return fmt.Errorf("Failed to create temporary directory: %w", err)
+	}
+	defer os.RemoveAll(squashfsDir)
+
+	tempRootDir, err := ioutil.TempDir(c.cacheDir, "temp_")
+	if err != nil {
+		return fmt.Errorf("Failed to create temporary directory: %w", err)
+	}
+	defer os.RemoveAll(tempRootDir)
 
 	// this is easier than doing the whole loop thing ourselves
-	err := shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
+	err = shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", filePath, err)
 	}
