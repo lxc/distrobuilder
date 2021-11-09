@@ -126,6 +126,27 @@ func main() {
 				os.Exit(1)
 			}
 
+			// Timeout handler
+			go func() {
+				// No timeout set
+				if globalCmd.flagTimeout == 0 {
+					return
+				}
+
+				time.Sleep(time.Duration(globalCmd.flagTimeout) * time.Second)
+
+				// exit all chroots otherwise we cannot remove the cache directory
+				for _, exit := range shared.ActiveChroots {
+					if exit != nil {
+						exit()
+					}
+				}
+
+				globalCmd.postRun(nil, nil)
+				fmt.Println("Timed out")
+				os.Exit(1)
+			}()
+
 			// Create temp directory if the cache directory isn't explicitly set
 			if globalCmd.flagCacheDir == "" {
 				dir, err := ioutil.TempDir("/var/cache", "distrobuilder.")
@@ -182,27 +203,6 @@ func main() {
 	// repack-windows sub-command
 	repackWindowsCmd := cmdRepackWindows{global: &globalCmd}
 	app.AddCommand(repackWindowsCmd.command())
-
-	// Timeout handler
-	go func() {
-		// No timeout set
-		if globalCmd.flagTimeout == 0 {
-			return
-		}
-
-		time.Sleep(time.Duration(globalCmd.flagTimeout) * time.Second)
-
-		// exit all chroots otherwise we cannot remove the cache directory
-		for _, exit := range shared.ActiveChroots {
-			if exit != nil {
-				exit()
-			}
-		}
-
-		globalCmd.postRun(nil, nil)
-		fmt.Println("Timed out")
-		os.Exit(1)
-	}()
 
 	go func() {
 		<-globalCmd.interrupt
