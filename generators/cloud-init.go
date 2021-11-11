@@ -107,8 +107,11 @@ func (g *cloudInit) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLX
 
 	switch g.defFile.Name {
 	case "user-data":
-		content = `{{ config_get("user.user-data", properties.default) }}
-`
+		content = `{%- if config_get("cloud-init.user-data", properties.default) == properties.default -%}
+{{ config_get("user.user-data", properties.default) }}
+{%- else -%}
+{{- config_get("cloud-init.user-data", properties.default) }}
+{%- endif -%}`
 		properties["default"] = `#cloud-config
 {}`
 	case "meta-data":
@@ -117,18 +120,28 @@ local-hostname: {{ container.name }}
 {{ config_get("user.meta-data", "") }}
 `
 	case "vendor-data":
-		content = `{{ config_get("user.vendor-data", properties.default) }}
+		content = `{%- if config_get("cloud-init.vendor-data", properties.default) == properties.default -%}
+{{ config_get("user.vendor-data", properties.default) }}
+{%- else -%}
+{{- config_get("cloud-init.vendor-data", properties.default) }}
+{%- endif -%}
 `
 		properties["default"] = `#cloud-config
 {}`
 	case "network-config":
-		content = `{% if config_get("user.network-config", "") == "" %}version: 1
+		content = `{%- if config_get("cloud-init.network-config", properties.default) == properties.default -%}
+{{ config_get("user.network-config", properties.default) }}
+{%- else -%}
+{{- config_get("cloud-init.network-config", properties.default) }}
+{%- endif -%}
+`
+		properties["default"] = `version: 1
 config:
   - type: physical
     name: {% if instance.type == "virtual-machine" %}enp5s0{% else %}eth0{% endif %}
     subnets:
-      - type: {% if config_get("user.network_mode", "") == "link-local" %}manual{% else %}dhcp{% endif %}
-        control: auto{% else %}{{ config_get("user.network-config", "") }}{% endif %}
+      - type: dhcp
+        control: auto
 `
 	default:
 		return fmt.Errorf("Unknown cloud-init configuration: %s", g.defFile.Name)
