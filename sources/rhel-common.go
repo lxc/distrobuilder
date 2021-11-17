@@ -209,7 +209,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 	// Figure out the offset
 	var buf bytes.Buffer
 
-	err = lxd.RunCommandWithFds(nil, &buf, "fdisk", "-l", "-o", "Start", rawFilePath)
+	err = shared.RunCommand(c.ctx, nil, &buf, "fdisk", "-l", "-o", "Start", rawFilePath)
 	if err != nil {
 		return fmt.Errorf(`Failed to run "fdisk": %w`, err)
 	}

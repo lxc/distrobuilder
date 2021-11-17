@@ -58,12 +58,14 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	s.fname = strings.TrimSuffix(s.fname, ".xz")
 	f := filepath.Join(s.fpath, s.fname)
 
-	output, err := lxd.RunCommand("fdisk", "-l", "-o", "Start", f)
+	var out strings.Builder
+
+	err := shared.RunCommand(s.ctx, nil, &out, "fdisk", "-l", "-o", "Start", f)
 	if err != nil {
 		return fmt.Errorf(`Failed to run "fdisk": %w`, err)
 	}
 
-	lines := strings.Split(output, "\n")
+	lines := strings.Split(out.String(), "\n")
 
 	offset, err := strconv.Atoi(lines[len(lines)-2])
 	if err != nil {

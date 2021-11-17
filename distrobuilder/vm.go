@@ -103,22 +103,25 @@ func (v *vm) mountImage() error {
 		return nil
 	}
 
-	stdout, err := lxd.RunCommand("losetup", "-P", "-f", "--show", v.imageFile)
+	var out strings.Builder
+
+	err := shared.RunCommand(v.ctx, nil, &out, "losetup", "-P", "-f", "--show", v.imageFile)
 	if err != nil {
 		return fmt.Errorf("Failed to setup loop device: %w", err)
 	}
 
-	v.loopDevice = strings.TrimSpace(stdout)
+	v.loopDevice = strings.TrimSpace(out.String())
+
+	out.Reset()
 
 	// Ensure the partitions are accessible. This part is usually only needed
 	// if building inside of a container.
-
-	out, err := lxd.RunCommand("lsblk", "--raw", "--output", "MAJ:MIN", "--noheadings", v.loopDevice)
+	err = shared.RunCommand(v.ctx, nil, &out, "lsblk", "--raw", "--output", "MAJ:MIN", "--noheadings", v.loopDevice)
 	if err != nil {
 		return fmt.Errorf("Failed to list block devices: %w", err)
 	}
 
-	deviceNumbers := strings.Split(out, "\n")
+	deviceNumbers := strings.Split(out.String(), "\n")
 
 	if !lxd.PathExists(v.getUEFIDevFile()) {
 		fields := strings.Split(deviceNumbers[1], ":")
@@ -236,12 +239,14 @@ func (v *vm) getRootfsPartitionUUID() (string, error) {
 		return "", errors.New("Disk image not mounted")
 	}
 
-	stdout, err := lxd.RunCommand("blkid", "-s", "PARTUUID", "-o", "value", v.getRootfsDevFile())
+	var out strings.Builder
+
+	err := shared.RunCommand(v.ctx, nil, &out, "blkid", "-s", "PARTUUID", "-o", "value", v.getRootfsDevFile())
 	if err != nil {
 		return "", err
 	}
 
-	return strings.TrimSpace(stdout), nil
+	return strings.TrimSpace(out.String()), nil
 }
 
 func (v *vm) getUEFIPartitionUUID() (string, error) {
@@ -249,12 +254,14 @@ func (v *vm) getUEFIPartitionUUID() (string, error) {
 		return "", errors.New("Disk image not mounted")
 	}
 
-	stdout, err := lxd.RunCommand("blkid", "-s", "PARTUUID", "-o", "value", v.getUEFIDevFile())
+	var out strings.Builder
+
+	err := shared.RunCommand(v.ctx, nil, &out, "blkid", "-s", "PARTUUID", "-o", "value", v.getUEFIDevFile())
 	if err != nil {
 		return "", err
 	}
 
-	return strings.TrimSpace(stdout), nil
+	return strings.TrimSpace(out.String()), nil
 }
 
 func (v *vm) mountRootPartition() error {

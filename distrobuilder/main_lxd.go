@@ -290,7 +290,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		if err != nil {
 			return fmt.Errorf("failed to mount root partion: %w", err)
 		}
-		defer lxd.RunCommand("umount", "-R", vmDir)
+		defer shared.RunCommand(vm.ctx, nil, nil, "umount", "-R", vmDir)
 
 		err = vm.createUEFIFS()
 		if err != nil {
@@ -361,7 +361,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	// Unmount VM directory and loop device before creating the image.
 	if c.flagVM {
-		_, err := lxd.RunCommand("umount", "-R", vmDir)
+		err := shared.RunCommand(vm.ctx, nil, nil, "umount", "-R", vmDir)
 		if err != nil {
 			return fmt.Errorf("Failed to unmount %q: %w", vmDir, err)
 		}
