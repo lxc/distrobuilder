@@ -49,7 +49,7 @@ func (s *ubuntu) runDefaultVariant(definition shared.Definition, rootfsDir strin
 
 func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) error {
 	if !lxd.PathExists(filepath.Join(s.fpath, strings.TrimSuffix(s.fname, ".xz"))) {
-		err := shared.RunCommand(s.ctx, "unxz", "-k", filepath.Join(s.fpath, s.fname))
+		err := shared.RunCommand(s.ctx, nil, nil, "unxz", "-k", filepath.Join(s.fpath, s.fname))
 		if err != nil {
 			return fmt.Errorf(`Failed to run "unxz": %w`, err)
 		}
@@ -81,7 +81,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 		}
 	}
 
-	err = shared.RunCommand(s.ctx, "mount", "-o", fmt.Sprintf("loop,offset=%d", offset*512), f, imageDir)
+	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-o", fmt.Sprintf("loop,offset=%d", offset*512), f, imageDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", fmt.Sprintf("loop,offset=%d", offset*512), err)
 	}

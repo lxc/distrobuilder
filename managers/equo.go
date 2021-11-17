@@ -66,7 +66,7 @@ func (m *equo) enmanRepoCaller(repo shared.DefinitionPackagesRepository) error {
 		args = append(args, repo.Name)
 	}
 
-	return shared.RunCommand(m.ctx, "enman", args...)
+	return shared.RunCommand(m.ctx, nil, nil, "enman", args...)
 }
 
 func (m *equo) equoRepoCaller(repo shared.DefinitionPackagesRepository) error {
@@ -78,6 +78,6 @@ func (m *equo) equoRepoCaller(repo shared.DefinitionPackagesRepository) error {
 		return errors.New("Invalid repository url")
 	}
 
-	return shared.RunCommand(m.ctx, "equo", "repo", "add", "--repo", repo.URL, "--pkg", repo.URL,
+	return shared.RunCommand(m.ctx, nil, nil, "equo", "repo", "add", "--repo", repo.URL, "--pkg", repo.URL,
 		repo.Name)
 }

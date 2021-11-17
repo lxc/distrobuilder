@@ -84,7 +84,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 
 	if vm {
 		// Create compressed qcow2 image.
-		err = shared.RunCommand(l.ctx, "qemu-img", "convert", "-c", "-O", "qcow2", "-o", "compat=0.10",
+		err = shared.RunCommand(l.ctx, nil, nil, "qemu-img", "convert", "-c", "-O", "qcow2", "-o", "compat=0.10",
 			rawImage,
 			qcowImage)
 		if err != nil {
@@ -138,7 +138,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 			rootfsFile = filepath.Join(l.targetDir, "rootfs.squashfs")
 
 			// Create rootfs as squashfs.
-			err = shared.RunCommand(l.ctx, "mksquashfs", l.sourceDir,
+			err = shared.RunCommand(l.ctx, nil, nil, "mksquashfs", l.sourceDir,
 				rootfsFile, "-noappend", "-comp",
 				compression, "-b", "1M", "-no-progress", "-no-recovery")
 		}

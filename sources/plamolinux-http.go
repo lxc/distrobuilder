@@ -75,7 +75,7 @@ func (s *plamolinux) Run() error {
 		return errors.New("Found more than one matching package")
 	}
 
-	err = shared.RunCommand(s.ctx, "tar", "-pxf", matches[0], "-C", pkgDir, "sbin/")
+	err = shared.RunCommand(s.ctx, nil, nil, "tar", "-pxf", matches[0], "-C", pkgDir, "sbin/")
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %q: %w", matches[0], err)
 	}
