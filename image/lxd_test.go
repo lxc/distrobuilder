@@ -1,6 +1,7 @@
 package image
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -40,7 +41,7 @@ func setupLXD(t *testing.T) *LXDImage {
 	err = os.MkdirAll(filepath.Join(cacheDir, "templates"), 0755)
 	require.NoError(t, err)
 
-	image := NewLXDImage(cacheDir, "", cacheDir, lxdDef)
+	image := NewLXDImage(context.TODO(), cacheDir, "", cacheDir, lxdDef)
 
 	fail := true
 	defer func() {

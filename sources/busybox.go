@@ -54,7 +54,7 @@ func (s *busybox) Run() error {
 
 	sourceDir = filepath.Join(sourceDir, fmt.Sprintf("busybox-%s", s.definition.Image.Release))
 
-	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	err = shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 set -eux
 
 source_dir=%s

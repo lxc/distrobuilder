@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"context"
 	"errors"
 
 	"go.uber.org/zap"
@@ -12,7 +13,7 @@ import (
 var ErrUnknownDownloader = errors.New("Unknown downloader")
 
 type downloader interface {
-	init(logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string)
+	init(ctx context.Context, logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string)
 
 	Downloader
 }
@@ -48,7 +49,7 @@ var downloaders = map[string]func() downloader{
 }
 
 // Load loads and initializes a downloader.
-func Load(downloaderName string, logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) (Downloader, error) {
+func Load(ctx context.Context, downloaderName string, logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) (Downloader, error) {
 	df, ok := downloaders[downloaderName]
 	if !ok {
 		return nil, ErrUnknownDownloader
@@ -56,7 +57,7 @@ func Load(downloaderName string, logger *zap.SugaredLogger, definition shared.De
 
 	d := df()
 
-	d.init(logger, definition, rootfsDir, cacheDir, sourcesDir)
+	d.init(ctx, logger, definition, rootfsDir, cacheDir, sourcesDir)
 
 	return d, nil
 }

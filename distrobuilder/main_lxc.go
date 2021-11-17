@@ -107,7 +107,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	imageTargets := shared.ImageTargetAll | shared.ImageTargetContainer
 
-	manager, err := managers.Load(c.global.definition.Packages.Manager, c.global.logger, *c.global.definition)
+	manager, err := managers.Load(c.global.ctx, c.global.definition.Packages.Manager, c.global.logger, *c.global.definition)
 	if err != nil {
 		return fmt.Errorf("Failed to load manager %q: %w", c.global.definition.Packages.Manager, err)
 	}
@@ -123,7 +123,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	// Run post unpack hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
-		err := shared.RunScript(hook.Action)
+		err := shared.RunScript(c.global.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %w", err)
 		}
@@ -141,7 +141,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	// Run post packages hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {
-		err := shared.RunScript(hook.Action)
+		err := shared.RunScript(c.global.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %w", err)
 		}
@@ -151,7 +151,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 }
 
 func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error {
-	img := image.NewLXCImage(overlayDir, c.global.targetDir,
+	img := image.NewLXCImage(c.global.ctx, overlayDir, c.global.targetDir,
 		c.global.flagCacheDir, *c.global.definition)
 
 	for _, file := range c.global.definition.Files {
@@ -185,7 +185,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	// Run post files hook
 	for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetUndefined|shared.ImageTargetAll|shared.ImageTargetContainer) {
-		err := shared.RunScript(action.Action)
+		err := shared.RunScript(c.global.ctx, action.Action)
 		if err != nil {
 			exitChroot()
 			return fmt.Errorf("Failed to run post-files: %w", err)

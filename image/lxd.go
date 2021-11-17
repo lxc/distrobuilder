@@ -1,6 +1,7 @@
 package image
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,10 +20,11 @@ type LXDImage struct {
 	cacheDir   string
 	Metadata   api.ImageMetadata
 	definition shared.Definition
+	ctx        context.Context
 }
 
 // NewLXDImage returns a LXDImage.
-func NewLXDImage(sourceDir, targetDir, cacheDir string,
+func NewLXDImage(ctx context.Context, sourceDir, targetDir, cacheDir string,
 	definition shared.Definition) *LXDImage {
 	return &LXDImage{
 		sourceDir,
@@ -33,6 +35,7 @@ func NewLXDImage(sourceDir, targetDir, cacheDir string,
 			Templates:  make(map[string]*api.ImageMetadataTemplate),
 		},
 		definition,
+		ctx,
 	}
 }
 
@@ -81,7 +84,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 
 	if vm {
 		// Create compressed qcow2 image.
-		err = shared.RunCommand("qemu-img", "convert", "-c", "-O", "qcow2", "-o", "compat=0.10",
+		err = shared.RunCommand(l.ctx, "qemu-img", "convert", "-c", "-O", "qcow2", "-o", "compat=0.10",
 			rawImage,
 			qcowImage)
 		if err != nil {
@@ -105,11 +108,11 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 				return "", "", fmt.Errorf("Failed to rename image %q -> %q: %w", qcowImage, filepath.Join(filepath.Dir(qcowImage), "rootfs.img"), err)
 			}
 
-			_, err = shared.Pack(targetTarball, "", l.cacheDir, "rootfs.img")
+			_, err = shared.Pack(l.ctx, targetTarball, "", l.cacheDir, "rootfs.img")
 		} else {
 			// Add the rootfs to the tarball, prefix all files with "rootfs".
 			// We intentionally don't set any compression here, as PackUpdate (further down) cannot deal with compressed tarballs.
-			_, err = shared.Pack(targetTarball,
+			_, err = shared.Pack(l.ctx, targetTarball,
 				"", l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
 		}
 		if err != nil {
@@ -122,7 +125,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 		}()
 
 		// Add the metadata to the tarball which is located in the cache directory
-		imageFile, err = shared.PackUpdate(targetTarball, compression, l.cacheDir, paths...)
+		imageFile, err = shared.PackUpdate(l.ctx, targetTarball, compression, l.cacheDir, paths...)
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to add metadata to tarball %q: %w", targetTarball, err)
 		}
@@ -135,7 +138,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 			rootfsFile = filepath.Join(l.targetDir, "rootfs.squashfs")
 
 			// Create rootfs as squashfs.
-			err = shared.RunCommand("mksquashfs", l.sourceDir,
+			err = shared.RunCommand(l.ctx, "mksquashfs", l.sourceDir,
 				rootfsFile, "-noappend", "-comp",
 				compression, "-b", "1M", "-no-progress", "-no-recovery")
 		}
@@ -144,7 +147,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 		}
 
 		// Create metadata tarball.
-		imageFile, err = shared.Pack(filepath.Join(l.targetDir, "lxd.tar"), compression,
+		imageFile, err = shared.Pack(l.ctx, filepath.Join(l.targetDir, "lxd.tar"), compression,
 			l.cacheDir, paths...)
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to create metadata tarball: %w", err)

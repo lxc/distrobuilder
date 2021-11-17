@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"context"
 	"fmt"
 	"hash"
 	"io"
@@ -25,14 +26,16 @@ type common struct {
 	rootfsDir  string
 	cacheDir   string
 	sourcesDir string
+	ctx        context.Context
 }
 
-func (s *common) init(logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) {
+func (s *common) init(ctx context.Context, logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) {
 	s.logger = logger
 	s.definition = definition
 	s.rootfsDir = rootfsDir
 	s.cacheDir = cacheDir
 	s.sourcesDir = sourcesDir
+	s.ctx = ctx
 }
 
 func (s *common) getTargetDir() string {

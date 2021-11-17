@@ -1,6 +1,7 @@
 package managers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -42,10 +43,11 @@ type managerCommands struct {
 type Manager struct {
 	mgr manager
 	def shared.Definition
+	ctx context.Context
 }
 
 type manager interface {
-	init(logger *zap.SugaredLogger, definition shared.Definition)
+	init(ctx context.Context, logger *zap.SugaredLogger, definition shared.Definition)
 	load() error
 	manageRepository(repo shared.DefinitionPackagesRepository) error
 	install(pkgs, flags []string) error
@@ -72,7 +74,7 @@ var managers = map[string]func() manager{
 }
 
 // Load loads and initializes a downloader.
-func Load(managerName string, logger *zap.SugaredLogger, definition shared.Definition) (*Manager, error) {
+func Load(ctx context.Context, managerName string, logger *zap.SugaredLogger, definition shared.Definition) (*Manager, error) {
 	df, ok := managers[managerName]
 	if !ok {
 		return nil, ErrUnknownManager
@@ -80,7 +82,7 @@ func Load(managerName string, logger *zap.SugaredLogger, definition shared.Defin
 
 	d := df()
 
-	d.init(logger, definition)
+	d.init(ctx, logger, definition)
 
 	err := d.load()
 	if err != nil {
@@ -121,7 +123,7 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 
 		// Run post update hook
 		for _, action := range m.def.GetRunnableActions("post-update", imageTarget) {
-			err = shared.RunScript(action.Action)
+			err = shared.RunScript(m.ctx, action.Action)
 			if err != nil {
 				return fmt.Errorf("Failed to run post-update: %w", err)
 			}

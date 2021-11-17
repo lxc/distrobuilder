@@ -2,6 +2,7 @@ package image
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -85,7 +86,7 @@ func lxcCacheDir() string {
 }
 
 func setupLXC() *LXCImage {
-	return NewLXCImage(lxcCacheDir(), "", lxcCacheDir(), lxcDef)
+	return NewLXCImage(context.TODO(), lxcCacheDir(), "", lxcCacheDir(), lxcDef)
 }
 
 func teardownLXC() {
@@ -93,7 +94,7 @@ func teardownLXC() {
 }
 
 func TestNewLXCImage(t *testing.T) {
-	image := NewLXCImage(lxcCacheDir(), "", lxcCacheDir(), lxcDef)
+	image := NewLXCImage(context.TODO(), lxcCacheDir(), "", lxcCacheDir(), lxcDef)
 	defer teardownLXC()
 
 	require.Equal(t, lxcCacheDir(), image.cacheDir)

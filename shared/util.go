@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -51,8 +52,8 @@ func Copy(src, dest string) error {
 // RunCommand runs a command hereby setting the SHELL and PATH env variables,
 // and redirecting the process's stdout and stderr to the real stdout and stderr
 // respectively.
-func RunCommand(name string, arg ...string) error {
-	cmd := exec.Command(name, arg...)
+func RunCommand(ctx context.Context, name string, arg ...string) error {
+	cmd := exec.CommandContext(ctx, name, arg...)
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -64,7 +65,7 @@ func RunCommand(name string, arg ...string) error {
 // RunScript runs a script hereby setting the SHELL and PATH env variables,
 // and redirecting the process's stdout and stderr to the real stdout and stderr
 // respectively.
-func RunScript(content string) error {
+func RunScript(ctx context.Context, content string) error {
 	fd, err := unix.MemfdCreate("tmp", 0)
 	if err != nil {
 		return fmt.Errorf("Failed to create memfd: %w", err)
@@ -78,33 +79,33 @@ func RunScript(content string) error {
 
 	fdPath := fmt.Sprintf("/proc/self/fd/%d", fd)
 
-	return RunCommand(fdPath)
+	return RunCommand(ctx, fdPath)
 }
 
 // Pack creates an uncompressed tarball.
-func Pack(filename, compression, path string, args ...string) (string, error) {
-	err := RunCommand("tar", append([]string{"--xattrs", "-cf", filename, "-C", path}, args...)...)
+func Pack(ctx context.Context, filename, compression, path string, args ...string) (string, error) {
+	err := RunCommand(ctx, "tar", append([]string{"--xattrs", "-cf", filename, "-C", path}, args...)...)
 	if err != nil {
 		// Clean up incomplete tarball
 		os.Remove(filename)
 		return "", fmt.Errorf("Failed to create tarball: %w", err)
 	}
 
-	return compressTarball(filename, compression)
+	return compressTarball(ctx, filename, compression)
 }
 
 // PackUpdate updates an existing tarball.
-func PackUpdate(filename, compression, path string, args ...string) (string, error) {
-	err := RunCommand("tar", append([]string{"--xattrs", "-uf", filename, "-C", path}, args...)...)
+func PackUpdate(ctx context.Context, filename, compression, path string, args ...string) (string, error) {
+	err := RunCommand(ctx, "tar", append([]string{"--xattrs", "-uf", filename, "-C", path}, args...)...)
 	if err != nil {
 		return "", fmt.Errorf("Failed to update tarball: %w", err)
 	}
 
-	return compressTarball(filename, compression)
+	return compressTarball(ctx, filename, compression)
 }
 
 // compressTarball compresses a tarball, or not.
-func compressTarball(filename, compression string) (string, error) {
+func compressTarball(ctx context.Context, filename, compression string) (string, error) {
 	fileExtension := ""
 
 	switch compression {
@@ -113,7 +114,7 @@ func compressTarball(filename, compression string) (string, error) {
 		defer os.Remove(filename)
 		fallthrough
 	case "bzip2", "xz", "lzip", "lzma", "gzip":
-		err := RunCommand(compression, "-f", filename)
+		err := RunCommand(ctx, compression, "-f", filename)
 		if err != nil {
 			return "", fmt.Errorf("Failed to compress tarball %q: %w", filename, err)
 		}
@@ -235,8 +236,8 @@ func SetEnvVariables(env Environment) Environment {
 }
 
 // RsyncLocal copies src to dest using rsync.
-func RsyncLocal(src string, dest string) error {
-	err := RunCommand("rsync", "-aHASX", "--devices", src, dest)
+func RsyncLocal(ctx context.Context, src string, dest string) error {
+	err := RunCommand(ctx, "rsync", "-aHASX", "--devices", src, dest)
 	if err != nil {
 		return fmt.Errorf("Failed to copy %q to %q: %w", src, dest, err)
 	}

@@ -90,7 +90,7 @@ func (s *debootstrap) Run() error {
 		defer os.Remove(scriptPath)
 	}
 
-	err := shared.RunCommand("debootstrap", args...)
+	err := shared.RunCommand(s.ctx, "debootstrap", args...)
 	if err != nil {
 		return fmt.Errorf(`Failed to run "debootstrap": %w`, err)
 	}

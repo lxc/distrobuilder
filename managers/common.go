@@ -1,6 +1,8 @@
 package managers
 
 import (
+	"context"
+
 	"github.com/lxc/distrobuilder/shared"
 	"go.uber.org/zap"
 )
@@ -11,11 +13,13 @@ type common struct {
 	hooks      managerHooks
 	logger     *zap.SugaredLogger
 	definition shared.Definition
+	ctx        context.Context
 }
 
-func (c *common) init(logger *zap.SugaredLogger, definition shared.Definition) {
+func (c *common) init(ctx context.Context, logger *zap.SugaredLogger, definition shared.Definition) {
 	c.logger = logger
 	c.definition = definition
+	c.ctx = ctx
 }
 
 // Install installs packages to the rootfs.
@@ -28,7 +32,7 @@ func (c *common) install(pkgs, flags []string) error {
 	args = append(args, flags...)
 	args = append(args, pkgs...)
 
-	return shared.RunCommand(c.commands.install, args...)
+	return shared.RunCommand(c.ctx, c.commands.install, args...)
 }
 
 // Remove removes packages from the rootfs.
@@ -41,7 +45,7 @@ func (c *common) remove(pkgs, flags []string) error {
 	args = append(args, flags...)
 	args = append(args, pkgs...)
 
-	return shared.RunCommand(c.commands.remove, args...)
+	return shared.RunCommand(c.ctx, c.commands.remove, args...)
 }
 
 // Clean cleans up cached files used by the package managers.
@@ -54,7 +58,7 @@ func (c *common) clean() error {
 
 	args := append(c.flags.global, c.flags.clean...)
 
-	err = shared.RunCommand(c.commands.clean, args...)
+	err = shared.RunCommand(c.ctx, c.commands.clean, args...)
 	if err != nil {
 		return err
 	}
@@ -81,7 +85,7 @@ func (c *common) refresh() error {
 
 	args := append(c.flags.global, c.flags.refresh...)
 
-	return shared.RunCommand(c.commands.refresh, args...)
+	return shared.RunCommand(c.ctx, c.commands.refresh, args...)
 }
 
 // Update updates all packages.
@@ -92,7 +96,7 @@ func (c *common) update() error {
 
 	args := append(c.flags.global, c.flags.update...)
 
-	return shared.RunCommand(c.commands.update, args...)
+	return shared.RunCommand(c.ctx, c.commands.update, args...)
 }
 
 // SetInstallFlags overrides the default install flags.

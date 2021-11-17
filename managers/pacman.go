@@ -94,7 +94,7 @@ func (m *pacman) setupTrustedKeys() error {
 		return nil
 	}
 
-	err = shared.RunCommand("pacman-key", "--init")
+	err = shared.RunCommand(m.ctx, "pacman-key", "--init")
 	if err != nil {
 		return fmt.Errorf("Error initializing with pacman-key: %w", err)
 	}
@@ -107,7 +107,7 @@ func (m *pacman) setupTrustedKeys() error {
 		keyring = "archlinux"
 	}
 
-	err = shared.RunCommand("pacman-key", "--populate", keyring)
+	err = shared.RunCommand(m.ctx, "pacman-key", "--populate", keyring)
 	if err != nil {
 		return fmt.Errorf("Error populating with pacman-key: %w", err)
 	}

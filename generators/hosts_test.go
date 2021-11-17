@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,7 +30,7 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 		},
 	}
 
-	image := image.NewLXCImage(cacheDir, "", cacheDir, definition)
+	image := image.NewLXCImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
 	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs", "etc"), 0755)
 	require.NoError(t, err)
@@ -62,7 +63,7 @@ func TestHostsGeneratorRunLXD(t *testing.T) {
 		},
 	}
 
-	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
+	image := image.NewLXDImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
 	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs", "etc"), 0755)
 	require.NoError(t, err)

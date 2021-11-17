@@ -285,7 +285,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load and run downloader
-	downloader, err := sources.Load(c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir, c.flagCacheDir, c.flagSourcesDir)
+	downloader, err := sources.Load(c.ctx, c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir, c.flagCacheDir, c.flagSourcesDir)
 	if err != nil {
 		return fmt.Errorf("Failed to load downloader %q: %w", c.definition.Source.Downloader, err)
 	}
@@ -335,7 +335,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	manager, err := managers.Load(c.definition.Packages.Manager, c.logger, *c.definition)
+	manager, err := managers.Load(c.ctx, c.definition.Packages.Manager, c.logger, *c.definition)
 	if err != nil {
 		return fmt.Errorf("Failed to load manager %q: %w", c.definition.Packages.Manager, err)
 	}
@@ -351,7 +351,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post unpack hook
 	for _, hook := range c.definition.GetRunnableActions("post-unpack", imageTargets) {
-		err := shared.RunScript(hook.Action)
+		err := shared.RunScript(c.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %w", err)
 		}
@@ -369,7 +369,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post packages hook
 	for _, hook := range c.definition.GetRunnableActions("post-packages", imageTargets) {
-		err := shared.RunScript(hook.Action)
+		err := shared.RunScript(c.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %w", err)
 		}
@@ -463,7 +463,7 @@ func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
 		overlayDir = filepath.Join(c.flagCacheDir, "overlay")
 
 		// Use rsync if overlay doesn't work
-		err = shared.RsyncLocal(c.sourceDir+"/", overlayDir)
+		err = shared.RsyncLocal(c.ctx, c.sourceDir+"/", overlayDir)
 		if err != nil {
 			return "", nil, fmt.Errorf("Failed to copy image content: %w", err)
 		}
@@ -475,7 +475,7 @@ func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
 			overlayDir = filepath.Join(c.flagCacheDir, "overlay")
 
 			// Use rsync if overlay doesn't work
-			err = shared.RsyncLocal(c.sourceDir+"/", overlayDir)
+			err = shared.RsyncLocal(c.ctx, c.sourceDir+"/", overlayDir)
 			if err != nil {
 				return "", nil, fmt.Errorf("Failed to copy image content: %w", err)
 			}

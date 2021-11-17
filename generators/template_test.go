@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -34,7 +35,7 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 	require.IsType(t, &template{}, generator)
 	require.NoError(t, err)
 
-	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
+	image := image.NewLXDImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
 	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs", "root"), 0755)
 	require.NoError(t, err)
@@ -71,7 +72,7 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 	require.IsType(t, &template{}, generator)
 	require.NoError(t, err)
 
-	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
+	image := image.NewLXDImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
 	err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
 	require.NoError(t, err)

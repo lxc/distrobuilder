@@ -105,7 +105,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	}
 
 	// this is easier than doing the whole loop thing ourselves
-	err := shared.RunCommand("mount", "-o", "ro", filePath, isoDir)
+	err := shared.RunCommand(s.ctx, "mount", "-o", "ro", filePath, isoDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", filePath, err)
 	}
@@ -117,7 +117,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 
 		// The squashfs.img contains an image containing the rootfs, so first
 		// mount squashfs.img
-		err = shared.RunCommand("mount", "-o", "ro", squashfsImage, squashfsDir)
+		err = shared.RunCommand(s.ctx, "mount", "-o", "ro", squashfsImage, squashfsDir)
 		if err != nil {
 			return fmt.Errorf("Failed to mount %q: %w", squashfsImage, err)
 		}
@@ -215,7 +215,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 		}
 	}
 
-	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	err = shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 set -eux
 
 version="%s"
@@ -305,7 +305,7 @@ EOF
 
 	exitChroot()
 
-	err = shared.RsyncLocal(tempRootDir+"/rootfs/", rootfsDir)
+	err = shared.RsyncLocal(s.ctx, tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {
 		return fmt.Errorf(`Failed to run "rsync": %w`, err)
 	}

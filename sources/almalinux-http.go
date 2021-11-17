@@ -111,7 +111,7 @@ func (s *almalinux) Run() error {
 }
 
 func (s *almalinux) rawRunner() error {
-	err := shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	err := shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 	set -eux
 
 	# Create required files
@@ -130,7 +130,7 @@ func (s *almalinux) rawRunner() error {
 }
 
 func (s *almalinux) isoRunner(gpgKeysPath string) error {
-	err := shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	err := shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 set -eux
 
 GPG_KEYS="%s"
