@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"context"
 	"log"
 	"os"
 	"path"
@@ -85,6 +86,7 @@ func TestVerifyFile(t *testing.T) {
 		definition: shared.Definition{
 			Source: shared.DefinitionSource{},
 		},
+		ctx: context.TODO(),
 	}
 
 	for i, tt := range tests {
@@ -117,6 +119,7 @@ func TestCreateGPGKeyring(t *testing.T) {
 				Keys:      []string{"0x5DE8949A899C8D99"},
 			},
 		},
+		ctx: context.TODO(),
 	}
 
 	keyring, err := c.CreateGPGKeyring()
