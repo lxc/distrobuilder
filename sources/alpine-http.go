@@ -96,13 +96,13 @@ func (s *alpineLinux) Run() error {
 			return fmt.Errorf("Failed to set up chroot: %w", err)
 		}
 
-		err = shared.RunCommand("sed", "-i", "-e", "s/v[[:digit:]]\\.[[:digit:]]\\+/edge/g", "/etc/apk/repositories")
+		err = shared.RunCommand(s.ctx, nil, nil, "sed", "-i", "-e", "s/v[[:digit:]]\\.[[:digit:]]\\+/edge/g", "/etc/apk/repositories")
 		if err != nil {
 			exitChroot()
 			return fmt.Errorf("Failed to edit apk repositories: %w", err)
 		}
 
-		err = shared.RunCommand("apk", "upgrade", "--update-cache", "--available")
+		err = shared.RunCommand(s.ctx, nil, nil, "apk", "upgrade", "--update-cache", "--available")
 		if err != nil {
 			exitChroot()
 			return fmt.Errorf("Failed to upgrade edge build: %w", err)

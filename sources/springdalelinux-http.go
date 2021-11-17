@@ -43,7 +43,7 @@ func (s *springdalelinux) Run() error {
 }
 
 func (s *springdalelinux) isoRunner(gpgKeysPath string) error {
-	err := shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	err := shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 set -eux
 
 GPG_KEYS="%s"

@@ -123,7 +123,7 @@ func (s *centOS) Run() error {
 }
 
 func (s *centOS) rawRunner() error {
-	err := shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	err := shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 set -eux
 
 version="%s"
@@ -156,7 +156,7 @@ fi
 }
 
 func (s *centOS) isoRunner(gpgKeysPath string) error {
-	err := shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	err := shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 set -eux
 
 GPG_KEYS="%s"

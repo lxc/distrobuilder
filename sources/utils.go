@@ -3,6 +3,7 @@ package sources
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"hash"
@@ -129,7 +130,7 @@ func getChecksum(fname string, hashLen int, r io.Reader) []string {
 	return nil
 }
 
-func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
+func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []string) (bool, error) {
 	args := []string{"--homedir", gpgDir}
 
 	var fingerprints []string
@@ -146,7 +147,7 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 	for _, f := range publicKeys {
 		args := append(args, "--import")
 
-		cmd := exec.Command("gpg", args...)
+		cmd := exec.CommandContext(ctx, "gpg", args...)
 		cmd.Stdin = strings.NewReader(f)
 		cmd.Env = append(os.Environ(), "LANG=C.UTF-8")
 
@@ -165,15 +166,21 @@ func recvGPGKeys(gpgDir string, keyserver string, keys []string) (bool, error) {
 
 	args = append(args, append([]string{"--recv-keys"}, fingerprints...)...)
 
-	_, out, err := lxd.RunCommandSplit(append(os.Environ(), "LANG=C.UTF-8"), nil, "gpg", args...)
+	cmd := exec.CommandContext(ctx, "gpg", args...)
+	cmd.Env = append(os.Environ(), "LANG=C.UTF-8")
+
+	var buffer bytes.Buffer
+	cmd.Stderr = &buffer
+
+	err := cmd.Run()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
 	}
 
 	// Verify output
 	var importedKeys []string
 	var missingKeys []string
-	lines := strings.Split(out, "\n")
+	lines := strings.Split(buffer.String(), "\n")
 
 	for _, l := range lines {
 		if strings.HasPrefix(l, "gpg: key ") && (strings.HasSuffix(l, " imported") || strings.HasSuffix(l, " not changed")) {

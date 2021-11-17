@@ -49,7 +49,7 @@ func (s *ubuntu) runDefaultVariant(definition shared.Definition, rootfsDir strin
 
 func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) error {
 	if !lxd.PathExists(filepath.Join(s.fpath, strings.TrimSuffix(s.fname, ".xz"))) {
-		err := shared.RunCommand("unxz", "-k", filepath.Join(s.fpath, s.fname))
+		err := shared.RunCommand(s.ctx, nil, nil, "unxz", "-k", filepath.Join(s.fpath, s.fname))
 		if err != nil {
 			return fmt.Errorf(`Failed to run "unxz": %w`, err)
 		}
@@ -58,12 +58,14 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 	s.fname = strings.TrimSuffix(s.fname, ".xz")
 	f := filepath.Join(s.fpath, s.fname)
 
-	output, err := lxd.RunCommand("fdisk", "-l", "-o", "Start", f)
+	var out strings.Builder
+
+	err := shared.RunCommand(s.ctx, nil, &out, "fdisk", "-l", "-o", "Start", f)
 	if err != nil {
 		return fmt.Errorf(`Failed to run "fdisk": %w`, err)
 	}
 
-	lines := strings.Split(output, "\n")
+	lines := strings.Split(out.String(), "\n")
 
 	offset, err := strconv.Atoi(lines[len(lines)-2])
 	if err != nil {
@@ -81,13 +83,13 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 		}
 	}
 
-	err = shared.RunCommand("mount", "-o", fmt.Sprintf("loop,offset=%d", offset*512), f, imageDir)
+	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-o", fmt.Sprintf("loop,offset=%d", offset*512), f, imageDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", fmt.Sprintf("loop,offset=%d", offset*512), err)
 	}
 	defer unix.Unmount(imageDir, 0)
 
-	err = shared.RsyncLocal(filepath.Join(imageDir, "system-data"), rootfsDir)
+	err = shared.RsyncLocal(s.ctx, filepath.Join(imageDir, "system-data"), rootfsDir)
 	if err != nil {
 		return fmt.Errorf(`Failed to run "rsync": %w`, err)
 	}
@@ -151,7 +153,7 @@ func (s *ubuntu) runCoreVariant(definition shared.Definition, rootfsDir string) 
 		return fmt.Errorf("Failed to create chroot: %w", err)
 	}
 
-	err = shared.RunScript(`#!/bin/sh
+	err = shared.RunScript(s.ctx, `#!/bin/sh
 	apt-get update
 	apt-get install -y busybox-static fuse util-linux squashfuse
 	`)

@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -88,7 +89,7 @@ func TestCloudInitGeneratorRunLXD(t *testing.T) {
 		},
 	}
 
-	image := image.NewLXDImage(cacheDir, "", cacheDir, definition)
+	image := image.NewLXDImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
 	tests := []struct {
 		name       string

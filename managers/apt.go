@@ -121,14 +121,14 @@ func (m *apt) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 			reader = strings.NewReader(repoAction.Key)
 		} else {
 			// If only key ID is provided, we need gpg to be installed early.
-			_, err := lxd.RunCommand("gpg", "--recv-keys", repoAction.Key)
+			err := shared.RunCommand(m.ctx, nil, nil, "gpg", "--recv-keys", repoAction.Key)
 			if err != nil {
 				return fmt.Errorf("Failed to receive GPG keys: %w", err)
 			}
 
 			var buf bytes.Buffer
 
-			err = lxd.RunCommandWithFds(nil, &buf, "gpg", "--export", "--armor", repoAction.Key)
+			err = shared.RunCommand(m.ctx, nil, &buf, "gpg", "--export", "--armor", repoAction.Key)
 			if err != nil {
 				return fmt.Errorf("Failed to export GPG keys: %w", err)
 			}

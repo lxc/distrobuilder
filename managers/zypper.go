@@ -60,5 +60,5 @@ func (m *zypper) manageRepository(repoAction shared.DefinitionPackagesRepository
 		return errors.New("Invalid repository url")
 	}
 
-	return shared.RunCommand("zypper", "ar", "--refresh", "--check", repoAction.URL, repoAction.Name)
+	return shared.RunCommand(m.ctx, nil, nil, "zypper", "ar", "--refresh", "--check", repoAction.URL, repoAction.Name)
 }

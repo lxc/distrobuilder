@@ -54,6 +54,7 @@ import "C"
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -110,6 +111,8 @@ type cmdGlobal struct {
 	interrupt      chan os.Signal
 	logger         *zap.SugaredLogger
 	overlayCleanup func()
+	ctx            context.Context
+	cancel         context.CancelFunc
 }
 
 func main() {
@@ -126,25 +129,34 @@ func main() {
 				os.Exit(1)
 			}
 
-			// Timeout handler
+			var err error
+
+			globalCmd.logger, err = shared.GetLogger(globalCmd.flagDebug)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to get logger: %s\n", err)
+				os.Exit(1)
+			}
+
+			if globalCmd.flagTimeout == 0 {
+				globalCmd.ctx, globalCmd.cancel = context.WithCancel(context.Background())
+			} else {
+				globalCmd.ctx, globalCmd.cancel = context.WithTimeout(context.Background(), time.Duration(globalCmd.flagTimeout)*time.Second)
+			}
+
 			go func() {
-				// No timeout set
-				if globalCmd.flagTimeout == 0 {
-					return
-				}
-
-				time.Sleep(time.Duration(globalCmd.flagTimeout) * time.Second)
-
-				// exit all chroots otherwise we cannot remove the cache directory
-				for _, exit := range shared.ActiveChroots {
-					if exit != nil {
-						exit()
+				for {
+					select {
+					case <-globalCmd.interrupt:
+						globalCmd.cancel()
+						globalCmd.logger.Info("Interrupted")
+						return
+					case <-globalCmd.ctx.Done():
+						if globalCmd.flagTimeout > 0 {
+							globalCmd.logger.Info("Timed out")
+						}
+						return
 					}
 				}
-
-				globalCmd.postRun(nil, nil)
-				fmt.Println("Timed out")
-				os.Exit(1)
 			}()
 
 			// Create temp directory if the cache directory isn't explicitly set
@@ -156,14 +168,6 @@ func main() {
 				}
 
 				globalCmd.flagCacheDir = dir
-			}
-
-			var err error
-
-			globalCmd.logger, err = shared.GetLogger(globalCmd.flagDebug)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to get logger: %s\n", err)
-				os.Exit(1)
 			}
 		},
 		PersistentPostRunE: globalCmd.postRun,
@@ -203,21 +207,6 @@ func main() {
 	// repack-windows sub-command
 	repackWindowsCmd := cmdRepackWindows{global: &globalCmd}
 	app.AddCommand(repackWindowsCmd.command())
-
-	go func() {
-		<-globalCmd.interrupt
-
-		// exit all chroots otherwise we cannot remove the cache directory
-		for _, exit := range shared.ActiveChroots {
-			if exit != nil {
-				exit()
-			}
-		}
-
-		globalCmd.postRun(nil, nil)
-		fmt.Println("Interrupted")
-		os.Exit(1)
-	}()
 
 	globalCmd.interrupt = make(chan os.Signal, 1)
 	signal.Notify(globalCmd.interrupt, os.Interrupt)
@@ -296,7 +285,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load and run downloader
-	downloader, err := sources.Load(c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir, c.flagCacheDir, c.flagSourcesDir)
+	downloader, err := sources.Load(c.ctx, c.definition.Source.Downloader, c.logger, *c.definition, c.sourceDir, c.flagCacheDir, c.flagSourcesDir)
 	if err != nil {
 		return fmt.Errorf("Failed to load downloader %q: %w", c.definition.Source.Downloader, err)
 	}
@@ -346,7 +335,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	manager, err := managers.Load(c.definition.Packages.Manager, c.logger, *c.definition)
+	manager, err := managers.Load(c.ctx, c.definition.Packages.Manager, c.logger, *c.definition)
 	if err != nil {
 		return fmt.Errorf("Failed to load manager %q: %w", c.definition.Packages.Manager, err)
 	}
@@ -362,7 +351,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post unpack hook
 	for _, hook := range c.definition.GetRunnableActions("post-unpack", imageTargets) {
-		err := shared.RunScript(hook.Action)
+		err := shared.RunScript(c.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %w", err)
 		}
@@ -380,7 +369,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post packages hook
 	for _, hook := range c.definition.GetRunnableActions("post-packages", imageTargets) {
-		err := shared.RunScript(hook.Action)
+		err := shared.RunScript(c.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %w", err)
 		}
@@ -426,6 +415,13 @@ func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 		defer c.logger.Sync()
 	}
 
+	// exit all chroots otherwise we cannot remove the cache directory
+	for _, exit := range shared.ActiveChroots {
+		if exit != nil {
+			exit()
+		}
+	}
+
 	// Clean up overlay
 	if c.overlayCleanup != nil {
 		if hasLogger {
@@ -467,7 +463,7 @@ func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
 		overlayDir = filepath.Join(c.flagCacheDir, "overlay")
 
 		// Use rsync if overlay doesn't work
-		err = shared.RsyncLocal(c.sourceDir+"/", overlayDir)
+		err = shared.RsyncLocal(c.ctx, c.sourceDir+"/", overlayDir)
 		if err != nil {
 			return "", nil, fmt.Errorf("Failed to copy image content: %w", err)
 		}
@@ -479,7 +475,7 @@ func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
 			overlayDir = filepath.Join(c.flagCacheDir, "overlay")
 
 			// Use rsync if overlay doesn't work
-			err = shared.RsyncLocal(c.sourceDir+"/", overlayDir)
+			err = shared.RsyncLocal(c.ctx, c.sourceDir+"/", overlayDir)
 			if err != nil {
 				return "", nil, fmt.Errorf("Failed to copy image content: %w", err)
 			}

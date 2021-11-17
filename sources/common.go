@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"context"
 	"fmt"
 	"hash"
 	"io"
@@ -25,14 +26,16 @@ type common struct {
 	rootfsDir  string
 	cacheDir   string
 	sourcesDir string
+	ctx        context.Context
 }
 
-func (s *common) init(logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) {
+func (s *common) init(ctx context.Context, logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) {
 	s.logger = logger
 	s.definition = definition
 	s.rootfsDir = rootfsDir
 	s.cacheDir = cacheDir
 	s.sourcesDir = sourcesDir
+	s.ctx = ctx
 }
 
 func (s *common) getTargetDir() string {
@@ -185,17 +188,19 @@ func (s *common) VerifyFile(signedFile, signatureFile string) (bool, error) {
 	gpgDir := path.Dir(keyring)
 	defer os.RemoveAll(gpgDir)
 
+	var out strings.Builder
+
 	if signatureFile != "" {
-		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
+		err := shared.RunCommand(s.ctx, nil, &out, "gpg", "--homedir", gpgDir, "--keyring", keyring,
 			"--verify", signatureFile, signedFile)
 		if err != nil {
-			return false, fmt.Errorf("Failed to verify: %s: %w", out, err)
+			return false, fmt.Errorf("Failed to verify: %s: %w", out.String(), err)
 		}
 	} else {
-		out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--keyring", keyring,
+		err := shared.RunCommand(s.ctx, nil, &out, "gpg", "--homedir", gpgDir, "--keyring", keyring,
 			"--verify", signedFile)
 		if err != nil {
-			return false, fmt.Errorf("Failed to verify: %s: %w", out, err)
+			return false, fmt.Errorf("Failed to verify: %s: %w", out.String(), err)
 		}
 	}
 
@@ -222,7 +227,7 @@ func (s *common) CreateGPGKeyring() (string, error) {
 	var ok bool
 
 	for i := 0; i < 3; i++ {
-		ok, err = recvGPGKeys(gpgDir, s.definition.Source.Keyserver, s.definition.Source.Keys)
+		ok, err = recvGPGKeys(s.ctx, gpgDir, s.definition.Source.Keyserver, s.definition.Source.Keys)
 		if ok {
 			break
 		}
@@ -234,12 +239,14 @@ func (s *common) CreateGPGKeyring() (string, error) {
 		return "", err
 	}
 
+	var out strings.Builder
+
 	// Export keys to support gpg1 and gpg2
-	out, err := lxd.RunCommand("gpg", "--homedir", gpgDir, "--export", "--output",
+	err = shared.RunCommand(s.ctx, nil, &out, "gpg", "--homedir", gpgDir, "--export", "--output",
 		filepath.Join(gpgDir, "distrobuilder.gpg"))
 	if err != nil {
 		os.RemoveAll(gpgDir)
-		return "", fmt.Errorf("Failed to export keyring: %s: %w", out, err)
+		return "", fmt.Errorf("Failed to export keyring: %s: %w", out.String(), err)
 	}
 
 	return filepath.Join(gpgDir, "distrobuilder.gpg"), nil

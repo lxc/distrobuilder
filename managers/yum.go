@@ -21,7 +21,7 @@ func (m *yum) load() error {
 	var buf bytes.Buffer
 	globalFlags := []string{"-y"}
 
-	lxd.RunCommandWithFds(nil, &buf, "yum", "--help")
+	shared.RunCommand(m.ctx, nil, &buf, "yum", "--help")
 
 	scanner := bufio.NewScanner(&buf)
 

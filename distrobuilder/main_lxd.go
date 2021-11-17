@@ -167,7 +167,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 		imageTargets = shared.ImageTargetContainer
 	}
 
-	manager, err := managers.Load(c.global.definition.Packages.Manager, c.global.logger, *c.global.definition)
+	manager, err := managers.Load(c.global.ctx, c.global.definition.Packages.Manager, c.global.logger, *c.global.definition)
 	if err != nil {
 		return fmt.Errorf("Failed to load manager %q: %w", c.global.definition.Packages.Manager, err)
 	}
@@ -183,7 +183,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	// Run post unpack hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
-		err := shared.RunScript(hook.Action)
+		err := shared.RunScript(c.global.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %w", err)
 		}
@@ -201,7 +201,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	// Run post packages hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {
-		err := shared.RunScript(hook.Action)
+		err := shared.RunScript(c.global.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %w", err)
 		}
@@ -211,7 +211,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 }
 
 func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error {
-	img := image.NewLXDImage(overlayDir, c.global.targetDir,
+	img := image.NewLXDImage(c.global.ctx, overlayDir, c.global.targetDir,
 		c.global.flagCacheDir, *c.global.definition)
 
 	imageTargets := shared.ImageTargetUndefined | shared.ImageTargetAll
@@ -260,7 +260,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		imgFile := filepath.Join(c.global.flagCacheDir, imgFilename)
 
-		vm, err = newVM(imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
+		vm, err = newVM(c.global.ctx, imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
 		if err != nil {
 			return fmt.Errorf("Failed to instanciate VM: %w", err)
 		}
@@ -290,7 +290,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		if err != nil {
 			return fmt.Errorf("failed to mount root partion: %w", err)
 		}
-		defer lxd.RunCommand("umount", "-R", vmDir)
+		defer shared.RunCommand(vm.ctx, nil, nil, "umount", "-R", vmDir)
 
 		err = vm.createUEFIFS()
 		if err != nil {
@@ -304,7 +304,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		// We cannot use LXD's rsync package as that uses the --delete flag which
 		// causes an issue due to the boot/efi directory being present.
-		err = shared.RsyncLocal(overlayDir+"/", vmDir)
+		err = shared.RsyncLocal(c.global.ctx, overlayDir+"/", vmDir)
 		if err != nil {
 			return fmt.Errorf("Failed to copy rootfs: %w", err)
 		}
@@ -350,7 +350,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	// Run post files hook
 	for _, action := range c.global.definition.GetRunnableActions("post-files", imageTargets) {
-		err := shared.RunScript(action.Action)
+		err := shared.RunScript(c.global.ctx, action.Action)
 		if err != nil {
 			exitChroot()
 			return fmt.Errorf("Failed to run post-files: %w", err)
@@ -361,7 +361,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	// Unmount VM directory and loop device before creating the image.
 	if c.flagVM {
-		_, err := lxd.RunCommand("umount", "-R", vmDir)
+		err := shared.RunCommand(vm.ctx, nil, nil, "umount", "-R", vmDir)
 		if err != nil {
 			return fmt.Errorf("Failed to unmount %q: %w", vmDir, err)
 		}

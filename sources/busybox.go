@@ -54,7 +54,7 @@ func (s *busybox) Run() error {
 
 	sourceDir = filepath.Join(sourceDir, fmt.Sprintf("busybox-%s", s.definition.Image.Release))
 
-	err = shared.RunScript(fmt.Sprintf(`#!/bin/sh
+	err = shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 set -eux
 
 source_dir=%s
@@ -77,7 +77,7 @@ mv ${source_dir}/busybox "${rootfs_dir}/bin/busybox"
 
 	var buf bytes.Buffer
 
-	err = lxd.RunCommandWithFds(os.Stdin, &buf, filepath.Join(s.rootfsDir, "bin", "busybox"), "--list-full")
+	err = shared.RunCommand(s.ctx, os.Stdin, &buf, filepath.Join(s.rootfsDir, "bin", "busybox"), "--list-full")
 	if err != nil {
 		return fmt.Errorf("Failed to install busybox: %w", err)
 	}

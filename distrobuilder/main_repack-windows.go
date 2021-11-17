@@ -160,7 +160,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	logger.Info("Mounting Windows ISO")
 
 	// Mount ISO
-	_, err = lxd.RunCommand("mount", "-o", "loop", args[0], c.global.sourceDir)
+	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-o", "loop", args[0], c.global.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q at %q: %w", args[0], c.global.sourceDir, err)
 	}
@@ -216,7 +216,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	logger.Info("Mounting driver ISO")
 
 	// Mount driver ISO
-	_, err := lxd.RunCommand("mount", "-o", "loop", virtioISOPath, driverPath)
+	err := shared.RunCommand(c.global.ctx, nil, nil, "mount", "-o", "loop", virtioISOPath, driverPath)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q at %q: %w", virtioISOPath, driverPath, err)
 	}
@@ -268,7 +268,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 	var buf bytes.Buffer
 
-	err = lxd.RunCommandWithFds(nil, &buf, "wimlib-imagex", "info", installWim)
+	err = shared.RunCommand(c.global.ctx, nil, &buf, "wimlib-imagex", "info", installWim)
 	if err != nil {
 		return fmt.Errorf("Failed to retrieve wim file information: %w", err)
 	}
@@ -305,18 +305,19 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	}
 
 	logger.Info("Generating new ISO")
+	var stdout strings.Builder
 
-	stdout, err := lxd.RunCommand("genisoimage", "--version")
+	err = shared.RunCommand(c.global.ctx, nil, &stdout, "genisoimage", "--version")
 	if err != nil {
 		return fmt.Errorf("Failed to determine version of genisoimage: %w", err)
 	}
 
-	version := strings.Split(stdout, "\n")[0]
+	version := strings.Split(stdout.String(), "\n")[0]
 
 	if strings.HasPrefix(version, "mkisofs") {
-		_, err = lxd.RunCommand("genisoimage", "-iso-level", "3", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
+		err = shared.RunCommand(c.global.ctx, nil, nil, "genisoimage", "-iso-level", "3", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
 	} else {
-		_, err = lxd.RunCommand("genisoimage", "--allow-limited-size", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
+		err = shared.RunCommand(c.global.ctx, nil, nil, "genisoimage", "--allow-limited-size", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to generate ISO: %w", err)
@@ -341,13 +342,13 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 
 	success := false
 
-	_, err := lxd.RunCommand("wimlib-imagex", "mountrw", wimFile, strconv.Itoa(index), wimPath, "--allow-other")
+	err := shared.RunCommand(c.global.ctx, nil, nil, "wimlib-imagex", "mountrw", wimFile, strconv.Itoa(index), wimPath, "--allow-other")
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", filepath.Base(wimFile), err)
 	}
 	defer func() {
 		if !success {
-			lxd.RunCommand("wimlib-imagex", "unmount", wimPath)
+			shared.RunCommand(c.global.ctx, nil, nil, "wimlib-imagex", "unmount", wimPath)
 		}
 	}()
 
@@ -380,7 +381,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 		return fmt.Errorf("Failed to inject drivers: %w", err)
 	}
 
-	_, err = lxd.RunCommand("wimlib-imagex", "unmount", wimPath, "--commit")
+	err = shared.RunCommand(c.global.ctx, nil, nil, "wimlib-imagex", "unmount", wimPath, "--commit")
 	if err != nil {
 		return fmt.Errorf("Failed to unmount WIM image: %w", err)
 	}
@@ -642,21 +643,21 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 	logger.Debugw("Updating Windows registry", "hivefile", "DRIVERS")
 
-	err := lxd.RunCommandWithFds(strings.NewReader(driversRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(dirs["config"], "DRIVERS"))
+	err := shared.RunCommand(c.global.ctx, strings.NewReader(driversRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(dirs["config"], "DRIVERS"))
 	if err != nil {
 		return fmt.Errorf("Failed to edit Windows DRIVERS registry: %w", err)
 	}
 
 	logger.Debugw("Updating Windows registry", "hivefile", "SYSTEM")
 
-	err = lxd.RunCommandWithFds(strings.NewReader(systemRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(dirs["config"], "SYSTEM"))
+	err = shared.RunCommand(c.global.ctx, strings.NewReader(systemRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(dirs["config"], "SYSTEM"))
 	if err != nil {
 		return fmt.Errorf("Failed to edit Windows SYSTEM registry: %w", err)
 	}
 
 	logger.Debugw("Updating Windows registry", "hivefile", "SOFTWARE")
 
-	err = lxd.RunCommandWithFds(strings.NewReader(softwareRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(dirs["config"], "SOFTWARE"))
+	err = shared.RunCommand(c.global.ctx, strings.NewReader(softwareRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(dirs["config"], "SOFTWARE"))
 	if err != nil {
 		return fmt.Errorf("Failed to edit Windows SOFTWARE registry: %w", err)
 	}
