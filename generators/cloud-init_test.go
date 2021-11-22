@@ -102,7 +102,7 @@ func TestCloudInitGeneratorRunLXD(t *testing.T) {
 {{ config_get("user.user-data", properties.default) }}
 {%- else -%}
 {{- config_get("cloud-init.user-data", properties.default) }}
-{%- endif -%}
+{%- endif %}
 `,
 			false,
 		},
@@ -120,17 +120,33 @@ local-hostname: {{ container.name }}
 {{ config_get("user.vendor-data", properties.default) }}
 {%- else -%}
 {{- config_get("cloud-init.vendor-data", properties.default) }}
-{%- endif -%}
+{%- endif %}
 `,
 			false,
 		},
 		{
 			"network-config",
-			`{%- if config_get("cloud-init.network-config", properties.default) == properties.default -%}
-{{ config_get("user.network-config", properties.default) }}
+			`{%- if config_get("cloud-init.network-config", "") == "" -%}
+{%- if config_get("user.network-config", "") == "" -%}
+version: 1
+config:
+  - type: physical
+    name: {% if instance.type == "virtual-machine" %}enp5s0{% else %}eth0{% endif %}
+    subnets:
+      - type: dhcp
+        control: auto
 {%- else -%}
-{{- config_get("cloud-init.network-config", properties.default) }}
+{{- config_get("user.network-config", "") -}}
 {%- endif -%}
+{%- else -%}
+version: 1
+config:
+  - type: physical
+    name: {% if instance.type == "virtual-machine" %}enp5s0{% else %}eth0{% endif %}
+    subnets:
+      - type: dhcp
+        control: auto
+{%- endif %}
 `,
 			false,
 		},
