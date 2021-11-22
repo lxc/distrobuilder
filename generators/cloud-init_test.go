@@ -102,7 +102,7 @@ func TestCloudInitGeneratorRunLXD(t *testing.T) {
 {{ config_get("user.user-data", properties.default) }}
 {%- else -%}
 {{- config_get("cloud-init.user-data", properties.default) }}
-{%- endif -%}
+{%- endif %}
 `,
 			false,
 		},
@@ -120,7 +120,7 @@ local-hostname: {{ container.name }}
 {{ config_get("user.vendor-data", properties.default) }}
 {%- else -%}
 {{- config_get("cloud-init.vendor-data", properties.default) }}
-{%- endif -%}
+{%- endif %}
 `,
 			false,
 		},
@@ -146,7 +146,7 @@ config:
     subnets:
       - type: dhcp
         control: auto
-{%- endif -%}
+{%- endif %}
 `,
 			false,
 		},

@@ -111,7 +111,8 @@ func (g *cloudInit) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLX
 {{ config_get("user.user-data", properties.default) }}
 {%- else -%}
 {{- config_get("cloud-init.user-data", properties.default) }}
-{%- endif -%}`
+{%- endif %}
+`
 		properties["default"] = `#cloud-config
 {}`
 	case "meta-data":
@@ -124,7 +125,7 @@ local-hostname: {{ container.name }}
 {{ config_get("user.vendor-data", properties.default) }}
 {%- else -%}
 {{- config_get("cloud-init.vendor-data", properties.default) }}
-{%- endif -%}
+{%- endif %}
 `
 		properties["default"] = `#cloud-config
 {}`
@@ -149,7 +150,8 @@ config:
     subnets:
       - type: dhcp
         control: auto
-{%- endif -%}`
+{%- endif %}
+`
 	default:
 		return fmt.Errorf("Unknown cloud-init configuration: %s", g.defFile.Name)
 	}
