@@ -129,20 +129,27 @@ local-hostname: {{ container.name }}
 		properties["default"] = `#cloud-config
 {}`
 	case "network-config":
-		content = `{%- if config_get("cloud-init.network-config", properties.default) == properties.default -%}
-{{ config_get("user.network-config", properties.default) }}
-{%- else -%}
-{{- config_get("cloud-init.network-config", properties.default) }}
-{%- endif -%}
-`
-		properties["default"] = `version: 1
+		content = `{%- if config_get("cloud-init.network-config", "") == "" -%}
+{%- if config_get("user.network-config", "") == "" -%}
+version: 1
 config:
   - type: physical
     name: {% if instance.type == "virtual-machine" %}enp5s0{% else %}eth0{% endif %}
     subnets:
       - type: dhcp
         control: auto
-`
+{%- else -%}
+{{- config_get("user.network-config", "") -}}
+{%- endif -%}
+{%- else -%}
+version: 1
+config:
+  - type: physical
+    name: {% if instance.type == "virtual-machine" %}enp5s0{% else %}eth0{% endif %}
+    subnets:
+      - type: dhcp
+        control: auto
+{%- endif -%}`
 	default:
 		return fmt.Errorf("Unknown cloud-init configuration: %s", g.defFile.Name)
 	}

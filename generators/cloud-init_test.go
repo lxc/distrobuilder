@@ -126,10 +126,26 @@ local-hostname: {{ container.name }}
 		},
 		{
 			"network-config",
-			`{%- if config_get("cloud-init.network-config", properties.default) == properties.default -%}
-{{ config_get("user.network-config", properties.default) }}
+			`{%- if config_get("cloud-init.network-config", "") == "" -%}
+{%- if config_get("user.network-config", "") == "" -%}
+version: 1
+config:
+  - type: physical
+    name: {% if instance.type == "virtual-machine" %}enp5s0{% else %}eth0{% endif %}
+    subnets:
+      - type: dhcp
+        control: auto
 {%- else -%}
-{{- config_get("cloud-init.network-config", properties.default) }}
+{{- config_get("user.network-config", "") -}}
+{%- endif -%}
+{%- else -%}
+version: 1
+config:
+  - type: physical
+    name: {% if instance.type == "virtual-machine" %}enp5s0{% else %}eth0{% endif %}
+    subnets:
+      - type: dhcp
+        control: auto
 {%- endif -%}
 `,
 			false,
