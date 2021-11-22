@@ -89,7 +89,7 @@ func Load(ctx context.Context, managerName string, logger *zap.SugaredLogger, de
 		return nil, fmt.Errorf("Failed to load manager %q: %w", managerName, err)
 	}
 
-	return &Manager{def: definition, mgr: d}, nil
+	return &Manager{def: definition, mgr: d, ctx: ctx}, nil
 }
 
 // ManagePackages manages packages.
