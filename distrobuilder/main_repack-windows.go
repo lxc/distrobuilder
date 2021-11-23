@@ -199,6 +199,8 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 			_, err = lxd.DownloadFileHash(c.global.ctx, &client, "", nil, nil, "virtio-win.iso", virtioURL, "", nil, f)
 			if err != nil {
+				f.Close()
+				os.Remove(virtioISOPath)
 				return fmt.Errorf("Failed to download %q: %w", virtioURL, err)
 			}
 
