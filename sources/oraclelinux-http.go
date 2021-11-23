@@ -194,7 +194,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 			}
 			defer f.Close()
 
-			_, err = lxd.DownloadFileHash(http.DefaultClient, "", nil, nil, elem[0], elem[1], "", nil, f)
+			_, err = lxd.DownloadFileHash(s.ctx, http.DefaultClient, "", nil, nil, elem[0], elem[1], "", nil, f)
 			if err != nil {
 				return fmt.Errorf("Failed to download %q: %w", elem[1], err)
 			}
