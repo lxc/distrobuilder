@@ -73,7 +73,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 		}
 
 		err := shared.Retry(func() error {
-			hashes, err = downloadChecksum(destDir, checksum, file, hashFunc, hashLen)
+			hashes, err = downloadChecksum(s.ctx, destDir, checksum, file, hashFunc, hashLen)
 			return err
 		}, 3)
 		if err != nil {
@@ -130,9 +130,16 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 		fmt.Printf("%s\r", progress.Text)
 	}
 
+	done := make(chan struct{})
+	defer close(done)
+
 	if checksum == "" {
 		err = shared.Retry(func() error {
-			_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, "", nil, image)
+			_, err = lxd.DownloadFileHash(s.ctx, &client, "", progress, nil, imagePath, file, "", nil, image)
+			if err != nil {
+				os.Remove(imagePath)
+			}
+
 			return err
 		}, 3)
 	} else {
@@ -143,7 +150,11 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 			}
 
 			err = shared.Retry(func() error {
-				_, err = lxd.DownloadFileHash(&client, "", progress, nil, imagePath, file, h, hashFunc, image)
+				_, err = lxd.DownloadFileHash(s.ctx, &client, "", progress, nil, imagePath, file, h, hashFunc, image)
+				if err != nil {
+					os.Remove(imagePath)
+				}
+
 				return err
 			}, 3)
 			if err == nil {
