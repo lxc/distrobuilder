@@ -144,23 +144,23 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 		}, 3)
 	} else {
 		// Check all file hashes in case multiple have been provided.
-		for _, h := range hashes {
-			if hashFunc != nil {
-				hashFunc.Reset()
-			}
-
-			err = shared.Retry(func() error {
-				_, err = lxd.DownloadFileHash(s.ctx, &client, "", progress, nil, imagePath, file, h, hashFunc, image)
-				if err != nil {
-					os.Remove(imagePath)
+		err = shared.Retry(func() error {
+			for _, h := range hashes {
+				if hashFunc != nil {
+					hashFunc.Reset()
 				}
 
-				return err
-			}, 3)
-			if err == nil {
-				break
+				_, err = lxd.DownloadFileHash(s.ctx, &client, "", progress, nil, imagePath, file, h, hashFunc, image)
+				if err == nil {
+					break
+				}
 			}
-		}
+			if err != nil {
+				os.Remove(imagePath)
+			}
+
+			return err
+		}, 3)
 	}
 	if err != nil {
 		return "", err
