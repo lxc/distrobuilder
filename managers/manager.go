@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/lxc/distrobuilder/shared"
+	"github.com/sirupsen/logrus"
 )
 
 // ErrUnknownManager represents the unknown manager error
@@ -47,7 +46,7 @@ type Manager struct {
 }
 
 type manager interface {
-	init(ctx context.Context, logger *zap.SugaredLogger, definition shared.Definition)
+	init(ctx context.Context, logger *logrus.Logger, definition shared.Definition)
 	load() error
 	manageRepository(repo shared.DefinitionPackagesRepository) error
 	install(pkgs, flags []string) error
@@ -73,7 +72,7 @@ var managers = map[string]func() manager{
 }
 
 // Load loads and initializes a downloader.
-func Load(ctx context.Context, managerName string, logger *zap.SugaredLogger, definition shared.Definition) (*Manager, error) {
+func Load(ctx context.Context, managerName string, logger *logrus.Logger, definition shared.Definition) (*Manager, error) {
 	df, ok := managers[managerName]
 	if !ok {
 		return nil, ErrUnknownManager

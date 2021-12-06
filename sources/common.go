@@ -17,11 +17,11 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/ioprogress"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 type common struct {
-	logger     *zap.SugaredLogger
+	logger     *logrus.Logger
 	definition shared.Definition
 	rootfsDir  string
 	cacheDir   string
@@ -29,7 +29,7 @@ type common struct {
 	ctx        context.Context
 }
 
-func (s *common) init(ctx context.Context, logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) {
+func (s *common) init(ctx context.Context, logger *logrus.Logger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) {
 	s.logger = logger
 	s.definition = definition
 	s.rootfsDir = rootfsDir

@@ -34,7 +34,7 @@ func (c *cmdBuildDir) command() *cobra.Command {
 					return fmt.Errorf("Failed to load generator %q: %w", file.Generator, err)
 				}
 
-				c.global.logger.Infow("Running generator", "generator", file.Generator)
+				c.global.logger.WithField("generator", file.Generator).Info("Running generator")
 
 				err = generator.Run()
 				if err != nil {

@@ -67,7 +67,7 @@ func (s *altLinux) Run() error {
 		return fmt.Errorf("Failed to download %q: %w", baseURL+fname, err)
 	}
 
-	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
+	s.logger.WithField("file", filepath.Join(fpath, fname)).Info("Unpacking image")
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)

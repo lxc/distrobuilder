@@ -81,7 +81,7 @@ func (s *oraclelinux) Run() error {
 		return fmt.Errorf("Failed to download %q: %w", source, err)
 	}
 
-	s.logger.Infow("Unpacking ISO", "file", filepath.Join(fpath, fname))
+	s.logger.WithField("file", filepath.Join(fpath, fname)).Info("Unpacking ISO")
 
 	err = s.unpackISO(latestUpdate[1:], filepath.Join(fpath, fname), s.rootfsDir)
 	if err != nil {
@@ -135,7 +135,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 		return fmt.Errorf("Failed to remove %q: %w", rootfsDir, err)
 	}
 
-	s.logger.Infow("Unpacking root image", "file", rootfsImage)
+	s.logger.WithField("file", rootfsImage).Info("Unpacking root image")
 
 	err = s.unpackRootfsImage(rootfsImage, tempRootDir)
 	if err != nil {

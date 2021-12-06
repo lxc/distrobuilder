@@ -11,6 +11,7 @@ import (
 	client "github.com/lxc/lxd/client"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
 
@@ -179,7 +180,7 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 		return fmt.Errorf("Failed to manage repositories: %w", err)
 	}
 
-	c.global.logger.Infow("Running hooks", "trigger", "post-unpack")
+	c.global.logger.WithField("trigger", "post-unpack").Info("Running hooks")
 
 	// Run post unpack hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
@@ -232,7 +233,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 			return fmt.Errorf("Failed to load generator %q: %w", file.Generator, err)
 		}
 
-		c.global.logger.Infow("Running generator", "generator", file.Generator)
+		c.global.logger.WithField("generator", file.Generator).Info("Running generator")
 
 		err = generator.RunLXD(img, c.global.definition.Targets.LXD)
 		if err != nil {
@@ -346,7 +347,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	addSystemdGenerator()
 
-	c.global.logger.Infow("Running hooks", "trigger", "post-files")
+	c.global.logger.WithField("trigger", "post-files").Info("Running hooks")
 
 	// Run post files hook
 	for _, action := range c.global.definition.GetRunnableActions("post-files", imageTargets) {
@@ -372,7 +373,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		}
 	}
 
-	c.global.logger.Infow("Creating LXD image", "type", c.flagType, "vm", c.flagVM, "compression", c.flagCompression)
+	c.global.logger.WithFields(logrus.Fields{"type": c.flagType, "vm": c.flagVM, "compression": c.flagCompression}).Info("Creating LXD image")
 
 	imageFile, rootfsFile, err := img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {

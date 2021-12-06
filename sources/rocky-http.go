@@ -66,7 +66,7 @@ func (s *rockylinux) Run() error {
 		return fmt.Errorf("Failed to download %q: %w", baseURL+s.fname, err)
 	}
 
-	s.logger.Infow("Unpacking ISO", "file", filepath.Join(fpath, s.fname))
+	s.logger.WithField("file", filepath.Join(fpath, s.fname)).Info("Unpacking ISO")
 
 	err = s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
 	if err != nil {

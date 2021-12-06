@@ -363,7 +363,7 @@ func (s ubuntu) unpack(filePath, rootDir string) error {
 		return fmt.Errorf("Failed to create directory %q: %w", rootDir, err)
 	}
 
-	s.logger.Infow("Unpacking file", "file", filePath)
+	s.logger.WithField("file", filePath).Info("Unpacking image")
 
 	err = lxd.Unpack(filePath, rootDir, false, false, nil)
 	if err != nil {

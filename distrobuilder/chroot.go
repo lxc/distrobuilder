@@ -6,11 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )
 
-func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), string, error) {
+func getOverlay(logger *logrus.Logger, cacheDir, sourceDir string) (func(), string, error) {
 	var stat unix.Statfs_t
 
 	// Skip overlay on xfs and zfs
@@ -59,23 +59,25 @@ func getOverlay(logger *zap.SugaredLogger, cacheDir, sourceDir string) (func(), 
 
 		err := unix.Unmount(overlayDir, 0)
 		if err != nil {
-			logger.Warnw("Failed to unmount overlay", "err", err, "dir", overlayDir)
+			logger.WithFields(logrus.Fields{"err": err, "dir": overlayDir}).Warn("Failed to unmount overlay directory")
 		}
 
 		err = os.RemoveAll(upperDir)
 		if err != nil {
-			logger.Warnw("Failed to remove upper directory", "err", err, "dir", upperDir)
+			logger.WithFields(logrus.Fields{"err": err, "dir": upperDir}).Warn("Failed to remove upper directory")
 
 		}
 
 		err = os.RemoveAll(workDir)
 		if err != nil {
-			logger.Warnw("Failed to remove work directory", "err", err, "dir", workDir)
+			logger.WithFields(logrus.Fields{"err": err, "dir": workDir}).Warn("Failed to remove work directory")
+
 		}
 
 		err = os.Remove(overlayDir)
 		if err != nil {
-			logger.Warnw("Failed to remove overlay directory", "err", err, "dir", overlayDir)
+			logger.WithFields(logrus.Fields{"err": err, "dir": overlayDir}).Warn("Failed to remove overlay directory")
+
 		}
 	}
 

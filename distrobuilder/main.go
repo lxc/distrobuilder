@@ -66,8 +66,8 @@ import (
 	"time"
 
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/managers"
@@ -109,7 +109,7 @@ type cmdGlobal struct {
 	sourceDir      string
 	targetDir      string
 	interrupt      chan os.Signal
-	logger         *zap.SugaredLogger
+	logger         *logrus.Logger
 	overlayCleanup func()
 	ctx            context.Context
 	cancel         context.CancelFunc
@@ -347,7 +347,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Failed to manage repositories: %w", err)
 	}
 
-	c.logger.Infow("Running hooks", "trigger", "post-unpack")
+	c.logger.WithField("trigger", "post-unpack").Info("Running hooks")
 
 	// Run post unpack hook
 	for _, hook := range c.definition.GetRunnableActions("post-unpack", imageTargets) {
@@ -365,7 +365,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Failed to manage packages: %w", err)
 	}
 
-	c.logger.Infow("Running hooks", "trigger", "post-packages")
+	c.logger.WithField("trigger", "post-packages").Info("Running hooks")
 
 	// Run post packages hook
 	for _, hook := range c.definition.GetRunnableActions("post-packages", imageTargets) {
@@ -410,10 +410,6 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 
 func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 	hasLogger := c.logger != nil
-
-	if hasLogger {
-		defer c.logger.Sync()
-	}
 
 	// exit all chroots otherwise we cannot remove the cache directory
 	for _, exit := range shared.ActiveChroots {
@@ -470,7 +466,7 @@ func (c *cmdGlobal) getOverlayDir() (string, func(), error) {
 	} else {
 		cleanup, overlayDir, err = getOverlay(c.logger, c.flagCacheDir, c.sourceDir)
 		if err != nil {
-			c.logger.Warnw("Failed to create overlay", "err", err)
+			c.logger.WithField("err", err).Warn("Failed to create overlay")
 
 			overlayDir = filepath.Join(c.flagCacheDir, "overlay")
 

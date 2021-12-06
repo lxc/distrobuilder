@@ -78,7 +78,7 @@ func (s *opensuse) Run() error {
 		}
 	}
 
-	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, fname))
+	s.logger.WithField("file", filepath.Join(fpath, fname)).Info("Unpacking image")
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
