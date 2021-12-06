@@ -1,19 +1,18 @@
 package generators
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/lxc/distrobuilder/shared"
+	"github.com/sirupsen/logrus"
 )
 
 type common struct {
-	logger    *zap.SugaredLogger
+	logger    *logrus.Logger
 	cacheDir  string
 	sourceDir string
 	defFile   shared.DefinitionFile
 }
 
-func (g *common) init(logger *zap.SugaredLogger, cacheDir string, sourceDir string, defFile shared.DefinitionFile, def shared.Definition) {
+func (g *common) init(logger *logrus.Logger, cacheDir string, sourceDir string, defFile shared.DefinitionFile, def shared.Definition) {
 	g.logger = logger
 	g.cacheDir = cacheDir
 	g.sourceDir = sourceDir
@@ -26,7 +25,7 @@ func (g *common) init(logger *zap.SugaredLogger, cacheDir string, sourceDir stri
 
 		out, err := shared.RenderTemplate(val, def)
 		if err != nil {
-			logger.Warnw("Failed to render template", "err", err)
+			logger.WithField("err", err).Warn("Failed to render template")
 			return val
 		}
 

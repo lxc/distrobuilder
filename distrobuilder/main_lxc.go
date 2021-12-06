@@ -119,7 +119,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 		return fmt.Errorf("Failed to manage repositories: %w", err)
 	}
 
-	c.global.logger.Infow("Running hooks", "trigger", "post-unpack")
+	c.global.logger.WithField("trigger", "post-unpack").Info("Running hooks")
 
 	// Run post unpack hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
@@ -137,7 +137,7 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 		return fmt.Errorf("Failed to manage packages: %w", err)
 	}
 
-	c.global.logger.Infow("Running hooks", "trigger", "post-packages")
+	c.global.logger.WithField("trigger", "post-packages").Info("Running hooks")
 
 	// Run post packages hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {
@@ -156,7 +156,8 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	for _, file := range c.global.definition.Files {
 		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, shared.ImageTargetUndefined|shared.ImageTargetAll|shared.ImageTargetContainer) {
-			c.global.logger.Infow("Skipping generator", "generator", file.Generator)
+			c.global.logger.WithField("generator", file.Generator).Info("Skipping generator")
+
 			continue
 		}
 
@@ -165,7 +166,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 			return fmt.Errorf("Failed to load generator %q: %w", file.Generator, err)
 		}
 
-		c.global.logger.Infow("Running generator", "generator", file.Generator)
+		c.global.logger.WithField("generator", file.Generator).Info("Running generator")
 
 		err = generator.RunLXC(img, c.global.definition.Targets.LXC)
 		if err != nil {
@@ -181,7 +182,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	addSystemdGenerator()
 
-	c.global.logger.Infow("Running hooks", "trigger", "post-files")
+	c.global.logger.WithField("trigger", "post-files").Info("Running hooks")
 
 	// Run post files hook
 	for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetUndefined|shared.ImageTargetAll|shared.ImageTargetContainer) {
@@ -194,7 +195,7 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	exitChroot()
 
-	c.global.logger.Infow("Creating LXC image", "compression", c.flagCompression)
+	c.global.logger.WithField("compression", c.flagCompression).Info("Creating LXC image")
 
 	err = img.Build(c.flagCompression)
 	if err != nil {

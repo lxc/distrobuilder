@@ -1,47 +1,22 @@
 package shared
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"github.com/sirupsen/logrus"
 )
 
 // GetLogger returns a new logger.
-func GetLogger(debug bool) (*zap.SugaredLogger, error) {
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:       "ts",
-		LevelKey:      "level",
-		NameKey:       "logger",
-		CallerKey:     "caller",
-		FunctionKey:   zapcore.OmitKey,
-		MessageKey:    "msg",
-		StacktraceKey: "stacktrace",
-		LineEnding:    zapcore.DefaultLineEnding,
-		EncodeLevel:   zapcore.CapitalLevelEncoder,
-		EncodeCaller:  zapcore.ShortCallerEncoder,
-		EncodeTime:    zapcore.RFC3339TimeEncoder,
+func GetLogger(debug bool) (*logrus.Logger, error) {
+	logger := logrus.StandardLogger()
+
+	formatter := logrus.TextFormatter{
+		FullTimestamp: true,
 	}
 
-	config := zap.Config{
-		Level:            zap.NewAtomicLevelAt(zap.InfoLevel),
-		Development:      false,
-		Encoding:         "console",
-		EncoderConfig:    encoderConfig,
-		OutputPaths:      []string{"stdout"},
-		ErrorOutputPaths: []string{"stderr"},
-	}
+	logger.Formatter = &formatter
 
 	if debug {
-		config.Level.SetLevel(zap.DebugLevel)
-	} else {
-		config.EncoderConfig.TimeKey = ""
-		config.DisableCaller = true
-		config.DisableStacktrace = true
+		logger.Level = logrus.DebugLevel
 	}
 
-	logger, err := config.Build()
-	if err != nil {
-		return nil, err
-	}
-
-	return logger.Sugar(), nil
+	return logger, nil
 }

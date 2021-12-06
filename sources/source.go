@@ -4,16 +4,15 @@ import (
 	"context"
 	"errors"
 
-	"go.uber.org/zap"
-
 	"github.com/lxc/distrobuilder/shared"
+	"github.com/sirupsen/logrus"
 )
 
 // ErrUnknownDownloader represents the unknown downloader error
 var ErrUnknownDownloader = errors.New("Unknown downloader")
 
 type downloader interface {
-	init(ctx context.Context, logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string)
+	init(ctx context.Context, logger *logrus.Logger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string)
 
 	Downloader
 }
@@ -48,7 +47,7 @@ var downloaders = map[string]func() downloader{
 }
 
 // Load loads and initializes a downloader.
-func Load(ctx context.Context, downloaderName string, logger *zap.SugaredLogger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) (Downloader, error) {
+func Load(ctx context.Context, downloaderName string, logger *logrus.Logger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) (Downloader, error) {
 	df, ok := downloaders[downloaderName]
 	if !ok {
 		return nil, ErrUnknownDownloader

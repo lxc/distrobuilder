@@ -36,7 +36,7 @@ func (s *rootfs) Run() error {
 		filename = path.Base(s.definition.Source.URL)
 	}
 
-	s.logger.Infow("Unpacking image", "file", filepath.Join(fpath, filename))
+	s.logger.WithField("file", filepath.Join(fpath, filename)).Info("Unpacking image")
 
 	// Unpack
 	err = lxd.Unpack(filepath.Join(fpath, filename), s.rootfsDir, false, false, nil)

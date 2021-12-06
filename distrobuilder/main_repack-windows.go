@@ -17,6 +17,7 @@ import (
 
 	"github.com/flosch/pongo2"
 	lxd "github.com/lxc/lxd/shared"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
 
@@ -56,13 +57,13 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 
 				err := unix.Statfs(dir, &stat)
 				if err != nil {
-					c.global.logger.Warnw("Failed to get directory information", "directory", dir, "err", err)
+					c.global.logger.WithFields(logrus.Fields{"dir": dir, "err": err}).Warn("Failed to get directory information")
 					continue
 				}
 
 				// Since there's no magic number for virtiofs, we need to check FUSE_SUPER_MAGIC (which is not defined in the unix package).
 				if stat.Type == 0x65735546 {
-					c.global.logger.Warnw("FUSE filesystem detected, disabling overlay")
+					c.global.logger.Warn("FUSE filesystem detected, disabling overlay")
 					c.global.flagDisableOverlay = true
 					break
 				}
@@ -375,7 +376,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 		return errors.New("Failed to determine windows/system32/drivers path")
 	}
 
-	logger.Infow("Modifying WIM file", "file", filepath.Base(path), "index", index)
+	logger.WithFields(logrus.Fields{"file": filepath.Base(path), "index": index}).Info("Modifying WIM file")
 
 	// Create registry entries and copy files
 	err = c.injectDrivers(dirs)
@@ -511,7 +512,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 	softwareRegistry := "Windows Registry Editor Version 5.00"
 
 	for driver, info := range windows.Drivers {
-		logger.Debugw("Injecting driver", "driver", driver)
+		logger.WithField("driver", driver).Debug("Injecting driver")
 
 		ctx := pongo2.Context{
 			"infFile":     fmt.Sprintf("oem%d.inf", i),
@@ -535,7 +536,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 
 			// Copy driver files
 			if lxd.StringInSlice(ext, []string{".cat", ".dll", ".inf", ".sys"}) {
-				logger.Debugw("Copying file", "src", path, "dest", targetPath)
+				logger.WithFields(logrus.Fields{"src": path, "dest": targetPath}).Debug("Copying file")
 
 				err := shared.Copy(path, targetPath)
 				if err != nil {
@@ -546,7 +547,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 			// Copy .inf file
 			if ext == ".inf" {
 				target := filepath.Join(dirs["inf"], ctx["infFile"].(string))
-				logger.Debugw("Copying file", "src", path, "dest", target)
+				logger.WithFields(logrus.Fields{"src": path, "dest": target}).Debug("Copying file")
 
 				err = shared.Copy(path, target)
 				if err != nil {
@@ -581,7 +582,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 			// Copy .sys and .dll files
 			if ext == ".dll" || ext == ".sys" {
 				target := filepath.Join(dirs["drivers"], filepath.Base(path))
-				logger.Debugw("Copying file", "src", path, "dest", target)
+				logger.WithFields(logrus.Fields{"src": path, "dest": target}).Debug("Copying file")
 
 				err = shared.Copy(path, target)
 				if err != nil {
@@ -643,21 +644,21 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 		i++
 	}
 
-	logger.Debugw("Updating Windows registry", "hivefile", "DRIVERS")
+	logger.WithField("hivefile", "DRIVERS").Debug("Updating Windows registry")
 
 	err := shared.RunCommand(c.global.ctx, strings.NewReader(driversRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(dirs["config"], "DRIVERS"))
 	if err != nil {
 		return fmt.Errorf("Failed to edit Windows DRIVERS registry: %w", err)
 	}
 
-	logger.Debugw("Updating Windows registry", "hivefile", "SYSTEM")
+	logger.WithField("hivefile", "SYSTEM").Debug("Updating Windows registry")
 
 	err = shared.RunCommand(c.global.ctx, strings.NewReader(systemRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(dirs["config"], "SYSTEM"))
 	if err != nil {
 		return fmt.Errorf("Failed to edit Windows SYSTEM registry: %w", err)
 	}
 
-	logger.Debugw("Updating Windows registry", "hivefile", "SOFTWARE")
+	logger.WithField("hivefile", "SOFTWARE").Debug("Updating Windows registry")
 
 	err = shared.RunCommand(c.global.ctx, strings.NewReader(softwareRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(dirs["config"], "SOFTWARE"))
 	if err != nil {

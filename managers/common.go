@@ -4,19 +4,19 @@ import (
 	"context"
 
 	"github.com/lxc/distrobuilder/shared"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 type common struct {
 	commands   managerCommands
 	flags      managerFlags
 	hooks      managerHooks
-	logger     *zap.SugaredLogger
+	logger     *logrus.Logger
 	definition shared.Definition
 	ctx        context.Context
 }
 
-func (c *common) init(ctx context.Context, logger *zap.SugaredLogger, definition shared.Definition) {
+func (c *common) init(ctx context.Context, logger *logrus.Logger, definition shared.Definition) {
 	c.logger = logger
 	c.definition = definition
 	c.ctx = ctx

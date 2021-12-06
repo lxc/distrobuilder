@@ -5,7 +5,7 @@ import (
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // ErrNotSupported returns a "Not supported" error
@@ -15,7 +15,7 @@ var ErrNotSupported = errors.New("Not supported")
 var ErrUnknownGenerator = errors.New("Unknown generator")
 
 type generator interface {
-	init(logger *zap.SugaredLogger, cacheDir string, sourceDir string, defFile shared.DefinitionFile, def shared.Definition)
+	init(logger *logrus.Logger, cacheDir string, sourceDir string, defFile shared.DefinitionFile, def shared.Definition)
 
 	Generator
 }
@@ -40,7 +40,7 @@ var generators = map[string]func() generator{
 }
 
 // Load loads and initializes a generator.
-func Load(generatorName string, logger *zap.SugaredLogger, cacheDir string, sourceDir string, defFile shared.DefinitionFile, def shared.Definition) (Generator, error) {
+func Load(generatorName string, logger *logrus.Logger, cacheDir string, sourceDir string, defFile shared.DefinitionFile, def shared.Definition) (Generator, error) {
 	df, ok := generators[generatorName]
 	if !ok {
 		return nil, ErrUnknownGenerator

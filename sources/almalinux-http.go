@@ -46,7 +46,7 @@ func (s *almalinux) Run() error {
 
 		stat, err := os.Stat(imagePath)
 		if err == nil && stat.Size() > 0 {
-			s.logger.Infow("Unpacking raw image", "file", filepath.Join(fpath, strings.TrimSuffix(s.fname, ".xz")))
+			s.logger.WithField("file", filepath.Join(fpath, strings.TrimSuffix(s.fname, ".xz"))).Info("Unpacking raw image")
 
 			return s.unpackRaw(filepath.Join(fpath, strings.TrimSuffix(s.fname, ".xz")),
 				s.rootfsDir, s.rawRunner)
@@ -100,12 +100,12 @@ func (s *almalinux) Run() error {
 	}
 
 	if strings.HasSuffix(s.fname, ".raw.xz") || strings.HasSuffix(s.fname, ".raw") {
-		s.logger.Infow("Unpacking raw image", "file", filepath.Join(fpath, s.fname))
+		s.logger.WithField("file", filepath.Join(fpath, s.fname)).Info("Unpacking raw image")
 
 		return s.unpackRaw(filepath.Join(fpath, s.fname), s.rootfsDir, s.rawRunner)
 	}
 
-	s.logger.Infow("Unpacking ISO", "file", filepath.Join(fpath, s.fname))
+	s.logger.WithField("file", filepath.Join(fpath, s.fname)).Info("Unpacking ISO")
 
 	return s.unpackISO(filepath.Join(fpath, s.fname), s.rootfsDir, s.isoRunner)
 }

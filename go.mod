@@ -27,12 +27,15 @@ require (
 	github.com/mudler/docker-companion v0.4.6-0.20211015133729-bd4704fad372
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/umoci v0.4.8-0.20211009121349-9c76304c034d // indirect
+	github.com/remyoudompheng/go-misc v0.0.0-20190427085024-2d6ac652a50e // indirect
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli v1.22.5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.19.1
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1
 	gopkg.in/antchfx/htmlquery.v1 v1.2.2
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
