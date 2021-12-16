@@ -16,13 +16,19 @@ type altLinux struct {
 }
 
 func (s *altLinux) Run() error {
+	arch := s.definition.Image.ArchitectureMapped
+
+	if arch == "armhf" {
+		arch = "armh"
+	}
+
 	baseURL := fmt.Sprintf(
 		"%s/%s/cloud/%s/",
 		s.definition.Source.URL,
 		s.definition.Image.Release,
-		s.definition.Image.ArchitectureMapped,
+		arch,
 	)
-	fname := fmt.Sprintf("alt-%s-rootfs-systemd-%s.tar.xz", strings.ToLower(s.definition.Image.Release), s.definition.Image.ArchitectureMapped)
+	fname := fmt.Sprintf("alt-%s-rootfs-systemd-%s.tar.xz", strings.ToLower(s.definition.Image.Release), arch)
 
 	url, err := url.Parse(baseURL)
 	if err != nil {
