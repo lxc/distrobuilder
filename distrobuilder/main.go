@@ -667,8 +667,17 @@ fix_systemd_mask() {
 # fix_systemd_udev_trigger overrides the systemd-udev-trigger.service to match the latest version
 # of the file which uses "ExecStart=-" instead of "ExecStart=".
 fix_systemd_udev_trigger() {
-	cmd=/usr/bin/udevadm
-	! [ -e "${cmd}" ] && cmd=/sbin/udevadm
+	cmd=
+	if [ -f /usr/bin/udevadm ]; then
+		cmd=/usr/bin/udevadm
+	elif [ -f /sbin/udevadm ]; then
+		cmd=/sbin/udevadm
+	elif [ -f /bin/udevadm ]; then
+		cmd=/bin/udevadm
+	else
+		return 0
+	fi
+
 	mkdir -p /run/systemd/system/systemd-udev-trigger.service.d
 	cat <<-EOF > /run/systemd/system/systemd-udev-trigger.service.d/zzz-lxc-override.conf
 [Service]
