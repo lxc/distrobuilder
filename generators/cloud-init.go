@@ -143,13 +143,7 @@ config:
 {{- config_get("user.network-config", "") -}}
 {%- endif -%}
 {%- else -%}
-version: 1
-config:
-  - type: physical
-    name: {% if instance.type == "virtual-machine" %}enp5s0{% else %}eth0{% endif %}
-    subnets:
-      - type: dhcp
-        control: auto
+{{- config_get("cloud-init.network-config", "") -}}
 {%- endif %}
 `
 	default:
