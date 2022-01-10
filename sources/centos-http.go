@@ -31,10 +31,16 @@ func (s *centOS) Run() error {
 	}
 
 	var err error
-
 	baseURL := fmt.Sprintf("%s/%s/isos/%s/", s.definition.Source.URL,
 		strings.ToLower(s.definition.Image.Release),
 		s.definition.Image.ArchitectureMapped)
+
+	if s.definition.Image.Release == "9-Stream" {
+		baseURL = fmt.Sprintf("%s/%s/BaseOS/%s/iso/", s.definition.Source.URL,
+			strings.ToLower(s.definition.Image.Release),
+			s.definition.Image.ArchitectureMapped)
+	}
+
 	s.fname, err = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
 		s.definition.Source.Variant, s.definition.Image.ArchitectureMapped)
 	if err != nil {
@@ -76,10 +82,11 @@ func (s *centOS) Run() error {
 			if s.definition.Image.ArchitectureMapped == "armhfp" {
 				checksumFile = "sha256sum.txt"
 			} else {
-				if strings.HasPrefix(s.definition.Image.Release, "8") {
+				checksumFile = "sha256sum.txt.asc"
+				if strings.HasPrefix(s.definition.Image.Release, "9") {
+					checksumFile = "SHA256SUM"
+				} else if strings.HasPrefix(s.definition.Image.Release, "8") {
 					checksumFile = "CHECKSUM"
-				} else {
-					checksumFile = "sha256sum.txt.asc"
 				}
 			}
 
@@ -300,6 +307,8 @@ yy+mHmSv
 EOF
 	fi
 
+	# --- All CentOS except Stream 9
+	if ! grep -q "CentOS Stream 9" /etc/os-release; then
 	cat <<- "EOF" > /etc/yum.repos.d/CentOS-Base.repo
 [BaseOS]
 name=CentOS-$releasever - Base
@@ -308,12 +317,33 @@ gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 EOF
+	fi
 
-	if grep -q "CentOS Stream" /etc/os-release; then
+	# --- Only on Stream 8
+	if grep -q "CentOS Stream 8" /etc/os-release; then
 		cat <<- "EOF" > /etc/yum.repos.d/CentOS-Appstream.repo
 [AppStream]
 name=CentOS-$releasever - Base
 mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=AppStream&infra=$infra
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+EOF
+	fi
+
+	# --- Only on Stream 9
+	if grep -q "CentOS Stream 9" /etc/os-release; then
+	cat <<- "EOF" > /etc/yum.repos.d/CentOS-Base.repo
+[baseos]
+name=CentOS Stream $releasever - BaseOS
+metalink=https://mirrors.centos.org/metalink?repo=centos-baseos-$stream&arch=$basearch&protocol=https,http
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+
+[appstream]
+name=CentOS Stream $releasever - AppStream
+metalink=https://mirrors.centos.org/metalink?repo=centos-appstream-$stream&arch=$basearch&protocol=https,http
 gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
@@ -345,6 +375,10 @@ rm -rf /rootfs/var/cache/yum
 func (s *centOS) getRelease(URL, release, variant, arch string) (string, error) {
 	releaseFields := strings.Split(release, ".")
 	u := URL + path.Join("/", strings.ToLower(release), "isos", arch)
+
+	if release == "9-Stream" {
+		u = URL + path.Join("/", strings.ToLower(release), "BaseOS", arch, "iso")
+	}
 
 	var (
 		resp *http.Response
@@ -410,6 +444,8 @@ func (s *centOS) getRegexes(arch string, variant string, release string) []*rege
 			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)*-%s-(?i:%s)(-\\d+)?.iso",
 				releaseFields[0], arch, variant))
 			re = append(re, fmt.Sprintf("CentOS-%s(.\\d+)*-%s(-\\d+)?-(?i:%s).iso",
+				releaseFields[0], arch, variant))
+			re = append(re, fmt.Sprintf("CentOS-%s(-\\d+.0)-%s-(?i:%s).iso",
 				releaseFields[0], arch, variant))
 		}
 	case 2:
