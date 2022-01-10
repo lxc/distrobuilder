@@ -130,22 +130,29 @@ local-hostname: {{ container.name }}
 		properties["default"] = `#cloud-config
 {}`
 	case "network-config":
-		content = `{%- if config_get("cloud-init.network-config", "") == "" -%}
-{%- if config_get("user.network-config", "") == "" -%}
-version: 1
+		defaultValue := `version: 1
 config:
   - type: physical
     name: {% if instance.type == "virtual-machine" %}enp5s0{% else %}eth0{% endif %}
     subnets:
       - type: dhcp
-        control: auto
-{%- else -%}
+        control: auto`
+
+		// Use the provided content as the new default value
+		if g.defFile.Content != "" {
+			defaultValue = g.defFile.Content
+		}
+
+		content = fmt.Sprintf(`{%%- if config_get("cloud-init.network-config", "") == "" -%%}
+{%%- if config_get("user.network-config", "") == "" -%%}
+%s
+{%%- else -%%}
 {{- config_get("user.network-config", "") -}}
-{%- endif -%}
-{%- else -%}
+{%%- endif -%%}
+{%%- else -%%}
 {{- config_get("cloud-init.network-config", "") -}}
-{%- endif %}
-`
+{%%- endif %%}
+`, defaultValue)
 	default:
 		return fmt.Errorf("Unknown cloud-init configuration: %s", g.defFile.Name)
 	}
@@ -160,8 +167,9 @@ config:
 
 	defer file.Close()
 
-	if g.defFile.Content != "" {
-		content = g.defFile.Content
+	// Use the provided content as the new default value
+	if g.defFile.Name != "network-config" && g.defFile.Content != "" {
+		properties["default"] = g.defFile.Content
 	}
 
 	// Append final new line if missing
