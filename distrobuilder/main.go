@@ -640,6 +640,7 @@ fix_systemd_override_unit() {
 	mkdir -p "${dropin_dir}"
 	{
 		echo "[Service]";
+		[ "${systemd_version}" -ge 247 ] && echo "ProcSubset=all";
 		[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default";
 		[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no";
 		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no";
