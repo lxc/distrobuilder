@@ -576,64 +576,6 @@ BindReadOnlyPaths=/sys /proc
 EOF
 }
 
-# fix_nm_force_up sets up a unit override to force NetworkManager to start the system connection
-fix_nm_force_up() {
-	# Check if the device exists
-	[ -e "/sys/class/net/$1" ] || return 0
-
-	# Check if NetworkManager exists
-	[ "${nm_exists}" -eq 1 ] || return 0
-
-	cat <<-EOF > /run/systemd/system/network-connection-activate.service
-[Unit]
-Description=Activate connection
-After=NetworkManager.service NetworkManager-wait-online.service
-
-[Service]
-ExecStart=-/usr/bin/nmcli c up "System $1"
-Type=oneshot
-RemainAfterExit=true
-
-[Install]
-WantedBy=default.target
-EOF
-
-	mkdir -p /run/systemd/system/default.target.wants
-	ln -sf /run/systemd/system/network-connection-activate.service /run/systemd/system/default.target.wants/network-connection-activate.service
-}
-
-# fix_nm_link_state forces the network interface to a DOWN state ahead of NetworkManager starting up
-fix_nm_link_state() {
-	[ -e "/sys/class/net/$1" ] || return 0
-
-	ip_path=
-	if [ -f /sbin/ip ]; then
-		ip_path=/sbin/ip
-	elif [ -f /bin/ip ]; then
-		ip_path=/bin/ip
-	else
-		return 0
-	fi
-
-	cat <<-EOF > /run/systemd/system/network-device-down.service
-[Unit]
-Description=Turn off network device
-Before=NetworkManager.service
-Before=systemd-networkd.service
-
-[Service]
-ExecStart=-${ip_path} link set $1 down
-Type=oneshot
-RemainAfterExit=true
-
-[Install]
-WantedBy=default.target
-EOF
-
-	mkdir -p /run/systemd/system/default.target.wants
-	ln -sf /run/systemd/system/network-device-down.service /run/systemd/system/default.target.wants/network-device-down.service
-}
-
 # fix_systemd_override_unit generates a unit specific override
 fix_systemd_override_unit() {
 	dropin_dir="/run/systemd/${1}.d"
@@ -706,13 +648,6 @@ if ! is_lxd_vm && ! is_lxc_container; then
 	exit
 fi
 
-# Check for NetworkManager and cloud-init
-nm_exists=0
-cloudinit_exists=0
-
-is_in_path NetworkManager && nm_exists=1
-is_in_path cloud-init && cloudinit_exists=1
-
 # Determine systemd version
 for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
 	[ -x "${path}" ] || continue
@@ -755,24 +690,10 @@ if is_lxc_container; then
 		fix_systemd_mask vconsole-setup-kludge@tty1.service
 	fi
 
-	# Workarounds for cloud containers
-	if { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
-		fix_nm_force_up eth0
-	fi
-
 	# Workarounds for privileged containers.
 	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
 		fix_ro_paths systemd-networkd.service
 		fix_ro_paths systemd-resolved.service
-	fi
-
-	# Workarounds for NetworkManager in containers
-	if [ "${nm_exists}" -eq 1 ]; then
-		if [ "${ID}" = "ol" ] || [ "${ID}" = "centos" ]; then
-			fix_nm_force_up eth0
-		fi
-
-		fix_nm_link_state eth0
 	fi
 fi
 `
