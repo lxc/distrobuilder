@@ -346,6 +346,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	}
 
 	addSystemdGenerator()
+	addVethUdevRule()
 
 	c.global.logger.WithField("trigger", "post-files").Info("Running hooks")
 

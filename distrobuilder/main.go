@@ -779,3 +779,19 @@ fi
 	os.MkdirAll("/etc/systemd/system-generators", 0755)
 	ioutil.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
 }
+
+// addVethUdevRule creates an udev rule that makes eth0 work with NetworkManager
+func addVethUdevRule() {
+	content := `
+# This file was created by distrobuilder.
+#
+# Its purpose is to convince NetworkManager to treat the eth0 veth
+# interface like a regular Ethernet. NetworkManager ordinarily doesn't
+# like to manage the veth interfaces, becaue they are typically configured
+# by container management tooling for specialized purposes.
+
+ACTION=="add|change|move", ENV{ID_NET_DRIVER}=="veth", ENV{INTERFACE}=="eth[0-9]*", ENV{NM_UNMANAGED}="0"
+`
+	os.MkdirAll("/etc/udev/rules.d", 0755)
+	ioutil.WriteFile("/etc/udev/rules.d/90-lxc-net.rules", []byte(content), 0644)
+}
