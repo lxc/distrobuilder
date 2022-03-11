@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	lxd "github.com/lxc/lxd/shared"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -112,7 +111,7 @@ func (s *funtoo) Run() error {
 	s.logger.WithField("file", filepath.Join(fpath, fname)).Info("Unpacking image")
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
+	err = shared.Unpack(filepath.Join(fpath, fname), s.rootfsDir)
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, fname), err)
 	}

@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	lxd "github.com/lxc/lxd/shared"
-
 	"github.com/lxc/distrobuilder/shared"
 )
 
@@ -47,7 +45,7 @@ func (s *busybox) Run() error {
 	s.logger.WithField("file", filepath.Join(fpath, fname)).Info("Unpacking image")
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(fpath, fname), sourceDir, false, false, nil)
+	err = shared.Unpack(filepath.Join(fpath, fname), sourceDir)
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %q: %w", fname, err)
 	}

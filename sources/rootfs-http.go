@@ -6,7 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
-	lxd "github.com/lxc/lxd/shared"
+	"github.com/lxc/distrobuilder/shared"
 )
 
 type rootfs struct {
@@ -39,7 +39,7 @@ func (s *rootfs) Run() error {
 	s.logger.WithField("file", filepath.Join(fpath, filename)).Info("Unpacking image")
 
 	// Unpack
-	err = lxd.Unpack(filepath.Join(fpath, filename), s.rootfsDir, false, false, nil)
+	err = shared.Unpack(filepath.Join(fpath, filename), s.rootfsDir)
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, filename), err)
 	}
