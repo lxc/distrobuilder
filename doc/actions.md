@@ -11,7 +11,7 @@ actions:
       variants: <array> # filter
 ```
 
-Actions are scripts than are to be run after certain steps during the building process.
+Actions are scripts that are to be run after certain steps during the building process.
 Each action has two fields, `trigger` and `action`, as well as some filters.
 The `trigger` field describes the step after which the `action` is to be run.
 Valid triggers are:
