@@ -365,7 +365,7 @@ func (s ubuntu) unpack(filePath, rootDir string) error {
 
 	s.logger.WithField("file", filePath).Info("Unpacking image")
 
-	err = lxd.Unpack(filePath, rootDir, false, false, nil)
+	err = shared.Unpack(filePath, rootDir)
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %q: %w", filePath, err)
 	}

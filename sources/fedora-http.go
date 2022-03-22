@@ -11,8 +11,6 @@ import (
 	"regexp"
 	"sort"
 
-	lxd "github.com/lxc/lxd/shared"
-
 	"github.com/lxc/distrobuilder/shared"
 )
 
@@ -45,7 +43,7 @@ func (s *fedora) Run() error {
 	s.logger.WithField("file", filepath.Join(fpath, fname)).Info("Unpacking image")
 
 	// Unpack the base image
-	err = lxd.Unpack(filepath.Join(fpath, fname), s.rootfsDir, false, false, nil)
+	err = shared.Unpack(filepath.Join(fpath, fname), s.rootfsDir)
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, fname), err)
 	}
@@ -96,7 +94,7 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 		for _, layer := range manifest.Layers {
 			s.logger.WithField("file", filepath.Join(rootfsDir, layer)).Info("Unpacking layer")
 
-			err := lxd.Unpack(filepath.Join(rootfsDir, layer), rootfsDir, false, false, nil)
+			err := shared.Unpack(filepath.Join(rootfsDir, layer), rootfsDir)
 			if err != nil {
 				return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(rootfsDir, layer), err)
 			}
