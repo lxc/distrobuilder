@@ -113,16 +113,6 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// FIXME: Windows 11 currently uses Windows 10 drivers, remove this once virtio w11 drivers exist.
-	if c.flagWindowsVersion == "w11" {
-		c.flagWindowsVersion = "w10"
-	}
-
-	// FIXME: Windows Server 2022 currently uses Windows Server 2019 drivers, remove this once virtio 2k22 drivers exist.
-	if c.flagWindowsVersion == "2k22" {
-		c.flagWindowsVersion = "2k19"
-	}
-
 	// Check dependencies
 	err := c.checkDependencies()
 	if err != nil {
