@@ -271,9 +271,9 @@ func (v *vm) mountRootPartition() error {
 
 	switch v.rootFS {
 	case "btrfs":
-		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "defaults,discard,subvol=/@")
+		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "defaults,discard,nobarrier,commit=300,noatime,subvol=/@")
 	case "ext4":
-		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "discard")
+		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "discard,nobarrier,commit=300,noatime,data=writeback")
 
 	}
 
