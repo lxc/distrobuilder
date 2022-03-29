@@ -14,8 +14,8 @@ update-gomod:
 	go mod tidy
 
 check: default
-	go get -v -x github.com/remyoudompheng/go-misc/deadcode
-	go get -v -x golang.org/x/lint/golint
+	go install -v -x github.com/tsenart/deadcode@latest
+	go install -v -x golang.org/x/lint/golint@latest
 	go test -v ./...
 	golint -set_exit_status ./...
 	deadcode ./

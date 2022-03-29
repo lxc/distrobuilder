@@ -271,9 +271,9 @@ func (v *vm) mountRootPartition() error {
 
 	switch v.rootFS {
 	case "btrfs":
-		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "defaults,subvol=/@")
+		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "defaults,discard,subvol=/@")
 	case "ext4":
-		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir)
+		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "discard")
 
 	}
 
@@ -292,5 +292,5 @@ func (v *vm) mountUEFIPartition() error {
 		return fmt.Errorf("Failed to create directory %q: %w", mountpoint, err)
 	}
 
-	return shared.RunCommand(v.ctx, nil, nil, "mount", v.getUEFIDevFile(), mountpoint)
+	return shared.RunCommand(v.ctx, nil, nil, "mount", v.getUEFIDevFile(), mountpoint, "-o", "discard")
 }
