@@ -29,23 +29,23 @@ func TestCopyGeneratorRun(t *testing.T) {
 	defer os.RemoveAll("copy_test")
 
 	err = os.Mkdir("copy_test", os.ModePerm)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	src1, err := os.Create(filepath.Join("copy_test", "src1"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer src1.Close()
 	_, err = src1.WriteString("src1\n")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	src2, err := os.Create(filepath.Join("copy_test", "src2"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer src2.Close()
 	_, err = src2.WriteString("src2\n")
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = os.Symlink("src1", filepath.Join("copy_test", "srcLink"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// <src> is a directory -> contents copied
 	err = generator.Run()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.DirExists(t, filepath.Join(rootfsDir, "copy_test_dir"))
 	require.FileExists(t, filepath.Join(rootfsDir, "copy_test_dir", "src1"))
@@ -54,34 +54,36 @@ func TestCopyGeneratorRun(t *testing.T) {
 
 	var destBuffer, srcBuffer bytes.Buffer
 	dest, err := os.Open(filepath.Join(rootfsDir, "copy_test_dir", "src1"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer dest.Close()
 
 	io.Copy(&destBuffer, dest)
 	_, err = src1.Seek(0, 0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	io.Copy(&srcBuffer, src1)
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 
 	dest, err = os.Open(filepath.Join(rootfsDir, "copy_test_dir", "src2"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer dest.Close()
 
 	destBuffer.Reset()
 	io.Copy(&destBuffer, dest)
 	_, err = src2.Seek(0, 0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	srcBuffer.Reset()
 	io.Copy(&srcBuffer, src2)
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 
 	link, err := os.Readlink(filepath.Join(rootfsDir, "copy_test_dir", "srcLink"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, "src1", link)
 
 	// <src> as wildcard
 	_, err = src1.Seek(0, 0)
+	require.NoError(t, err)
 	_, err = src2.Seek(0, 0)
+	require.NoError(t, err)
 	generator, err = Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test/src*",
 		Path:   "copy_test_wildcard",
@@ -97,26 +99,26 @@ func TestCopyGeneratorRun(t *testing.T) {
 	require.FileExists(t, filepath.Join(rootfsDir, "copy_test_wildcard", "src2"))
 
 	dest, err = os.Open(filepath.Join(rootfsDir, "copy_test_wildcard", "src1"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer dest.Close()
 
 	destBuffer.Reset()
 	io.Copy(&destBuffer, dest)
 	_, err = src1.Seek(0, 0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	srcBuffer.Reset()
 	io.Copy(&srcBuffer, src1)
 
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 
 	dest, err = os.Open(filepath.Join(rootfsDir, "copy_test_wildcard", "src2"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer dest.Close()
 
 	destBuffer.Reset()
 	io.Copy(&destBuffer, dest)
 	_, err = src2.Seek(0, 0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	srcBuffer.Reset()
 	io.Copy(&srcBuffer, src2)
 
@@ -124,6 +126,7 @@ func TestCopyGeneratorRun(t *testing.T) {
 
 	// <src> is a file -> file copied to <dest>
 	_, err = src1.Seek(0, 0)
+	require.NoError(t, err)
 	generator, err = Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test/src1",
 	}, shared.Definition{})
@@ -136,13 +139,13 @@ func TestCopyGeneratorRun(t *testing.T) {
 	require.FileExists(t, filepath.Join(rootfsDir, "copy_test", "src1"))
 
 	dest, err = os.Open(filepath.Join(rootfsDir, "copy_test", "src1"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer dest.Close()
 
 	destBuffer.Reset()
 	io.Copy(&destBuffer, dest)
 	_, err = src1.Seek(0, 0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	srcBuffer.Reset()
 	io.Copy(&srcBuffer, src1)
 
@@ -150,7 +153,7 @@ func TestCopyGeneratorRun(t *testing.T) {
 
 	// <src> is a file -> file copied to <dest>/
 	_, err = src1.Seek(0, 0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	generator, err = Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Source: "copy_test/src1",
 		Path:   "/hello/world/",
@@ -165,13 +168,13 @@ func TestCopyGeneratorRun(t *testing.T) {
 	require.FileExists(t, filepath.Join(rootfsDir, "hello", "world", "src1"))
 
 	dest, err = os.Open(filepath.Join(rootfsDir, "hello", "world", "src1"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer dest.Close()
 
 	destBuffer.Reset()
 	io.Copy(&destBuffer, dest)
 	_, err = src1.Seek(0, 0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	srcBuffer.Reset()
 	io.Copy(&srcBuffer, src1)
 

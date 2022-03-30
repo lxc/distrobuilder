@@ -26,7 +26,6 @@ import (
 )
 
 type cmdRepackWindows struct {
-	cmd    *cobra.Command
 	global *cmdGlobal
 
 	flagDrivers        string
@@ -218,6 +217,9 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	var sourcesDir string
 
 	entries, err := ioutil.ReadDir(overlayDir)
+	if err != nil {
+		return fmt.Errorf("Failed to read directory %q: %w", overlayDir, err)
+	}
 
 	for _, entry := range entries {
 		if strings.ToLower(entry.Name()) == "sources" {
@@ -539,7 +541,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 				target := filepath.Join(dirs["inf"], ctx["infFile"].(string))
 				logger.WithFields(logrus.Fields{"src": path, "dest": target}).Debug("Copying file")
 
-				err = shared.Copy(path, target)
+				err := shared.Copy(path, target)
 				if err != nil {
 					return fmt.Errorf("Failed to copy %q to %q: %w", filepath.Base(path), target, err)
 				}
@@ -574,7 +576,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 				target := filepath.Join(dirs["drivers"], filepath.Base(path))
 				logger.WithFields(logrus.Fields{"src": path, "dest": target}).Debug("Copying file")
 
-				err = shared.Copy(path, target)
+				err := shared.Copy(path, target)
 				if err != nil {
 					return fmt.Errorf("Failed to copy %q to %q: %w", filepath.Base(path), target, err)
 				}

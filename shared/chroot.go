@@ -205,7 +205,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	}
 
 	// Setup all needed mounts in a temporary location
-	if m != nil && len(m) > 0 {
+	if len(m) > 0 {
 		err = setupMounts(rootfs, append(mounts, m...))
 	} else {
 		err = setupMounts(rootfs, mounts)

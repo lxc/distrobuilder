@@ -398,8 +398,6 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 			Filename: imageFile,
 		}
 
-		createArgs := &client.ImageCreateArgs{}
-
 		imageType := "container"
 
 		var meta io.ReadCloser
@@ -425,7 +423,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 			}
 		}
 
-		createArgs = &client.ImageCreateArgs{
+		createArgs := &client.ImageCreateArgs{
 			MetaFile:   meta,
 			MetaName:   filepath.Base(imageFile),
 			RootfsFile: rootfs,

@@ -234,36 +234,6 @@ func (v *vm) createUEFIFS() error {
 	return shared.RunCommand(v.ctx, nil, nil, "mkfs.vfat", "-F", "32", "-n", "UEFI", v.getUEFIDevFile())
 }
 
-func (v *vm) getRootfsPartitionUUID() (string, error) {
-	if v.loopDevice == "" {
-		return "", errors.New("Disk image not mounted")
-	}
-
-	var out strings.Builder
-
-	err := shared.RunCommand(v.ctx, nil, &out, "blkid", "-s", "PARTUUID", "-o", "value", v.getRootfsDevFile())
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(out.String()), nil
-}
-
-func (v *vm) getUEFIPartitionUUID() (string, error) {
-	if v.loopDevice == "" {
-		return "", errors.New("Disk image not mounted")
-	}
-
-	var out strings.Builder
-
-	err := shared.RunCommand(v.ctx, nil, &out, "blkid", "-s", "PARTUUID", "-o", "value", v.getUEFIDevFile())
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(out.String()), nil
-}
-
 func (v *vm) mountRootPartition() error {
 	if v.loopDevice == "" {
 		return errors.New("Disk image not mounted")
