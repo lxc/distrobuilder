@@ -33,8 +33,8 @@ func (s *rockylinux) Run() error {
 
 	s.fname, err = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
 		s.definition.Source.Variant, s.definition.Image.ArchitectureMapped)
-	if s.fname == "" {
-		return errors.New("Failed to get release")
+	if err != nil {
+		return fmt.Errorf("Failed to get release: %w", err)
 	}
 
 	fpath := s.getTargetDir()

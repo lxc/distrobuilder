@@ -69,14 +69,15 @@ func getChecksum(fname string, hashLen int, r io.Reader) []string {
 	var matches []string
 	var result []string
 
+	regex := regexp.MustCompile("[[:xdigit:]]+")
+
 	for scanner.Scan() {
 		if !strings.Contains(scanner.Text(), fname) {
 			continue
 		}
 
 		for _, s := range strings.Split(scanner.Text(), " ") {
-			m, _ := regexp.MatchString("[[:xdigit:]]+", s)
-			if !m {
+			if !regex.MatchString(s) {
 				continue
 			}
 
@@ -115,8 +116,7 @@ func getChecksum(fname string, hashLen int, r io.Reader) []string {
 	// Special case: CentOS
 	for _, m := range matches {
 		for _, s := range strings.Split(m, " ") {
-			m, _ := regexp.MatchString("[[:xdigit:]]+", s)
-			if !m {
+			if !regex.MatchString(s) {
 				continue
 			}
 

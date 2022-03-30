@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -156,7 +158,7 @@ func TestLXDCreateMetadata(t *testing.T) {
 		{
 			"Properties[description]",
 			image.Metadata.Properties["description"],
-			fmt.Sprintf("%s %s", strings.Title(lxdDef.Image.Distribution),
+			fmt.Sprintf("%s %s", cases.Title(language.English).String(lxdDef.Image.Distribution),
 				lxdDef.Image.Release),
 		},
 		{

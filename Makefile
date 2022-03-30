@@ -15,11 +15,14 @@ update-gomod:
 
 check: default
 	go install -v -x github.com/tsenart/deadcode@latest
-	go install -v -x golang.org/x/lint/golint@latest
+	go install -v -x honnef.co/go/tools/cmd/staticcheck@latest
 	go test -v ./...
-	golint -set_exit_status ./...
 	deadcode ./
 	go vet ./...
+	# Ignore the following errors:
+	# - "error strings should not be capitalized"
+	# - "at least one file in a package should have a package comment"
+	staticcheck -checks all,-ST1005,-ST1000 ./...
 
 dist:
 	# Cleanup

@@ -8,11 +8,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sys/unix"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -231,7 +232,7 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 	_, err = io.Copy(&buf, f)
 	require.NoError(t, err)
 	require.Equal(t, fmt.Sprintf("Welcome to %s %s\n",
-		strings.Title(lxcDef.Image.Distribution), lxcDef.Image.Release),
+		cases.Title(language.English).String(lxcDef.Image.Distribution), lxcDef.Image.Release),
 		buf.String())
 }
 

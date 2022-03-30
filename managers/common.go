@@ -99,11 +99,6 @@ func (c *common) update() error {
 	return shared.RunCommand(c.ctx, nil, nil, c.commands.update, args...)
 }
 
-// SetInstallFlags overrides the default install flags.
-func (c *common) setInstallFlags(flags ...string) {
-	c.flags.install = flags
-}
-
 func (c *common) manageRepository(repo shared.DefinitionPackagesRepository) error {
 	return nil
 }

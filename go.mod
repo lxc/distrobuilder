@@ -9,12 +9,13 @@ replace google.golang.org/grpc/naming => google.golang.org/grpc v1.29.1
 require (
 	github.com/flosch/pongo2 v0.0.0-20200913210552-0d938eb266f3
 	github.com/gobuffalo/packr/v2 v2.8.3
-	github.com/lxc/lxd v0.0.0-20220328151721-9d97ad51d7fe
+	github.com/lxc/lxd v0.0.0-20220330110539-f7a4698244cb
 	github.com/mudler/docker-companion v0.4.6-0.20211015133729-bd4704fad372
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.7.1
-	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886
+	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f
+	golang.org/x/text v0.3.7
 	gopkg.in/antchfx/htmlquery.v1 v1.2.2
 	gopkg.in/flosch/pongo2.v3 v3.0.0-20141028000813-5e81b817a0c4
 	gopkg.in/yaml.v2 v2.4.0
@@ -91,7 +92,6 @@ require (
 	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/errgo.v1 v1.0.1 // indirect
 	gopkg.in/httprequest.v1 v1.2.1 // indirect
