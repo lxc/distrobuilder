@@ -163,9 +163,9 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	imageTargets := shared.ImageTargetAll
 
 	if c.flagVM {
-		imageTargets = shared.ImageTargetVM
+		imageTargets |= shared.ImageTargetVM
 	} else {
-		imageTargets = shared.ImageTargetContainer
+		imageTargets |= shared.ImageTargetContainer
 	}
 
 	manager, err := managers.Load(c.global.ctx, c.global.definition.Packages.Manager, c.global.logger, *c.global.definition)
