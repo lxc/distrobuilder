@@ -110,7 +110,7 @@ func (s *openwrt) Run() error {
 		return nil
 	}, 3)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Use fallback image "generic"

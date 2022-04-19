@@ -63,7 +63,7 @@ func (s *funtoo) Run() error {
 			return nil
 		}, 3)
 		if err != nil {
-			return nil
+			return err
 		}
 
 		if resp.StatusCode == http.StatusNotFound {
