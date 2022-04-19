@@ -50,7 +50,7 @@ func (s *opensuse) Run() error {
 		return nil
 	}, 3)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	baseURL, fname = path.Split(resp.Request.URL.String())
