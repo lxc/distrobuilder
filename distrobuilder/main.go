@@ -729,14 +729,24 @@ fi
 
 # Workarounds for containers.
 if is_lxc_container; then
-	# Apply systemd overrides
-	if [ "${systemd_version}" -ge 244 ]; then
-		fix_systemd_override_unit system/service
-	else
-		# Setup per-unit overrides
-		find /lib/systemd /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(lib\|etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
-			fix_systemd_override_unit "${service_file}"
-		done
+	# Overriding some systemd features is only needed if security.nesting=false
+	# in which case, /dev/.lxc will be missing
+	if [ ! -d /dev/.lxc ]; then
+		# Apply systemd overrides
+		if [ "${systemd_version}" -ge 244 ]; then
+			fix_systemd_override_unit system/service
+		else
+			# Setup per-unit overrides
+			find /lib/systemd /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(lib\|etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
+				fix_systemd_override_unit "${service_file}"
+			done
+		fi
+
+		# Workarounds for privileged containers.
+		if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
+			fix_ro_paths systemd-networkd.service
+			fix_ro_paths systemd-resolved.service
+		fi
 	fi
 
 	# Ignore failures on some units.
@@ -758,12 +768,6 @@ if is_lxc_container; then
 	# Workarounds for cloud containers
 	if { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
 		fix_nm_force_up eth0
-	fi
-
-	# Workarounds for privileged containers.
-	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
-		fix_ro_paths systemd-networkd.service
-		fix_ro_paths systemd-resolved.service
 	fi
 
 	# Workarounds for NetworkManager in containers
