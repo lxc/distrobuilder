@@ -29,20 +29,47 @@ const (
 	ImageTargetUndefined ImageTarget = 1 << 3
 )
 
+// DefinitionFilterType represents the filter type.
+type DefinitionFilterType string
+
+const (
+	// DefinitionFilterTypeVM is used for VMs.
+	DefinitionFilterTypeVM DefinitionFilterType = "vm"
+
+	// DefinitionFilterTypeContainer is used for containers.
+	DefinitionFilterTypeContainer DefinitionFilterType = "container"
+)
+
+// UnmarshalYAML validates the filter type.
+func (d DefinitionFilterType) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var filterType string
+
+	err := unmarshal(&filterType)
+	if err != nil {
+		return err
+	}
+
+	if DefinitionFilterType(filterType) != DefinitionFilterTypeContainer && DefinitionFilterType(filterType) != DefinitionFilterTypeVM {
+		return fmt.Errorf("Invalid filter type %q", filterType)
+	}
+
+	return nil
+}
+
 // Filter represents a filter.
 type Filter interface {
 	GetReleases() []string
 	GetArchitectures() []string
 	GetVariants() []string
-	GetTypes() []string
+	GetTypes() []DefinitionFilterType
 }
 
 // A DefinitionFilter defines filters for various actions.
 type DefinitionFilter struct {
-	Releases      []string `yaml:"releases,omitempty"`
-	Architectures []string `yaml:"architectures,omitempty"`
-	Variants      []string `yaml:"variants,omitempty"`
-	Types         []string `yaml:"types,omitempty"`
+	Releases      []string               `yaml:"releases,omitempty"`
+	Architectures []string               `yaml:"architectures,omitempty"`
+	Variants      []string               `yaml:"variants,omitempty"`
+	Types         []DefinitionFilterType `yaml:"types,omitempty"`
 }
 
 // GetReleases returns a list of releases.
@@ -61,7 +88,7 @@ func (d *DefinitionFilter) GetVariants() []string {
 }
 
 // GetTypes returns a list of types.
-func (d *DefinitionFilter) GetTypes() []string {
+func (d *DefinitionFilter) GetTypes() []DefinitionFilterType {
 	return d.Types
 }
 
@@ -166,9 +193,9 @@ type DefinitionTargetLXD struct {
 
 // A DefinitionTarget specifies target dependent files.
 type DefinitionTarget struct {
-	LXC  DefinitionTargetLXC `yaml:"lxc,omitempty"`
-	LXD  DefinitionTargetLXD `yaml:"lxd,omitempty"`
-	Type string              // This field is internal only and used only for simplicity.
+	LXC  DefinitionTargetLXC  `yaml:"lxc,omitempty"`
+	LXD  DefinitionTargetLXD  `yaml:"lxd,omitempty"`
+	Type DefinitionFilterType // This field is internal only and used only for simplicity.
 }
 
 // A DefinitionFile represents a file which is to be created inside to chroot.
@@ -310,7 +337,7 @@ func (d *Definition) SetDefaults() {
 	}
 
 	// Set default target type. This will only be overriden if building VMs for LXD.
-	d.Targets.Type = "container"
+	d.Targets.Type = DefinitionFilterTypeContainer
 }
 
 // Validate validates the Definition.
@@ -595,7 +622,7 @@ func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, 
 }
 
 // ApplyFilter returns true if the filter matches.
-func ApplyFilter(filter Filter, release string, architecture string, variant string, targetType string, acceptedImageTargets ImageTarget) bool {
+func ApplyFilter(filter Filter, release string, architecture string, variant string, targetType DefinitionFilterType, acceptedImageTargets ImageTarget) bool {
 	if len(filter.GetReleases()) > 0 && !shared.StringInSlice(release, filter.GetReleases()) {
 		return false
 	}
@@ -614,20 +641,30 @@ func ApplyFilter(filter Filter, release string, architecture string, variant str
 		return true
 	}
 
+	hasTargetType := func(targetType DefinitionFilterType) bool {
+		for _, t := range types {
+			if t == targetType {
+				return true
+			}
+		}
+
+		return false
+	}
+
 	if acceptedImageTargets&ImageTargetAll > 0 {
-		if len(types) == 2 && shared.StringInSlice(targetType, types) {
+		if len(types) == 2 && hasTargetType(targetType) {
 			return true
 		}
 	}
 
 	if acceptedImageTargets&ImageTargetContainer > 0 {
-		if targetType == "container" && shared.StringInSlice(targetType, types) {
+		if targetType == DefinitionFilterTypeContainer && hasTargetType(targetType) {
 			return true
 		}
 	}
 
 	if acceptedImageTargets&ImageTargetVM > 0 {
-		if targetType == "vm" && shared.StringInSlice(targetType, types) {
+		if targetType == DefinitionFilterTypeVM && hasTargetType(targetType) {
 			return true
 		}
 	}

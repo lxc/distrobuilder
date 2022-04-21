@@ -208,6 +208,9 @@ func main() {
 	repackWindowsCmd := cmdRepackWindows{global: &globalCmd}
 	app.AddCommand(repackWindowsCmd.command())
 
+	validateCmd := cmdValidate{global: &globalCmd}
+	app.AddCommand(validateCmd.command())
+
 	globalCmd.interrupt = make(chan os.Signal, 1)
 	signal.Notify(globalCmd.interrupt, os.Interrupt)
 
@@ -329,7 +332,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 		if ok {
 			imageTargets |= shared.ImageTargetVM
-			c.definition.Targets.Type = "vm"
+			c.definition.Targets.Type = shared.DefinitionFilterTypeVM
 		} else {
 			imageTargets |= shared.ImageTargetContainer
 		}
@@ -504,7 +507,7 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 
 	// Parse the yaml input
 	var def shared.Definition
-	err := yaml.Unmarshal(buf.Bytes(), &def)
+	err := yaml.UnmarshalStrict(buf.Bytes(), &def)
 	if err != nil {
 		return nil, err
 	}
