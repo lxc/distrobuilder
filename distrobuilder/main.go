@@ -208,6 +208,9 @@ func main() {
 	repackWindowsCmd := cmdRepackWindows{global: &globalCmd}
 	app.AddCommand(repackWindowsCmd.command())
 
+	validateCmd := cmdValidate{global: &globalCmd}
+	app.AddCommand(validateCmd.command())
+
 	globalCmd.interrupt = make(chan os.Signal, 1)
 	signal.Notify(globalCmd.interrupt, os.Interrupt)
 
