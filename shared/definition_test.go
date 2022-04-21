@@ -535,7 +535,7 @@ func TestApplyFilter(t *testing.T) {
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetVM))
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
 
-	repo.Types = []string{"vm"}
+	repo.Types = []DefinitionFilterType{DefinitionFilterTypeVM}
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetVM))
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetVM))
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
@@ -544,7 +544,7 @@ func TestApplyFilter(t *testing.T) {
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", 0))
 
-	repo.Types = []string{"container"}
+	repo.Types = []DefinitionFilterType{DefinitionFilterTypeContainer}
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer))
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetContainer))
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
@@ -553,7 +553,7 @@ func TestApplyFilter(t *testing.T) {
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
 
-	repo.Types = []string{"container", "vm"}
+	repo.Types = []DefinitionFilterType{DefinitionFilterTypeContainer, DefinitionFilterTypeVM}
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer))
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetContainer))
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
