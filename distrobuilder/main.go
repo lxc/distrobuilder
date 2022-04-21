@@ -504,7 +504,7 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 
 	// Parse the yaml input
 	var def shared.Definition
-	err := yaml.Unmarshal(buf.Bytes(), &def)
+	err := yaml.UnmarshalStrict(buf.Bytes(), &def)
 	if err != nil {
 		return nil, err
 	}
