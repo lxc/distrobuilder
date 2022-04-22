@@ -561,3 +561,28 @@ func TestApplyFilter(t *testing.T) {
 	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
 	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
 }
+
+func TestDefinitionFilterTypeUnmarshalYAML(t *testing.T) {
+	data := "vm"
+	var out DefinitionFilterType
+
+	err := yaml.Unmarshal([]byte(data), &out)
+	require.NoError(t, err)
+	require.Equal(t, DefinitionFilterTypeVM, out)
+
+	data = "container"
+
+	err = yaml.Unmarshal([]byte(data), &out)
+	require.NoError(t, err)
+	require.Equal(t, DefinitionFilterTypeContainer, out)
+
+	data = "containers"
+
+	err = yaml.Unmarshal([]byte(data), &out)
+	require.EqualError(t, err, `Invalid filter type "containers"`)
+
+	data = "vms"
+
+	err = yaml.Unmarshal([]byte(data), &out)
+	require.EqualError(t, err, `Invalid filter type "vms"`)
+}
