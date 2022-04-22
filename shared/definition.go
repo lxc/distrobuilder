@@ -41,7 +41,7 @@ const (
 )
 
 // UnmarshalYAML validates the filter type.
-func (d DefinitionFilterType) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (d *DefinitionFilterType) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var filterType string
 
 	err := unmarshal(&filterType)
@@ -52,6 +52,8 @@ func (d DefinitionFilterType) UnmarshalYAML(unmarshal func(interface{}) error) e
 	if DefinitionFilterType(filterType) != DefinitionFilterTypeContainer && DefinitionFilterType(filterType) != DefinitionFilterTypeVM {
 		return fmt.Errorf("Invalid filter type %q", filterType)
 	}
+
+	*d = DefinitionFilterType(filterType)
 
 	return nil
 }
