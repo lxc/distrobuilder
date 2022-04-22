@@ -658,7 +658,7 @@ fix_systemd_override_unit() {
 			echo "PrivateTmp=no";
 			[ "${systemd_version}" -ge 244 ] && echo "ProtectKernelLogs=no";
 			[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelModules=no";
-			echo "ReadWritePaths=";
+			[ "${systemd_version}" -ge 231 ] && echo "ReadWritePaths=";
 		fi
 	} > "${dropin_dir}/zzz-lxc-service.conf"
 }
