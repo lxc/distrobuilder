@@ -554,6 +554,10 @@ is_lxc_container() {
 	grep -qa container=lxc /proc/1/environ
 }
 
+is_lxc_privileged_container() {
+	grep -qw 4294967295$ /proc/self/uid_map
+}
+
 # is_lxd_vm succeeds if we're running inside a LXD VM
 is_lxd_vm() {
 	[ -e /dev/virtio-ports/org.linuxcontainers.lxd ]
@@ -648,7 +652,7 @@ fix_systemd_override_unit() {
 		[ "${systemd_version}" -ge 249 ] && echo "LoadCredential=";
 
 		# Additional settings for privileged containers
-		if grep -q 4294967295 /proc/self/uid_map; then
+		if is_lxc_privileged_container; then
 			echo "ProtectHome=no";
 			echo "ProtectSystem=no";
 			echo "PrivateDevices=no";
@@ -735,7 +739,7 @@ if [ ! -d /dev/.lxc ]; then
 	fi
 
 	# Workarounds for privileged containers.
-	if { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; } && ! grep -q 4294967295 /proc/self/uid_map; then
+	if { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; } && ! is_lxc_privileged_container; then
 		fix_ro_paths systemd-networkd.service
 		fix_ro_paths systemd-resolved.service
 	fi
