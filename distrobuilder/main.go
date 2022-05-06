@@ -704,10 +704,11 @@ EOF
 }
 
 ## Main logic
-# Exit immediately if not a LXC/LXD container or VM
-if ! is_lxd_vm && ! is_lxc_container; then
-	exit
-fi
+# Nothing to do in LXD VM but deployed in case it is later converted to a container
+is_lxd_vm && exit 0
+
+# Exit immediately if not a LXC/LXD container
+is_lxc_container || exit 0
 
 # Check for NetworkManager and cloud-init
 nm_exists=0
@@ -730,57 +731,54 @@ if [ -e /etc/os-release ]; then
 	. /etc/os-release
 fi
 
-# Workarounds for containers.
-if is_lxc_container; then
-	# Overriding some systemd features is only needed if security.nesting=false
-	# in which case, /dev/.lxc will be missing
-	if [ ! -d /dev/.lxc ]; then
-		# Apply systemd overrides
-		if [ "${systemd_version}" -ge 244 ]; then
-			fix_systemd_override_unit system/service
-		else
-			# Setup per-unit overrides
-			find /lib/systemd /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(lib\|etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
-				fix_systemd_override_unit "${service_file}"
-			done
-		fi
-
-		# Workarounds for privileged containers.
-		if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
-			fix_ro_paths systemd-networkd.service
-			fix_ro_paths systemd-resolved.service
-		fi
+# Overriding some systemd features is only needed if security.nesting=false
+# in which case, /dev/.lxc will be missing
+if [ ! -d /dev/.lxc ]; then
+	# Apply systemd overrides
+	if [ "${systemd_version}" -ge 244 ]; then
+		fix_systemd_override_unit system/service
+	else
+		# Setup per-unit overrides
+		find /lib/systemd /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(lib\|etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
+			fix_systemd_override_unit "${service_file}"
+		done
 	fi
 
-	# Ignore failures on some units.
-	fix_systemd_udev_trigger
-	fix_systemd_sysctl
-
-	# Mask some units.
-	fix_systemd_mask dev-hugepages.mount
-	fix_systemd_mask run-ribchester-general.mount
-	fix_systemd_mask systemd-hwdb-update.service
-	fix_systemd_mask systemd-journald-audit.socket
-	fix_systemd_mask systemd-modules-load.service
-	fix_systemd_mask systemd-pstore.service
-	fix_systemd_mask ua-messaging.service
-	if [ ! -e /dev/tty1 ]; then
-		fix_systemd_mask vconsole-setup-kludge@tty1.service
+	# Workarounds for privileged containers.
+	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
+		fix_ro_paths systemd-networkd.service
+		fix_ro_paths systemd-resolved.service
 	fi
+fi
 
-	# Workarounds for cloud containers
-	if { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
+# Ignore failures on some units.
+fix_systemd_udev_trigger
+fix_systemd_sysctl
+
+# Mask some units.
+fix_systemd_mask dev-hugepages.mount
+fix_systemd_mask run-ribchester-general.mount
+fix_systemd_mask systemd-hwdb-update.service
+fix_systemd_mask systemd-journald-audit.socket
+fix_systemd_mask systemd-modules-load.service
+fix_systemd_mask systemd-pstore.service
+fix_systemd_mask ua-messaging.service
+if [ ! -e /dev/tty1 ]; then
+	fix_systemd_mask vconsole-setup-kludge@tty1.service
+fi
+
+# Workarounds for cloud containers
+if { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
+	fix_nm_force_up eth0
+fi
+
+# Workarounds for NetworkManager in containers
+if [ "${nm_exists}" -eq 1 ]; then
+	if [ "${ID}" = "ol" ] || [ "${ID}" = "centos" ]; then
 		fix_nm_force_up eth0
 	fi
 
-	# Workarounds for NetworkManager in containers
-	if [ "${nm_exists}" -eq 1 ]; then
-		if [ "${ID}" = "ol" ] || [ "${ID}" = "centos" ]; then
-			fix_nm_force_up eth0
-		fi
-
-		fix_nm_link_state eth0
-	fi
+	fix_nm_link_state eth0
 fi
 `
 	os.MkdirAll("/etc/systemd/system-generators", 0755)
