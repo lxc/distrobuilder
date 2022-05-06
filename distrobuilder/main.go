@@ -705,6 +705,20 @@ fix_systemd_mask ua-messaging.service
 if [ ! -e /dev/tty1 ]; then
 	fix_systemd_mask vconsole-setup-kludge@tty1.service
 fi
+
+if [ -d /etc/udev ]; then
+	mkdir -p /run/udev/rules.d
+	cat <<-EOF > /run/udev/rules.d/90-lxc-net.rules
+# This file was created by distrobuilder.
+#
+# Its purpose is to convince NetworkManager to treat the eth0 veth
+# interface like a regular Ethernet. NetworkManager ordinarily doesn't
+# like to manage the veth interfaces, because they are typically configured
+# by container management tooling for specialized purposes.
+
+ACTION=="add|change|move", ENV{ID_NET_DRIVER}=="veth", ENV{INTERFACE}=="eth[0-9]*", ENV{NM_UNMANAGED}="0"
+EOF
+fi
 `
 	os.MkdirAll("/etc/systemd/system-generators", 0755)
 	ioutil.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
