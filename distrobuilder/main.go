@@ -548,6 +548,9 @@ func addSystemdGenerator() {
 # NOTE: systemctl is not available for systemd-generators
 set -eu
 
+# disable localisation (faster grep)
+export LC_ALL=C
+
 ## Helper functions
 # is_lxc_container succeeds if we're running inside a LXC container
 is_lxc_container() {
