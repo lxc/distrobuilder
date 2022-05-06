@@ -735,7 +735,7 @@ if [ ! -d /dev/.lxc ]; then
 	fi
 
 	# Workarounds for privileged containers.
-	if ! grep -q 4294967295 /proc/self/uid_map && { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; }; then
+	if { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; } && ! grep -q 4294967295 /proc/self/uid_map; then
 		fix_ro_paths systemd-networkd.service
 		fix_ro_paths systemd-resolved.service
 	fi
