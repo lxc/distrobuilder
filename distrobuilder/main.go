@@ -584,9 +584,6 @@ fix_nm_force_up() {
 	# Check if the device exists
 	[ -e "/sys/class/net/$1" ] || return 0
 
-	# Check if NetworkManager exists
-	[ "${nm_exists}" -eq 1 ] || return 0
-
 	cat <<-EOF > /run/systemd/system/network-connection-activate.service
 [Unit]
 Description=Activate connection
@@ -710,13 +707,6 @@ is_lxd_vm && exit 0
 # Exit immediately if not a LXC/LXD container
 is_lxc_container || exit 0
 
-# Check for NetworkManager and cloud-init
-nm_exists=0
-cloudinit_exists=0
-
-is_in_path NetworkManager && nm_exists=1
-is_in_path cloud-init && cloudinit_exists=1
-
 # Determine systemd version
 for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
 	[ -x "${path}" ] || continue
@@ -768,12 +758,12 @@ if [ ! -e /dev/tty1 ]; then
 fi
 
 # Workarounds for cloud containers
-if { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && [ "${cloudinit_exists}" -eq 1 ]; then
+if { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && is_in_path cloud-init; then
 	fix_nm_force_up eth0
 fi
 
 # Workarounds for NetworkManager in containers
-if [ "${nm_exists}" -eq 1 ]; then
+if is_in_path NetworkManager; then
 	if [ "${ID}" = "ol" ] || [ "${ID}" = "centos" ]; then
 		fix_nm_force_up eth0
 	fi
