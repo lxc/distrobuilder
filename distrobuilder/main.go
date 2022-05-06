@@ -583,61 +583,6 @@ BindReadOnlyPaths=/sys /proc
 EOF
 }
 
-# fix_nm_force_up sets up a unit override to force NetworkManager to start the system connection
-fix_nm_force_up() {
-	# Check if the device exists
-	[ -e "/sys/class/net/$1" ] || return 0
-
-	cat <<-EOF > /run/systemd/system/network-connection-activate.service
-[Unit]
-Description=Activate connection
-After=NetworkManager.service NetworkManager-wait-online.service
-
-[Service]
-ExecStart=-/usr/bin/nmcli c up "System $1"
-Type=oneshot
-RemainAfterExit=true
-
-[Install]
-WantedBy=default.target
-EOF
-
-	mkdir -p /run/systemd/system/default.target.wants
-	ln -sf /run/systemd/system/network-connection-activate.service /run/systemd/system/default.target.wants/network-connection-activate.service
-}
-
-# fix_nm_link_state forces the network interface to a DOWN state ahead of NetworkManager starting up
-fix_nm_link_state() {
-	[ -e "/sys/class/net/$1" ] || return 0
-
-	ip_path=
-	if [ -f /sbin/ip ]; then
-		ip_path=/sbin/ip
-	elif [ -f /bin/ip ]; then
-		ip_path=/bin/ip
-	else
-		return 0
-	fi
-
-	cat <<-EOF > /run/systemd/system/network-device-down.service
-[Unit]
-Description=Turn off network device
-Before=NetworkManager.service
-Before=systemd-networkd.service
-
-[Service]
-ExecStart=-${ip_path} link set $1 down
-Type=oneshot
-RemainAfterExit=true
-
-[Install]
-WantedBy=default.target
-EOF
-
-	mkdir -p /run/systemd/system/default.target.wants
-	ln -sf /run/systemd/system/network-device-down.service /run/systemd/system/default.target.wants/network-device-down.service
-}
-
 # fix_systemd_override_unit generates a unit specific override
 fix_systemd_override_unit() {
 	dropin_dir="/run/systemd/${1}.d"
@@ -761,18 +706,18 @@ if [ ! -e /dev/tty1 ]; then
 	fix_systemd_mask vconsole-setup-kludge@tty1.service
 fi
 
-# Workarounds for cloud containers
-if { [ "${ID}" = "fedora" ] || [ "${ID}" = "rhel" ]; } && is_in_path cloud-init; then
-	fix_nm_force_up eth0
-fi
+if [ -d /etc/udev ]; then
+	mkdir -p /run/udev/rules.d
+	cat <<-EOF > /run/udev/rules.d/90-lxc-net.rules
+# This file was created by distrobuilder.
+#
+# Its purpose is to convince NetworkManager to treat the eth0 veth
+# interface like a regular Ethernet. NetworkManager ordinarily doesn't
+# like to manage the veth interfaces, because they are typically configured
+# by container management tooling for specialized purposes.
 
-# Workarounds for NetworkManager in containers
-if is_in_path NetworkManager; then
-	if [ "${ID}" = "ol" ] || [ "${ID}" = "centos" ]; then
-		fix_nm_force_up eth0
-	fi
-
-	fix_nm_link_state eth0
+ACTION=="add|change|move", ENV{ID_NET_DRIVER}=="veth", ENV{INTERFACE}=="eth[0-9]*", ENV{NM_UNMANAGED}="0"
+EOF
 fi
 `
 	os.MkdirAll("/etc/systemd/system-generators", 0755)
