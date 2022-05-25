@@ -84,7 +84,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 
 	if vm {
 		// Create compressed qcow2 image.
-		err = shared.RunCommand(l.ctx, nil, nil, "qemu-img", "convert", "-c", "-O", "qcow2", "-o", "compat=0.10",
+		err = shared.RunCommand(l.ctx, nil, nil, "qemu-img", "convert", "-c", "-O", "qcow2",
 			rawImage,
 			qcowImage)
 		if err != nil {
