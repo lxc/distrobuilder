@@ -142,104 +142,44 @@ yum_args=""
 mkdir -p /etc/yum.repos.d
 
 if [ -d /mnt/cdrom ]; then
-# Install initial package set
-cd /mnt/cdrom/Packages
-rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
-rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
+	# Install initial package set
+	cd /mnt/cdrom/Packages
+	rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
+	rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
 
-# Add cdrom repo
-cat <<- EOF > /etc/yum.repos.d/cdrom.repo
-[cdrom]
-name=Install CD-ROM
-baseurl=file:///mnt/cdrom
-enabled=0
-EOF
+	# Add cdrom repo
+	cat <<- EOF > /etc/yum.repos.d/cdrom.repo
+	[cdrom]
+	name=Install CD-ROM
+	baseurl=file:///mnt/cdrom
+	enabled=0
+	EOF
 
-if [ -n "${GPG_KEYS}" ]; then
-	echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
-	echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
+	if [ -n "${GPG_KEYS}" ]; then
+		echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
+		echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
+	else
+		echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
+	fi
+
+	yum_args="--disablerepo=* --enablerepo=cdrom"
+	yum ${yum_args} -y reinstall yum
 else
-	echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
-fi
+	if ! [ -f /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux ]; then
+		mv /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux-* /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+	fi
 
-yum_args="--disablerepo=* --enablerepo=cdrom"
-yum ${yum_args} -y reinstall yum
-else
-if ! [ -f /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux ]; then
-	mkdir -p /etc/pki/rpm-gpg
-	cat <<- "EOF" > /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
------BEGIN PGP PUBLIC KEY BLOCK-----
-Version: GnuPG v1
+	cat <<- "EOF" > /etc/yum.repos.d/almalinux.repo
+	[baseos]
+	name=AlmaLinux $releasever - BaseOS
+	baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
+	gpgcheck=1
+	enabled=1
+	gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+	EOF
 
-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
-72EHtteVBoVn0eg6
-=rEWJ
------END PGP PUBLIC KEY BLOCK-----
-EOF
-fi
-
-cat <<- "EOF" > /etc/yum.repos.d/almalinux.repo
-[baseos]
-name=AlmaLinux $releasever - BaseOS
-baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
-gpgcheck=1
-enabled=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
-EOF
-
-# Use dnf in the boot iso since yum isn't available
-alias yum=dnf
+	# Use dnf in the boot iso since yum isn't available
+	alias yum=dnf
 fi
 
 pkgs="basesystem almalinux-release yum"
