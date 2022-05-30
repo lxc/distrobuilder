@@ -142,32 +142,32 @@ yum_args=""
 mkdir -p /etc/yum.repos.d
 
 if [ -d /mnt/cdrom ]; then
-# Install initial package set
-cd /mnt/cdrom/Packages
-rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
-rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
+	# Install initial package set
+	cd /mnt/cdrom/Packages
+	rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
+	rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
 
-# Add cdrom repo
-cat <<- EOF > /etc/yum.repos.d/cdrom.repo
-[cdrom]
-name=Install CD-ROM
-baseurl=file:///mnt/cdrom
-enabled=0
-EOF
+	# Add cdrom repo
+	cat <<- EOF > /etc/yum.repos.d/cdrom.repo
+	[cdrom]
+	name=Install CD-ROM
+	baseurl=file:///mnt/cdrom
+	enabled=0
+	EOF
 
-if [ -n "${GPG_KEYS}" ]; then
-	echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
-	echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
+	if [ -n "${GPG_KEYS}" ]; then
+		echo gpgcheck=1 >> /etc/yum.repos.d/cdrom.repo
+		echo gpgkey=${GPG_KEYS} >> /etc/yum.repos.d/cdrom.repo
+	else
+		echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
+	fi
+
+	yum_args="--disablerepo=* --enablerepo=cdrom"
+	yum ${yum_args} -y reinstall yum
 else
-	echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
-fi
-
-yum_args="--disablerepo=* --enablerepo=cdrom"
-yum ${yum_args} -y reinstall yum
-else
-if ! [ -f /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux ]; then
-	mkdir -p /etc/pki/rpm-gpg
-	cat <<- "EOF" > /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+	if ! [ -f /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux ]; then
+		mkdir -p /etc/pki/rpm-gpg
+		cat <<- "EOF" > /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v1
 
@@ -227,19 +227,19 @@ kAIBinjtZwEEAP4GumNNy7f4l4tt1CBy1EgoYtYCcJC5SGyhWMee3L3hLhHe7Iwd
 =rEWJ
 -----END PGP PUBLIC KEY BLOCK-----
 EOF
-fi
+	fi
 
-cat <<- "EOF" > /etc/yum.repos.d/almalinux.repo
-[baseos]
-name=AlmaLinux $releasever - BaseOS
-baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
-gpgcheck=1
-enabled=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
-EOF
+	cat <<- "EOF" > /etc/yum.repos.d/almalinux.repo
+	[baseos]
+	name=AlmaLinux $releasever - BaseOS
+	baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
+	gpgcheck=1
+	enabled=1
+	gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
+	EOF
 
-# Use dnf in the boot iso since yum isn't available
-alias yum=dnf
+	# Use dnf in the boot iso since yum isn't available
+	alias yum=dnf
 fi
 
 pkgs="basesystem almalinux-release yum"
