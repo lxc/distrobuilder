@@ -3,7 +3,7 @@
 image:
   description: |-
     here goes the image description
-  distrobution: distro
+  distribution: distro
   release: release
   architecture: x86_64
   expiry: 30d
@@ -24,7 +24,7 @@ source:
 
 targets:
   lxc:
-    create-message: |-
+    create_message: |-
       You just created an {{ image.description }} container.
 
       To enable SSH, run: apt install openssh-server
@@ -112,7 +112,7 @@ files:
 
 packages:
   manager: apt
-  custom-manager:
+  custom_manager:
     clean:
       cmd: mgr
       flags:
@@ -220,4 +220,5 @@ mappings:
 environment:
   clear_defaults: true
   variables:
-    - FOO: bar
+    - key: FOO
+      value: bar

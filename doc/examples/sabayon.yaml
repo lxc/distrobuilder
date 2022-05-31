@@ -1,6 +1,6 @@
 image:
   distribution: sabayon
-  decription: Sabayon Builder
+  description: Sabayon Builder
   expiry: 30d
   variant: builder
   architecture: amd64
@@ -21,7 +21,7 @@ environment:
 
 targets:
   lxc:
-    create-message: |
+    create_message: |
       You just created a Sabayon container (arch={{ image.architecture }})
 
     config:
