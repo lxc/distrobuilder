@@ -586,6 +586,33 @@ BindReadOnlyPaths=/sys /proc
 EOF
 }
 
+# fix_nm_link_state forces the network interface to a DOWN state ahead of NetworkManager starting up
+fix_nm_link_state() {
+	[ -e "/sys/class/net/$1" ] || return 0
+	ip_path=
+	if [ -f /sbin/ip ]; then
+		ip_path=/sbin/ip
+	elif [ -f /bin/ip ]; then
+		ip_path=/bin/ip
+	else
+		return 0
+	fi
+	cat <<-EOF > /run/systemd/system/network-device-down.service
+[Unit]
+Description=Turn off network device
+Before=NetworkManager.service
+Before=systemd-networkd.service
+[Service]
+ExecStart=-${ip_path} link set $1 down
+Type=oneshot
+RemainAfterExit=true
+[Install]
+WantedBy=default.target
+EOF
+	mkdir -p /run/systemd/system/default.target.wants
+	ln -sf /run/systemd/system/network-device-down.service /run/systemd/system/default.target.wants/network-device-down.service
+}
+
 # fix_systemd_override_unit generates a unit specific override
 fix_systemd_override_unit() {
 	dropin_dir="/run/systemd/${1}.d"
@@ -659,6 +686,11 @@ is_lxd_vm && exit 0
 # Exit immediately if not a LXC/LXD container
 is_lxc_container || exit 0
 
+# Check for NetworkManager
+nm_exists=0
+
+is_in_path NetworkManager && nm_exists=1
+
 # Determine systemd version
 for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
 	[ -x "${path}" ] || continue
@@ -721,6 +753,11 @@ if [ -d /etc/udev ]; then
 
 ACTION=="add|change|move", ENV{ID_NET_DRIVER}=="veth", ENV{INTERFACE}=="eth[0-9]*", ENV{NM_UNMANAGED}="0"
 EOF
+fi
+
+# Workarounds for NetworkManager in containers
+if [ "${nm_exists}" -eq 1 ]; then
+	fix_nm_link_state eth0
 fi
 `
 	os.MkdirAll("/etc/systemd/system-generators", 0755)
