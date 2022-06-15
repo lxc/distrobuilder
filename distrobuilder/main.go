@@ -737,6 +737,7 @@ fix_systemd_mask systemd-journald-audit.socket
 fix_systemd_mask systemd-modules-load.service
 fix_systemd_mask systemd-pstore.service
 fix_systemd_mask ua-messaging.service
+fix_systemd_mask systemd-firstboot.service
 if [ ! -e /dev/tty1 ]; then
 	fix_systemd_mask vconsole-setup-kludge@tty1.service
 fi
