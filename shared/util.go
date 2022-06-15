@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lxc/lxd/shared"
 	"golang.org/x/sys/unix"
 	"gopkg.in/flosch/pongo2.v3"
 	yaml "gopkg.in/yaml.v2"
@@ -115,13 +116,20 @@ func PackUpdate(ctx context.Context, filename, compression, path string, args ..
 func compressTarball(ctx context.Context, filename, compression string) (string, error) {
 	fileExtension := ""
 
+	args := []string{"-f", filename}
+
+	// If supported, use as many threads as possible.
+	if shared.StringInSlice(compression, []string{"zstd", "xz", "lzma"}) {
+		args = append(args, "--threads=0")
+	}
+
 	switch compression {
 	case "lzop", "zstd":
 		// Remove the uncompressed file as the compress fails to do so.
 		defer os.Remove(filename)
 		fallthrough
 	case "bzip2", "xz", "lzip", "lzma", "gzip":
-		err := RunCommand(ctx, nil, nil, compression, "-f", filename)
+		err := RunCommand(ctx, nil, nil, compression, args...)
 		if err != nil {
 			return "", fmt.Errorf("Failed to compress tarball %q: %w", filename, err)
 		}
