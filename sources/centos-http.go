@@ -268,6 +268,11 @@ gpg_keys_official="file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7-aarch64 file:///
 		echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
 	fi
 
+	# Disable fastestmirror plugin
+	if [ -f /etc/yum/pluginconf.d/fastestmirror.conf ]; then
+		sed -ri 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
+	fi
+
 	yum_args="--disablerepo=* --enablerepo=cdrom"
 	yum ${yum_args} -y reinstall yum
 else
@@ -307,12 +312,12 @@ yy+mHmSv
 EOF
 	fi
 
-	# --- All CentOS except Stream 9
-	if ! grep -q "CentOS Stream 9" /etc/os-release; then
+	# --- CentOS 7
+	if grep -q "CentOS Linux 7" /etc/os-release; then
 	cat <<- "EOF" > /etc/yum.repos.d/CentOS-Base.repo
 [BaseOS]
 name=CentOS-$releasever - Base
-mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=BaseOS&infra=$infra
+baseurl=https://muug.ca/mirror/centos/$releasever/BaseOS/$basearch
 gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
@@ -321,10 +326,19 @@ EOF
 
 	# --- Only on Stream 8
 	if grep -q "CentOS Stream 8" /etc/os-release; then
+	cat <<- "EOF" > /etc/yum.repos.d/CentOS-Base.repo
+[BaseOS]
+name=CentOS-$releasever - Base
+baseurl=https://muug.ca/mirror/centos/$releasever/BaseOS/$basearch/os
+gpgcheck=1
+enabled=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+EOF
+
 		cat <<- "EOF" > /etc/yum.repos.d/CentOS-Appstream.repo
 [AppStream]
 name=CentOS-$releasever - Base
-mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=AppStream&infra=$infra
+baseurl=https://muug.ca/mirror/centos/$releasever/AppStream/$basearch/os
 gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
@@ -336,14 +350,14 @@ EOF
 	cat <<- "EOF" > /etc/yum.repos.d/CentOS-Base.repo
 [baseos]
 name=CentOS Stream $releasever - BaseOS
-metalink=https://mirrors.centos.org/metalink?repo=centos-baseos-$stream&arch=$basearch&protocol=https,http
+baseurl=https://mirror.xenyth.net/centos-stream/$releasever/BaseOS/$basearch/os
 gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 
 [appstream]
 name=CentOS Stream $releasever - AppStream
-metalink=https://mirrors.centos.org/metalink?repo=centos-appstream-$stream&arch=$basearch&protocol=https,http
+baseurl=https://mirror.xenyth.net/centos-stream/$releasever/AppStream/$basearch/os
 gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
@@ -352,6 +366,11 @@ EOF
 
 	# Use dnf in the boot iso since yum isn't available
 	alias yum=dnf
+fi
+
+# Disable fastestmirror plugin
+if [ -f /etc/yum/pluginconf.d/fastestmirror.conf ]; then
+	sed -ri 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
 fi
 
 pkgs="basesystem centos-release yum"
