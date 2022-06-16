@@ -268,6 +268,11 @@ gpg_keys_official="file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7-aarch64 file:///
 		echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
 	fi
 
+	# Disable fastestmirror plugin
+	if [ -f /etc/yum/pluginconf.d/fastestmirror.conf ]; then
+		sed -ri 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
+	fi
+
 	yum_args="--disablerepo=* --enablerepo=cdrom"
 	yum ${yum_args} -y reinstall yum
 else
@@ -352,6 +357,11 @@ EOF
 
 	# Use dnf in the boot iso since yum isn't available
 	alias yum=dnf
+fi
+
+# Disable fastestmirror plugin
+if [ -f /etc/yum/pluginconf.d/fastestmirror.conf ]; then
+	sed -ri 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
 fi
 
 pkgs="basesystem centos-release yum"
