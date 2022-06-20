@@ -8,7 +8,7 @@ func (m *portage) load() error {
 	m.commands = managerCommands{
 		clean:   "emerge",
 		install: "emerge",
-		refresh: "emerge",
+		refresh: "true",
 		remove:  "emerge",
 		update:  "emerge",
 	}
@@ -22,9 +22,7 @@ func (m *portage) load() error {
 		remove: []string{
 			"--unmerge",
 		},
-		refresh: []string{
-			"--sync",
-		},
+		refresh: []string{},
 		update: []string{
 			"--update", "@world",
 		},
