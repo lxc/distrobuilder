@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -95,6 +96,53 @@ func (s *gentoo) Run() error {
 	err = shared.Unpack(filepath.Join(fpath, fname), s.rootfsDir)
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, fname), err)
+	}
+
+	// Download portage tree snapshot. This avoid having to run `emerge --sync` every time which often fails.
+	baseURL = fmt.Sprintf("%s/snapshots",
+		s.definition.Source.URL)
+	fname = "portage-latest.tar.xz"
+	tarball = fmt.Sprintf("%s/%s", baseURL, fname)
+
+	fpath, err = s.DownloadHash(s.definition.Image, tarball, "", nil)
+	if err != nil {
+		return fmt.Errorf("Failed to download %q: %w", tarball, err)
+	}
+
+	// Force gpg checks when using http
+	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
+		_, err = s.DownloadHash(s.definition.Image, tarball+".gpgsig", "", nil)
+		if err != nil {
+			return fmt.Errorf("Failed to download %q: %w", tarball+".gpgsig", err)
+		}
+
+		valid, err := s.VerifyFile(
+			filepath.Join(fpath, fname+".gpgsig"),
+			"")
+		if err != nil {
+			return fmt.Errorf("Failed to verify %q: %w", filepath.Join(fpath, fname+".gpgsig"), err)
+		}
+		if !valid {
+			return fmt.Errorf("Failed to verify %q", fname+".gpgsig")
+		}
+	}
+
+	s.logger.WithField("file", filepath.Join(fpath, fname)).Info("Unpacking image")
+
+	// Unpack
+	err = shared.Unpack(filepath.Join(fpath, fname), filepath.Join(s.rootfsDir, "var/db/repos"))
+	if err != nil {
+		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, fname), err)
+	}
+
+	err = os.RemoveAll(filepath.Join(s.rootfsDir, "var/db/repos/gentoo"))
+	if err != nil {
+		return fmt.Errorf("Failed to remove %q: %w", filepath.Join(s.rootfsDir, "var/db/repos/gentoo"), err)
+	}
+
+	err = os.Rename(filepath.Join(s.rootfsDir, "var/db/repos/portage"), filepath.Join(s.rootfsDir, "var/db/repos/gentoo"))
+	if err != nil {
+		return fmt.Errorf("Failed to rename %q: %w", filepath.Join(s.rootfsDir, "var/db/repos/portage"), err)
 	}
 
 	return nil
