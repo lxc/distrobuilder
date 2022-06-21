@@ -133,10 +133,10 @@ func (s *opensuse) getPathToTarball(baseURL string, release string, arch string)
 		return "", fmt.Errorf("Failed to parse URL %q: %w", baseURL, err)
 	}
 
-	u.Path = path.Join(u.Path, "repositories", "Virtualization:", "containers:", "images:")
+	var tarballName string
 
 	if strings.ToLower(release) == "tumbleweed" {
-		u.Path = path.Join(u.Path, "openSUSE-Tumbleweed")
+		u.Path = path.Join(u.Path, "repositories", "Virtualization:", "containers:", "images:", "openSUSE-Tumbleweed")
 
 		switch arch {
 		case "i686", "x86_64":
@@ -151,33 +151,18 @@ func (s *opensuse) getPathToTarball(baseURL string, release string, arch string)
 			return "", fmt.Errorf("Unsupported architecture %q", arch)
 		}
 
-		tarballName, err := s.getTarballName(u, "tumbleweed", arch)
-		if err != nil {
-			return "", fmt.Errorf("Failed to get tarball name: %w", err)
-		}
-
-		u.Path = path.Join(u.Path, tarballName)
+		release = "tumbleweed"
 	} else {
-		u.Path = path.Join(u.Path, fmt.Sprintf("openSUSE-Leap-%s", release))
-
-		if release == "15.3" {
-			u.Path = path.Join(u.Path, "containers")
-		} else {
-			switch arch {
-			case "x86_64":
-				u.Path = path.Join(u.Path, "containers")
-			case "aarch64", "ppc64le":
-				u.Path = path.Join(u.Path, "containers_ports")
-			}
-		}
-
-		tarballName, err := s.getTarballName(u, "leap", arch)
-		if err != nil {
-			return "", fmt.Errorf("Failed to get tarball name: %w", err)
-		}
-
-		u.Path = path.Join(u.Path, tarballName)
+		u.Path = path.Join(u.Path, "distribution", "leap", release, "appliances")
+		release = "leap"
 	}
+
+	tarballName, err = s.getTarballName(u, release, arch)
+	if err != nil {
+		return "", fmt.Errorf("Failed to get tarball name: %w", err)
+	}
+
+	u.Path = path.Join(u.Path, tarballName)
 
 	return u.String(), nil
 }
