@@ -105,7 +105,7 @@ The `when` key can be one or more of:
 * copy (run when a container is created from an existing one)
 * start (run every time the container is started)
 
-See [LXD image format](https://lxd.readthedocs.io/en/latest/image-handling/#image-format) for more.
+See [LXD image format](https://linuxcontainers.org/lxd/docs/master/image-handling/#image-format) for more.
 
 ## upstart_tty
 
