@@ -197,6 +197,10 @@ func (s *opensuse) getTarballName(u *url.URL, release, arch string) (string, err
 		if strings.Contains(text, "Build") {
 			builds = append(builds, text)
 		} else {
+			if !s.validateURL(*u, text) {
+				continue
+			}
+
 			return text, nil
 		}
 	}
@@ -205,8 +209,31 @@ func (s *opensuse) getTarballName(u *url.URL, release, arch string) (string, err
 		// Unfortunately, the link to the latest build is missing, hence we need
 		// to manually select the latest build.
 		sort.Strings(builds)
-		return builds[len(builds)-1], nil
+
+		for i := len(builds) - 1; i >= 0; i-- {
+			if !s.validateURL(*u, builds[i]) {
+				continue
+			}
+
+			return builds[i], nil
+		}
 	}
 
 	return "", errors.New("Failed to find tarball name")
+}
+
+func (s *opensuse) validateURL(u url.URL, tarball string) bool {
+	u.Path = path.Join(u.Path, tarball)
+
+	resp, err := http.Head(u.String())
+	if err != nil {
+		return false
+	}
+
+	// Check whether the link to the tarball is valid.
+	if resp.StatusCode == http.StatusNotFound {
+		return false
+	}
+
+	return true
 }
