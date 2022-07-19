@@ -86,16 +86,18 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 		repodataDir = filepath.Join(isoDir, "BaseOS", "repodata")
 	}
 
-	entries, err := os.ReadDir(packagesDir)
-	if err != nil {
-		return fmt.Errorf("Failed reading directory %q: %w", packagesDir, err)
-	}
+	if lxd.PathExists(packagesDir) {
+		entries, err := os.ReadDir(packagesDir)
+		if err != nil {
+			return fmt.Errorf("Failed reading directory %q: %w", packagesDir, err)
+		}
 
-	// If the BaseOS package dir is empty, try a different one, and also change the repodata directory.
-	// This is the case for Rocky Linux 9.
-	if len(entries) == 0 {
-		packagesDir = filepath.Join(isoDir, c.definition.Source.Variant, "Packages")
-		repodataDir = filepath.Join(isoDir, c.definition.Source.Variant, "repodata")
+		// If the BaseOS package dir is empty, try a different one, and also change the repodata directory.
+		// This is the case for Rocky Linux 9.
+		if len(entries) == 0 {
+			packagesDir = filepath.Join(isoDir, c.definition.Source.Variant, "Packages")
+			repodataDir = filepath.Join(isoDir, c.definition.Source.Variant, "repodata")
+		}
 	}
 
 	if lxd.PathExists(packagesDir) && lxd.PathExists(repodataDir) {
