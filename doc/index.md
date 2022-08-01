@@ -187,7 +187,7 @@ lxc-start -n myContainerImage
 With LXD it's possible to run Windows VMs. All you need is a Windows ISO and a bunch of drivers.
 To make the installation a bit easier, `distrobuilder` added the `repack-windows` command. It takes a Windows ISO, and repacks it together with the necessary drivers.
 
-Currently, `distrobuilder` supports Windows 10, Windows Server 2012, Windows Server 2016, and Windows Server 2019. The Windows version will automatically be detected, but in case this fails you can use the `--windows-version` flag to set it manually. It supports the values `w10`, `2k12`, `2k16`, and `2k19` for Windows 10, Windows Server 2012, Windows Server 2016 and Windows Server 2019 respectively.
+Currently, `distrobuilder` supports Windows 10, Windows Server 2012, Windows Server 2016, Windows Server 2019 and Windows Server 2022. The Windows version will automatically be detected, but in case this fails you can use the `--windows-version` flag to set it manually. It supports the values `w10`, `2k12`, `2k16`, `2k19` and `2k22` for Windows 10, Windows Server 2012, Windows Server 2016, Windows Server 2019 and Windows Server 2022 respectively.
 
 Here's how to repack a Windows ISO:
 ```bash
