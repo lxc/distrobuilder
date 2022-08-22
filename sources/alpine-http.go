@@ -4,9 +4,12 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -32,16 +35,26 @@ func (s *alpineLinux) Run() error {
 	releaseField := strings.Split(releaseFull, ".")
 	if len(releaseField) == 2 {
 		releaseShort = fmt.Sprintf("v%s", releaseFull)
-		releaseFull = fmt.Sprintf("%s.0", releaseFull)
 	} else if len(releaseField) == 3 {
 		releaseShort = fmt.Sprintf("v%s.%s", releaseField[0], releaseField[1])
 	} else {
 		return fmt.Errorf("Bad Alpine release: %s", releaseFull)
 	}
 
+	baseURL := fmt.Sprintf("%s/%s/releases/%s", s.definition.Source.URL, releaseShort, s.definition.Image.ArchitectureMapped)
+
+	if len(releaseField) == 2 {
+		var err error
+
+		releaseFull, err = s.getLatestRelease(baseURL, s.definition.Image.Release, s.definition.Image.ArchitectureMapped)
+		if err != nil {
+			return fmt.Errorf("Failed to find latest release: %w", err)
+		}
+	}
+
 	fname := fmt.Sprintf("alpine-minirootfs-%s-%s.tar.gz", releaseFull, s.definition.Image.ArchitectureMapped)
 
-	tarball := fmt.Sprintf("%s/%s/releases/%s/%s", s.definition.Source.URL, releaseShort, s.definition.Image.ArchitectureMapped, fname)
+	tarball := fmt.Sprintf("%s/%s", baseURL, fname)
 
 	url, err := url.Parse(tarball)
 	if err != nil {
@@ -116,4 +129,38 @@ func (s *alpineLinux) Run() error {
 	}
 
 	return nil
+}
+
+func (s *alpineLinux) getLatestRelease(baseURL, release string, arch string) (string, error) {
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	err = shared.Retry(func() error {
+		resp, err = http.Get(baseURL)
+		if err != nil {
+			return fmt.Errorf("Failed to GET %q: %w", baseURL, err)
+		}
+
+		return nil
+	}, 3)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("Failed to ready body: %w", err)
+	}
+
+	regex := regexp.MustCompile(fmt.Sprintf(">alpine-minirootfs-(%s\\.\\d+)-%s.tar.gz<", release, arch))
+	releases := regex.FindAllStringSubmatch(string(body), -1)
+
+	if len(releases) > 0 {
+		return releases[len(releases)-1][1], nil
+	}
+
+	return "", nil
 }
