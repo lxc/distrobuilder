@@ -353,6 +353,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post unpack hook
 	for _, hook := range c.definition.GetRunnableActions("post-unpack", imageTargets) {
+		if hook.Pongo {
+			hook.Action, err = shared.RenderTemplate(hook.Action, c.definition)
+			if err != nil {
+				return fmt.Errorf("Failed to render action: %w", err)
+			}
+		}
+
 		err := shared.RunScript(c.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %w", err)
@@ -371,6 +378,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post packages hook
 	for _, hook := range c.definition.GetRunnableActions("post-packages", imageTargets) {
+		if hook.Pongo {
+			hook.Action, err = shared.RenderTemplate(hook.Action, c.definition)
+			if err != nil {
+				return fmt.Errorf("Failed to render action: %w", err)
+			}
+		}
+
 		err := shared.RunScript(c.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %w", err)
