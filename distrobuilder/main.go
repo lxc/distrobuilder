@@ -58,7 +58,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -161,7 +160,7 @@ func main() {
 
 			// Create temp directory if the cache directory isn't explicitly set
 			if globalCmd.flagCacheDir == "" {
-				dir, err := ioutil.TempDir("/var/cache", "distrobuilder.")
+				dir, err := os.MkdirTemp("/var/cache", "distrobuilder.")
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Failed to create cache directory: %s\n", err)
 					os.Exit(1)
@@ -354,6 +353,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post unpack hook
 	for _, hook := range c.definition.GetRunnableActions("post-unpack", imageTargets) {
+		if hook.Pongo {
+			hook.Action, err = shared.RenderTemplate(hook.Action, c.definition)
+			if err != nil {
+				return fmt.Errorf("Failed to render action: %w", err)
+			}
+		}
+
 		err := shared.RunScript(c.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %w", err)
@@ -372,6 +378,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Run post packages hook
 	for _, hook := range c.definition.GetRunnableActions("post-packages", imageTargets) {
+		if hook.Pongo {
+			hook.Action, err = shared.RenderTemplate(hook.Action, c.definition)
+			if err != nil {
+				return fmt.Errorf("Failed to render action: %w", err)
+			}
+		}
+
 		err := shared.RunScript(c.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %w", err)
@@ -762,5 +775,5 @@ if [ "${nm_exists}" -eq 1 ]; then
 fi
 `
 	os.MkdirAll("/etc/systemd/system-generators", 0755)
-	ioutil.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
+	os.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
 }

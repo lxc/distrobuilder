@@ -121,6 +121,13 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 
 		// Run post update hook
 		for _, action := range m.def.GetRunnableActions("post-update", imageTarget) {
+			if action.Pongo {
+				action.Action, err = shared.RenderTemplate(action.Action, m.def)
+				if err != nil {
+					return fmt.Errorf("Failed to render action: %w", err)
+				}
+			}
+
 			err = shared.RunScript(m.ctx, action.Action)
 			if err != nil {
 				return fmt.Errorf("Failed to run post-update: %w", err)

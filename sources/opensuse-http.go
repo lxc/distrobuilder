@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -98,7 +97,7 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 	if err == nil && valid {
 		checksum, err = s.GetSignedContent(checksumPath)
 	} else {
-		checksum, err = ioutil.ReadFile(checksumPath)
+		checksum, err = os.ReadFile(checksumPath)
 	}
 	if err != nil {
 		return fmt.Errorf("Failed to read checksum file: %w", err)

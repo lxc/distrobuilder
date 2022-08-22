@@ -2,7 +2,6 @@ package generators
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +25,7 @@ func (g *hosts) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 	}
 
 	// Read the current content
-	content, err := ioutil.ReadFile(filepath.Join(g.sourceDir, g.defFile.Path))
+	content, err := os.ReadFile(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
 		return fmt.Errorf("Failed to read file %q: %w", filepath.Join(g.sourceDir, g.defFile.Path), err)
 	}
@@ -77,7 +76,7 @@ func (g *hosts) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) e
 	}
 
 	// Read the current content
-	content, err := ioutil.ReadFile(filepath.Join(g.sourceDir, g.defFile.Path))
+	content, err := os.ReadFile(filepath.Join(g.sourceDir, g.defFile.Path))
 	if err != nil {
 		return fmt.Errorf("Failed to read file %q: %w", filepath.Join(g.sourceDir, g.defFile.Path), err)
 	}
@@ -91,7 +90,7 @@ func (g *hosts) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) e
 	}
 
 	// Write the template
-	err = ioutil.WriteFile(filepath.Join(templateDir, "hosts.tpl"), content, 0644)
+	err = os.WriteFile(filepath.Join(templateDir, "hosts.tpl"), content, 0644)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(templateDir, "hosts.tpl"), err)
 	}

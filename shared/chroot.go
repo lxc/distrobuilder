@@ -2,7 +2,6 @@ package shared
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -290,7 +289,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	// Setup policy-rc.d override
 	policyCleanup := false
 	if lxd.PathExists("/usr/sbin/") && !lxd.PathExists("/usr/sbin/policy-rc.d") {
-		err = ioutil.WriteFile("/usr/sbin/policy-rc.d", []byte(`#!/bin/sh
+		err = os.WriteFile("/usr/sbin/policy-rc.d", []byte(`#!/bin/sh
 exit 101
 `), 0755)
 		if err != nil {

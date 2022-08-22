@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -53,18 +54,18 @@ func Unpack(file string, path string) error {
 		return fmt.Errorf("Unsupported image format: %s", extension)
 	}
 
-	err = lxd.RunCommandWithFds(reader, nil, command, args...)
+	err = lxd.RunCommandWithFds(context.TODO(), reader, nil, command, args...)
 	if err != nil {
 		// We can't create char/block devices in unpriv containers so ignore related errors.
 		if command == "unsquashfs" {
 			runError, ok := err.(lxd.RunError)
-			if !ok || runError.Stderr == "" {
+			if !ok || runError.StdErr().String() == "" {
 				return err
 			}
 
 			// Confirm that all errors are related to character or block devices.
 			found := false
-			for _, line := range strings.Split(runError.Stderr, "\n") {
+			for _, line := range strings.Split(runError.StdErr().String(), "\n") {
 				line = strings.TrimSpace(line)
 				if line == "" {
 					continue

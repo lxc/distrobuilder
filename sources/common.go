@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -225,7 +224,7 @@ func (s *common) CreateGPGKeyring() (string, error) {
 		return "", err
 	}
 
-	gpgDir, err := ioutil.TempDir(s.getTargetDir(), "gpg.")
+	gpgDir, err := os.MkdirTemp(s.getTargetDir(), "gpg.")
 	if err != nil {
 		return "", fmt.Errorf("Failed to create gpg directory: %w", err)
 	}

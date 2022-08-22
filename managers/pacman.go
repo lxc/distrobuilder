@@ -2,7 +2,6 @@ package managers
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -61,7 +60,7 @@ func (m *pacman) load() error {
 			path := "/var/cache/pacman/pkg"
 
 			// List all entries.
-			entries, err := ioutil.ReadDir(path)
+			entries, err := os.ReadDir(path)
 			if err != nil {
 				if os.IsNotExist(err) {
 					return nil

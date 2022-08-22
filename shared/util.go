@@ -159,7 +159,7 @@ func compressTarball(ctx context.Context, filename, compression string) (string,
 	return fmt.Sprintf("%s.%s", filename, fileExtension), nil
 }
 
-//GetExpiryDate returns an expiry date based on the creationDate and format.
+// GetExpiryDate returns an expiry date based on the creationDate and format.
 func GetExpiryDate(creationDate time.Time, format string) time.Time {
 	regex := regexp.MustCompile(`(?:(\d+)(s|m|h|d|w))*`)
 	expiryDate := creationDate

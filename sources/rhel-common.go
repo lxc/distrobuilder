@@ -3,7 +3,6 @@ package sources
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,19 +18,19 @@ type commonRHEL struct {
 }
 
 func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(string) error) error {
-	isoDir, err := ioutil.TempDir(c.cacheDir, "temp_")
+	isoDir, err := os.MkdirTemp(c.cacheDir, "temp_")
 	if err != nil {
 		return fmt.Errorf("Failed to create temporary directory: %w", err)
 	}
 	defer os.RemoveAll(isoDir)
 
-	squashfsDir, err := ioutil.TempDir(c.cacheDir, "temp_")
+	squashfsDir, err := os.MkdirTemp(c.cacheDir, "temp_")
 	if err != nil {
 		return fmt.Errorf("Failed to create temporary directory: %w", err)
 	}
 	defer os.RemoveAll(squashfsDir)
 
-	tempRootDir, err := ioutil.TempDir(c.cacheDir, "temp_")
+	tempRootDir, err := os.MkdirTemp(c.cacheDir, "temp_")
 	if err != nil {
 		return fmt.Errorf("Failed to create temporary directory: %w", err)
 	}
@@ -162,7 +161,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 }
 
 func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
-	installDir, err := ioutil.TempDir(c.cacheDir, "temp_")
+	installDir, err := os.MkdirTemp(c.cacheDir, "temp_")
 	if err != nil {
 		return fmt.Errorf("Failed to create temporary directory: %w", err)
 	}
@@ -178,7 +177,7 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 	rootfsFile := filepath.Join(installDir, "LiveOS", "rootfs.img")
 
 	if lxd.PathExists(rootfsFile) {
-		rootfsDir, err = ioutil.TempDir(c.cacheDir, "temp_")
+		rootfsDir, err = os.MkdirTemp(c.cacheDir, "temp_")
 		if err != nil {
 			return fmt.Errorf("Failed to create temporary directory: %w", err)
 		}

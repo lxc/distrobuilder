@@ -123,6 +123,13 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	// Run post unpack hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-unpack", imageTargets) {
+		if hook.Pongo {
+			hook.Action, err = shared.RenderTemplate(hook.Action, c.global.definition)
+			if err != nil {
+				return fmt.Errorf("Failed to render action: %w", err)
+			}
+		}
+
 		err := shared.RunScript(c.global.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-unpack: %w", err)
@@ -141,6 +148,13 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 
 	// Run post packages hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {
+		if hook.Pongo {
+			hook.Action, err = shared.RenderTemplate(hook.Action, c.global.definition)
+			if err != nil {
+				return fmt.Errorf("Failed to render action: %w", err)
+			}
+		}
+
 		err := shared.RunScript(c.global.ctx, hook.Action)
 		if err != nil {
 			return fmt.Errorf("Failed to run post-packages: %w", err)
@@ -186,6 +200,13 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 	// Run post files hook
 	for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetUndefined|shared.ImageTargetAll|shared.ImageTargetContainer) {
+		if action.Pongo {
+			action.Action, err = shared.RenderTemplate(action.Action, c.global.definition)
+			if err != nil {
+				return fmt.Errorf("Failed to render action: %w", err)
+			}
+		}
+
 		err := shared.RunScript(c.global.ctx, action.Action)
 		if err != nil {
 			exitChroot()
