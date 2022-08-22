@@ -228,6 +228,7 @@ type DefinitionAction struct {
 	DefinitionFilter `yaml:",inline"`
 	Trigger          string `yaml:"trigger"`
 	Action           string `yaml:"action"`
+	Pongo            bool   `yaml:"pongo,omitempty"`
 }
 
 // DefinitionMappings defines custom mappings.
