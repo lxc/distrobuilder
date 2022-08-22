@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -216,7 +215,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 	var sourcesDir string
 
-	entries, err := ioutil.ReadDir(overlayDir)
+	entries, err := os.ReadDir(overlayDir)
 	if err != nil {
 		return fmt.Errorf("Failed to read directory %q: %w", overlayDir, err)
 	}
@@ -228,7 +227,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		}
 	}
 
-	entries, err = ioutil.ReadDir(sourcesDir)
+	entries, err = os.ReadDir(sourcesDir)
 	if err != nil {
 		return fmt.Errorf("Failed to read directory %q: %w", sourcesDir, err)
 	}
@@ -404,7 +403,7 @@ func (c *cmdRepackWindows) getWindowsDirectories(wimPath string) (map[string]str
 	driverStorePath := ""
 	dirs := make(map[string]string)
 
-	entries, err := ioutil.ReadDir(wimPath)
+	entries, err := os.ReadDir(wimPath)
 	if err != nil {
 		return nil, err
 	}
@@ -421,7 +420,7 @@ func (c *cmdRepackWindows) getWindowsDirectories(wimPath string) (map[string]str
 		}
 	}
 
-	entries, err = ioutil.ReadDir(windowsPath)
+	entries, err = os.ReadDir(windowsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -445,7 +444,7 @@ func (c *cmdRepackWindows) getWindowsDirectories(wimPath string) (map[string]str
 		}
 	}
 
-	entries, err = ioutil.ReadDir(system32Path)
+	entries, err = os.ReadDir(system32Path)
 	if err != nil {
 		return nil, err
 	}
@@ -474,7 +473,7 @@ func (c *cmdRepackWindows) getWindowsDirectories(wimPath string) (map[string]str
 		}
 	}
 
-	entries, err = ioutil.ReadDir(driverStorePath)
+	entries, err = os.ReadDir(driverStorePath)
 	if err != nil {
 		return nil, err
 	}

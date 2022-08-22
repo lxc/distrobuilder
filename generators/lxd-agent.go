@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -91,7 +90,7 @@ WantedBy=multi-user.target
 
 	path := filepath.Join(g.sourceDir, systemdPath, "system", "lxd-agent.service")
 
-	err := ioutil.WriteFile(path, []byte(lxdAgentServiceUnit), 0644)
+	err := os.WriteFile(path, []byte(lxdAgentServiceUnit), 0644)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", path, err)
 	}
@@ -144,7 +143,7 @@ chown -R root:root "${PREFIX}"
 
 	path = filepath.Join(g.sourceDir, systemdPath, "lxd-agent-setup")
 
-	err = ioutil.WriteFile(path, []byte(lxdAgentSetupScript), 0755)
+	err = os.WriteFile(path, []byte(lxdAgentSetupScript), 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", path, err)
 	}
@@ -156,7 +155,7 @@ chown -R root:root "${PREFIX}"
 	}
 
 	lxdAgentRules := `ACTION=="add", SYMLINK=="virtio-ports/org.linuxcontainers.lxd", TAG+="systemd", ACTION=="add", RUN+="/bin/systemctl start lxd-agent.service"`
-	err = ioutil.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-lxd-agent.rules"), []byte(lxdAgentRules), 0400)
+	err = os.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-lxd-agent.rules"), []byte(lxdAgentRules), 0400)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, udevPath, "99-lxd-agent.rules"), err)
 	}
@@ -184,7 +183,7 @@ depend() {
 }
 `
 
-	err := ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent"), []byte(lxdAgentScript), 0755)
+	err := os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent"), []byte(lxdAgentScript), 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent"), err)
 	}
@@ -210,7 +209,7 @@ start_pre() {
 }
 `
 
-	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
+	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-9p"), err)
 	}
@@ -235,7 +234,7 @@ start_pre() {
 	}
 	`
 
-	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
+	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-virtiofs"), err)
 	}
@@ -260,7 +259,7 @@ respawn limit 10 5
 exec lxd-agent
 `
 
-	err := ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent"), []byte(lxdAgentScript), 0755)
+	err := os.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent"), []byte(lxdAgentScript), 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init/lxd-agent"), err)
 	}
@@ -289,7 +288,7 @@ task
 exec mount -t 9p config /run/lxd_config/drive -o access=0,trans=virtio
 `
 
-	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
+	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init/lxd-agent-9p"), err)
 	}
@@ -313,7 +312,7 @@ task
 exec mount -t virtiofs config /run/lxd_config/drive
 `
 
-	err = ioutil.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
+	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init/lxd-agent-virtiofs"), err)
 	}

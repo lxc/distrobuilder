@@ -58,7 +58,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -161,7 +160,7 @@ func main() {
 
 			// Create temp directory if the cache directory isn't explicitly set
 			if globalCmd.flagCacheDir == "" {
-				dir, err := ioutil.TempDir("/var/cache", "distrobuilder.")
+				dir, err := os.MkdirTemp("/var/cache", "distrobuilder.")
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Failed to create cache directory: %s\n", err)
 					os.Exit(1)
@@ -762,5 +761,5 @@ if [ "${nm_exists}" -eq 1 ]; then
 fi
 `
 	os.MkdirAll("/etc/systemd/system-generators", 0755)
-	ioutil.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
+	os.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
 }

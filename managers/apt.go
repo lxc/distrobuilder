@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -78,7 +77,7 @@ func (m *apt) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 	}
 	defer f.Close()
 
-	content, err := ioutil.ReadAll(f)
+	content, err := io.ReadAll(f)
 	if err != nil {
 		return fmt.Errorf("Failed to read from file %q: %w", targetFile, err)
 	}

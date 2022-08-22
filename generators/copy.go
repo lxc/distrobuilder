@@ -2,7 +2,6 @@ package generators
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,7 +41,7 @@ func (g *copy) Run() error {
 		destPath = filepath.Join(g.sourceDir, g.defFile.Path)
 	}
 
-	dirFiles, err := ioutil.ReadDir(filepath.Dir(srcPath))
+	dirFiles, err := os.ReadDir(filepath.Dir(srcPath))
 	if err != nil {
 		return fmt.Errorf("Failed to read directory %q: %w", filepath.Dir(srcPath), err)
 	}

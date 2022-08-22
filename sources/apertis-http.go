@@ -3,7 +3,7 @@ package sources
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -106,7 +106,7 @@ func (s *apertis) getLatestRelease(baseURL, release string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("Failed to ready body: %w", err)
 	}

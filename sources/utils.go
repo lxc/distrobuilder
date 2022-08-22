@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -37,7 +36,7 @@ func downloadChecksum(ctx context.Context, targetDir string, URL string, fname s
 		}
 		defer os.Remove(tempFile.Name())
 	} else {
-		tempFile, err = ioutil.TempFile(targetDir, "hash.")
+		tempFile, err = os.CreateTemp(targetDir, "hash.")
 		if err != nil {
 			return nil, err
 		}

@@ -4,7 +4,7 @@ import (
 	"crypto/sha512"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -167,7 +167,7 @@ func (s *gentoo) getLatestBuild(baseURL, arch, variant string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("Failed to read body: %w", err)
 	}
