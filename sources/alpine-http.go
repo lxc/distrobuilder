@@ -46,7 +46,7 @@ func (s *alpineLinux) Run() error {
 	if len(releaseField) == 2 {
 		var err error
 
-		releaseFull, err = s.getLatestRelease(baseURL, s.definition.Image.Release, s.definition.Image.ArchitectureMapped)
+		releaseFull, err = s.getLatestRelease(baseURL, releaseFull, s.definition.Image.ArchitectureMapped)
 		if err != nil {
 			return fmt.Errorf("Failed to find latest release: %w", err)
 		}
