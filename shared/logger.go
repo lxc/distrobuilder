@@ -14,6 +14,7 @@ func GetLogger(debug bool) (*logrus.Logger, error) {
 
 	formatter := logrus.TextFormatter{
 		FullTimestamp: true,
+		PadLevelText:  true,
 	}
 
 	logger.Formatter = &formatter
