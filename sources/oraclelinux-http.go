@@ -33,11 +33,53 @@ func (s *oraclelinux) Run() error {
 
 	updates, err := s.getUpdates(baseURL)
 	if err != nil {
-		return fmt.Errorf("Failed to get updates: %w", err)
+		s.logger.WithField("err", err).Warn("Failed to get updates")
 	}
 
 	var latestUpdate string
 	var fname string
+
+	if len(updates) == 0 {
+		s.logger.Info("Trying to find updates through iteration")
+
+		fname = fmt.Sprintf("%s-boot.iso", s.architecture)
+
+		// Try finding updates through iteration.
+		for i := 10; i >= 0; i-- {
+			latestUpdate = fmt.Sprintf("u%d", i)
+
+			if s.definition.Image.Release == "9" {
+				if s.architecture == "x86_64" {
+					fname = fmt.Sprintf("OracleLinux-R9-U%d-%s-boot.iso", i, s.architecture)
+				} else if s.architecture == "aarch64" {
+					fname = fmt.Sprintf("OracleLinux-R9-U%d-%s-dvd.iso", i, s.architecture)
+				}
+			}
+
+			fullURL := fmt.Sprintf("%s/%s/%s/%s", baseURL, latestUpdate, s.architecture, fname)
+
+			var (
+				resp *http.Response
+				err  error
+			)
+
+			err = shared.Retry(func() error {
+				resp, err = http.Head(fullURL)
+				if err != nil {
+					return errors.New("")
+				}
+
+				return nil
+			}, 3)
+			if err != nil {
+				continue
+			}
+
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
+		}
+	}
 
 	// Only consider updates providing a boot image since we're not interested in the
 	// DVD ISO.
