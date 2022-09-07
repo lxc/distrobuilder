@@ -32,6 +32,7 @@ It needs to be one of
 * openwrt-http
 * oraclelinux-http
 * sabayon-http
+* rootfs-http
 * ubuntu-http
 * voidlinux-http
 

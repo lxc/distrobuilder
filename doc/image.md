@@ -1,6 +1,6 @@
 # Image
 
-The image section describes the image.
+The image section describes the image output.
 
 ```yaml
 image:
