@@ -56,6 +56,7 @@ func (m *yum) load() error {
 		},
 		update: []string{
 			"update",
+			"--nobest",
 		},
 	}
 
