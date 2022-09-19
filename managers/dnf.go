@@ -33,6 +33,7 @@ func (m *dnf) load() error {
 		},
 		update: []string{
 			"upgrade",
+			"--nobest",
 		},
 		clean: []string{
 			"clean", "all",
