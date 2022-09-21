@@ -18,20 +18,6 @@ type yum struct {
 }
 
 func (m *yum) load() error {
-	var buf bytes.Buffer
-	globalFlags := []string{"-y"}
-
-	shared.RunCommand(m.ctx, nil, &buf, "yum", "--help")
-
-	scanner := bufio.NewScanner(&buf)
-
-	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), "--allowerasing") {
-			globalFlags = append(globalFlags, "--allowerasing")
-			break
-		}
-	}
-
 	m.commands = managerCommands{
 		clean:   "yum",
 		install: "yum",
@@ -44,7 +30,9 @@ func (m *yum) load() error {
 		clean: []string{
 			"clean", "all",
 		},
-		global: globalFlags,
+		global: []string{
+			"-y",
+		},
 		install: []string{
 			"install",
 		},
@@ -56,8 +44,24 @@ func (m *yum) load() error {
 		},
 		update: []string{
 			"update",
-			"--nobest",
 		},
+	}
+
+	var buf bytes.Buffer
+
+	shared.RunCommand(m.ctx, nil, &buf, "yum", "--help")
+
+	scanner := bufio.NewScanner(&buf)
+
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "--allowerasing") {
+			m.flags.global = append(m.flags.global, "--allowerasing")
+			continue
+		}
+
+		if strings.Contains(scanner.Text(), "--nobest") {
+			m.flags.update = append(m.flags.update, "--nobest")
+		}
 	}
 
 	return nil
