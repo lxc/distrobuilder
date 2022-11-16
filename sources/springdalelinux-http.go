@@ -77,8 +77,65 @@ EOF
 	yum_args="--disablerepo=* --enablerepo=cdrom"
 	yum ${yum_args} -y reinstall yum
 else
-	if ! [ -f /etc/pki/rpm-gpg/RPM-GPG-KEY-springdale ]; then
-		mkdir -p /etc/pki/rpm-gpg
+	. /etc/os-release
+	mkdir -p /etc/pki/rpm-gpg
+	if [ "${VERSION_ID:0:1}" -eq "9" ]; then
+		cat <<- "EOF" > /etc/pki/rpm-gpg/RPM-GPG-KEY-springdale
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+GrticHp1XlAnezB5yw==
+=1nA4
+-----END PGP PUBLIC KEY BLOCK-----
+EOF
+	elif ! [ -f /etc/pki/rpm-gpg/RPM-GPG-KEY-springdale ]; then
 		cat <<- "EOF" > /etc/pki/rpm-gpg/RPM-GPG-KEY-springdale
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v2.0.14 (GNU/Linux)
@@ -113,8 +170,6 @@ vYD0DGRZTGNEJYUDZFgRyynIOxk=
 EOF
 	fi
 
-	. /etc/os-release
-
 	if [[ ${VERSION_ID:0:1} == "7" ]]
 	then
 		fname="$(curl -s http://springdale.princeton.edu/data/springdale/7/x86_64/os/Packages/ | grep -Eo 'yum-[[:digit:]].+\.noarch\.rpm')"
@@ -126,7 +181,7 @@ EOF
 	fi
 
 
-	if [[ ${VERSION_ID:0:1} == "8" ]]
+	if [[ ${VERSION_ID:0:1} == "8" || ${VERSION_ID:0:1} == "9" ]]
 	then
 	cat <<- "EOF" > /etc/yum.repos.d/Springdale-Base.repo
 [sdl8-baseos]
