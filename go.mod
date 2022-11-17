@@ -2,7 +2,10 @@ module github.com/lxc/distrobuilder
 
 go 1.18
 
-exclude github.com/rootless-containers/proto v0.1.0
+exclude (
+	github.com/rootless-containers/proto v0.1.0
+	github.com/rootless-containers/proto/go-proto v0.0.0-20221103010429-bc555ef10687
+)
 
 replace google.golang.org/grpc/naming => google.golang.org/grpc v1.29.1
 
