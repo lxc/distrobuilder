@@ -28,6 +28,7 @@ It needs to be one of
 * fedora-http
 * funtoo-http
 * gentoo-http
+* openeuler-http
 * opensuse-http
 * openwrt-http
 * oraclelinux-http

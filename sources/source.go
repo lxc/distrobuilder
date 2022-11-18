@@ -44,6 +44,7 @@ var downloaders = map[string]func() downloader{
 	"springdalelinux-http": func() downloader { return &springdalelinux{} },
 	"ubuntu-http":          func() downloader { return &ubuntu{} },
 	"voidlinux-http":       func() downloader { return &voidlinux{} },
+	"openeuler-http":       func() downloader { return &openEuler{} },
 }
 
 // Load loads and initializes a downloader.
