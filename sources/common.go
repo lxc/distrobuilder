@@ -134,7 +134,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 
 	if checksum == "" {
 		err = shared.Retry(func() error {
-			_, err = lxd.DownloadFileHash(s.ctx, &client, "", progress, nil, imagePath, file, "", nil, image)
+			_, err = lxd.DownloadFileHash(s.ctx, &client, "distrobuilder", progress, nil, imagePath, file, "", nil, image)
 			if err != nil {
 				os.Remove(imagePath)
 			}
@@ -149,7 +149,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 					hashFunc.Reset()
 				}
 
-				_, err = lxd.DownloadFileHash(s.ctx, &client, "", progress, nil, imagePath, file, h, hashFunc, image)
+				_, err = lxd.DownloadFileHash(s.ctx, &client, "distrobuilder", progress, nil, imagePath, file, h, hashFunc, image)
 				if err == nil {
 					break
 				}
