@@ -48,6 +48,19 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 				return errors.New("--type needs to be one of ['split', 'unified']")
 			}
 
+			// Check compression arguments
+			_, _, err := shared.ParseCompression(c.flagCompression)
+			if err != nil {
+				return fmt.Errorf("Failed to parse compression level: %w", err)
+			}
+
+			if c.flagType == "split" {
+				_, _, err := shared.ParseSquashfsCompression(c.flagCompression)
+				if err != nil {
+					return fmt.Errorf("Failed to parse compression level: %w", err)
+				}
+			}
+
 			// Check dependencies
 			if c.flagVM {
 				err := c.checkVMDependencies()
@@ -102,6 +115,19 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if !lxd.StringInSlice(c.flagType, []string{"split", "unified"}) {
 				return errors.New("--type needs to be one of ['split', 'unified']")
+			}
+
+			// Check compression arguments
+			_, _, err := shared.ParseCompression(c.flagCompression)
+			if err != nil {
+				return fmt.Errorf("Failed to parse compression level: %w", err)
+			}
+
+			if c.flagType == "split" {
+				_, _, err := shared.ParseSquashfsCompression(c.flagCompression)
+				if err != nil {
+					return fmt.Errorf("Failed to parse compression level: %w", err)
+				}
 			}
 
 			// Check dependencies

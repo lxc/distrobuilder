@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/lxc/lxd/shared/api"
@@ -136,11 +137,21 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 			err = shared.Copy(qcowImage, rootfsFile)
 		} else {
 			rootfsFile = filepath.Join(l.targetDir, "rootfs.squashfs")
+			args := []string{l.sourceDir, rootfsFile, "-noappend", "-b", "1M", "-no-progress", "-no-recovery"}
+
+			compression, level, err := shared.ParseSquashfsCompression(compression)
+			if err != nil {
+				return "", "", fmt.Errorf("Failed to parse compression level: %w", err)
+			}
+
+			if level != nil {
+				args = append(args, "-comp", compression, "-Xcompression-level", strconv.Itoa(*level))
+			} else {
+				args = append(args, "-comp", compression)
+			}
 
 			// Create rootfs as squashfs.
-			err = shared.RunCommand(l.ctx, nil, nil, "mksquashfs", l.sourceDir,
-				rootfsFile, "-noappend", "-comp",
-				compression, "-b", "1M", "-no-progress", "-no-recovery")
+			err = shared.RunCommand(l.ctx, nil, nil, "mksquashfs", args...)
 		}
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to create squashfs or copy image: %w", err)

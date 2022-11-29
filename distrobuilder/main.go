@@ -91,6 +91,9 @@ following values:
   - lzop
   - xz (default)
   - zstd
+
+For supported compression methods, a compression level can be specified with
+method-N, where N is an integer, e.g. gzip-9.
 `
 
 type cmdGlobal struct {

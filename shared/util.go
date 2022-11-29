@@ -118,6 +118,19 @@ func compressTarball(ctx context.Context, filename, compression string) (string,
 
 	args := []string{"-f", filename}
 
+	compression, level, err := ParseCompression(compression)
+	if err != nil {
+		return "", fmt.Errorf("Failed to parse compression level: %w", err)
+	}
+
+	if level != nil {
+		if compression == "zstd" && *level > 19 {
+			args = append(args, "--ultra")
+		}
+
+		args = append(args, "-"+strconv.Itoa(*level))
+	}
+
 	// If supported, use as many threads as possible.
 	if shared.StringInSlice(compression, []string{"zstd", "xz", "lzma"}) {
 		args = append(args, "--threads=0")
@@ -275,4 +288,74 @@ func Retry(f func() error, attempts uint) error {
 	}
 
 	return err
+}
+
+// ParseCompression extracts the compression method and level (if any) from the
+// compression flag.
+func ParseCompression(compression string) (string, *int, error) {
+	levelRegex := regexp.MustCompile(`^([\w]+)-(\d{1,2})$`)
+	match := levelRegex.FindStringSubmatch(compression)
+	if match != nil {
+		compression = match[1]
+		level, err := strconv.Atoi(match[2])
+		if err != nil {
+			return "", nil, err
+		}
+
+		switch compression {
+		case "zstd":
+			if 1 <= level && level <= 22 {
+				return compression, &level, nil
+			}
+		case "bzip2", "gzip", "lzop":
+			if 1 <= level && level <= 9 {
+				return compression, &level, nil
+			}
+		case "lzip", "lzma", "xz":
+			if 0 <= level && level <= 9 {
+				return compression, &level, nil
+			}
+		default:
+			return "", nil, fmt.Errorf("Compression method %q does not support specifying levels", compression)
+		}
+
+		return "", nil, fmt.Errorf("Invalid compression level %q for method %q", level, compression)
+	}
+
+	return compression, nil, nil
+}
+
+// ParseSquashfsCompression extracts the compression method and level (if any)
+// from the compression flag for use with mksquashfs.
+func ParseSquashfsCompression(compression string) (string, *int, error) {
+	levelRegex := regexp.MustCompile(`^([\w]+)-(\d{1,2})$`)
+	match := levelRegex.FindStringSubmatch(compression)
+	if match != nil {
+		compression = match[1]
+		level, err := strconv.Atoi(match[2])
+		if err != nil {
+			return "", nil, err
+		}
+
+		switch compression {
+		case "zstd":
+			if 1 <= level && level <= 22 {
+				return compression, &level, nil
+			}
+		case "gzip", "lzo":
+			if 1 <= level && level <= 9 {
+				return compression, &level, nil
+			}
+		default:
+			return "", nil, fmt.Errorf("Squashfs compression method %q does not support specifying levels", compression)
+		}
+
+		return "", nil, fmt.Errorf("Invalid squashfs compression level %q for method %q", level, compression)
+	}
+
+	if shared.StringInSlice(compression, []string{"gzip", "lzo", "lz4", "xz", "zstd", "lzma"}) {
+		return compression, nil, nil
+	}
+
+	return "", nil, fmt.Errorf("Invalid squashfs compression method %q", compression)
 }

@@ -112,3 +112,96 @@ func TestSetEnvVariables(t *testing.T) {
 	require.False(t, set, "Expected 'BAR' to be unset")
 	require.Empty(t, val)
 }
+
+func TestParseCompression(t *testing.T) {
+	tests := []struct {
+		compression         string
+		expectedCompression string
+		expectLevel         bool
+		expectedLevel       int
+		shouldFail          bool
+	}{
+		{
+			"gzip", "gzip", false, 0 /* irrelevant */, false,
+		},
+		{
+			"gzip-1", "gzip", true, 1, false,
+		},
+		{
+			"gzip-10", "", false, 0, true,
+		},
+		{
+			"zstd-22", "zstd", true, 22, false,
+		},
+		{
+			"gzip-0", "", false, 0, true,
+		},
+		{
+			"unknown-1", "", false, 0, true,
+		},
+	}
+
+	for i, tt := range tests {
+		log.Printf("Running test #%d: %s", i, tt.compression)
+		compression, level, err := ParseCompression(tt.compression)
+
+		if tt.shouldFail {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedCompression, compression)
+			if tt.expectLevel {
+				require.NotNil(t, level)
+				require.Equal(t, tt.expectedLevel, *level)
+			}
+		}
+	}
+}
+
+func TestSquashfsParseCompression(t *testing.T) {
+	tests := []struct {
+		compression         string
+		expectedCompression string
+		expectLevel         bool
+		expectedLevel       int
+		shouldFail          bool
+	}{
+		{
+			"gzip", "gzip", false, 0 /* irrelevant */, false,
+		},
+		{
+			"gzip-1", "gzip", true, 1, false,
+		},
+		{
+			"gzip-10", "", false, 0, true,
+		},
+		{
+			"zstd-22", "zstd", true, 22, false,
+		},
+		{
+			"gzip-0", "", false, 0, true,
+		},
+		{
+			"invalid", "", false, 0, true,
+		},
+		{
+			"xz-1", "", false, 0, true,
+		},
+	}
+
+	for i, tt := range tests {
+		log.Printf("Running test #%d: %s", i, tt.compression)
+		compression, level, err := ParseSquashfsCompression(tt.compression)
+
+		if tt.shouldFail {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedCompression, compression)
+			if tt.expectLevel {
+				require.NotNil(t, level)
+				require.Equal(t, tt.expectedLevel, *level)
+			}
+		}
+	}
+}
