@@ -48,6 +48,7 @@ following values:
   - gzip
   - lzip
   - lzma
+  - lzo
   - lzop
   - xz (default)
   - zstd
@@ -101,6 +102,7 @@ following values:
   - gzip
   - lzip
   - lzma
+  - lzo
   - lzop
   - xz (default)
   - zstd

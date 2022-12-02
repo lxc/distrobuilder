@@ -307,7 +307,13 @@ func ParseCompression(compression string) (string, *int, error) {
 			if 1 <= level && level <= 22 {
 				return compression, &level, nil
 			}
-		case "bzip2", "gzip", "lzop":
+		case "bzip2", "gzip", "lzo", "lzop":
+			// The standalone tool is named lzop, but mksquashfs
+			// accepts only lzo. For convenience, accept both.
+			if compression == "lzo" {
+				compression = "lzop"
+			}
+
 			if 1 <= level && level <= 9 {
 				return compression, &level, nil
 			}
@@ -320,6 +326,10 @@ func ParseCompression(compression string) (string, *int, error) {
 		}
 
 		return "", nil, fmt.Errorf("Invalid compression level %q for method %q", level, compression)
+	}
+
+	if compression == "lzo" {
+		compression = "lzop"
 	}
 
 	return compression, nil, nil
@@ -342,7 +352,13 @@ func ParseSquashfsCompression(compression string) (string, *int, error) {
 			if 1 <= level && level <= 22 {
 				return compression, &level, nil
 			}
-		case "gzip", "lzo":
+		case "gzip", "lzo", "lzop":
+			// mkskquashfs accepts only lzo, but the standalone
+			// tool is named lzop. For convenience, accept both.
+			if compression == "lzop" {
+				compression = "lzo"
+			}
+
 			if 1 <= level && level <= 9 {
 				return compression, &level, nil
 			}
@@ -351,6 +367,10 @@ func ParseSquashfsCompression(compression string) (string, *int, error) {
 		}
 
 		return "", nil, fmt.Errorf("Invalid squashfs compression level %q for method %q", level, compression)
+	}
+
+	if compression == "lzop" {
+		compression = "lzo"
 	}
 
 	if shared.StringInSlice(compression, []string{"gzip", "lzo", "lz4", "xz", "zstd", "lzma"}) {

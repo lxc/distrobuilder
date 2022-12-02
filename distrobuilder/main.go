@@ -88,6 +88,7 @@ following values:
   - gzip
   - lzip
   - lzma
+  - lzo
   - lzop
   - xz (default)
   - zstd

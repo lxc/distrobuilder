@@ -139,6 +139,12 @@ func TestParseCompression(t *testing.T) {
 		{
 			"unknown-1", "", false, 0, true,
 		},
+		{
+			"lzo", "lzop", false, 0 /* irrelevant */, false,
+		},
+		{
+			"lzo-9", "lzop", true, 9, false,
+		},
 	}
 
 	for i, tt := range tests {
@@ -186,6 +192,12 @@ func TestSquashfsParseCompression(t *testing.T) {
 		},
 		{
 			"xz-1", "", false, 0, true,
+		},
+		{
+			"lzop", "lzo", false, 0 /* irrelevant */, false,
+		},
+		{
+			"lzop-9", "lzo", true, 9, false,
 		},
 	}
 

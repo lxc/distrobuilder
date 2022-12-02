@@ -139,8 +139,8 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 			rootfsFile = filepath.Join(l.targetDir, "rootfs.squashfs")
 			args := []string{l.sourceDir, rootfsFile, "-noappend", "-b", "1M", "-no-progress", "-no-recovery"}
 
-			compression, level, err := shared.ParseSquashfsCompression(compression)
-			if err != nil {
+			compression, level, parseErr := shared.ParseSquashfsCompression(compression)
+			if parseErr != nil {
 				return "", "", fmt.Errorf("Failed to parse compression level: %w", err)
 			}
 
