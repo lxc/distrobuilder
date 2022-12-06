@@ -81,7 +81,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 		}
 
 		err := shared.Retry(func() error {
-			hashes, err = downloadChecksum(s.ctx, destDir, checksum, file, hashFunc, hashLen)
+			hashes, err = downloadChecksum(s.ctx, s.client, destDir, checksum, file, hashFunc, hashLen)
 			return err
 		}, 3)
 		if err != nil {
