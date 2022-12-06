@@ -20,9 +20,8 @@ import (
 
 // downloadChecksum downloads or opens URL, and matches fname against the
 // checksums inside of the downloaded or opened file.
-func downloadChecksum(ctx context.Context, targetDir string, URL string, fname string, hashFunc hash.Hash, hashLen int) ([]string, error) {
+func downloadChecksum(ctx context.Context, client *http.Client, targetDir string, URL string, fname string, hashFunc hash.Hash, hashLen int) ([]string, error) {
 	var (
-		client   http.Client
 		tempFile *os.File
 		err      error
 	)
@@ -45,7 +44,7 @@ func downloadChecksum(ctx context.Context, targetDir string, URL string, fname s
 		done := make(chan struct{})
 		defer close(done)
 
-		_, err = lxd.DownloadFileHash(ctx, &client, "", nil, nil, "", URL, "", hashFunc, tempFile)
+		_, err = lxd.DownloadFileHash(ctx, client, "distrobuilder", nil, nil, "", URL, "", hashFunc, tempFile)
 		// ignore hash mismatch
 		if err != nil && !strings.HasPrefix(err.Error(), "Hash mismatch") {
 			return nil, err
