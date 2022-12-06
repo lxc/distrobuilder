@@ -48,9 +48,13 @@ following values:
   - gzip
   - lzip
   - lzma
+  - lzo
   - lzop
   - xz (default)
   - zstd
+
+For supported compression methods, a compression level can be specified with
+method-N, where N is an integer, e.g. gzip-9.
 
 Usage:
   distrobuilder build-lxc <filename|-> [target dir] [--compression=COMPRESSION] [flags]
@@ -98,9 +102,13 @@ following values:
   - gzip
   - lzip
   - lzma
+  - lzo
   - lzop
   - xz (default)
   - zstd
+
+For supported compression methods, a compression level can be specified with
+method-N, where N is an integer, e.g. gzip-9.
 
 Usage:
   distrobuilder build-lxd <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-lxd] [flags]

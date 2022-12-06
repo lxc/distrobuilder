@@ -29,8 +29,16 @@ func (c *cmdLXC) commandBuild() *cobra.Command {
 
 %s
 `, compressionDescription),
-		Args:    cobra.RangeArgs(1, 2),
-		PreRunE: c.global.preRunBuild,
+		Args: cobra.RangeArgs(1, 2),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Check compression arguments
+			_, _, err := shared.ParseCompression(c.flagCompression)
+			if err != nil {
+				return fmt.Errorf("Failed to parse compression level: %w", err)
+			}
+
+			return c.global.preRunBuild(cmd, args)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
@@ -65,8 +73,16 @@ func (c *cmdLXC) commandPack() *cobra.Command {
 
 %s
 `, compressionDescription),
-		Args:    cobra.RangeArgs(2, 3),
-		PreRunE: c.global.preRunPack,
+		Args: cobra.RangeArgs(2, 3),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// Check compression arguments
+			_, _, err := shared.ParseCompression(c.flagCompression)
+			if err != nil {
+				return fmt.Errorf("Failed to parse compression level: %w", err)
+			}
+
+			return c.global.preRunPack(cmd, args)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			overlayDir, cleanup, err := c.global.getOverlayDir()
 			if err != nil {
