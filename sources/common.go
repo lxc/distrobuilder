@@ -26,6 +26,7 @@ type common struct {
 	cacheDir   string
 	sourcesDir string
 	ctx        context.Context
+	client     *http.Client
 }
 
 func (s *common) init(ctx context.Context, logger *logrus.Logger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) {
@@ -35,6 +36,15 @@ func (s *common) init(ctx context.Context, logger *logrus.Logger, definition sha
 	s.cacheDir = cacheDir
 	s.sourcesDir = sourcesDir
 	s.ctx = ctx
+
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// Increase TLS handshake timeout for mirrors which need a bit more time.
+	transport.TLSHandshakeTimeout = 60 * time.Second
+
+	s.client = &http.Client{
+		Transport: transport,
+	}
+
 }
 
 func (s *common) getTargetDir() string {
@@ -49,7 +59,6 @@ func (s *common) getTargetDir() string {
 // match the hash.
 func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string, hashFunc hash.Hash) (string, error) {
 	var (
-		client http.Client
 		hashes []string
 		err    error
 	)
@@ -134,7 +143,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 
 	if checksum == "" {
 		err = shared.Retry(func() error {
-			_, err = lxd.DownloadFileHash(s.ctx, &client, "distrobuilder", progress, nil, imagePath, file, "", nil, image)
+			_, err = lxd.DownloadFileHash(s.ctx, s.client, "distrobuilder", progress, nil, imagePath, file, "", nil, image)
 			if err != nil {
 				os.Remove(imagePath)
 			}
@@ -149,7 +158,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 					hashFunc.Reset()
 				}
 
-				_, err = lxd.DownloadFileHash(s.ctx, &client, "distrobuilder", progress, nil, imagePath, file, h, hashFunc, image)
+				_, err = lxd.DownloadFileHash(s.ctx, s.client, "distrobuilder", progress, nil, imagePath, file, h, hashFunc, image)
 				if err == nil {
 					break
 				}
