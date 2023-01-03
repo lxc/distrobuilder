@@ -220,6 +220,10 @@ func main() {
 	// Run the main command and handle errors
 	err := app.Execute()
 	if err != nil {
+		if globalCmd.logger != nil {
+			globalCmd.logger.WithFields(logrus.Fields{"err": err}).Error("Failed running distrobuilder")
+		}
+
 		globalCmd.postRun(nil, nil)
 		os.Exit(1)
 	}
