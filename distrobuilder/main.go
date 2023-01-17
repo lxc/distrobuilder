@@ -222,6 +222,8 @@ func main() {
 	if err != nil {
 		if globalCmd.logger != nil {
 			globalCmd.logger.WithFields(logrus.Fields{"err": err}).Error("Failed running distrobuilder")
+		} else {
+			fmt.Fprintf(os.Stderr, "Failed running distrobuilder: %s\n", err.Error())
 		}
 
 		globalCmd.postRun(nil, nil)
