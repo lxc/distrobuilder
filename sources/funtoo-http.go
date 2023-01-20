@@ -32,7 +32,13 @@ func (s *funtoo) Run() error {
 		topLevelArch = "arm-64bit"
 	}
 
-	baseURL := fmt.Sprintf("%s/%s-release-std/%s/%s",
+	// Keep release backward compatible to old implementation
+	// and to permit to have yet the funtoo/1.4 alias.
+	if s.definition.Image.Release == "1.4" {
+		s.definition.Image.Release = "1.4-release-std"
+	}
+
+	baseURL := fmt.Sprintf("%s/%s/%s/%s",
 		s.definition.Source.URL, s.definition.Image.Release,
 		topLevelArch, s.definition.Image.ArchitectureMapped)
 
@@ -46,7 +52,8 @@ func (s *funtoo) Run() error {
 
 	// Find a valid release tarball
 	for i := len(releaseDates) - 1; i >= 0; i-- {
-		fname = fmt.Sprintf("stage3-%s-%s-release-std-%s.tar.xz", s.definition.Image.ArchitectureMapped, s.definition.Image.Release, releaseDates[i])
+		fname = fmt.Sprintf("stage3-%s-%s-%s.tar.xz",
+			s.definition.Image.ArchitectureMapped, s.definition.Image.Release, releaseDates[i])
 		tarball = fmt.Sprintf("%s/%s/%s", baseURL, releaseDates[i], fname)
 
 		var (
