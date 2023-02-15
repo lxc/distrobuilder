@@ -1,0 +1,8 @@
+# Sphinx
+doc/html/
+.sphinx/deps/
+.sphinx/themes/
+.sphinx/venv/
+.sphinx/warnings.txt
+.sphinx/.wordlist.dic
+.sphinx/_static/download
