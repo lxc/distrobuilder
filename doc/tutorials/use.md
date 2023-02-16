@@ -15,7 +15,7 @@ mkdir -p $HOME/ContainerImages/ubuntu/
 cd $HOME/ContainerImages/ubuntu/
 ```
 
-Then, copy one of the example yaml configuration files for container images into this directory. In this example, we are creating an Ubuntu container image.
+Then, copy one of the example YAML configuration files for container images into this directory. In this example, we are creating an Ubuntu container image.
 
 ```
 cp $HOME/go/src/github.com/lxc/distrobuilder/doc/examples/ubuntu.yaml ubuntu.yaml
@@ -29,7 +29,7 @@ Finally, run `distrobuilder` to create the container image. We are using the `bu
 sudo $HOME/go/bin/distrobuilder build-lxd ubuntu.yaml
 ```
 
-If the command is successful, you will get an output similar to the following. The `lxd.tar.xz` file is the description of the container image. The `rootfs.squasfs` file is the root filesystem (rootfs) of the container image. The set of these two files is the _container image_.
+If the command is successful, you will get an output similar to the following. The `lxd.tar.xz` file is the description of the container image. The `rootfs.squasfs` file is the root file system (rootfs) of the container image. The set of these two files is the _container image_.
 
 ```bash
 $ ls -l
@@ -74,10 +74,11 @@ Starting c1
 
 Using LXC containers instead of LXD may require the installation of `lxc-utils`.
 Having both LXC and LXD installed on the same system will probably cause confusion.
-Use of raw LXC is generally discouraged due to the lack of automatic Apparmor
+Use of raw LXC is generally discouraged due to the lack of automatic AppArmor
 protection.
 
 For LXC, instead use:
+
 ```bash
 $ sudo $HOME/go/bin/distrobuilder build-lxc ubuntu.yaml
 $ ls -l
@@ -96,6 +97,7 @@ lxc-create -n myContainerImage -t local -- --metadata meta.tar.xz --fstree rootf
 ```
 
 Then start the container with
+
 ```bash
 lxc-start -n myContainerImage
 ```
@@ -111,6 +113,7 @@ To make the installation a bit easier, `distrobuilder` added the `repack-windows
 Currently, `distrobuilder` supports Windows 10, Windows Server 2012, Windows Server 2016, Windows Server 2019 and Windows Server 2022. The Windows version will automatically be detected, but in case this fails you can use the `--windows-version` flag to set it manually. It supports the values `w10`, `2k12`, `2k16`, `2k19` and `2k22` for Windows 10, Windows Server 2012, Windows Server 2016, Windows Server 2019 and Windows Server 2022 respectively.
 
 Here's how to repack a Windows ISO:
+
 ```bash
 distrobuilder repack-windows path/to/Windows.iso path/to/Windows-repacked.iso
 ```
@@ -137,8 +140,8 @@ Now, the VM win10 has been configured and it is ready to be started. The followi
 lxc start win10 --console=vga
 ```
 
-Taken from: https://blog.simos.info/how-to-run-a-windows-virtual-machine-on-lxd-on-linux/
+Taken from: [How to run a Windows virtual machine on LXD on Linux](https://blog.simos.info/how-to-run-a-windows-virtual-machine-on-lxd-on-linux/)
 
 ## Examples
 
-Examples of yaml files for various distributions can be found in the [examples directory](https://github.com/lxc/distrobuilder/tree/master/doc/examples) and in the [lxc-ci repository](https://github.com/lxc/lxc-ci/tree/master/images).
+Examples of YAML files for various distributions can be found in the [examples directory](https://github.com/lxc/distrobuilder/tree/master/doc/examples) and in the [`lxc-ci` repository](https://github.com/lxc/lxc-ci/tree/master/images).

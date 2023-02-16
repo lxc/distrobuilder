@@ -5,12 +5,12 @@
 `distrobuilder` is an image building tool for LXC and LXD.
 
 Its modern design uses pre-built official images whenever available and supports a variety of modifications on the base image.
-`distrobuilder` creates LXC or LXD images, or just a plain root filesystem, from a declarative image definition (in YAML format) that defines the source of the image, its package manager, what packages to install or remove for specific image variants, OS releases and architectures, as well as additional files to generate and arbitrary actions to execute as part of the image build process.
+`distrobuilder` creates LXC or LXD images, or just a plain root file system, from a declarative image definition (in YAML format) that defines the source of the image, its package manager, what packages to install or remove for specific image variants, OS releases and architectures, as well as additional files to generate and arbitrary actions to execute as part of the image build process.
 
 `distrobuilder` can be used to create custom images that can be used as the base for LXC containers or LXD instances.
 
 The LXD team uses `distrobuilder` to build the images on the [Linux containers image server](https://images.linuxcontainers.org/).
-You can also use it to build images from ISOs that require licenses and therefore cannot be distributed.
+You can also use it to build images from ISO files that require licenses and therefore cannot be distributed.
 
 ---
 
@@ -55,7 +55,6 @@ The LXD project is sponsored by [Canonical Ltd](https://www.canonical.com).
 - [Discuss on IRC](https://web.libera.chat/#lxc) (see [Getting started with IRC](https://discuss.linuxcontainers.org/t/getting-started-with-irc/11920) if needed)
 - [Ask and answer questions on the forum](https://discuss.linuxcontainers.org)
 - [Join the mailing lists](https://lists.linuxcontainers.org)
-
 
 ```{toctree}
 :hidden:

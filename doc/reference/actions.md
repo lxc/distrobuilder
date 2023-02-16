@@ -23,7 +23,7 @@ Valid triggers are:
 
 The above list also shows the order in which the actions are processed.
 
-After the root filesystem has been unpacked, all `post-unpack` actions are run.
+After the root file system has been unpacked, all `post-unpack` actions are run.
 
 After the package manager has updated all packages, (given that `packages.update` is `true`), all `post-update` actions are run.
 After the package manager has installed the requested packages, all `post-packages` actions are run.

@@ -76,11 +76,11 @@ Global Flags:
 
 ```
 
-Running the `build-lxc` subcommand creates a LXC image.
+Running the `build-lxc` sub-command creates a LXC image.
 It outputs two files `rootfs.tar.xz` and `meta.tar.xz`.
 After building the image, the rootfs will be destroyed.
 
-The `pack-lxc` subcommand can be used to create an image from an existing rootfs.
+The `pack-lxc` sub-command can be used to create an image from an existing rootfs.
 The rootfs won't be deleted afterwards.
 
 ## LXD image
@@ -132,7 +132,7 @@ Global Flags:
       --version           Print version number
 ```
 
-Running the `build-lxd` subcommand creates a LXD image.
+Running the `build-lxd` sub-command creates a LXD image.
 If `--type=split`, it outputs two files.
 The metadata tarball will always be named `lxd.tar.xz`.
 When creating a container image, the second file will be `rootfs.squashfs`.
@@ -142,7 +142,7 @@ See the [image section](../reference/image.md) for more on the image name.
 
 If `--compression` is set, the tarballs will use the provided compression instead of `xz`.
 
-Setting `--vm` will create a qcow2 image which is used for virtual machines.
+Setting `--vm` will create a `qcow2` image which is used for virtual machines.
 
 If `--import-into-lxd` is set, the resulting image is imported into LXD.
 It basically runs `lxc image import <image>`.
@@ -151,5 +151,5 @@ This can be changed by calling it as `--import-into-lxd=<alias>`.
 
 After building the image, the rootfs will be destroyed.
 
-The `pack-lxd` subcommand can be used to create an image from an existing rootfs.
+The `pack-lxd` sub-command can be used to create an image from an existing rootfs.
 The rootfs won't be deleted afterwards.

@@ -32,18 +32,18 @@ packages:
 The `manager` keys specifies the package manager which is to be used.
 Valid package manager are:
 
-* apk
-* apt
-* dnf
-* egoportage (combination of portage and ego)
-* equo
-* luet
-* opkg
-* pacman
-* portage
-* xbps
-* yum
-* zypper
+* `apk`
+* `apt`
+* `dnf`
+* `egoportage` (combination of `portage` and `ego`)
+* `equo`
+* `luet`
+* `opkg`
+* `pacman`
+* `portage`
+* `xbps`
+* `yum`
+* `zypper`
 
 It's also possible to specify a custom package manager.
 This is useful if the desired package manager is not supported by distrobuilder.
@@ -85,9 +85,9 @@ with `--no-install-recommends`.
 
 `repositories` contains a list of additional repositories which are to be added.
 The `type` field is only needed if the package manager supports more than one repository manager.
-The `key` field is a GPG armored keyring which might be needed for verification.
+The `key` field is a GPG armored key ring which might be needed for verification.
 
-Depending on the package manager, the `url` field can take the content of a repo file. The following is possible with `yum`:
+Depending on the package manager, the `url` field can take the content of a repository file. The following is possible with `yum`:
 
 ```yaml
 packages:

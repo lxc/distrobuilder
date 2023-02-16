@@ -5,6 +5,7 @@ ACLs
 AIO
 APIs
 AppArmor
+ArchLinux
 ARMv
 ARP
 ASN
@@ -47,9 +48,12 @@ dereferenced
 devtmpfs
 DHCP
 DHCPv
+distrobuilder
 DNS
 DNSSEC
 DoS
+downloader
+downloaders
 Dqlite
 DRM
 EB
@@ -75,6 +79,7 @@ GID
 GIDs
 Golang
 goroutines
+GPG
 GPUs
 Grafana
 HAProxy
@@ -237,6 +242,7 @@ topologies
 TPM
 TSIG
 TTL
+TTYs
 UDP
 UEFI
 UFW

@@ -47,7 +47,7 @@ Use "distrobuilder [command] --help" for more information about a command.
 <!-- Include start installing -->
 ## Installing from package
 
-`distrobuilder` is available from the snapstore.
+`distrobuilder` is available from the Snap Store.
 
 ```
 sudo snap install distrobuilder --classic

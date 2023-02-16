@@ -22,7 +22,8 @@ extensions = [
     "related-links",
     "custom-rst-roles",
     "sphinxcontrib.jquery",
-    "sphinx_design"
+    "sphinx_design",
+    "sphinx.ext.intersphinx"
 ]
 
 myst_enable_extensions = [
@@ -33,6 +34,10 @@ myst_enable_extensions = [
 
 myst_linkify_fuzzy_links=False
 myst_heading_anchors = 7
+
+intersphinx_mapping = {
+    'lxd': ('https://linuxcontainers.org/lxd/docs/master/', None)
+}
 
 if os.path.exists("../doc/substitutions.yaml"):
     with open("../doc/substitutions.yaml", "r") as fd:
@@ -139,6 +144,7 @@ ogp_image = "https://linuxcontainers.org/static/img/containers.png"
 # Links to ignore when checking links
 
 linkcheck_ignore = [
+    'https://web.libera.chat/#lxc'
 ]
 
 # Setup redirects (https://documatt.gitlab.io/sphinx-reredirects/usage.html)

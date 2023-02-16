@@ -16,6 +16,11 @@ done
 
 mdl .tmp/doc -s.sphinx/.markdownlint/style.rb -u.sphinx/.markdownlint/rules.rb --ignore-front-matter > .tmp/errors.txt || true
 
+if [ ! -s ".tmp/errors.txt" ]; then
+    echo "Passed!"
+    exit 0
+fi
+
 ## Postprocessing
 
 filtered_errors="$(grep -vxFf .sphinx/.markdownlint/exceptions.txt .tmp/errors.txt)"
