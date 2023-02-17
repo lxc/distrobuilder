@@ -1,0 +1,25 @@
+name: Build documentation
+on:
+  - push
+  - pull_request
+
+jobs:
+  doc:
+    name: Build Sphinx documentation
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build docs
+        run: make doc
+
+      - name: Print warnings
+        run: if [ -s .sphinx/warnings.txt ]; then cat .sphinx/warnings.txt; exit 1; fi
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: doc/html
