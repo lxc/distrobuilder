@@ -3,18 +3,18 @@
 Generators are used to create, modify or remove files inside the rootfs.
 Available generators are
 
-* [cloud-init](#cloud-init)
-* [dump](#dump)
-* [copy](#copy)
-* [hostname](#hostname)
-* [hosts](#hosts)
-* [remove](#remove)
-* [template](#template)
-* [upstart_tty](#upstart_tty)
-* [lxd-agent](#lxd-agent)
-* [fstab](#fstab)
+* [`cloud-init`](#cloud-init)
+* [`dump`](#dump)
+* [`copy`](#copy)
+* [`hostname`](#hostname)
+* [`hosts`](#hosts)
+* [`remove`](#remove)
+* [`template`](#template)
+* [`upstart_tty`](#upstart_tty)
+* [`lxd-agent`](#lxd-agent)
+* [`fstab`](#fstab)
 
-In the image definition yaml, they are listed under `files`.
+In the image definition YAML, they are listed under `files`.
 
 ```yaml
 files:
@@ -40,9 +40,9 @@ Filters can be applied to each entry in `files`.
 Valid filters are `architecture`, `release` and `variant`.
 See filters for more information.
 
-If `pongo` is `true`, the values of `path`, `content`, and `source` are rendered using pongo2.
+If `pongo` is `true`, the values of `path`, `content`, and `source` are rendered using Pongo2.
 
-## cloud-init
+## `cloud-init`
 
 For LXC images, the generator disables cloud-init by disabling any cloud-init services, and creates the file `cloud-init.disable` which is checked by `cloud-init` on startup.
 
@@ -51,12 +51,12 @@ Valid names are `user-data`, `meta-data`, `vendor-data` and `network-config`.
 The default `path` if not defined otherwise is `/var/lib/cloud/seed/nocloud-net/<name>`.
 Setting `path`, `content` or `template.properties` will override the default values.
 
-## dump
+## `dump`
 
 The `dump` generator writes the provided `content` to a file set in `path`.
 If provided, it will set the `mode` (octal format), `gid` (integer) and/or `uid` (integer).
 
-## copy
+## `copy`
 
 The `copy` generator copies the file(s) from `source` to the destination `path`.
 `path` can be left empty and in that case the data will be placed in the same `source` path but inside the container.
@@ -64,39 +64,41 @@ If provided, the destination `path` will set the `mode` (octal format), `gid` (i
 Copying will be done according to the following rules:
 
 * If `source` is a directory, the entire contents of the directory are copied. Only symlinks and regular files are supported.
-	- Note 1: The directory itself is not copied, just its contents.
-	- Note 2: For files copied, only regular unix permissions are kept.
+
+   * Note 1: The directory itself is not copied, just its contents.
+   * Note 2: For files copied, only regular Unix permissions are kept.
+
 * If `source` is a symlink or a regular file, it is copied individually along with its metadata.
-In this case, if `path` ends with a trailing slash `/`, it will be considered a directory and the contents of `source` will be written at `path`/base(`source`).
+  In this case, if `path` ends with a trailing slash `/`, it will be considered a directory and the contents of `source` will be written at `path`/base(`source`).
 * If `path` does not end with a trailing slash, it will be considered a regular file and the contents of `source` will be written at `path`.
 * If `path` does not exist, it is created along with all missing directories in its path.
-* Multiple `source` resources can be specified using golang `filepath.Match` regexps.
-For simplicity they are only allowed in the basename and not in the directory hierarchy.
-If more than one match is found, `path` will be automatically interpreted as a directory.
+* Multiple `source` resources can be specified using Golang `filepath.Match` regexps.
+  For simplicity they are only allowed in the base name and not in the directory hierarchy.
+  If more than one match is found, `path` will be automatically interpreted as a directory.
 
-## hostname
+## `hostname`
 
-For LXC images, the hostname generator writes the LXC specific string `LXC_NAME` to the hostname file set in `path`.
+For LXC images, the host name generator writes the LXC specific string `LXC_NAME` to the `hostname` file set in `path`.
 If the path doesn't exist, the generator does nothing.
 
 For LXD images, the generator creates a template for `path`.
 If the path doesn't exist, the generator does nothing.
 
-## hosts
+## `hosts`
 
 For LXC images, the generator adds the entry `127.0.0.1 LXC_NAME` to the hosts file set in `path`.
 
 For LXD images, the generator creates a template for the hosts file set in `path`, adding an entry for `127.0.0.1 {{ container.name }}`.
 
-## remove
+## `remove`
 
-The generator removes the file set in `path` from the container's root filesystem.
+The generator removes the file set in `path` from the container's root file system.
 
-## template
+## `template`
 
 This generator creates a custom LXD template.
 The `name` field is used as the template's file name.
-The `path` defines the target file in the container's root filesystem.
+The `path` defines the target file in the container's root file system.
 The `properties` key is a map of the template properties.
 
 The `when` key can be one or more of:
@@ -105,20 +107,20 @@ The `when` key can be one or more of:
 * copy (run when a container is created from an existing one)
 * start (run every time the container is started)
 
-See [LXD image format](https://linuxcontainers.org/lxd/docs/master/image-handling/#image-format) for more.
+See {ref}`lxd:image-format` in the LXD documentation for more information.
 
-## upstart_tty
+## `upstart_tty`
 
 This generator creates an upstart job which prevents certain TTYs from starting.
 The job script is written to `path`.
 
-## lxd-agent
+## `lxd-agent`
 
-This generator creates the systemd unit files which are needed to start the lxd-agent in LXD VMs.
+This generator creates the `systemd` unit files which are needed to start the `lxd-agent` in LXD VMs.
 
-## fstab
+## `fstab`
 
-This generator creates an /etc/fstab file which is used for VMs.
+This generator creates an `/etc/fstab` file which is used for VMs.
 Its content is:
 
 ```
@@ -126,6 +128,6 @@ LABEL=rootfs  /         <fs>  <options>  0 0
 LABEL=UEFI    /boot/efi vfat  defaults   0 0
 ```
 
-The filesystem is taken from the LXD target (see [targets](targets.md)) which defaults to `ext4`.
-The options are generated depending on the filesystem.
-They cannot be overriden.
+The file system is taken from the LXD target (see [targets](targets.md)) which defaults to `ext4`.
+The options are generated depending on the file system.
+You cannot override them.

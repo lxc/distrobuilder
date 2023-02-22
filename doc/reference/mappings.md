@@ -10,7 +10,7 @@ mappings:
 ```
 
 It's possible to specify a custom map using the `architectures` field.
-Heres an example of a custom mapping:
+Here's an example of a custom mapping:
 
 ```yaml
 mappings:
@@ -29,12 +29,12 @@ The mapped architecture can be accessed via `Image.ArchitectureMapped` in the co
 There are some preset mappings which can be used in the `architecture_map` field.
 Those are:
 
-* alpinelinux
-* altlinux
-* archlinux
-* centos
-* debian
-* funtoo
-* gentoo
-* plamolinux
-* voidlinux
+* `alpinelinux`
+* `altlinux`
+* `archlinux`
+* `centos`
+* `debian`
+* `funtoo`
+* `gentoo`
+* `plamolinux`
+* `voidlinux`
