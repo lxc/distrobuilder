@@ -168,3 +168,9 @@ ol.arabic ol.arabic {
 details summary {
     color: var(--color-link);
 }
+
+/** Hide the line above the search (looks strange without the
+    version switcher) **/
+.sidebar-search {
+    border-top: 0
+}

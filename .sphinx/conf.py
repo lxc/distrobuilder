@@ -120,7 +120,7 @@ html_context = {
 
 html_sidebars = {
     "**": [
-        "sidebar/variant-selector.html",
+#        "sidebar/variant-selector.html",
         "sidebar/search.html",
         "sidebar/scroll-start.html",
         "sidebar/navigation.html",
