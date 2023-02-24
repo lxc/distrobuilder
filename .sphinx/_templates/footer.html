@@ -64,7 +64,7 @@
          rel="nofollow">Show source</a>
     </div>
     {%- endif %}
-    {% if github_url and github_version and github_folder and github_filetype %}
+    {% if github_url and github_version and github_folder and github_filetype and has_source and sourcename %}
     <div class="edit-github">
       <a class="muted-link" href="{{ github_url }}/edit/{{ github_version }}{{ github_folder }}{{ pagename }}.{{ github_filetype }}">Edit on GitHub</a>
     </div>
