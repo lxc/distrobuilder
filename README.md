@@ -90,7 +90,7 @@ $HOME/go/bin/distrobuilder
 
 ## How to use
 
-See [How to use `distrobuilder`](doc/howto/use.md) for instructions.
+See [How to use `distrobuilder`](doc/howto/build.md) for instructions.
 
 ## Troubleshooting
 
