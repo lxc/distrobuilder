@@ -19,3 +19,9 @@ You are trying to install the `distrobuilder` snap package. The `distrobuilder` 
 > Error `You must be root to run this tool`
 
 You must be _root_ in order to run the `distrobuilder` tool. The tool runs commands such as `mknod` that require administrative privileges. Use `sudo` when running `distrobuilder`.
+
+## Kernel settings
+
+> Error `SQUASHFS error: xz decompression failed, data probably corrupt`
+
+If running distrobuilder using WSL2 (Windows Subsystem for Linux) with an unmodified kernel an error occurs during extracting `rootfs.img` out of Rocky Linux image.<br>Solution: compile new WSL2 kernel mit setting `CONFIG_XZ_DEC_X86=y`
