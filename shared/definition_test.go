@@ -73,7 +73,7 @@ func TestValidateDefinition(t *testing.T) {
 			false,
 		},
 		{
-			"valid Defintion without source.url",
+			"valid Definition without source.url",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",
@@ -90,7 +90,7 @@ func TestValidateDefinition(t *testing.T) {
 			false,
 		},
 		{
-			"valid Defintion with packages.custom_manager",
+			"valid Definition with packages.custom_manager",
 			Definition{
 				Image: DefinitionImage{
 					Distribution: "ubuntu",

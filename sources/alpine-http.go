@@ -20,8 +20,9 @@ type alpineLinux struct {
 }
 
 func (s *alpineLinux) Run() error {
+	var releaseShort string
+
 	releaseFull := s.definition.Image.Release
-	releaseShort := releaseFull
 
 	if s.definition.Image.Release == "edge" {
 		if s.definition.Source.SameAs == "" {
@@ -29,7 +30,6 @@ func (s *alpineLinux) Run() error {
 		}
 
 		releaseFull = s.definition.Source.SameAs
-		releaseShort = releaseFull
 	}
 
 	releaseField := strings.Split(releaseFull, ".")
@@ -73,19 +73,25 @@ func (s *alpineLinux) Run() error {
 	} else {
 		fpath, err = s.DownloadHash(s.definition.Image, tarball, tarball+".sha256", sha256.New())
 	}
+
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", tarball, err)
 	}
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
-		s.DownloadHash(s.definition.Image, tarball+".asc", "", nil)
+		_, err = s.DownloadHash(s.definition.Image, tarball+".asc", "", nil)
+		if err != nil {
+			return fmt.Errorf("Failed downloading %q: %w", tarball+".asc", err)
+		}
+
 		valid, err := s.VerifyFile(
 			filepath.Join(fpath, fname),
 			filepath.Join(fpath, fname+".asc"))
 		if err != nil {
 			return fmt.Errorf("Failed to download %q: %w", tarball+".asc", err)
 		}
+
 		if !valid {
 			return fmt.Errorf("Invalid signature for %q", filepath.Join(fpath, fname))
 		}
@@ -109,17 +115,32 @@ func (s *alpineLinux) Run() error {
 
 		err = shared.RunCommand(s.ctx, nil, nil, "sed", "-i", "-e", "s/v[[:digit:]]\\.[[:digit:]]\\+/edge/g", "/etc/apk/repositories")
 		if err != nil {
-			exitChroot()
+			{
+				err := exitChroot()
+				if err != nil {
+					s.logger.WithField("err", err).Warn("Failed exiting chroot")
+				}
+			}
+
 			return fmt.Errorf("Failed to edit apk repositories: %w", err)
 		}
 
 		err = shared.RunCommand(s.ctx, nil, nil, "apk", "upgrade", "--update-cache", "--available")
 		if err != nil {
-			exitChroot()
+			{
+				err := exitChroot()
+				if err != nil {
+					s.logger.WithField("err", err).Warn("Failed exiting chroot")
+				}
+			}
+
 			return fmt.Errorf("Failed to upgrade edge build: %w", err)
 		}
 
-		exitChroot()
+		err = exitChroot()
+		if err != nil {
+			return fmt.Errorf("Failed exiting chroot: %w", err)
+		}
 	}
 
 	// Fix bad permissions in Alpine tarballs
@@ -148,6 +169,7 @@ func (s *alpineLinux) getLatestRelease(baseURL, release string, arch string) (st
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)

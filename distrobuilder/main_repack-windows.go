@@ -33,7 +33,7 @@ type cmdRepackWindows struct {
 
 func init() {
 	// Filters should be registered in the init() function
-	pongo2.RegisterFilter("toHex", toHex)
+	_ = pongo2.RegisterFilter("toHex", toHex)
 }
 
 func (c *cmdRepackWindows) command() *cobra.Command {
@@ -43,7 +43,9 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 		Args:    cobra.ExactArgs(2),
 		PreRunE: c.preRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			defer unix.Unmount(c.global.sourceDir, 0)
+			defer func() {
+				_ = unix.Unmount(c.global.sourceDir, 0)
+			}()
 
 			sourceDir := filepath.Dir(args[0])
 			targetDir := filepath.Dir(args[1])
@@ -132,6 +134,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", c.global.flagCacheDir, err)
 	}
+
 	defer func() {
 		if c.global.flagCleanup && !success {
 			os.RemoveAll(c.global.flagCacheDir)
@@ -180,6 +183,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 			if err != nil {
 				return fmt.Errorf("Failed to create file %q: %w", virtioISOPath, err)
 			}
+
 			defer f.Close()
 
 			var client http.Client
@@ -211,7 +215,10 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q at %q: %w", virtioISOPath, driverPath, err)
 	}
-	defer unix.Unmount(driverPath, 0)
+
+	defer func() {
+		_ = unix.Unmount(driverPath, 0)
+	}()
 
 	var sourcesDir string
 
@@ -280,6 +287,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 			if err != nil {
 				return fmt.Errorf("Failed to determine wim file indexes: %w", err)
 			}
+
 			indexes = append(indexes, index)
 		}
 	}
@@ -313,6 +321,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	} else {
 		err = shared.RunCommand(c.global.ctx, nil, nil, "genisoimage", "--allow-limited-size", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
 	}
+
 	if err != nil {
 		return fmt.Errorf("Failed to generate ISO: %w", err)
 	}
@@ -340,9 +349,10 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", filepath.Base(wimFile), err)
 	}
+
 	defer func() {
 		if !success {
-			shared.RunCommand(c.global.ctx, nil, nil, "wimlib-imagex", "unmount", wimPath)
+			_ = shared.RunCommand(c.global.ctx, nil, nil, "wimlib-imagex", "unmount", wimPath)
 		}
 	}()
 

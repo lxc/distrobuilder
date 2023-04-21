@@ -1,6 +1,8 @@
 package managers
 
-import "os"
+import (
+	"os"
+)
 
 type opkg struct {
 	common

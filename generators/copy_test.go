@@ -57,10 +57,12 @@ func TestCopyGeneratorRun(t *testing.T) {
 	require.NoError(t, err)
 	defer dest.Close()
 
-	io.Copy(&destBuffer, dest)
+	_, err = io.Copy(&destBuffer, dest)
+	require.NoError(t, err)
 	_, err = src1.Seek(0, 0)
 	require.NoError(t, err)
-	io.Copy(&srcBuffer, src1)
+	_, err = io.Copy(&srcBuffer, src1)
+	require.NoError(t, err)
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 
 	dest, err = os.Open(filepath.Join(rootfsDir, "copy_test_dir", "src2"))
@@ -68,11 +70,13 @@ func TestCopyGeneratorRun(t *testing.T) {
 	defer dest.Close()
 
 	destBuffer.Reset()
-	io.Copy(&destBuffer, dest)
+	_, err = io.Copy(&destBuffer, dest)
+	require.NoError(t, err)
 	_, err = src2.Seek(0, 0)
 	require.NoError(t, err)
 	srcBuffer.Reset()
-	io.Copy(&srcBuffer, src2)
+	_, err = io.Copy(&srcBuffer, src2)
+	require.NoError(t, err)
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 
 	link, err := os.Readlink(filepath.Join(rootfsDir, "copy_test_dir", "srcLink"))
@@ -103,11 +107,13 @@ func TestCopyGeneratorRun(t *testing.T) {
 	defer dest.Close()
 
 	destBuffer.Reset()
-	io.Copy(&destBuffer, dest)
+	_, err = io.Copy(&destBuffer, dest)
+	require.NoError(t, err)
 	_, err = src1.Seek(0, 0)
 	require.NoError(t, err)
 	srcBuffer.Reset()
-	io.Copy(&srcBuffer, src1)
+	_, err = io.Copy(&srcBuffer, src1)
+	require.NoError(t, err)
 
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 
@@ -116,11 +122,13 @@ func TestCopyGeneratorRun(t *testing.T) {
 	defer dest.Close()
 
 	destBuffer.Reset()
-	io.Copy(&destBuffer, dest)
+	_, err = io.Copy(&destBuffer, dest)
+	require.NoError(t, err)
 	_, err = src2.Seek(0, 0)
 	require.NoError(t, err)
 	srcBuffer.Reset()
-	io.Copy(&srcBuffer, src2)
+	_, err = io.Copy(&srcBuffer, src2)
+	require.NoError(t, err)
 
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 
@@ -143,11 +151,13 @@ func TestCopyGeneratorRun(t *testing.T) {
 	defer dest.Close()
 
 	destBuffer.Reset()
-	io.Copy(&destBuffer, dest)
+	_, err = io.Copy(&destBuffer, dest)
+	require.NoError(t, err)
 	_, err = src1.Seek(0, 0)
 	require.NoError(t, err)
 	srcBuffer.Reset()
-	io.Copy(&srcBuffer, src1)
+	_, err = io.Copy(&srcBuffer, src1)
+	require.NoError(t, err)
 
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 
@@ -172,11 +182,13 @@ func TestCopyGeneratorRun(t *testing.T) {
 	defer dest.Close()
 
 	destBuffer.Reset()
-	io.Copy(&destBuffer, dest)
+	_, err = io.Copy(&destBuffer, dest)
+	require.NoError(t, err)
 	_, err = src1.Seek(0, 0)
 	require.NoError(t, err)
 	srcBuffer.Reset()
-	io.Copy(&srcBuffer, src1)
+	_, err = io.Copy(&srcBuffer, src1)
+	require.NoError(t, err)
 
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 }

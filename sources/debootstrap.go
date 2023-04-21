@@ -60,6 +60,7 @@ func (s *debootstrap) Run() error {
 		if err != nil {
 			return fmt.Errorf("Failed to create GPG keyring: %w", err)
 		}
+
 		defer os.RemoveAll(path.Dir(keyring))
 
 		args = append(args, "--keyring", keyring)

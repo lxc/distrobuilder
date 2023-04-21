@@ -35,12 +35,14 @@ func Copy(src, dest string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to open file %q: %w", src, err)
 	}
+
 	defer srcFile.Close()
 
 	destFile, err := os.Create(dest)
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", dest, err)
 	}
+
 	defer destFile.Close()
 
 	_, err = io.Copy(destFile, srcFile)
@@ -78,6 +80,7 @@ func RunScript(ctx context.Context, content string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to create memfd: %w", err)
 	}
+
 	defer unix.Close(fd)
 
 	_, err = unix.Write(int(fd), []byte(content))
@@ -216,7 +219,11 @@ func RenderTemplate(template string, iface interface{}) (string, error) {
 
 	// Decode document and write it to a pongo2 Context
 	var ctx pongo2.Context
-	yaml.Unmarshal(data, &ctx)
+
+	err = yaml.Unmarshal(data, &ctx)
+	if err != nil {
+		return "", fmt.Errorf("Failed unmarshalling data: %w", err)
+	}
 
 	// Load template from string
 	tpl, err := pongo2.FromString("{% autoescape off %}" + template + "{% endautoescape %}")
@@ -307,6 +314,7 @@ func ParseCompression(compression string) (string, *int, error) {
 			if 1 <= level && level <= 22 {
 				return compression, &level, nil
 			}
+
 		case "bzip2", "gzip", "lzo", "lzop":
 			// The standalone tool is named lzop, but mksquashfs
 			// accepts only lzo. For convenience, accept both.
@@ -317,10 +325,12 @@ func ParseCompression(compression string) (string, *int, error) {
 			if 1 <= level && level <= 9 {
 				return compression, &level, nil
 			}
+
 		case "lzip", "lzma", "xz":
 			if 0 <= level && level <= 9 {
 				return compression, &level, nil
 			}
+
 		default:
 			return "", nil, fmt.Errorf("Compression method %q does not support specifying levels", compression)
 		}
@@ -352,6 +362,7 @@ func ParseSquashfsCompression(compression string) (string, *int, error) {
 			if 1 <= level && level <= 22 {
 				return compression, &level, nil
 			}
+
 		case "gzip", "lzo", "lzop":
 			// mkskquashfs accepts only lzo, but the standalone
 			// tool is named lzop. For convenience, accept both.
@@ -362,6 +373,7 @@ func ParseSquashfsCompression(compression string) (string, *int, error) {
 			if 1 <= level && level <= 9 {
 				return compression, &level, nil
 			}
+
 		default:
 			return "", nil, fmt.Errorf("Squashfs compression method %q does not support specifying levels", compression)
 		}

@@ -51,6 +51,7 @@ func (s *voidlinux) Run() error {
 	} else {
 		fpath, err = s.DownloadHash(s.definition.Image, tarball, digests, sha256.New())
 	}
+
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", tarball, err)
 	}
@@ -73,6 +74,7 @@ func (s *voidlinux) Run() error {
 		if err != nil {
 			return fmt.Errorf(`Failed to verify "sha256sum.txt": %w`, err)
 		}
+
 		if !valid {
 			return errors.New(`Invalid signature for "sha256sum.txt"`)
 		}
@@ -106,6 +108,7 @@ func (s *voidlinux) getLatestBuild(baseURL, arch, variant string) (string, error
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -118,6 +121,7 @@ func (s *voidlinux) getLatestBuild(baseURL, arch, variant string) (string, error
 	if variant != "" {
 		selector = fmt.Sprintf("%s-%s", selector, variant)
 	}
+
 	regex := regexp.MustCompile(fmt.Sprintf(">void-%s-ROOTFS-.*.tar.xz<", selector))
 
 	// Find all rootfs related files

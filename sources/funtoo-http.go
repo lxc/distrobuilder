@@ -110,6 +110,7 @@ func (s *funtoo) Run() error {
 		if err != nil {
 			return fmt.Errorf("Failed to verify file: %w", err)
 		}
+
 		if !valid {
 			return fmt.Errorf("Invalid signature for %q", filepath.Join(fpath, fname))
 		}

@@ -25,6 +25,7 @@ func (g *fstab) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) e
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", filepath.Join(g.sourceDir, "etc/fstab"), err)
 	}
+
 	defer f.Close()
 
 	content := `LABEL=rootfs  /         %s  %s  0 0

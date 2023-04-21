@@ -13,10 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/ioprogress"
 	"github.com/sirupsen/logrus"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 type common struct {
@@ -44,7 +45,6 @@ func (s *common) init(ctx context.Context, logger *logrus.Logger, definition sha
 	s.client = &http.Client{
 		Transport: transport,
 	}
-
 }
 
 func (s *common) getTargetDir() string {
@@ -97,6 +97,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 		if err != nil {
 			return "", err
 		}
+
 		defer image.Close()
 
 		if checksum != "" {
@@ -132,6 +133,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 	if err != nil {
 		return "", err
 	}
+
 	defer image.Close()
 
 	progress := func(progress ioprogress.ProgressData) {
@@ -170,6 +172,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 			return err
 		}, 3)
 	}
+
 	if err != nil {
 		return "", err
 	}
@@ -204,6 +207,7 @@ func (s *common) VerifyFile(signedFile, signatureFile string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	gpgDir := path.Dir(keyring)
 	defer os.RemoveAll(gpgDir)
 

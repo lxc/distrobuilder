@@ -47,7 +47,8 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 	require.NoError(t, err)
 	defer file.Close()
 
-	io.Copy(&buffer, file)
+	_, err = io.Copy(&buffer, file)
+	require.NoError(t, err)
 
 	require.Equal(t, "hello message\n", buffer.String())
 
@@ -70,7 +71,8 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 	defer file.Close()
 
 	buffer.Reset()
-	io.Copy(&buffer, file)
+	_, err = io.Copy(&buffer, file)
+	require.NoError(t, err)
 
 	require.Equal(t, "hello {{ targets.lxc.create_message }}\n", buffer.String())
 }
@@ -113,7 +115,8 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	require.NoError(t, err)
 	defer file.Close()
 
-	io.Copy(&buffer, file)
+	_, err = io.Copy(&buffer, file)
+	require.NoError(t, err)
 
 	require.Equal(t, "hello ext4\n", buffer.String())
 
@@ -139,7 +142,8 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	defer file.Close()
 
 	buffer.Reset()
-	io.Copy(&buffer, file)
+	_, err = io.Copy(&buffer, file)
+	require.NoError(t, err)
 
 	require.Equal(t, "hello {{ targets.lxd.vm.filesystem }}\n", buffer.String())
 }

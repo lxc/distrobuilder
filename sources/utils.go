@@ -33,12 +33,14 @@ func downloadChecksum(ctx context.Context, client *http.Client, targetDir string
 		if err != nil {
 			return nil, err
 		}
+
 		defer os.Remove(tempFile.Name())
 	} else {
 		tempFile, err = os.CreateTemp(targetDir, "hash.")
 		if err != nil {
 			return nil, err
 		}
+
 		defer os.Remove(tempFile.Name())
 
 		done := make(chan struct{})
@@ -51,7 +53,10 @@ func downloadChecksum(ctx context.Context, client *http.Client, targetDir string
 		}
 	}
 
-	tempFile.Seek(0, 0)
+	_, err = tempFile.Seek(0, 0)
+	if err != nil {
+		return nil, fmt.Errorf("Failed setting offset in file %q: %w", tempFile.Name(), err)
+	}
 
 	checksum := getChecksum(filepath.Base(fname), hashLen, tempFile)
 	if checksum != nil {

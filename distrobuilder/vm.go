@@ -65,6 +65,7 @@ func (v *vm) createEmptyDiskImage() error {
 	if err != nil {
 		return fmt.Errorf("Failed to open %s: %w", v.imageFile, err)
 	}
+
 	defer f.Close()
 
 	err = f.Chmod(0600)
@@ -216,7 +217,10 @@ func (v *vm) createRootFS() error {
 		if err != nil {
 			return fmt.Errorf("Failed to mount %q at %q: %w", v.getRootfsDevFile(), v.rootfsDir, err)
 		}
-		defer shared.RunCommand(v.ctx, nil, nil, "umount", v.rootfsDir)
+
+		defer func() {
+			_ = shared.RunCommand(v.ctx, nil, nil, "umount", v.rootfsDir)
+		}()
 
 		return shared.RunCommand(v.ctx, nil, nil, "btrfs", "subvolume", "create", fmt.Sprintf("%s/@", v.rootfsDir))
 	case "ext4":
@@ -244,7 +248,6 @@ func (v *vm) mountRootPartition() error {
 		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "defaults,discard,nobarrier,commit=300,noatime,subvol=/@")
 	case "ext4":
 		return shared.RunCommand(v.ctx, nil, nil, "mount", v.getRootfsDevFile(), v.rootfsDir, "-o", "discard,nobarrier,commit=300,noatime,data=writeback")
-
 	}
 
 	return nil

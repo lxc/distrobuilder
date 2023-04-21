@@ -52,6 +52,7 @@ func (l *LXCImage) AddTemplate(path string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to open file %q: %w", filepath.Join(metaDir, "templates"), err)
 	}
+
 	defer file.Close()
 
 	_, err = file.WriteString(fmt.Sprintf("%v\n", path))
@@ -90,13 +91,13 @@ func (l *LXCImage) createMetadata() error {
 		if c.Before == 0 {
 			c.Before = maxLXCCompatLevel + 1
 		}
+
 		for i := uint(1); i < maxLXCCompatLevel+1; i++ {
 			// Bound checking
 			if c.After < c.Before {
 				if i <= c.After || i >= c.Before {
 					continue
 				}
-
 			} else if c.After >= c.Before {
 				if i <= c.After && i >= c.Before {
 					continue
@@ -114,11 +115,13 @@ func (l *LXCImage) createMetadata() error {
 				if err != nil {
 					return fmt.Errorf("Failed to write config %q: %w", filepath.Join(metaDir, "config-user"), err)
 				}
+
 			case "system":
 				err := l.writeConfig(i, filepath.Join(metaDir, "config"), c.Content)
 				if err != nil {
 					return fmt.Errorf("Failed to write config %q: %w", filepath.Join(metaDir, "config"), err)
 				}
+
 			case "user":
 				err := l.writeConfig(i, filepath.Join(metaDir, "config-user"), c.Content)
 				if err != nil {
@@ -195,6 +198,7 @@ func (l *LXCImage) packMetadata() error {
 
 	return nil
 }
+
 func (l *LXCImage) writeMetadata(filename, content string, appendContent bool) error {
 	var file *os.File
 	var err error
@@ -237,6 +241,7 @@ func (l *LXCImage) writeConfig(compatLevel uint, filename, content string) error
 	if compatLevel != maxLXCCompatLevel {
 		filename = fmt.Sprintf("%s.%d", filename, compatLevel)
 	}
+
 	err := l.writeMetadata(filename, content, true)
 	if err != nil {
 		return fmt.Errorf("Error writing '%s': %w", filepath.Base(filename), err)

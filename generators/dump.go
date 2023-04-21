@@ -59,6 +59,7 @@ func (g *dump) run(content string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", path, err)
 	}
+
 	defer file.Close()
 
 	// Append final new line if missing

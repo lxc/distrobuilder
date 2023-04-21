@@ -65,6 +65,7 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to open %q: %w", filepath.Join(rootfsDir, "manifest.json"), err)
 	}
+
 	defer file.Close()
 
 	data, err := io.ReadAll(file)
@@ -111,6 +112,7 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to find matching files: %w", err)
 	}
+
 	pathsToRemove = append(pathsToRemove, files...)
 
 	// Clean up /root since there are unnecessary files there
@@ -118,6 +120,7 @@ func (s *fedora) unpackLayers(rootfsDir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to find matching files: %w", err)
 	}
+
 	pathsToRemove = append(pathsToRemove, files...)
 
 	for _, f := range pathsToRemove {
@@ -144,6 +147,7 @@ func (s *fedora) getLatestBuild(URL, release string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	content, err := io.ReadAll(resp.Body)

@@ -3,15 +3,16 @@ package generators
 import (
 	"errors"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
-	"github.com/sirupsen/logrus"
 )
 
-// ErrNotSupported returns a "Not supported" error
+// ErrNotSupported returns a "Not supported" error.
 var ErrNotSupported = errors.New("Not supported")
 
-// ErrUnknownGenerator represents the unknown generator error
+// ErrUnknownGenerator represents the unknown generator error.
 var ErrUnknownGenerator = errors.New("Unknown generator")
 
 type generator interface {

@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/lxc/distrobuilder/shared"
 	"github.com/stretchr/testify/require"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 func setup(t *testing.T, cacheDir string) {
@@ -46,7 +47,8 @@ func validateTestFile(t *testing.T, path, content string) {
 	defer file.Close()
 
 	var buffer bytes.Buffer
-	io.Copy(&buffer, file)
+	_, err = io.Copy(&buffer, file)
+	require.NoError(t, err)
 
 	require.Equal(t, content, buffer.String())
 }

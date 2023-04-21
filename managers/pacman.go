@@ -119,6 +119,7 @@ func (m *pacman) setMirrorlist() error {
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", filepath.Join("etc", "pacman.d", "mirrorlist"), err)
 	}
+
 	defer f.Close()
 
 	var mirror string

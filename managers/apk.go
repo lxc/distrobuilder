@@ -48,6 +48,7 @@ func (m *apk) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 	if err != nil {
 		return fmt.Errorf("Failed to open %q: %w", repoFile, err)
 	}
+
 	defer f.Close()
 
 	_, err = f.WriteString(repoAction.URL + "\n")

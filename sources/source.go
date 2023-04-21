@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/lxc/distrobuilder/shared"
 	"github.com/sirupsen/logrus"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
-// ErrUnknownDownloader represents the unknown downloader error
+// ErrUnknownDownloader represents the unknown downloader error.
 var ErrUnknownDownloader = errors.New("Unknown downloader")
 
 type downloader interface {

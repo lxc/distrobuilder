@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/lxc/distrobuilder/image"
-	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
+
+	"github.com/lxc/distrobuilder/image"
+	"github.com/lxc/distrobuilder/shared"
 )
 
 type hosts struct {
@@ -18,7 +19,6 @@ type hosts struct {
 
 // RunLXC creates a LXC specific entry in the hosts file.
 func (g *hosts) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
-
 	// Skip if the file doesn't exist
 	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil
@@ -42,6 +42,7 @@ func (g *hosts) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", filepath.Join(g.sourceDir, g.defFile.Path), err)
 	}
+
 	defer f.Close()
 
 	// Overwrite the file
@@ -61,7 +62,6 @@ func (g *hosts) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 
 // RunLXD creates a hosts template.
 func (g *hosts) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
-
 	// Skip if the file doesn't exist
 	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil

@@ -55,7 +55,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 			continue
 		}
 
-		filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
+		err := filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
 			if info.IsDir() {
 				return nil
 			}
@@ -69,6 +69,9 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 
 			return nil
 		})
+		if err != nil {
+			return fmt.Errorf("Failed walking %q: %w", fullPath, err)
+		}
 	}
 
 	// With systemd:
@@ -88,6 +91,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", path, err)
 	}
+
 	defer f.Close()
 
 	return nil

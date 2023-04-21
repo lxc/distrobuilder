@@ -68,6 +68,7 @@ func (s *gentoo) Run() error {
 	} else {
 		fpath, err = s.DownloadHash(s.definition.Image, tarball, tarball+".DIGESTS", sha512.New())
 	}
+
 	if err != nil {
 		return fmt.Errorf("Failed to download %q: %w", tarball, err)
 	}
@@ -85,6 +86,7 @@ func (s *gentoo) Run() error {
 		if err != nil {
 			return fmt.Errorf("Failed to verify %q: %w", filepath.Join(fpath, fname+".DIGESTS.asc"), err)
 		}
+
 		if !valid {
 			return fmt.Errorf("Failed to verify %q", fname+".DIGESTS.asc")
 		}
@@ -122,6 +124,7 @@ func (s *gentoo) Run() error {
 		if err != nil {
 			return fmt.Errorf("Failed to verify %q: %w", filepath.Join(fpath, fname+".gpgsig"), err)
 		}
+
 		if !valid {
 			return fmt.Errorf("Failed to verify %q", fname+".gpgsig")
 		}
@@ -165,6 +168,7 @@ func (s *gentoo) getLatestBuild(baseURL, arch, variant string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)

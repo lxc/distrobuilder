@@ -151,19 +151,24 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", filePath, err)
 	}
-	defer unix.Unmount(isoDir, 0)
+
+	defer func() {
+		_ = unix.Unmount(isoDir, 0)
+	}()
 
 	var rootfsImage string
 	squashfsImage := filepath.Join(isoDir, "LiveOS", "squashfs.img")
 	if lxd.PathExists(squashfsImage) {
-
 		// The squashfs.img contains an image containing the rootfs, so first
 		// mount squashfs.img
 		err = shared.RunCommand(s.ctx, nil, nil, "mount", "-o", "ro", squashfsImage, squashfsDir)
 		if err != nil {
 			return fmt.Errorf("Failed to mount %q: %w", squashfsImage, err)
 		}
-		defer unix.Unmount(squashfsDir, 0)
+
+		defer func() {
+			_ = unix.Unmount(squashfsDir, 0)
+		}()
 
 		rootfsImage = filepath.Join(squashfsDir, "LiveOS", "rootfs.img")
 	} else {
@@ -234,12 +239,14 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 			if err != nil {
 				return fmt.Errorf("Failed to create file %q: %w", elem[0], err)
 			}
+
 			defer f.Close()
 
 			_, err = lxd.DownloadFileHash(s.ctx, http.DefaultClient, "", nil, nil, elem[0], elem[1], "", nil, f)
 			if err != nil {
 				return fmt.Errorf("Failed to download %q: %w", elem[1], err)
 			}
+
 			f.Close()
 		}
 	}
@@ -341,11 +348,20 @@ EOF
 
 `, s.majorVersion, latestUpdate, s.architecture))
 	if err != nil {
-		exitChroot()
+		{
+			err := exitChroot()
+			if err != nil {
+				s.logger.WithField("err", err).Warn("Failed exiting chroot")
+			}
+		}
+
 		return fmt.Errorf("Failed to run script: %w", err)
 	}
 
-	exitChroot()
+	err = exitChroot()
+	if err != nil {
+		return fmt.Errorf("Failed exiting chroot: %w", err)
+	}
 
 	err = shared.RsyncLocal(s.ctx, tempRootDir+"/rootfs/", rootfsDir)
 	if err != nil {

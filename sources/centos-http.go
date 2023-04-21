@@ -101,6 +101,7 @@ func (s *centOS) Run() error {
 				if err != nil {
 					return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
 				}
+
 				if !valid {
 					return fmt.Errorf("Invalid signature for %q", checksumFile)
 				}
@@ -122,6 +123,7 @@ func (s *centOS) Run() error {
 	} else {
 		err = s.unpackISO(source, s.rootfsDir, s.isoRunner)
 	}
+
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %q: %w", source, err)
 	}
@@ -415,6 +417,7 @@ func (s *centOS) getRelease(URL, release, variant, arch string) (string, error) 
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -467,6 +470,7 @@ func (s *centOS) getRegexes(arch string, variant string, release string) []*rege
 			re = append(re, fmt.Sprintf("CentOS-%s(-\\d+.0)-%s-(?i:%s).iso",
 				releaseFields[0], arch, variant))
 		}
+
 	case 2:
 		if arch == "armhfp" {
 			re = append(re, fmt.Sprintf("CentOS-Userland-%s.%s-armv7hl-RootFS-(?i:%s)(-\\d+)?-sda.raw.xz",
@@ -477,6 +481,7 @@ func (s *centOS) getRegexes(arch string, variant string, release string) []*rege
 			re = append(re, fmt.Sprintf("CentOS-%s-%s-%s-(?i:%s).iso",
 				releaseFields[0], arch, releaseFields[1], variant))
 		}
+
 	case 3:
 		if arch == "x86_64" {
 			re = append(re, fmt.Sprintf("CentOS-%s.%s-%s-%s-(?i:%s)(-\\d+)?.iso",

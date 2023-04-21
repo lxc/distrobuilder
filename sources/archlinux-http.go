@@ -11,8 +11,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/lxc/distrobuilder/shared"
 	"gopkg.in/antchfx/htmlquery.v1"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 type archlinux struct {
@@ -66,7 +67,10 @@ func (s *archlinux) Run() error {
 
 	// Force gpg checks when using http
 	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
-		s.DownloadHash(s.definition.Image, tarball+".sig", "", nil)
+		_, err = s.DownloadHash(s.definition.Image, tarball+".sig", "", nil)
+		if err != nil {
+			return fmt.Errorf("Failed downloading %q: %w", tarball+".sig", err)
+		}
 
 		valid, err := s.VerifyFile(
 			filepath.Join(fpath, fname),
@@ -74,6 +78,7 @@ func (s *archlinux) Run() error {
 		if err != nil {
 			return fmt.Errorf("Failed to verify %q: %w", fname, err)
 		}
+
 		if !valid {
 			return fmt.Errorf("Invalid signature for %q", fname)
 		}

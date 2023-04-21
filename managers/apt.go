@@ -61,7 +61,6 @@ func (m *apt) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 		if !strings.HasSuffix(targetFile, ".list") {
 			targetFile = fmt.Sprintf("%s.list", targetFile)
 		}
-
 	}
 
 	if !lxd.PathExists(filepath.Dir(targetFile)) {
@@ -75,6 +74,7 @@ func (m *apt) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 	if err != nil {
 		return fmt.Errorf("Failed to open file %q: %w", targetFile, err)
 	}
+
 	defer f.Close()
 
 	content, err := io.ReadAll(f)
@@ -141,6 +141,7 @@ func (m *apt) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 		if err != nil {
 			return fmt.Errorf("Failed to create file %q: %w", signatureFilePath, err)
 		}
+
 		defer f.Close()
 
 		_, err = io.Copy(f, reader)

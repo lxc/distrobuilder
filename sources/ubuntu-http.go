@@ -90,6 +90,7 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 		if err != nil {
 			return fmt.Errorf(`Failed to verify "SHA256SUMS": %w`, err)
 		}
+
 		if !valid {
 			return errors.New(`Invalid signature for "SHA256SUMS"`)
 		}
@@ -141,6 +142,7 @@ func getLatestRelease(baseURL, release, arch string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
@@ -177,6 +179,7 @@ func getLatestCoreBaseImage(baseURL, release, arch string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
