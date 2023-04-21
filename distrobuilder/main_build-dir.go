@@ -14,6 +14,8 @@ import (
 type cmdBuildDir struct {
 	cmdBuild *cobra.Command
 	global   *cmdGlobal
+
+	flagWithPostFiles bool
 }
 
 func (c *cmdBuildDir) command() *cobra.Command {
@@ -42,12 +44,42 @@ func (c *cmdBuildDir) command() *cobra.Command {
 				}
 			}
 
+			if !c.flagWithPostFiles {
+				return nil
+			}
+
+			exitChroot, err := shared.SetupChroot(c.global.targetDir,
+				c.global.definition.Environment, nil)
+			if err != nil {
+				return fmt.Errorf("Failed to setup chroot in %q: %w", c.global.targetDir, err)
+			}
+
+			c.global.logger.WithField("trigger", "post-files").Info("Running hooks")
+
+			// Run post files hook
+			for _, action := range c.global.definition.GetRunnableActions("post-files", shared.ImageTargetUndefined) {
+				if action.Pongo {
+					action.Action, err = shared.RenderTemplate(action.Action, c.global.definition)
+					if err != nil {
+						return fmt.Errorf("Failed to render action: %w", err)
+					}
+				}
+
+				err := shared.RunScript(c.global.ctx, action.Action)
+				if err != nil {
+					exitChroot()
+					return fmt.Errorf("Failed to run post-files: %w", err)
+				}
+			}
+
+			exitChroot()
+
 			return nil
 		},
 	}
 
 	c.cmdBuild.Flags().StringVar(&c.global.flagSourcesDir, "sources-dir", filepath.Join(os.TempDir(), "distrobuilder"), "Sources directory for distribution tarballs"+"``")
 	c.cmdBuild.Flags().BoolVar(&c.global.flagKeepSources, "keep-sources", true, "Keep sources after build"+"``")
-
+	c.cmdBuild.Flags().BoolVar(&c.flagWithPostFiles, "with-post-files", false, "Run post-files actions"+"``")
 	return c.cmdBuild
 }
