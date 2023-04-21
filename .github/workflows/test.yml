@@ -32,5 +32,8 @@ jobs:
       - name: Update Go modules
         run: make update-gomod
 
+      - name: Static analysis
+        run: make static-analysis
+
       - name: Test
         run: make check
