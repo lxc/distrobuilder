@@ -67,12 +67,21 @@ func (c *cmdBuildDir) command() *cobra.Command {
 
 				err := shared.RunScript(c.global.ctx, action.Action)
 				if err != nil {
-					exitChroot()
+					{
+						err := exitChroot()
+						if err != nil {
+							c.global.logger.WithField("err", err).Warn("Failed exiting chroot")
+						}
+					}
+
 					return fmt.Errorf("Failed to run post-files: %w", err)
 				}
 			}
 
-			exitChroot()
+			err = exitChroot()
+			if err != nil {
+				return fmt.Errorf("Failed exiting chroot: %w", err)
+			}
 
 			return nil
 		},
