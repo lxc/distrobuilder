@@ -10,9 +10,10 @@ Usage:
   distrobuilder build-dir <filename|-> <target dir> [flags]
 
 Flags:
-  -h, --help           help for build-dir
-      --keep-sources   Keep sources after build (default true)
-      --sources-dir    Sources directory for distribution tarballs (default "/tmp/distrobuilder")
+  -h, --help              help for build-dir
+      --keep-sources      Keep sources after build (default true)
+      --sources-dir       Sources directory for distribution tarballs (default "/tmp/distrobuilder")
+      --with-post-files   Run post-files actions
 
 Global Flags:
       --cache-dir         Cache directory
