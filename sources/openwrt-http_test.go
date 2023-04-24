@@ -23,6 +23,7 @@ func TestOpenWrtHTTP_getLatestServiceRelease(t *testing.T) {
 			regexp.MustCompile(`18\.06\.\d+`),
 		},
 	}
+
 	for _, tt := range tests {
 		baseURL := "https://downloads.openwrt.org/releases/"
 		release, err := s.getLatestServiceRelease(baseURL, tt.release)

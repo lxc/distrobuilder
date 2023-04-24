@@ -21,7 +21,7 @@ type ChrootMount struct {
 	IsDir  bool
 }
 
-// ActiveChroots is a map of all active chroots and their exit functions
+// ActiveChroots is a map of all active chroots and their exit functions.
 var ActiveChroots = make(map[string]func() error)
 
 func setupMounts(rootfs string, mounts []ChrootMount) error {
@@ -46,6 +46,7 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 			if err != nil {
 				return fmt.Errorf("Failed to create file %q: %w", tmpTarget, err)
 			}
+
 			f.Close()
 		}
 
@@ -121,11 +122,10 @@ func moveMounts(mounts []ChrootMount) error {
 				return fmt.Errorf("Failed to create directory %q: %w", target, err)
 			}
 		} else {
-			f, err := os.Create(target)
+			err := os.WriteFile(target, nil, 0644)
 			if err != nil {
 				return fmt.Errorf("Failed to create file %q: %w", target, err)
 			}
-			f.Close()
 		}
 
 		// Move the mount to its destination
@@ -142,7 +142,6 @@ func moveMounts(mounts []ChrootMount) error {
 	}
 
 	return nil
-
 }
 
 func killChrootProcesses(rootfs string) error {
@@ -165,7 +164,11 @@ func killChrootProcesses(rootfs string) error {
 			link, _ := os.Readlink(filepath.Join(rootfs, "proc", dir, "root"))
 			if link == rootfs {
 				pid, _ := strconv.Atoi(dir)
-				unix.Kill(pid, unix.SIGKILL)
+
+				err = unix.Kill(pid, unix.SIGKILL)
+				if err != nil {
+					return fmt.Errorf("Failed killing process: %w", err)
+				}
 			}
 		}
 	}
@@ -173,7 +176,7 @@ func killChrootProcesses(rootfs string) error {
 	return nil
 }
 
-// SetupChroot sets up mount and files, a reverter and then chroots for you
+// SetupChroot sets up mount and files, a reverter and then chroots for you.
 func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() error, error) {
 	// Mount the rootfs
 	err := unix.Mount(rootfs, rootfs, "", unix.MS_BIND, "")
@@ -209,6 +212,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	} else {
 		err = setupMounts(rootfs, mounts)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("Failed to mount filesystems: %w", err)
 	}
@@ -331,10 +335,16 @@ exit 101
 
 		// This will kill all processes in the chroot and allow to cleanly
 		// unmount everything.
-		killChrootProcesses(rootfs)
+		err = killChrootProcesses(rootfs)
+		if err != nil {
+			return fmt.Errorf("Failed killing chroot processes: %w", err)
+		}
 
 		// And now unmount the entire tree
-		unix.Unmount(rootfs, unix.MNT_DETACH)
+		err = unix.Unmount(rootfs, unix.MNT_DETACH)
+		if err != nil {
+			return fmt.Errorf("Failed unmounting rootfs: %w", err)
+		}
 
 		devPath := filepath.Join(rootfs, "dev")
 

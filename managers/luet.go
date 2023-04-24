@@ -75,6 +75,7 @@ func (m *luet) manageRepository(repoAction shared.DefinitionPackagesRepository) 
 	if err != nil {
 		return fmt.Errorf("Failed to open file %q: %w", targetFile, err)
 	}
+
 	defer f.Close()
 
 	// NOTE: repo.URL is not an URL but the content of the file.

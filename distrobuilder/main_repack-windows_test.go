@@ -10,6 +10,7 @@ func Test_detectWindowsVersion(t *testing.T) {
 	type args struct {
 		fileName string
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -96,6 +97,7 @@ func Test_detectWindowsVersion(t *testing.T) {
 			"2k12",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := detectWindowsVersion(tt.args.fileName)

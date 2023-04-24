@@ -184,7 +184,9 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
 	// Unmount everything and exit the chroot
-	defer exitChroot()
+	defer func() {
+		_ = exitChroot()
+	}()
 
 	imageTargets := shared.ImageTargetAll
 
@@ -303,7 +305,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		vm, err = newVM(c.global.ctx, imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
 		if err != nil {
-			return fmt.Errorf("Failed to instanciate VM: %w", err)
+			return fmt.Errorf("Failed to instantiate VM: %w", err)
 		}
 
 		err = vm.createEmptyDiskImage()
@@ -320,7 +322,10 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		if err != nil {
 			return fmt.Errorf("Failed to mount image: %w", err)
 		}
-		defer vm.umountImage()
+
+		defer func() {
+			_ = vm.umountImage()
+		}()
 
 		err = vm.createRootFS()
 		if err != nil {
@@ -331,7 +336,10 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		if err != nil {
 			return fmt.Errorf("failed to mount root partion: %w", err)
 		}
-		defer shared.RunCommand(vm.ctx, nil, nil, "umount", "-R", vmDir)
+
+		defer func() {
+			_ = shared.RunCommand(vm.ctx, nil, nil, "umount", "-R", vmDir)
+		}()
 
 		err = vm.createUEFIFS()
 		if err != nil {
@@ -385,7 +393,10 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		return fmt.Errorf("Failed to chroot: %w", err)
 	}
 
-	addSystemdGenerator()
+	err = addSystemdGenerator()
+	if err != nil {
+		return fmt.Errorf("Failed adding systemd generator: %w", err)
+	}
 
 	c.global.logger.WithField("trigger", "post-files").Info("Running hooks")
 
@@ -400,12 +411,21 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		err := shared.RunScript(c.global.ctx, action.Action)
 		if err != nil {
-			exitChroot()
+			{
+				err := exitChroot()
+				if err != nil {
+					c.global.logger.WithField("err", err).Warn("Failed exiting chroot")
+				}
+			}
+
 			return fmt.Errorf("Failed to run post-files: %w", err)
 		}
 	}
 
-	exitChroot()
+	err = exitChroot()
+	if err != nil {
+		return fmt.Errorf("Failed exiting chroot: %w", err)
+	}
 
 	// Unmount VM directory and loop device before creating the image.
 	if c.flagVM {
@@ -455,6 +475,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		if err != nil {
 			return err
 		}
+
 		defer meta.Close()
 
 		// Open rootfs
@@ -463,6 +484,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 			if err != nil {
 				return err
 			}
+
 			defer rootfs.Close()
 
 			if filepath.Ext(rootfsFile) == ".qcow2" {

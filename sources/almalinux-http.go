@@ -87,6 +87,7 @@ func (s *almalinux) Run() error {
 				if err != nil {
 					return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
 				}
+
 				if !valid {
 					return fmt.Errorf("Invalid signature for %q", filepath.Join(fpath, checksumFile))
 				}
@@ -215,6 +216,7 @@ func (s *almalinux) getRelease(URL, release, variant, arch string) (string, erro
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)

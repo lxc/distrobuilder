@@ -18,7 +18,6 @@ type hostname struct {
 
 // RunLXC creates a hostname template.
 func (g *hostname) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
-
 	// Skip if the file doesn't exist
 	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil
@@ -29,6 +28,7 @@ func (g *hostname) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", filepath.Join(g.sourceDir, g.defFile.Path), err)
 	}
+
 	defer file.Close()
 
 	// Write LXC specific string to the hostname file
@@ -48,7 +48,6 @@ func (g *hostname) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC
 
 // RunLXD creates a hostname template.
 func (g *hostname) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
-
 	// Skip if the file doesn't exist
 	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil
@@ -65,6 +64,7 @@ func (g *hostname) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", filepath.Join(templateDir, "hostname.tpl"), err)
 	}
+
 	defer file.Close()
 
 	_, err = file.WriteString("{{ container.name }}\n")

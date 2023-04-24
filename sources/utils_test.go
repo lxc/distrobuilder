@@ -14,6 +14,7 @@ func Test_getChecksum(t *testing.T) {
 		hashLen int
 		r       io.Reader
 	}
+
 	tests := []struct {
 		name string
 		args args

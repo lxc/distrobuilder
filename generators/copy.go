@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	lxd "github.com/lxc/lxd/shared"
+
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
-	lxd "github.com/lxc/lxd/shared"
 )
 
 type copy struct {
@@ -45,11 +46,13 @@ func (g *copy) Run() error {
 	if err != nil {
 		return fmt.Errorf("Failed to read directory %q: %w", filepath.Dir(srcPath), err)
 	}
+
 	for _, f := range dirFiles {
 		match, err := filepath.Match(srcPath, filepath.Join(filepath.Dir(srcPath), f.Name()))
 		if err != nil {
 			return fmt.Errorf("Failed to match pattern: %w", err)
 		}
+
 		if match {
 			files = append(files, filepath.Join(filepath.Dir(srcPath), f.Name()))
 		}
@@ -62,6 +65,7 @@ func (g *copy) Run() error {
 		if err != nil {
 			return fmt.Errorf("Failed to stat file %q: %w", srcPath, err)
 		}
+
 		err = g.doCopy(srcPath, destPath, g.defFile)
 	case 1:
 		err = g.doCopy(srcPath, destPath, g.defFile)
@@ -75,6 +79,7 @@ func (g *copy) Run() error {
 			}
 		}
 	}
+
 	if err != nil {
 		return fmt.Errorf("Failed to copy file(s): %w", err)
 	}
@@ -94,6 +99,7 @@ func (g *copy) doCopy(srcPath, destPath string, defFile shared.DefinitionFile) e
 		if strings.HasSuffix(defFile.Path, "/") {
 			destPath = filepath.Join(destPath, filepath.Base(srcPath))
 		}
+
 		err := g.copyFile(srcPath, destPath, defFile)
 		if err != nil {
 			return fmt.Errorf("Failed to copy file %q to %q: %w", srcPath, destPath, err)
@@ -104,6 +110,7 @@ func (g *copy) doCopy(srcPath, destPath string, defFile shared.DefinitionFile) e
 		if err != nil {
 			return fmt.Errorf("Failed to copy file %q to %q: %w", srcPath, destPath, err)
 		}
+
 	default:
 		return fmt.Errorf("File type of %q not supported", srcPath)
 	}
@@ -121,6 +128,7 @@ func (g *copy) copyDir(srcPath, destPath string, defFile shared.DefinitionFile) 
 		if err != nil {
 			return fmt.Errorf("Failed to get relative path of %q: %w", srcPath, err)
 		}
+
 		dest := filepath.Join(destPath, rel)
 		if err != nil {
 			return fmt.Errorf("Failed to join path elements: %w", err)
@@ -132,16 +140,20 @@ func (g *copy) copyDir(srcPath, destPath string, defFile shared.DefinitionFile) 
 			if err != nil {
 				return fmt.Errorf("Failed to copy file %q to %q: %w", src, dest, err)
 			}
+
 		case os.ModeDir:
 			err := os.MkdirAll(dest, os.ModePerm)
 			if err != nil {
 				return fmt.Errorf("Failed to create directory %q: %w", dest, err)
 			}
+
 		default:
 			fmt.Printf("File type of %q not supported, skipping", src)
 		}
+
 		return nil
 	})
+
 	if err != nil {
 		return fmt.Errorf("Failed to walk file tree of %q: %w", srcPath, err)
 	}
@@ -156,6 +168,7 @@ func (g *copy) copyFile(src, dest string, defFile shared.DefinitionFile) error {
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(dir, os.ModePerm)
 	}
+
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", dir, err)
 	}
@@ -169,6 +182,7 @@ func (g *copy) copyFile(src, dest string, defFile shared.DefinitionFile) error {
 	if err != nil {
 		return fmt.Errorf("Failed to open file %q: %w", dest, err)
 	}
+
 	defer out.Close()
 
 	err = updateFileAccess(out, defFile)

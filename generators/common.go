@@ -1,8 +1,9 @@
 package generators
 
 import (
-	"github.com/lxc/distrobuilder/shared"
 	"github.com/sirupsen/logrus"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 type common struct {

@@ -8,9 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	lxd "github.com/lxc/lxd/shared"
+
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
-	lxd "github.com/lxc/lxd/shared"
 )
 
 type lxdAgent struct {
@@ -325,6 +326,7 @@ func (g *lxdAgent) getInitSystemFromInittab() error {
 	if err != nil {
 		return fmt.Errorf("Failed to open file %q: %w", filepath.Join(g.sourceDir, "etc", "inittab"), err)
 	}
+
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)

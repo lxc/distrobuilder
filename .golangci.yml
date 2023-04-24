@@ -1,0 +1,14 @@
+linters:
+  enable:
+    - gofmt
+    - misspell
+    - godot
+    - whitespace
+    - gci
+    - errorlint
+linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/lxc/distrobuilder)

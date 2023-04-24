@@ -77,7 +77,6 @@ func (s *openwrt) Run() error {
 			fname = fmt.Sprintf("openwrt-%s-default-rootfs.tar.gz",
 				strings.Replace(architecturePath, "/", "-", 1))
 		}
-
 	} else {
 		switch s.definition.Image.ArchitectureMapped {
 		case "x86_64":
@@ -88,6 +87,7 @@ func (s *openwrt) Run() error {
 				fname = fmt.Sprintf("openwrt-%s%s-generic-rootfs.tar.gz", releaseInFilename,
 					strings.Replace(architecturePath, "/", "-", 1))
 			}
+
 		case "armv7l":
 			fallthrough
 		case "aarch64":
@@ -174,6 +174,7 @@ func (s *openwrt) getLatestServiceRelease(baseURL, release string) (string, erro
 	if err != nil {
 		return "", err
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)

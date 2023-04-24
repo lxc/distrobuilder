@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lxc/distrobuilder/shared"
 	"github.com/sirupsen/logrus"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
-// ErrUnknownManager represents the unknown manager error
+// ErrUnknownManager represents the unknown manager error.
 var ErrUnknownManager = errors.New("Unknown manager")
 
 // managerFlags represents flags for all subcommands of a package manager.
@@ -142,6 +143,7 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 		} else if set.Action == "remove" {
 			err = m.mgr.remove(set.Packages, set.Flags)
 		}
+
 		if err != nil {
 			return fmt.Errorf("Failed to %s packages: %w", set.Action, err)
 		}

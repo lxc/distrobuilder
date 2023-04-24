@@ -49,7 +49,10 @@ func (m *yum) load() error {
 
 	var buf bytes.Buffer
 
-	shared.RunCommand(m.ctx, nil, &buf, "yum", "--help")
+	err := shared.RunCommand(m.ctx, nil, &buf, "yum", "--help")
+	if err != nil {
+		return fmt.Errorf("Failed running yum: %w", err)
+	}
 
 	scanner := bufio.NewScanner(&buf)
 
@@ -89,6 +92,7 @@ func yumManageRepository(repoAction shared.DefinitionPackagesRepository) error {
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", targetFile, err)
 	}
+
 	defer f.Close()
 
 	_, err = f.WriteString(repoAction.URL)

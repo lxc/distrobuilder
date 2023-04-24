@@ -51,6 +51,7 @@ __attribute__((constructor)) void init(void) {
 }
 */
 import "C"
+
 import (
 	"bufio"
 	"bytes"
@@ -157,6 +158,7 @@ func main() {
 						if globalCmd.flagTimeout > 0 {
 							globalCmd.logger.Info("Timed out")
 						}
+
 						return
 					}
 				}
@@ -226,7 +228,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Failed running distrobuilder: %s\n", err.Error())
 		}
 
-		globalCmd.postRun(nil, nil)
+		_ = globalCmd.postRun(nil, nil)
 		os.Exit(1)
 	}
 }
@@ -238,8 +240,15 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	isRunningBuildDir := cmd.CalledAs() == "build-dir"
 
 	// Clean up cache directory before doing anything
-	os.RemoveAll(c.flagCacheDir)
-	os.Mkdir(c.flagCacheDir, 0755)
+	err := os.RemoveAll(c.flagCacheDir)
+	if err != nil {
+		return fmt.Errorf("Failed removing cache directory: %w", err)
+	}
+
+	err = os.Mkdir(c.flagCacheDir, 0755)
+	if err != nil {
+		return fmt.Errorf("Failed creating cache directory: %w", err)
+	}
 
 	if len(args) > 1 {
 		// Create and set target directory if provided
@@ -247,6 +256,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", args[1], err)
 		}
+
 		c.targetDir = args[1]
 	} else {
 		// Use current working directory as target
@@ -263,7 +273,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create source directory if it doesn't exist
-	err := os.MkdirAll(c.sourceDir, 0755)
+	err = os.MkdirAll(c.sourceDir, 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", c.sourceDir, err)
 	}
@@ -315,7 +325,9 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
 	// Unmount everything and exit the chroot
-	defer exitChroot()
+	defer func() {
+		_ = exitChroot()
+	}()
 
 	// Always include sections which have no type filter. If running build-dir,
 	// only these sections will be processed.
@@ -411,8 +423,15 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	// Clean up cache directory before doing anything
-	os.RemoveAll(c.flagCacheDir)
-	os.Mkdir(c.flagCacheDir, 0755)
+	err = os.RemoveAll(c.flagCacheDir)
+	if err != nil {
+		return fmt.Errorf("Failed removing cache directory: %w", err)
+	}
+
+	err = os.Mkdir(c.flagCacheDir, 0755)
+	if err != nil {
+		return fmt.Errorf("Failed creating cache directory: %w", err)
+	}
 
 	// resolve path
 	c.sourceDir, err = filepath.Abs(args[1])
@@ -440,7 +459,10 @@ func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 	// exit all chroots otherwise we cannot remove the cache directory
 	for _, exit := range shared.ActiveChroots {
 		if exit != nil {
-			exit()
+			err := exit()
+			if err != nil && hasLogger {
+				c.logger.WithField("err", err).Warn("Failed exiting chroot")
+			}
 		}
 	}
 
@@ -459,7 +481,7 @@ func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 			c.logger.Info("Removing cache directory")
 		}
 
-		os.RemoveAll(c.flagCacheDir)
+		_ = os.RemoveAll(c.flagCacheDir)
 	}
 
 	// Clean up sources directory
@@ -468,7 +490,7 @@ func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 			c.logger.Info("Removing sources directory")
 		}
 
-		os.RemoveAll(c.flagSourcesDir)
+		_ = os.RemoveAll(c.flagSourcesDir)
 	}
 
 	return nil
@@ -520,6 +542,7 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		defer f.Close()
 
 		_, err = io.Copy(&buf, f)
@@ -561,10 +584,10 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 }
 
 // addSystemdGenerator creates a systemd-generator which runs on boot, and does some configuration around the system itself and networking.
-func addSystemdGenerator() {
+func addSystemdGenerator() error {
 	// Check if container has systemd
 	if !lxd.PathExists("/etc/systemd") {
-		return
+		return nil
 	}
 
 	content := `#!/bin/sh
@@ -785,6 +808,15 @@ if [ "${nm_exists}" -eq 1 ]; then
 	fix_nm_link_state eth0
 fi
 `
-	os.MkdirAll("/etc/systemd/system-generators", 0755)
-	os.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
+	err := os.MkdirAll("/etc/systemd/system-generators", 0755)
+	if err != nil {
+		return fmt.Errorf("Failed creating directory: %w", err)
+	}
+
+	err = os.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
+	if err != nil {
+		return fmt.Errorf("Failed creating system generator: %w", err)
+	}
+
+	return nil
 }

@@ -119,7 +119,9 @@ func (c *cmdLXC) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
 	// Unmount everything and exit the chroot
-	defer exitChroot()
+	defer func() {
+		_ = exitChroot()
+	}()
 
 	imageTargets := shared.ImageTargetAll | shared.ImageTargetContainer
 
@@ -210,7 +212,10 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		return fmt.Errorf("Failed to setup chroot in %q: %w", overlayDir, err)
 	}
 
-	addSystemdGenerator()
+	err = addSystemdGenerator()
+	if err != nil {
+		return fmt.Errorf("Failed adding systemd generator: %w", err)
+	}
 
 	c.global.logger.WithField("trigger", "post-files").Info("Running hooks")
 
@@ -225,12 +230,21 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		err := shared.RunScript(c.global.ctx, action.Action)
 		if err != nil {
-			exitChroot()
+			{
+				err := exitChroot()
+				if err != nil {
+					c.global.logger.WithField("err", err).Warn("Failed exiting chroot")
+				}
+			}
+
 			return fmt.Errorf("Failed to run post-files: %w", err)
 		}
 	}
 
-	exitChroot()
+	err = exitChroot()
+	if err != nil {
+		return fmt.Errorf("Failed exiting chroot: %w", err)
+	}
 
 	c.global.logger.WithField("compression", c.flagCompression).Info("Creating LXC image")
 

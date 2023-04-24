@@ -104,7 +104,7 @@ type DefinitionPackagesSet struct {
 	Flags            []string `yaml:"flags,omitempty"`
 }
 
-// A DefinitionPackagesRepository contains data of a specific repository
+// A DefinitionPackagesRepository contains data of a specific repository.
 type DefinitionPackagesRepository struct {
 	DefinitionFilter `yaml:",inline"`
 	Name             string `yaml:"name"`           // Name of the repository
@@ -156,7 +156,7 @@ type DefinitionImage struct {
 	ArchitecturePersonality string `yaml:"architecture_personality,omitempty"`
 }
 
-// A DefinitionSource specifies the download type and location
+// A DefinitionSource specifies the download type and location.
 type DefinitionSource struct {
 	Downloader       string   `yaml:"downloader"`
 	URL              string   `yaml:"url,omitempty"`
@@ -216,7 +216,7 @@ type DefinitionFile struct {
 	Source           string                 `yaml:"source,omitempty"`
 }
 
-// A DefinitionFileTemplate represents the settings used by generators
+// A DefinitionFileTemplate represents the settings used by generators.
 type DefinitionFileTemplate struct {
 	Properties map[string]string `yaml:"properties,omitempty"`
 	When       []string          `yaml:"when,omitempty"`
@@ -280,12 +280,14 @@ func (d *Definition) SetValue(key string, value string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to parse bool %q: %w", value, err)
 		}
+
 		field.SetBool(v)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		v, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return fmt.Errorf("Failed to parse int %q: %w", value, err)
 		}
+
 		field.SetInt(v)
 	case reflect.String:
 		field.SetString(value)
@@ -294,6 +296,7 @@ func (d *Definition) SetValue(key string, value string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to parse uint %q: %w", value, err)
 		}
+
 		field.SetUint(v)
 	default:
 		return fmt.Errorf("Unsupported type '%s'", field.Kind())
@@ -339,7 +342,7 @@ func (d *Definition) SetDefaults() {
 		d.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.architecture_mapped }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
 	}
 
-	// Set default target type. This will only be overriden if building VMs for LXD.
+	// Set default target type. This will only be overridden if building VMs for LXD.
 	d.Targets.Type = DefinitionFilterTypeContainer
 }
 
@@ -374,6 +377,7 @@ func (d *Definition) Validate() error {
 		"rootfs-http",
 		"rockylinux-http",
 	}
+
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
 	}
@@ -393,6 +397,7 @@ func (d *Definition) Validate() error {
 			"zypper",
 			"luet",
 		}
+
 		if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
 			return fmt.Errorf("packages.manager must be one of %v", validManagers)
 		}
@@ -541,7 +546,7 @@ func (d *Definition) GetRunnableActions(trigger string, imageTarget ImageTarget)
 }
 
 // GetEarlyPackages returns a list of packages which are to be installed or removed earlier than the actual package handling
-// Also removes them from the package set so they aren't attempted to be re-installed again as normal packages
+// Also removes them from the package set so they aren't attempted to be re-installed again as normal packages.
 func (d *Definition) GetEarlyPackages(action string) []string {
 	var early []string
 
@@ -601,6 +606,7 @@ func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, 
 			if value < 0 || value >= v.Len() {
 				return reflect.Value{}, errors.New("Index out of range")
 			}
+
 			return getFieldByTag(v.Index(value), t.Elem(), parts[1])
 		}
 
@@ -616,6 +622,7 @@ func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, 
 				if len(parts) == 1 {
 					return v.Field(i), nil
 				}
+
 				return getFieldByTag(v.Field(i), t.Field(i).Type, parts[1])
 			}
 		}

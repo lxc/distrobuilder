@@ -15,15 +15,7 @@ update-gomod:
 	go mod tidy
 
 check: default
-	go install -v -x github.com/tsenart/deadcode@latest
-	go install -v -x honnef.co/go/tools/cmd/staticcheck@latest
 	go test -v ./...
-	deadcode ./
-	go vet ./...
-	# Ignore the following errors:
-	# - "error strings should not be capitalized"
-	# - "at least one file in a package should have a package comment"
-	staticcheck -checks all,-ST1005,-ST1000 ./...
 
 dist:
 	# Cleanup
@@ -76,3 +68,11 @@ doc-linkcheck: doc-setup
 .PHONY: doc-lint
 doc-lint:
 	.sphinx/.markdownlint/doc-lint.sh
+
+.PHONY: static-analysis
+static-analysis:
+ifeq ($(shell command -v golangci-lint 2> /dev/null),)
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
+endif
+	golangci-lint run --timeout 5m
+	run-parts --exit-on-error --regex '.sh' test/lint

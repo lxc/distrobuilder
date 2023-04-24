@@ -51,6 +51,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to create metadata.yaml: %w", err)
 	}
+
 	defer file.Close()
 
 	data, err := yaml.Marshal(l.Metadata)
@@ -91,9 +92,8 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to create qcow2 image %q: %w", qcowImage, err)
 		}
-		defer func() {
-			os.RemoveAll(rawImage)
-		}()
+
+		defer os.RemoveAll(rawImage)
 	}
 
 	imageFile := ""
@@ -116,9 +116,11 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 			_, err = shared.Pack(l.ctx, targetTarball,
 				"", l.sourceDir, "--transform", "s,^./,rootfs/,", ".")
 		}
+
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to pack tarball %q: %w", targetTarball, err)
 		}
+
 		defer func() {
 			if vm {
 				os.RemoveAll(qcowImage)
@@ -153,6 +155,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 			// Create rootfs as squashfs.
 			err = shared.RunCommand(l.ctx, nil, nil, "mksquashfs", args...)
 		}
+
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to create squashfs or copy image: %w", err)
 		}

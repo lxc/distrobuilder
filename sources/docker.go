@@ -12,7 +12,7 @@ type docker struct {
 	common
 }
 
-// Run downloads and unpacks a docker image
+// Run downloads and unpacks a docker image.
 func (s *docker) Run() error {
 	absRootfsDir, err := filepath.Abs(s.rootfsDir)
 	if err != nil {

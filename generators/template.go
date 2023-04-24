@@ -31,6 +31,7 @@ func (g *template) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", templateDir, err)
 	}
+
 	template := fmt.Sprintf("%s.tpl", g.defFile.Name)
 
 	file, err := os.Create(filepath.Join(templateDir, template))

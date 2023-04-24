@@ -99,6 +99,7 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 	} else {
 		checksum, err = os.ReadFile(checksumPath)
 	}
+
 	if err != nil {
 		return fmt.Errorf("Failed to read checksum file: %w", err)
 	}
@@ -107,6 +108,7 @@ func (s *opensuse) verifyTarball(imagePath string, definition shared.Definition)
 	if err != nil {
 		return fmt.Errorf("Failed to open %q: %w", imagePath, err)
 	}
+
 	defer image.Close()
 
 	hash := sha256.New()

@@ -8,9 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/lxc/distrobuilder/shared"
 	lxd "github.com/lxc/lxd/shared"
 	"github.com/stretchr/testify/require"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 func TestVerifyFile(t *testing.T) {
@@ -18,6 +19,7 @@ func TestVerifyFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to retrieve working directory: %v", err)
 	}
+
 	testdataDir := filepath.Join(wd, "..", "testdata")
 
 	keys := []string{"0x5DE8949A899C8D99"}

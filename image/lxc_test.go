@@ -112,25 +112,29 @@ func TestLXCAddTemplate(t *testing.T) {
 		filepath.Join(lxcCacheDir(), "metadata", "templates")))
 
 	// Add first template entry.
-	image.AddTemplate("/path/file1")
+	err = image.AddTemplate("/path/file1")
+	require.NoError(t, err)
 	file, err := os.Open(filepath.Join(lxcCacheDir(), "metadata", "templates"))
 	require.NoError(t, err)
 
 	// Copy file content to buffer.
 	var buffer bytes.Buffer
-	io.Copy(&buffer, file)
+	_, err = io.Copy(&buffer, file)
+	require.NoError(t, err)
 	file.Close()
 
 	require.Equal(t, "/path/file1\n", buffer.String())
 
 	// Add second template entry.
-	image.AddTemplate("/path/file2")
+	err = image.AddTemplate("/path/file2")
+	require.NoError(t, err)
 	file, err = os.Open(filepath.Join(lxcCacheDir(), "metadata", "templates"))
 	require.NoError(t, err)
 
 	// Copy file content to buffer.
 	buffer.Reset()
-	io.Copy(&buffer, file)
+	_, err = io.Copy(&buffer, file)
+	require.NoError(t, err)
 	file.Close()
 
 	require.Equal(t, "/path/file1\n/path/file2\n", buffer.String())
@@ -186,6 +190,7 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 						Content: "{{ invalid }",
 					},
 				}
+
 				return &l
 			},
 		},
@@ -204,9 +209,10 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 			"",
 			func(l LXCImage) *LXCImage {
 				// Create /dev and device file.
-				os.MkdirAll(filepath.Join(lxcCacheDir(), "rootfs", "dev"), 0755)
-				unix.Mknod(filepath.Join(lxcCacheDir(), "rootfs", "dev", "null"),
-					unix.S_IFCHR, 0)
+				err := os.MkdirAll(filepath.Join(lxcCacheDir(), "rootfs", "dev"), 0755)
+				require.NoError(t, err)
+				err = unix.Mknod(filepath.Join(lxcCacheDir(), "rootfs", "dev", "null"), unix.S_IFCHR, 0)
+				require.NoError(t, err)
 				return &l
 			},
 		},
@@ -316,7 +322,8 @@ func TestLXCPackMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	// Include templates directory.
-	image.AddTemplate("/path/file")
+	err = image.AddTemplate("/path/file")
+	require.NoError(t, err)
 	err = image.packMetadata()
 	require.NoError(t, err)
 
@@ -324,7 +331,6 @@ func TestLXCPackMetadata(t *testing.T) {
 	os.RemoveAll(filepath.Join(lxcCacheDir(), "metadata"))
 	err = image.packMetadata()
 	require.Error(t, err)
-
 }
 
 func TestLXCWriteMetadata(t *testing.T) {

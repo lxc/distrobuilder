@@ -55,7 +55,8 @@ func TestCloudInitGeneratorRunLXC(t *testing.T) {
 	}
 
 	// Disable cloud-init
-	generator.RunLXC(nil, shared.DefinitionTargetLXC{})
+	err = generator.RunLXC(nil, shared.DefinitionTargetLXC{})
+	require.NoError(t, err)
 
 	// Check whether the generator has altered the rootfs
 	for _, f := range []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"} {
@@ -172,5 +173,4 @@ config:
 
 		validateTestFile(t, filepath.Join(cacheDir, "templates", fmt.Sprintf("cloud-init-%s.tpl", tt.name)), tt.expected)
 	}
-
 }

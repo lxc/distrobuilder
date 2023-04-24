@@ -2,6 +2,7 @@ package shared
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -32,6 +33,7 @@ func Unpack(file string, path string) error {
 		if err != nil {
 			return err
 		}
+
 		defer f.Close()
 
 		reader = f
@@ -58,7 +60,9 @@ func Unpack(file string, path string) error {
 	if err != nil {
 		// We can't create char/block devices in unpriv containers so ignore related errors.
 		if command == "unsquashfs" {
-			runError, ok := err.(lxd.RunError)
+			var runError *lxd.RunError
+
+			ok := errors.As(err, &runError)
 			if !ok || runError.StdErr().String() == "" {
 				return err
 			}

@@ -91,6 +91,7 @@ func (s *openEuler) Run() error {
 	if err != nil {
 		return fmt.Errorf("Failed to unpack %s: %w", source, err)
 	}
+
 	return nil
 }
 

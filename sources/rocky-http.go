@@ -244,6 +244,7 @@ func (s *rockylinux) getRelease(URL, release, variant, arch string) (string, err
 	if err != nil {
 		return "", fmt.Errorf("Failed to GET %q: %w", u, err)
 	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)

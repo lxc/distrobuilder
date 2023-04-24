@@ -65,19 +65,16 @@ func getOverlay(logger *logrus.Logger, cacheDir, sourceDir string) (func(), stri
 		err = os.RemoveAll(upperDir)
 		if err != nil {
 			logger.WithFields(logrus.Fields{"err": err, "dir": upperDir}).Warn("Failed to remove upper directory")
-
 		}
 
 		err = os.RemoveAll(workDir)
 		if err != nil {
 			logger.WithFields(logrus.Fields{"err": err, "dir": workDir}).Warn("Failed to remove work directory")
-
 		}
 
 		err = os.Remove(overlayDir)
 		if err != nil {
 			logger.WithFields(logrus.Fields{"err": err, "dir": overlayDir}).Warn("Failed to remove overlay directory")
-
 		}
 	}
 
