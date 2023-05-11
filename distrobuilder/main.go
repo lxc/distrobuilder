@@ -164,6 +164,11 @@ func main() {
 				}
 			}()
 
+			// No need to create cache directory if we're only validating.
+			if cmd.CalledAs() == "validate" {
+				return
+			}
+
 			// Create temp directory if the cache directory isn't explicitly set
 			if globalCmd.flagCacheDir == "" {
 				dir, err := os.MkdirTemp("/var/cache", "distrobuilder.")
@@ -454,6 +459,11 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 }
 
 func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
+	// If we're only validating, there's nothing to clean up.
+	if cmd.CalledAs() == "validate" {
+		return nil
+	}
+
 	hasLogger := c.logger != nil
 
 	// exit all chroots otherwise we cannot remove the cache directory
