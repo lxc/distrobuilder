@@ -460,7 +460,7 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 
 func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 	// If we're only validating, there's nothing to clean up.
-	if cmd.CalledAs() == "validate" {
+	if cmd != nil && cmd.CalledAs() == "validate" {
 		return nil
 	}
 
