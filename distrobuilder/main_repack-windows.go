@@ -27,8 +27,9 @@ import (
 type cmdRepackWindows struct {
 	global *cmdGlobal
 
-	flagDrivers        string
-	flagWindowsVersion string
+	flagDrivers             string
+	flagWindowsVersion      string
+	flagWindowsArchitecture string
 }
 
 func init() {
@@ -89,6 +90,7 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 
 	cmd.Flags().StringVar(&c.flagDrivers, "drivers", "", "Path to drivers ISO"+"``")
 	cmd.Flags().StringVar(&c.flagWindowsVersion, "windows-version", "", "Windows version to repack"+"``")
+	cmd.Flags().StringVar(&c.flagWindowsArchitecture, "windows-arch", "", "Windows architecture to repack"+"``")
 
 	return cmd
 }
@@ -110,6 +112,22 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 		if !lxd.StringInSlice(c.flagWindowsVersion, supportedVersions) {
 			return fmt.Errorf("Version must be one of %v", supportedVersions)
+		}
+	}
+
+	if c.flagWindowsArchitecture == "" {
+		detectedArchitecture := detectWindowsArchitecture(filepath.Base(args[0]))
+
+		if detectedArchitecture == "" {
+			return errors.New("Failed to detect Windows architecture. Please provide the architecture using the --windows-arch flag")
+		}
+
+		c.flagWindowsArchitecture = detectedArchitecture
+	} else {
+		supportedArchitectures := []string{"amd64", "ARM64"}
+
+		if !lxd.StringInSlice(c.flagWindowsArchitecture, supportedArchitectures) {
+			return fmt.Errorf("Architecture must be one of %v", supportedArchitectures)
 		}
 	}
 
@@ -521,7 +539,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 			"driverName":  driver,
 		}
 
-		sourceDir := filepath.Join(driverPath, driver, c.flagWindowsVersion, "amd64")
+		sourceDir := filepath.Join(driverPath, driver, c.flagWindowsVersion, c.flagWindowsArchitecture)
 		targetBasePath := filepath.Join(dirs["filerepository"], info.PackageName)
 
 		if !lxd.PathExists(targetBasePath) {
@@ -677,6 +695,23 @@ func detectWindowsVersion(fileName string) string {
 		"2k12": {"2k12", "w2k12", "win2k12", "windows.?server.?2012"},
 		"2k16": {"2k16", "w2k16", "win2k16", "windows.?server.?2016"},
 		"2k22": {"2k22", "w2k22", "win2k22", "windows.?server.?2022"},
+	}
+
+	for k, v := range aliases {
+		for _, alias := range v {
+			if regexp.MustCompile(fmt.Sprintf("(?i)%s", alias)).MatchString(fileName) {
+				return k
+			}
+		}
+	}
+
+	return ""
+}
+
+func detectWindowsArchitecture(fileName string) string {
+	aliases := map[string][]string{
+		"amd64": {"amd64", "x64"},
+		"ARM64": {"arm64"},
 	}
 
 	for k, v := range aliases {
