@@ -105,3 +105,33 @@ func Test_detectWindowsVersion(t *testing.T) {
 		})
 	}
 }
+
+func Test_detectWindowsArchitecture(t *testing.T) {
+	type args struct {
+		fileName string
+	}
+
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			"Windows 11 (1)",
+			args{"Win10_22H2_English_x64.iso"},
+			"amd64",
+		},
+		{
+			"Windows 11 (2)",
+			args{"Win10_22H2_English_arm64.iso"},
+			"ARM64",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := detectWindowsArchitecture(tt.args.fileName)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
