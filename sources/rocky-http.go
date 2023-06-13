@@ -18,15 +18,13 @@ import (
 type rockylinux struct {
 	commonRHEL
 
-	fname        string
-	majorVersion string
+	fname string
 }
 
 // Run downloads the tarball and unpacks it.
 func (s *rockylinux) Run() error {
 	var err error
 
-	s.majorVersion = strings.Split(s.definition.Image.Release, ".")[0]
 	baseURL := fmt.Sprintf("%s/%s/isos/%s/", s.definition.Source.URL,
 		strings.ToLower(s.definition.Image.Release),
 		s.definition.Image.ArchitectureMapped)
@@ -77,10 +75,17 @@ func (s *rockylinux) Run() error {
 }
 
 func (s *rockylinux) isoRunner(gpgKeysPath string) error {
+	repoURL := "mirrorlist=http://mirrors.rockylinux.org/mirrorlist?arch=\\$basearch&repo=BaseOS-\\$releasever"
+
+	if strings.Contains(s.definition.Source.URL, "/vault/") {
+		repoURL = fmt.Sprintf("baseurl=http://dl.rockylinux.org/vault/rocky/%s/BaseOS/\\$basearch/os/", s.definition.Image.Release)
+	}
+
 	err := shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 set -eux
 GPG_KEYS="%s"
 RELEASE="%s"
+REPO_URL="%s"
 # Create required files
 touch /etc/mtab /etc/fstab
 yum_args=""
@@ -213,10 +218,10 @@ i+YIbPKH1TAOMwiyxC106mIL705p+ORf5zATZMyB8Y0OvRIz5aKkBDFZM2QN6A==
 EOF
 		fi
 	fi
-	cat <<- "EOF" > /etc/yum.repos.d/Rocky-BaseOS.repo
+	cat <<- EOF > /etc/yum.repos.d/Rocky-BaseOS.repo
 [BaseOS]
-name=Rocky-$releasever - Base
-mirrorlist=http://mirrors.rockylinux.org/mirrorlist?arch=$basearch&repo=BaseOS-$releasever
+name=Rocky-\$releasever - Base
+${REPO_URL}
 gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
@@ -229,7 +234,7 @@ pkgs="basesystem Rocky-release yum"
 mkdir /rootfs
 yum ${yum_args} --installroot=/rootfs -y --releasever="${RELEASE}" --skip-broken install ${pkgs}
 rm -rf /rootfs/var/cache/yum
-`, gpgKeysPath, s.majorVersion))
+`, gpgKeysPath, s.definition.Image.Release, repoURL))
 	if err != nil {
 		return fmt.Errorf("Failed to run ISO script: %w", err)
 	}
