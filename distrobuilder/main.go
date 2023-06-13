@@ -238,6 +238,26 @@ func main() {
 	}
 }
 
+func (c *cmdGlobal) cleanupCacheDirectory() {
+	// Try removing the entire cache directory.
+	err := os.RemoveAll(c.flagCacheDir)
+	if err == nil {
+		return
+	}
+
+	// Try removing the content of the cache directory if the directory itself cannot be removed.
+	err = filepath.Walk(c.flagCacheDir, func(path string, info os.FileInfo, err error) error {
+		if path == c.flagCacheDir {
+			return nil
+		}
+
+		return os.RemoveAll(path)
+	})
+	if err != nil {
+		c.logger.WithField("err", err).Warn("Failed cleaning up cache directory")
+	}
+}
+
 func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// if an error is returned, disable the usage message
 	cmd.SilenceUsage = true
@@ -245,12 +265,9 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	isRunningBuildDir := cmd.CalledAs() == "build-dir"
 
 	// Clean up cache directory before doing anything
-	err := os.RemoveAll(c.flagCacheDir)
-	if err != nil {
-		return fmt.Errorf("Failed removing cache directory: %w", err)
-	}
+	c.cleanupCacheDirectory()
 
-	err = os.Mkdir(c.flagCacheDir, 0755)
+	err := os.MkdirAll(c.flagCacheDir, 0755)
 	if err != nil {
 		return fmt.Errorf("Failed creating cache directory: %w", err)
 	}
@@ -422,18 +439,13 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 }
 
 func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
-	var err error
-
 	// if an error is returned, disable the usage message
 	cmd.SilenceUsage = true
 
 	// Clean up cache directory before doing anything
-	err = os.RemoveAll(c.flagCacheDir)
-	if err != nil {
-		return fmt.Errorf("Failed removing cache directory: %w", err)
-	}
+	c.cleanupCacheDirectory()
 
-	err = os.Mkdir(c.flagCacheDir, 0755)
+	err := os.MkdirAll(c.flagCacheDir, 0755)
 	if err != nil {
 		return fmt.Errorf("Failed creating cache directory: %w", err)
 	}
@@ -491,7 +503,7 @@ func (c *cmdGlobal) postRun(cmd *cobra.Command, args []string) error {
 			c.logger.Info("Removing cache directory")
 		}
 
-		_ = os.RemoveAll(c.flagCacheDir)
+		c.cleanupCacheDirectory()
 	}
 
 	// Clean up sources directory
