@@ -36,6 +36,7 @@ var downloaders = map[string]func() downloader{
 	"fedora-http":          func() downloader { return &fedora{} },
 	"funtoo-http":          func() downloader { return &funtoo{} },
 	"gentoo-http":          func() downloader { return &gentoo{} },
+	"openeuler-http":       func() downloader { return &openEuler{} },
 	"opensuse-http":        func() downloader { return &opensuse{} },
 	"openwrt-http":         func() downloader { return &openwrt{} },
 	"oraclelinux-http":     func() downloader { return &oraclelinux{} },
@@ -45,7 +46,7 @@ var downloaders = map[string]func() downloader{
 	"springdalelinux-http": func() downloader { return &springdalelinux{} },
 	"ubuntu-http":          func() downloader { return &ubuntu{} },
 	"voidlinux-http":       func() downloader { return &voidlinux{} },
-	"openeuler-http":       func() downloader { return &openEuler{} },
+	"vyos-http":            func() downloader { return &vyos{} },
 }
 
 // Load loads and initializes a downloader.

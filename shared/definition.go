@@ -376,6 +376,7 @@ func (d *Definition) Validate() error {
 		"funtoo-http",
 		"rootfs-http",
 		"rockylinux-http",
+		"vyos-http",
 	}
 
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
