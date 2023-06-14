@@ -41,7 +41,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 	defer os.RemoveAll(tempRootDir)
 
 	// this is easier than doing the whole loop thing ourselves
-	err = shared.RunCommand(c.ctx, nil, nil, "mount", "-o", "ro", filePath, isoDir)
+	err = shared.RunCommand(c.ctx, nil, nil, "mount", "-t", "iso9660", "-o", "ro", filePath, isoDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", filePath, err)
 	}
@@ -55,7 +55,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 	if lxd.PathExists(squashfsImage) {
 		// The squashfs.img contains an image containing the rootfs, so first
 		// mount squashfs.img
-		err = shared.RunCommand(c.ctx, nil, nil, "mount", "-o", "ro", squashfsImage, squashfsDir)
+		err = shared.RunCommand(c.ctx, nil, nil, "mount", "-t", "squashfs", "-o", "ro", squashfsImage, squashfsDir)
 		if err != nil {
 			return fmt.Errorf("Failed to mount %q: %w", squashfsImage, err)
 		}
@@ -191,7 +191,13 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 		_ = os.RemoveAll(installDir)
 	}()
 
-	err = shared.RunCommand(c.ctx, nil, nil, "mount", "-o", "ro", imageFile, installDir)
+	fsType := "squashfs"
+
+	if filepath.Base(imageFile) == "rootfs.img" {
+		fsType = "ext4"
+	}
+
+	err = shared.RunCommand(c.ctx, nil, nil, "mount", "-t", fsType, "-o", "ro", imageFile, installDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", imageFile, err)
 	}
@@ -211,7 +217,7 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 
 		defer os.RemoveAll(rootfsDir)
 
-		err = shared.RunCommand(c.ctx, nil, nil, "mount", "-o", "ro", rootfsFile, rootfsDir)
+		err = shared.RunCommand(c.ctx, nil, nil, "mount", "-t", "ext4", "-o", "ro", rootfsFile, rootfsDir)
 		if err != nil {
 			return fmt.Errorf("Failed to mount %q: %w", rootfsFile, err)
 		}
@@ -267,7 +273,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 	}
 
 	// Mount the partition read-only since we don't want to accidentally modify it.
-	err = shared.RunCommand(c.ctx, nil, nil, "mount", "-o", fmt.Sprintf("ro,loop,offset=%d", offset*512),
+	err = shared.RunCommand(c.ctx, nil, nil, "mount", "-t", "ext4", "-o", fmt.Sprintf("ro,loop,offset=%d", offset*512),
 		rawFilePath, roRootDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", rawFilePath, err)

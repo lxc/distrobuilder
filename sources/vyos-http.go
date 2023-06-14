@@ -46,7 +46,7 @@ func (s *vyos) unpackISO(filePath string, rootfsDir string) error {
 	defer os.RemoveAll(squashfsDir)
 
 	// this is easier than doing the whole loop thing ourselves
-	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-o", "ro", filePath, isoDir)
+	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-t", "iso9660", "-o", "ro", filePath, isoDir)
 	if err != nil {
 		return fmt.Errorf("Failed mounting %q: %w", filePath, err)
 	}
@@ -59,7 +59,7 @@ func (s *vyos) unpackISO(filePath string, rootfsDir string) error {
 
 	// The squashfs.img contains an image containing the rootfs, so first
 	// mount squashfs.img
-	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-o", "ro", squashfsImage, squashfsDir)
+	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-t", "squashfs", "-o", "ro", squashfsImage, squashfsDir)
 	if err != nil {
 		return fmt.Errorf("Failed mounting %q: %w", squashfsImage, err)
 	}
