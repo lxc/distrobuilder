@@ -31,9 +31,18 @@ func (s *openwrt) Run() error {
 	case "x86_64":
 		architecturePath = strings.Replace(s.definition.Image.ArchitectureMapped, "_", "/", 1)
 	case "armv7l":
-		architecturePath = "armvirt/32"
+		if release == "snapshot" {
+			architecturePath = "armsr/armv7"
+		} else {
+			architecturePath = "armvirt/32"
+		}
+
 	case "aarch64":
-		architecturePath = "armvirt/64"
+		if release == "snapshot" {
+			architecturePath = "armsr/armv8"
+		} else {
+			architecturePath = "armvirt/64"
+		}
 	}
 
 	// Figure out the correct release
@@ -74,7 +83,7 @@ func (s *openwrt) Run() error {
 		case "armv7l":
 			fallthrough
 		case "aarch64":
-			fname = fmt.Sprintf("openwrt-%s-default-rootfs.tar.gz",
+			fname = fmt.Sprintf("openwrt-%s-rootfs.tar.gz",
 				strings.Replace(architecturePath, "/", "-", 1))
 		}
 	} else {
