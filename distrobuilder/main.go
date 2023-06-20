@@ -829,6 +829,19 @@ fi
 if [ "${nm_exists}" -eq 1 ]; then
 	fix_nm_link_state eth0
 fi
+
+# Allow masking units created by the lxc system-generator.
+for d in /etc/systemd/system /usr/lib/systemd/system /lib/systemd/system; do
+	if ! [ -d "${d}" ]; then
+		continue
+	fi
+
+	find "${d}" -maxdepth 1 -type l | while read -r f; do
+		if [ "$(readlink "${f}")" = "/dev/null" ]; then
+			fix_systemd_mask "$(basename "${f}")"
+		fi
+	done
+done
 `
 	err := os.MkdirAll("/etc/systemd/system-generators", 0755)
 	if err != nil {
