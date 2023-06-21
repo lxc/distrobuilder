@@ -14,6 +14,47 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
+var lxdAgentSetupScript = `#!/bin/sh
+set -eu
+PREFIX="/run/lxd_agent"
+
+# Functions.
+mount_virtiofs() {
+    mount -t virtiofs config "${PREFIX}/.mnt" >/dev/null 2>&1
+}
+
+mount_9p() {
+    /sbin/modprobe 9pnet_virtio >/dev/null 2>&1 || true
+    /bin/mount -t 9p config "${PREFIX}/.mnt" -o access=0,trans=virtio,size=1048576 >/dev/null 2>&1
+}
+
+fail() {
+    umount -l "${PREFIX}" >/dev/null 2>&1 || true
+    rmdir "${PREFIX}" >/dev/null 2>&1 || true
+    echo "${1}"
+    exit 1
+}
+
+# Setup the mount target.
+umount -l "${PREFIX}" >/dev/null 2>&1 || true
+mkdir -p "${PREFIX}"
+mount -t tmpfs tmpfs "${PREFIX}" -o mode=0700,size=50M
+mkdir -p "${PREFIX}/.mnt"
+
+# Try virtiofs first.
+mount_virtiofs || mount_9p || fail "Couldn't mount virtiofs or 9p, failing."
+
+# Copy the data.
+cp -Ra "${PREFIX}/.mnt/"* "${PREFIX}"
+
+# Unmount the temporary mount.
+umount "${PREFIX}/.mnt"
+rmdir "${PREFIX}/.mnt"
+
+# Fix up permissions.
+chown -R root:root "${PREFIX}"
+`
+
 type lxdAgent struct {
 	common
 }
@@ -101,47 +142,6 @@ WantedBy=multi-user.target
 		return fmt.Errorf("Failed to create symlink %q: %w", filepath.Join(g.sourceDir, "/etc/systemd/system/multi-user.target.wants/lxd-agent.service"), err)
 	}
 
-	lxdAgentSetupScript := `#!/bin/sh
-set -eu
-PREFIX="/run/lxd_agent"
-
-# Functions.
-mount_virtiofs() {
-    mount -t virtiofs config "${PREFIX}/.mnt" >/dev/null 2>&1
-}
-
-mount_9p() {
-    /sbin/modprobe 9pnet_virtio >/dev/null 2>&1 || true
-    /bin/mount -t 9p config "${PREFIX}/.mnt" -o access=0,trans=virtio,size=1048576 >/dev/null 2>&1
-}
-
-fail() {
-    umount -l "${PREFIX}" >/dev/null 2>&1 || true
-    rmdir "${PREFIX}" >/dev/null 2>&1 || true
-    echo "${1}"
-    exit 1
-}
-
-# Setup the mount target.
-umount -l "${PREFIX}" >/dev/null 2>&1 || true
-mkdir -p "${PREFIX}"
-mount -t tmpfs tmpfs "${PREFIX}" -o mode=0700,size=50M
-mkdir -p "${PREFIX}/.mnt"
-
-# Try virtiofs first.
-mount_virtiofs || mount_9p || fail "Couldn't mount virtiofs or 9p, failing."
-
-# Copy the data.
-cp -Ra "${PREFIX}/.mnt/"* "${PREFIX}"
-
-# Unmount the temporary mount.
-umount "${PREFIX}/.mnt"
-rmdir "${PREFIX}/.mnt"
-
-# Fix up permissions.
-chown -R root:root "${PREFIX}"
-`
-
 	path = filepath.Join(g.sourceDir, systemdPath, "lxd-agent-setup")
 
 	err = os.WriteFile(path, []byte(lxdAgentSetupScript), 0755)
@@ -168,17 +168,15 @@ func (g *lxdAgent) handleOpenRC() error {
 	lxdAgentScript := `#!/sbin/openrc-run
 
 description="LXD - agent"
-command=/run/lxd_config/drive/lxd-agent
+command=/run/lxd_agent/lxd-agent
 command_background=true
 pidfile=/run/lxd-agent.pid
-start_stop_daemon_args="--chdir /run/lxd_config/drive"
-required_dirs=/run/lxd_config/drive
+start_stop_daemon_args="--chdir /run/lxd_agent"
+required_dirs=/run/lxd_agent
 
 depend() {
-	want lxd-agent-virtiofs
-	after lxd-agent-virtiofs
-	want lxd-agent-9p
-	after lxd-agent-9p
+	need lxd-agent-setup
+	after lxd-agent-setup
 	before cloud-init
 	before cloud-init-local
 }
@@ -196,53 +194,26 @@ depend() {
 
 	lxdConfigShareMountScript := `#!/sbin/openrc-run
 
-description="LXD - agent - 9p mount"
-command=/bin/mount
-command_args="-t 9p config /run/lxd_config/drive -o access=0,trans=virtio"
+description="LXD - agent - setup"
+command=/usr/local/bin/lxd-agent-setup
 required_files=/dev/virtio-ports/org.linuxcontainers.lxd
-
-start_pre() {
-	/sbin/modprobe 9pnet_virtio || true
-	# Don't proceed if the config drive is mounted already
-	mount | grep -q /run/lxd_config/drive && return 1
-	checkpath -d /run/lxd_config -m 0700
-	checkpath -d /run/lxd_config/drive
-}
 `
 
-	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
+	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-setup"), []byte(lxdConfigShareMountScript), 0755)
 	if err != nil {
-		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-9p"), err)
+		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-setup"), err)
 	}
 
-	err = os.Symlink("/etc/init.d/lxd-agent-9p", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-9p"))
+	err = os.Symlink("/etc/init.d/lxd-agent-setup", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-setup"))
 	if err != nil {
-		return fmt.Errorf("Failed to create symlink %q: %w", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-9p"), err)
+		return fmt.Errorf("Failed to create symlink %q: %w", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-setup"), err)
 	}
 
-	lxdConfigShareMountVirtioFSScript := `#!/sbin/openrc-run
+	path := filepath.Join(g.sourceDir, "/usr/local/bin", "lxd-agent-setup")
 
-	description="LXD - agent - virtio-fs mount"
-	command=/bin/mount
-	command_args="-t virtiofs config /run/lxd_config/drive"
-	required_files=/dev/virtio-ports/org.linuxcontainers.lxd
-
-	start_pre() {
-		# Don't proceed if the config drive is mounted already
-		mount | grep -q /run/lxd_config/drive && return 1
-		checkpath -d /run/lxd_config -m 0700
-		checkpath -d /run/lxd_config/drive
-	}
-	`
-
-	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
+	err = os.WriteFile(path, []byte(lxdAgentSetupScript), 0755)
 	if err != nil {
-		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/lxd-agent-virtiofs"), err)
-	}
-
-	err = os.Symlink("/etc/init.d/lxd-agent-virtiofs", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-virtiofs"))
-	if err != nil {
-		return fmt.Errorf("Failed to create symlink %q: %w", filepath.Join(g.sourceDir, "/etc/runlevels/default/lxd-agent-virtiofs"), err)
+		return fmt.Errorf("Failed to write file %q: %w", path, err)
 	}
 
 	return nil
