@@ -37,6 +37,7 @@ distrobuilder pack-lxc def.yaml /path/to/rootfs /path/to/output
 distrobuilder pack-lxd def.yaml /path/to/rootfs /path/to/output
 ```
 
+(howto-build-lxc)=
 ## LXC image
 
 ```shell
@@ -84,6 +85,7 @@ After building the image, the rootfs will be destroyed.
 The `pack-lxc` sub-command can be used to create an image from an existing rootfs.
 The rootfs won't be deleted afterwards.
 
+(howto-build-lxd)=
 ## LXD image
 
 ```shell

@@ -4,32 +4,79 @@ discourse: 7519
 
 # Use `distrobuilder` to create images
 
-In the following, we see how to create a container image for LXD.
+This guide shows you how to create an image for LXD or LXC.
 
-## Creating a container image
+Before you start, you must install `distrobuilder`.
+See {doc}`../howto/install` for instructions.
 
-To create a container image, first create a directory where you will be placing the container images, and enter that directory.
+## Create an image
+
+To create an image, first create a directory where you will be placing the images, and enter that directory.
 
 ```
-mkdir -p $HOME/ContainerImages/ubuntu/
-cd $HOME/ContainerImages/ubuntu/
+mkdir -p $HOME/Images/ubuntu/
+cd $HOME/Images/ubuntu/
 ```
 
-Then, copy one of the example YAML configuration files for container images into this directory. In this example, we are creating an Ubuntu container image.
+Then, copy one of the example YAML configuration files for images into this directory.
+
+```{note}
+The YAML configuration file contains an image template that gives instructions to distrobuilder.
+
+Distrobuilder provides examples of YAML files for various distributions in the [examples directory](https://github.com/lxc/distrobuilder/tree/master/doc/examples).
+[`scheme.yaml`](https://github.com/lxc/distrobuilder/blob/master/doc/examples/scheme.yaml) is a standard template that includes all available options.
+
+Official LXD templates for various distributions are available in the [`lxc-ci` repository](https://github.com/lxc/lxc-ci/tree/master/images).
+```
+
+In this example, we are creating an Ubuntu image.
 
 ```
 cp $HOME/go/src/github.com/lxc/distrobuilder/doc/examples/ubuntu.yaml ubuntu.yaml
 ```
 
-## Build the container image for LXD
+### Edit the template file
 
-Finally, run `distrobuilder` to create the container image. We are using the `build-lxd` option to create a container image for LXD.
+Optionally, you can do some edits to the YAML configuration file.
+You can define the following keys:
 
+| Section    | Description                                                                              | Documentation                  |
+|------------|------------------------------------------------------------------------------------------|--------------------------------|
+| `image`    | Defines distribution, architecture, release etc.                                         | {doc}`../reference/image`      |
+| `source`   | Defines main package source, keys etc.                                                   | {doc}`../reference/source`     |
+| `targets`  | Defines configuration for specific targets (e.g. LXD-client, instances etc.)             | {doc}`../reference/targets`    |
+| `files`    | Defines generators to modify files                                                       | {doc}`../reference/generators` |
+| `packages` | Defines packages for install or removal; adds repositories                               | {doc}`../reference/packages`   |
+| `actions`  | Defines scripts to be run after specific steps during image building                     | {doc}`../reference/actions`    |
+| `mappings` | Maps different terms for architectures for specific distributions (e.g. `x86_64: amd64`) | {doc}`../reference/mappings`   |
+
+```{tip}
+When building a VM image, you should either build an image with cloud-init support (provides automatic size growth) or set a higher size in the template, because the standard size is relatively small (~4 GB). Alternatively, you can also grow it manually.
 ```
-sudo $HOME/go/bin/distrobuilder build-lxd ubuntu.yaml
-```
 
-If the command is successful, you will get an output similar to the following. The `lxd.tar.xz` file is the description of the container image. The `rootfs.squasfs` file is the root file system (rootfs) of the container image. The set of these two files is the _container image_.
+## Build and launch the image
+
+The steps for building and launching the image depend on whether you want to use it with LXD or with LXC.
+
+### Create an image for LXD
+
+To build an image for LXD, run `distrobuilder`. We are using the `build-lxd` option to create an image for LXD.
+
+- To create a container image:
+
+  ```
+  sudo $HOME/go/bin/distrobuilder build-lxd ubuntu.yaml
+  ```
+
+- To create a VM image:
+
+  ```
+  sudo $HOME/go/bin/distrobuilder build-lxd ubuntu.yaml --vm
+  ```
+
+See {ref}`howto-build-lxd` for more information about the `build-lxd` command.
+
+If the command is successful, you will get an output similar to the following (for a container image). The `lxd.tar.xz` file is the description of the container image. The `rootfs.squasfs` file is the root file system (rootfs) of the container image. The set of these two files is the _container image_.
 
 ```bash
 $ ls -l
@@ -40,16 +87,18 @@ total 100960
 $
 ```
 
-## Adding the container image to LXD
+#### Add the image to LXD
 
-To add the container image to a LXD installation, use the `lxc image import` command as follows.
+To add the image to a LXD installation, use the `lxc image import` command as follows.
 
 ```bash
 $ lxc image import lxd.tar.xz rootfs.squashfs --alias mycontainerimage
 Image imported with fingerprint: 009349195858651a0f883de804e64eb82e0ac8c0bc51880
 ```
 
-Let's see the container image in LXD. The `ubuntu.yaml` had a setting to create an Ubuntu 20.04 (`focal`) image. The size is 98.58MB.
+See {ref}`lxd:images-copy` for detailed information.
+
+Let's look at the image in LXD. The `ubuntu.yaml` had a setting to create an Ubuntu 20.04 (`focal`) image. The size is 98.58MB.
 
 ```bash
 $ lxc image list mycontainerimage
@@ -60,9 +109,9 @@ $ lxc image list mycontainerimage
 +------------------+--------------+--------+--------------+--------+---------+-----------------------------+
 ```
 
-## Launching a LXD container from the container image
+#### Launch a LXD container from the container image
 
-To launch a container from the freshly created container image, use `lxc launch` as follows. Note that you do not specify a repository of container images (like `ubuntu:` or `images:`) because the image is located locally.
+To launch a container from the freshly created image, use `lxc launch` as follows. Note that you do not specify a repository for the image (like `ubuntu:` or `images:`) because the image is located locally.
 
 ```bash
 $ lxc launch mycontainerimage c1
@@ -70,14 +119,14 @@ Creating c1
 Starting c1
 ```
 
-## Build a LXC container image
+### Create an image for LXC
 
 Using LXC containers instead of LXD may require the installation of `lxc-utils`.
 Having both LXC and LXD installed on the same system will probably cause confusion.
 Use of raw LXC is generally discouraged due to the lack of automatic AppArmor
 protection.
 
-For LXC, instead use:
+To create an image for LXC, use the following command:
 
 ```bash
 $ sudo $HOME/go/bin/distrobuilder build-lxc ubuntu.yaml
@@ -88,13 +137,17 @@ total 87340
 -rw-r--r-- 1 root root     4798 Jan 19 02:42 ubuntu.yaml
 ```
 
-## Adding the container image to LXC
+See {ref}`howto-build-lxc` for more information about the `build-lxc` command.
+
+#### Add the container image to LXC
 
 To add the container image to a LXC installation, use the `lxc-create` command as follows.
 
 ```bash
 lxc-create -n myContainerImage -t local -- --metadata meta.tar.xz --fstree rootfs.tar.xz
 ```
+
+#### Launch a LXC container from the container image
 
 Then start the container with
 
@@ -124,7 +177,7 @@ More information on `repack-windows` can be found by running
 distrobuilder repack-windows -h
 ```
 
-## Install Windows
+### Install Windows
 
 Run the following commands to initialize the VM, to configure (=increase) the allocated disk space and finally attach the full path of your prepared ISO file. Note that the installation of Windows 10 takes about 10GB (before updates), therefore a 30GB disk gives you about 20GB of free space.
 
@@ -141,7 +194,3 @@ lxc start win10 --console=vga
 ```
 
 Taken from: [How to run a Windows virtual machine on LXD on Linux](https://blog.simos.info/how-to-run-a-windows-virtual-machine-on-lxd-on-linux/)
-
-## Examples
-
-Examples of YAML files for various distributions can be found in the [examples directory](https://github.com/lxc/distrobuilder/tree/master/doc/examples) and in the [`lxc-ci` repository](https://github.com/lxc/lxc-ci/tree/master/images).
