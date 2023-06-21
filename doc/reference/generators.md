@@ -10,7 +10,6 @@ Available generators are
 * [`hosts`](#hosts)
 * [`remove`](#remove)
 * [`template`](#template)
-* [`upstart_tty`](#upstart_tty)
 * [`lxd-agent`](#lxd-agent)
 * [`fstab`](#fstab)
 
@@ -108,11 +107,6 @@ The `when` key can be one or more of:
 * start (run every time the container is started)
 
 See {ref}`lxd:image-format` in the LXD documentation for more information.
-
-## `upstart_tty`
-
-This generator creates an upstart job which prevents certain TTYs from starting.
-The job script is written to `path`.
 
 ## `lxd-agent`
 

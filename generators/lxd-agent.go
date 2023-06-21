@@ -90,11 +90,6 @@ func (g *lxdAgent) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 		return nil
 	}
 
-	// Check if we have upstart.
-	if lxd.PathExists(filepath.Join(g.sourceDir, "sbin", "initctl")) {
-		return g.handleUpstart()
-	}
-
 	return g.getInitSystemFromInittab()
 }
 
@@ -214,79 +209,6 @@ required_files=/dev/virtio-ports/org.linuxcontainers.lxd
 	err = os.WriteFile(path, []byte(lxdAgentSetupScript), 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", path, err)
-	}
-
-	return nil
-}
-
-func (g *lxdAgent) handleUpstart() error {
-	lxdAgentScript := `Description "LXD agent"
-
-start on runlevel [2345]
-stop on runlevel [!2345]
-
-respawn
-respawn limit 10 5
-
-exec lxd-agent
-`
-
-	err := os.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent"), []byte(lxdAgentScript), 0755)
-	if err != nil {
-		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init/lxd-agent"), err)
-	}
-
-	lxdConfigShareMountScript := `Description "LXD agent 9p mount"
-
-start on stopped lxd-agent-virtiofs
-
-pre-start script
-	if mount | grep -q /run/lxd_config/drive; then
-		stop
-		exit 0
-	fi
-
-	if ! modprobe 9pnet_virtio; then
-		stop
-		exit 0
-	fi
-
-	mkdir -p /run/lxd_config/drive
-	chmod 0700 /run/lxd_config
-end script
-
-task
-
-exec mount -t 9p config /run/lxd_config/drive -o access=0,trans=virtio
-`
-
-	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-9p"), []byte(lxdConfigShareMountScript), 0755)
-	if err != nil {
-		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init/lxd-agent-9p"), err)
-	}
-
-	lxdConfigShareMountVirtioFSScript := `Description "LXD agent virtio-fs mount"
-
-start on runlevel filesystem
-
-pre-start script
-	if mount | grep -q /run/lxd_config/drive; then
-		stop
-		exit 0
-	fi
-
-	mkdir -p /run/lxd_config/drive
-	chmod 0700 /run/lxd_config
-end script
-
-task
-
-exec mount -t virtiofs config /run/lxd_config/drive
-`
-
-	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init/lxd-agent-virtiofs"), []byte(lxdConfigShareMountVirtioFSScript), 0755)
-	if err != nil {
-		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init/lxd-agent-virtiofs"), err)
 	}
 
 	return nil
