@@ -28,6 +28,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v3
+        if: github.event_name == 'pull_request'
+
       - name: Install Go
         uses: actions/setup-go@v4
         with:
