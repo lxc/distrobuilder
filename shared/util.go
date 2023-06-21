@@ -95,7 +95,7 @@ func RunScript(ctx context.Context, content string) error {
 
 // Pack creates an uncompressed tarball.
 func Pack(ctx context.Context, filename, compression, path string, args ...string) (string, error) {
-	err := RunCommand(ctx, nil, nil, "tar", append([]string{"--xattrs", "-cf", filename, "-C", path}, args...)...)
+	err := RunCommand(ctx, nil, nil, "tar", append([]string{"--xattrs", "-cf", filename, "-C", path, "--sort=name"}, args...)...)
 	if err != nil {
 		// Clean up incomplete tarball
 		os.Remove(filename)
@@ -107,7 +107,7 @@ func Pack(ctx context.Context, filename, compression, path string, args ...strin
 
 // PackUpdate updates an existing tarball.
 func PackUpdate(ctx context.Context, filename, compression, path string, args ...string) (string, error) {
-	err := RunCommand(ctx, nil, nil, "tar", append([]string{"--xattrs", "-uf", filename, "-C", path}, args...)...)
+	err := RunCommand(ctx, nil, nil, "tar", append([]string{"--xattrs", "-uf", filename, "-C", path, "--sort=name"}, args...)...)
 	if err != nil {
 		return "", fmt.Errorf("Failed to update tarball: %w", err)
 	}
