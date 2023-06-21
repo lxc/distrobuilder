@@ -439,7 +439,6 @@ func (d *Definition) Validate() error {
 		"hostname",
 		"hosts",
 		"remove",
-		"upstart-tty",
 		"cloud-init",
 		"lxd-agent",
 		"fstab",

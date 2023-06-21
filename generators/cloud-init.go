@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	lxd "github.com/lxc/lxd/shared"
@@ -41,36 +40,6 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 		})
 		if err != nil {
 			return fmt.Errorf("Failed to walk file tree %q: %w", fullPath, err)
-		}
-	}
-
-	// With upstart:
-	// Remove all symlinks to /etc/rc.d/init.d/cloud-{init-local,config,init,final} in /etc/rc.d/rc<runlevel>.d/*
-	re := regexp.MustCompile(`^[KS]\d+cloud-(?:config|final|init|init-local)$`)
-
-	for i := 0; i <= 6; i++ {
-		fullPath := filepath.Join(g.sourceDir, fmt.Sprintf("/etc/rc.d/rc%d.d", i))
-
-		if !lxd.PathExists(fullPath) {
-			continue
-		}
-
-		err := filepath.Walk(fullPath, func(path string, info os.FileInfo, err error) error {
-			if info.IsDir() {
-				return nil
-			}
-
-			if re.MatchString(info.Name()) {
-				err := os.Remove(path)
-				if err != nil {
-					return fmt.Errorf("Failed to remove file %q: %w", path, err)
-				}
-			}
-
-			return nil
-		})
-		if err != nil {
-			return fmt.Errorf("Failed walking %q: %w", fullPath, err)
 		}
 	}
 

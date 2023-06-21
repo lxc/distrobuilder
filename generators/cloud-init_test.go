@@ -40,20 +40,6 @@ func TestCloudInitGeneratorRunLXC(t *testing.T) {
 		require.FileExists(t, fullPath)
 	}
 
-	for i := 0; i <= 6; i++ {
-		dir := filepath.Join(rootfsDir, "etc", "rc.d", fmt.Sprintf("rc%d.d", i))
-
-		err = os.MkdirAll(dir, 0755)
-		require.NoError(t, err)
-
-		for _, f := range []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"} {
-			fullPath := filepath.Join(dir, fmt.Sprintf("S99%s", f))
-			err = os.Symlink("/dev/null", fullPath)
-			require.NoError(t, err)
-			require.FileExists(t, fullPath)
-		}
-	}
-
 	// Disable cloud-init
 	err = generator.RunLXC(nil, shared.DefinitionTargetLXC{})
 	require.NoError(t, err)

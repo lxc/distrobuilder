@@ -102,14 +102,6 @@ files:
         - create
         - copy
 
-  - generator: upstart-tty
-    path: /etc/init/lxc-tty.conf
-
-  - generator: cloud-init
-    name: user-data
-    content: |-
-      Here goes the user-data
-
 packages:
   manager: apt
   custom_manager:
