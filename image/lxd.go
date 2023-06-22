@@ -139,7 +139,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 			err = shared.Copy(qcowImage, rootfsFile)
 		} else {
 			rootfsFile = filepath.Join(l.targetDir, "rootfs.squashfs")
-			args := []string{l.sourceDir, rootfsFile, "-noappend", "-b", "1M", "-no-progress", "-no-recovery"}
+			args := []string{l.sourceDir, rootfsFile, "-noappend", "-b", "1M", "-no-exports", "-no-progress", "-no-recovery"}
 
 			compression, level, parseErr := shared.ParseSquashfsCompression(compression)
 			if parseErr != nil {
