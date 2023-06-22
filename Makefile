@@ -3,20 +3,22 @@ ARCHIVE=distrobuilder-$(VERSION).tar
 GO111MODULE=on
 SPHINXENV=.sphinx/venv/bin/activate
 
-.PHONY: default check dist
-
+.PHONY: default
 default:
 	gofmt -s -w .
 	go install -v ./...
 	@echo "distrobuilder built successfully"
 
+.PHONY: update-gomod
 update-gomod:
 	go get -t -v -d -u ./...
 	go mod tidy
 
+.PHONY: check
 check: default
 	go test -v ./...
 
+.PHONY: dist
 dist:
 	# Cleanup
 	rm -Rf $(ARCHIVE).gz

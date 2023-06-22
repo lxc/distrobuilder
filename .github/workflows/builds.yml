@@ -1,15 +1,14 @@
-name: Build documentation
+name: Builds
 on:
   - push
   - pull_request
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: read
 
 jobs:
   doc:
-    name: Build Sphinx documentation
+    name: Documentation (Sphinx)
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
