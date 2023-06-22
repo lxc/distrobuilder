@@ -1,5 +1,5 @@
 # distrobuilder
-System container image builder for LXC and LXD
+System container and VM image builder for LXC and LXD
 
 ## Status
 Type            | Service               | Status
@@ -15,7 +15,7 @@ The following are the command line options of `distrobuilder`. You can use `dist
 
 ```bash
 $ distrobuilder
-System container image builder for LXC and LXD
+System container and VM image builder for LXC and LXD
 
 Usage:
   distrobuilder [command]

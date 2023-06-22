@@ -125,7 +125,7 @@ func main() {
 
 	app := &cobra.Command{
 		Use:   "distrobuilder",
-		Short: "System container image builder for LXC and LXD",
+		Short: "System container and VM image builder for LXC and LXD",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// Quick checks
 			if os.Geteuid() != 0 {
