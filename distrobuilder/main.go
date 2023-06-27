@@ -837,8 +837,10 @@ for d in /etc/systemd/system /usr/lib/systemd/system /lib/systemd/system; do
 	fi
 
 	find "${d}" -maxdepth 1 -type l | while read -r f; do
-		if [ "$(readlink "${f}")" = "/dev/null" ]; then
-			fix_systemd_mask "$(basename "${f}")"
+		unit="$(basename "${f}")"
+
+		if [ "${unit}" = "network-device-down.service" ] && [ "$(readlink "${f}")" = "/dev/null" ]; then
+			fix_systemd_mask "${unit}"
 		fi
 	done
 done
