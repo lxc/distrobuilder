@@ -21,6 +21,8 @@ source:
   suite: suite
   same_as: bionic
   skip_verification: false
+  components:
+    - main
 
 targets:
   lxc:

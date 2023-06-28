@@ -166,6 +166,7 @@ type DefinitionSource struct {
 	Suite            string   `yaml:"suite,omitempty"`
 	SameAs           string   `yaml:"same_as,omitempty"`
 	SkipVerification bool     `yaml:"skip_verification,omitempty"`
+	Components       []string `yaml:"components,omitempty"`
 }
 
 // A DefinitionTargetLXCConfig represents the config part of the metadata.

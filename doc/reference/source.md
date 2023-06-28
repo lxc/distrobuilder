@@ -13,6 +13,7 @@ source:
     suite: <string>
     same_as: <boolean>
     skip_verification: <boolean>
+    components: <array>
 ```
 
 The `downloader` field defines a downloader which pulls a rootfs image which will be used as a starting point.
@@ -64,6 +65,8 @@ If the `same_as` field is set, distrobuilder creates a temporary symlink in `/us
 This can be used if you want to run `debootstrap foo` but `foo` is missing due to `debootstrap` not being up-to-date.
 
 If `skip_verification` is true, the source tarball is not verified.
+
+If the `components` field is set, `debootstrap` will use packages from the listed components.
 
 If a package set has the `early` flag enabled, that list of packages will be installed
 while the source is being downloaded. (Note that `early` packages are only supported by
