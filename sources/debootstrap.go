@@ -55,6 +55,10 @@ func (s *debootstrap) Run() error {
 		args = append(args, fmt.Sprintf("--exclude=%s", strings.Join(earlyPackagesRemove, ",")))
 	}
 
+	if len(s.definition.Source.Components) > 0 {
+		args = append(args, fmt.Sprintf("--components=%s", strings.Join(s.definition.Source.Components, ",")))
+	}
+
 	if len(s.definition.Source.Keys) > 0 {
 		keyring, err := s.CreateGPGKeyring()
 		if err != nil {
