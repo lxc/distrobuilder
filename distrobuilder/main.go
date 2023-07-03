@@ -179,6 +179,12 @@ func main() {
 
 				globalCmd.flagCacheDir = dir
 			}
+
+			// Set VM target type if we're building or packing a VM.
+			isTargetVM, _ := cmd.Flags().GetBool("vm")
+			if isTargetVM {
+				globalCmd.definition.Targets.Type = shared.DefinitionFilterTypeVM
+			}
 		},
 		PersistentPostRunE: globalCmd.postRun,
 		CompletionOptions:  cobra.CompletionOptions{DisableDefaultCmd: true},
