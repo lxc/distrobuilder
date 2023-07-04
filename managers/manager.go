@@ -94,19 +94,9 @@ func Load(ctx context.Context, managerName string, logger *logrus.Logger, defini
 
 // ManagePackages manages packages.
 func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
-	var validSets []shared.DefinitionPackagesSet
-
-	for _, set := range m.def.Packages.Sets {
-		if !shared.ApplyFilter(&set, m.def.Image.Release, m.def.Image.ArchitectureMapped, m.def.Image.Variant, m.def.Targets.Type, imageTarget) {
-			continue
-		}
-
-		validSets = append(validSets, set)
-	}
-
 	// If there's nothing to install or remove, and no updates need to be performed,
 	// we can exit here.
-	if len(validSets) == 0 && !m.def.Packages.Update {
+	if len(m.def.Packages.Sets) == 0 && !m.def.Packages.Update {
 		return nil
 	}
 
@@ -137,7 +127,7 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 		}
 	}
 
-	for _, set := range optimizePackageSets(validSets) {
+	for _, set := range optimizePackageSets(m.def.Packages.Sets) {
 		if set.Action == "install" {
 			err = m.mgr.install(set.Packages, set.Flags)
 		} else if set.Action == "remove" {
@@ -168,10 +158,6 @@ func (m *Manager) ManageRepositories(imageTarget shared.ImageTarget) error {
 	}
 
 	for _, repo := range m.def.Packages.Repositories {
-		if !shared.ApplyFilter(&repo, m.def.Image.Release, m.def.Image.ArchitectureMapped, m.def.Image.Variant, m.def.Targets.Type, imageTarget) {
-			continue
-		}
-
 		// Run template on repo.URL
 		repo.URL, err = shared.RenderTemplate(repo.URL, m.def)
 		if err != nil {
