@@ -241,8 +241,9 @@ type DefinitionMappings struct {
 
 // DefinitionEnvVars defines custom environment variables.
 type DefinitionEnvVars struct {
-	Key   string `yaml:"key"`
-	Value string `yaml:"value"`
+	DefinitionFilter `yaml:",inline"`
+	Key              string `yaml:"key"`
+	Value            string `yaml:"value"`
 }
 
 // DefinitionEnv represents the config part of the environment section.
@@ -702,6 +703,17 @@ func (d *Definition) ApplyFilters(imageTargets ImageTarget) {
 		}
 
 		newDefinition.Targets.LXC.Config = append(newDefinition.Targets.LXC.Config, config)
+	}
+
+	// Filter environment variables
+	newDefinition.Environment.EnvVariables = []DefinitionEnvVars{}
+
+	for _, envVar := range d.Environment.EnvVariables {
+		if !d.applyFilter(&envVar, imageTargets) {
+			continue
+		}
+
+		newDefinition.Environment.EnvVariables = append(newDefinition.Environment.EnvVariables, envVar)
 	}
 
 	*d = newDefinition
