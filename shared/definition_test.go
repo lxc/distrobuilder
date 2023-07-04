@@ -577,6 +577,42 @@ func TestApplyFilter(t *testing.T) {
 	require.True(t, d.applyFilter(&repo, ImageTargetAll|ImageTargetContainer))
 	require.True(t, d.applyFilter(&repo, ImageTargetContainer|ImageTargetVM))
 	require.False(t, d.applyFilter(&repo, ImageTargetContainer))
+
+	// Simulate build-lxc
+	d = Definition{
+		Targets: DefinitionTarget{
+			LXC: DefinitionTargetLXC{
+				Config: []DefinitionTargetLXCConfig{
+					{
+						Type:    "all",
+						Before:  5,
+						Content: "lxc.include = LXC_TEMPLATE_CONFIG/distro.common.conf",
+					},
+				},
+			},
+		},
+	}
+
+	d.ApplyFilters(ImageTargetUndefined | ImageTargetAll | ImageTargetContainer)
+	require.NotEmpty(t, d.Targets.LXC.Config)
+
+	// Simulate pack-lxc
+	d = Definition{
+		Targets: DefinitionTarget{
+			LXC: DefinitionTargetLXC{
+				Config: []DefinitionTargetLXCConfig{
+					{
+						Type:    "all",
+						Before:  5,
+						Content: "lxc.include = LXC_TEMPLATE_CONFIG/distro.common.conf",
+					},
+				},
+			},
+		},
+	}
+
+	d.ApplyFilters(ImageTargetAll | ImageTargetContainer)
+	require.NotEmpty(t, d.Targets.LXC.Config)
 }
 
 func TestDefinitionFilterTypeUnmarshalYAML(t *testing.T) {
