@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	lxd "github.com/lxc/lxd/shared"
+	lxd "github.com/canonical/lxd/shared"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -106,7 +106,7 @@ func (g *lxdAgent) handleSystemd() error {
 
 	lxdAgentServiceUnit := fmt.Sprintf(`[Unit]
 Description=LXD - agent
-Documentation=https://linuxcontainers.org/lxd
+Documentation=https://documentation.ubuntu.com/lxd/en/latest/
 ConditionPathExists=/dev/virtio-ports/org.linuxcontainers.lxd
 Before=cloud-init.target cloud-init.service cloud-init-local.service
 DefaultDependencies=no

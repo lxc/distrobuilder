@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	lxd "github.com/lxc/lxd/shared"
+	lxd "github.com/canonical/lxd/shared"
 	"golang.org/x/sys/unix"
 )
 

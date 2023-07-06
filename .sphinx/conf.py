@@ -36,7 +36,7 @@ myst_linkify_fuzzy_links=False
 myst_heading_anchors = 7
 
 intersphinx_mapping = {
-    'lxd': ('https://linuxcontainers.org/lxd/docs/master/', None)
+    'lxd': ('https://documentation.ubuntu.com/lxd/en/latest/', None)
 }
 
 if os.path.exists("../doc/substitutions.yaml"):

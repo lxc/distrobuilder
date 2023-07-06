@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"strings"
 
+	lxd "github.com/canonical/lxd/shared"
 	"github.com/flosch/pongo2"
-	lxd "github.com/lxc/lxd/shared"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
