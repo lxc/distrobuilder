@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	lxd "github.com/lxc/lxd/shared"
-	"github.com/lxc/lxd/shared/ioprogress"
+	lxd "github.com/canonical/lxd/shared"
+	"github.com/canonical/lxd/shared/ioprogress"
 	"github.com/sirupsen/logrus"
 
 	"github.com/lxc/distrobuilder/shared"

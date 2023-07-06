@@ -4,7 +4,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/lxc/lxd/shared"
+	"github.com/canonical/lxd/shared"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v2"
 )

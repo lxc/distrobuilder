@@ -8,9 +8,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	client "github.com/lxc/lxd/client"
-	lxd "github.com/lxc/lxd/shared"
-	"github.com/lxc/lxd/shared/api"
+	client "github.com/canonical/lxd/client"
+	lxd "github.com/canonical/lxd/shared"
+	"github.com/canonical/lxd/shared/api"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	lxd "github.com/lxc/lxd/shared"
+	lxd "github.com/canonical/lxd/shared"
 	"github.com/stretchr/testify/require"
 
 	"github.com/lxc/distrobuilder/image"
