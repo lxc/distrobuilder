@@ -169,38 +169,6 @@ func main() {
 				return
 			}
 
-			// Get the image definition
-			globalCmd.definition, err = getDefinition(args[0], globalCmd.flagOptions)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Failed reading definition: %s\n", err)
-				os.Exit(1)
-			}
-
-			// Set VM target type if we're building or packing a VM.
-			isTargetVM, _ := cmd.Flags().GetBool("vm")
-			if isTargetVM {
-				globalCmd.definition.Targets.Type = shared.DefinitionFilterTypeVM
-			}
-
-			// Get image targets depending on the subcommand and flags.
-			var imageTargets shared.ImageTarget
-
-			if strings.HasPrefix(cmd.CalledAs(), "build-") {
-				imageTargets = shared.ImageTargetUndefined
-			}
-
-			if cmd.CalledAs() != "build-dir" {
-				imageTargets |= shared.ImageTargetAll
-			}
-
-			if isTargetVM {
-				imageTargets |= shared.ImageTargetVM
-			} else {
-				imageTargets |= shared.ImageTargetContainer
-			}
-
-			globalCmd.definition.ApplyFilters(imageTargets)
-
 			// Create temp directory if the cache directory isn't explicitly set
 			if globalCmd.flagCacheDir == "" {
 				dir, err := os.MkdirTemp("/var/cache", "distrobuilder.")
@@ -330,6 +298,12 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	err = os.MkdirAll(c.sourceDir, 0755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", c.sourceDir, err)
+	}
+
+	// Get the image definition
+	c.definition, err = getDefinition(args[0], c.flagOptions)
+	if err != nil {
+		return fmt.Errorf("Failed to get definition: %w", err)
 	}
 
 	// Create cache directory if we also plan on creating LXC or LXD images
@@ -485,6 +459,12 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	c.targetDir = "."
 	if len(args) == 3 {
 		c.targetDir = args[2]
+	}
+
+	// Get the image definition
+	c.definition, err = getDefinition(args[0], c.flagOptions)
+	if err != nil {
+		return fmt.Errorf("Failed to get definition: %w", err)
 	}
 
 	return nil
