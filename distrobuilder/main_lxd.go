@@ -155,6 +155,10 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 				}()
 			}
 
+			if c.flagVM {
+				c.global.definition.Targets.Type = "vm"
+			}
+
 			err = c.runPack(cmd, args, overlayDir)
 			if err != nil {
 				return fmt.Errorf("Failed to pack image: %w", err)
