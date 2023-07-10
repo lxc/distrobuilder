@@ -187,12 +187,6 @@ func (c *cmdLXC) run(cmd *cobra.Command, args []string, overlayDir string) error
 		c.global.flagCacheDir, *c.global.definition)
 
 	for _, file := range c.global.definition.Files {
-		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, shared.ImageTargetUndefined|shared.ImageTargetAll|shared.ImageTargetContainer) {
-			c.global.logger.WithField("generator", file.Generator).Info("Skipping generator")
-
-			continue
-		}
-
 		generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, overlayDir, file, *c.global.definition)
 		if err != nil {
 			return fmt.Errorf("Failed to load generator %q: %w", file.Generator, err)
