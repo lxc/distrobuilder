@@ -171,11 +171,10 @@ type DefinitionSource struct {
 
 // A DefinitionTargetLXCConfig represents the config part of the metadata.
 type DefinitionTargetLXCConfig struct {
-	DefinitionFilter `yaml:",inline"`
-	Type             string `yaml:"type"`
-	Before           uint   `yaml:"before,omitempty"`
-	After            uint   `yaml:"after,omitempty"`
-	Content          string `yaml:"content"`
+	Type    string `yaml:"type"`
+	Before  uint   `yaml:"before,omitempty"`
+	After   uint   `yaml:"after,omitempty"`
+	Content string `yaml:"content"`
 }
 
 // A DefinitionTargetLXC represents LXC specific files as part of the metadata.
@@ -691,20 +690,6 @@ func (d *Definition) ApplyFilters(imageTargets ImageTarget) {
 		}
 
 		newDefinition.Actions = append(newDefinition.Actions, action)
-	}
-
-	// Filter targets
-	newDefinition.Targets.LXC.Config = []DefinitionTargetLXCConfig{}
-
-	for _, config := range d.Targets.LXC.Config {
-		// Always add ImageTargetUndefined when handling LXC targets.
-		// These are only applied when running {build,pack}-lxc, and shouldn't require
-		// explicitly setting the "container" type filter.
-		if !d.applyFilter(&config, ImageTargetUndefined|imageTargets) {
-			continue
-		}
-
-		newDefinition.Targets.LXC.Config = append(newDefinition.Targets.LXC.Config, config)
 	}
 
 	*d = newDefinition
