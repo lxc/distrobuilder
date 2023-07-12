@@ -505,78 +505,61 @@ func TestDefinitionFilter(t *testing.T) {
 }
 
 func TestApplyFilter(t *testing.T) {
-	d := Definition{}
 	repo := DefinitionPackagesRepository{}
 
 	// Variants
 	repo.Variants = []string{"default"}
-	d.Image = DefinitionImage{Release: "foo", ArchitectureMapped: "amd64", Variant: "default"}
-	require.True(t, d.applyFilter(&repo, ImageTargetUndefined))
-	d.Image = DefinitionImage{Release: "foo", ArchitectureMapped: "amd64", Variant: "cloud"}
-	require.False(t, d.applyFilter(&repo, ImageTargetUndefined))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "cloud", "vm", 0))
 
 	// Architectures
 	repo.Architectures = []string{"amd64", "i386"}
-	d.Image = DefinitionImage{Release: "foo", ArchitectureMapped: "amd64", Variant: "default"}
-	require.True(t, d.applyFilter(&repo, ImageTargetUndefined))
-	d.Image = DefinitionImage{Release: "foo", ArchitectureMapped: "i386", Variant: "default"}
-	require.True(t, d.applyFilter(&repo, ImageTargetUndefined))
-	d.Image = DefinitionImage{Release: "foo", ArchitectureMapped: "s390", Variant: "default"}
-	require.False(t, d.applyFilter(&repo, ImageTargetUndefined))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
+	require.True(t, ApplyFilter(&repo, "foo", "i386", "default", "vm", 0))
+	require.False(t, ApplyFilter(&repo, "foo", "s390", "default", "vm", 0))
 
 	// Releases
 	repo.Releases = []string{"foo"}
-	d.Image = DefinitionImage{Release: "foo", ArchitectureMapped: "amd64", Variant: "default"}
-	require.True(t, d.applyFilter(&repo, ImageTargetUndefined))
-	d.Image = DefinitionImage{Release: "bar", ArchitectureMapped: "amd64", Variant: "default"}
-	require.False(t, d.applyFilter(&repo, ImageTargetUndefined))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
+	require.False(t, ApplyFilter(&repo, "bar", "amd64", "default", "vm", 0))
 
 	// Targets
-	d.Image = DefinitionImage{Release: "foo", ArchitectureMapped: "amd64", Variant: "default"}
-	d.Targets.Type = DefinitionFilterTypeVM
-	require.True(t, d.applyFilter(&repo, ImageTargetUndefined))
-	d.Targets.Type = DefinitionFilterTypeContainer
-	require.True(t, d.applyFilter(&repo, ImageTargetUndefined))
-	d.Targets.Type = DefinitionFilterTypeVM
-	require.False(t, d.applyFilter(&repo, ImageTargetVM))
-	require.False(t, d.applyFilter(&repo, ImageTargetAll|ImageTargetVM))
-	require.False(t, d.applyFilter(&repo, ImageTargetContainer|ImageTargetVM))
-	d.Targets.Type = DefinitionFilterTypeContainer
-	require.False(t, d.applyFilter(&repo, ImageTargetVM))
-	require.False(t, d.applyFilter(&repo, ImageTargetAll|ImageTargetVM))
-	require.False(t, d.applyFilter(&repo, ImageTargetContainer|ImageTargetVM))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", 0))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetUndefined))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetUndefined))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
 
-	d.Targets.Type = DefinitionFilterTypeVM
 	repo.Types = []DefinitionFilterType{DefinitionFilterTypeVM}
-	require.True(t, d.applyFilter(&repo, ImageTargetVM))
-	require.True(t, d.applyFilter(&repo, ImageTargetAll|ImageTargetVM))
-	require.True(t, d.applyFilter(&repo, ImageTargetContainer|ImageTargetVM))
-	d.Targets.Type = DefinitionFilterTypeContainer
-	require.False(t, d.applyFilter(&repo, ImageTargetVM))
-	require.False(t, d.applyFilter(&repo, ImageTargetAll|ImageTargetVM))
-	require.False(t, d.applyFilter(&repo, ImageTargetContainer|ImageTargetVM))
-	require.False(t, d.applyFilter(&repo, ImageTargetUndefined))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetVM))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetVM))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", 0))
 
-	d.Targets.Type = DefinitionFilterTypeContainer
 	repo.Types = []DefinitionFilterType{DefinitionFilterTypeContainer}
-	require.True(t, d.applyFilter(&repo, ImageTargetContainer))
-	require.True(t, d.applyFilter(&repo, ImageTargetAll|ImageTargetContainer))
-	require.True(t, d.applyFilter(&repo, ImageTargetContainer|ImageTargetVM))
-	d.Targets.Type = DefinitionFilterTypeVM
-	require.False(t, d.applyFilter(&repo, ImageTargetContainer))
-	require.False(t, d.applyFilter(&repo, ImageTargetAll|ImageTargetContainer))
-	require.False(t, d.applyFilter(&repo, ImageTargetContainer|ImageTargetVM))
-	require.False(t, d.applyFilter(&repo, ImageTargetUndefined))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetContainer))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", 0))
 
-	d.Targets.Type = DefinitionFilterTypeContainer
 	repo.Types = []DefinitionFilterType{DefinitionFilterTypeContainer, DefinitionFilterTypeVM}
-	require.True(t, d.applyFilter(&repo, ImageTargetContainer))
-	require.True(t, d.applyFilter(&repo, ImageTargetAll|ImageTargetContainer))
-	require.True(t, d.applyFilter(&repo, ImageTargetContainer|ImageTargetVM))
-	d.Targets.Type = DefinitionFilterTypeVM
-	require.True(t, d.applyFilter(&repo, ImageTargetAll|ImageTargetContainer))
-	require.True(t, d.applyFilter(&repo, ImageTargetContainer|ImageTargetVM))
-	require.False(t, d.applyFilter(&repo, ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetAll|ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "container", ImageTargetContainer|ImageTargetVM))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetAll|ImageTargetContainer))
+	require.True(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer|ImageTargetVM))
+	require.False(t, ApplyFilter(&repo, "foo", "amd64", "default", "vm", ImageTargetContainer))
 }
 
 func TestDefinitionFilterTypeUnmarshalYAML(t *testing.T) {
