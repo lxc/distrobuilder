@@ -171,11 +171,10 @@ type DefinitionSource struct {
 
 // A DefinitionTargetLXCConfig represents the config part of the metadata.
 type DefinitionTargetLXCConfig struct {
-	DefinitionFilter `yaml:",inline"`
-	Type             string `yaml:"type"`
-	Before           uint   `yaml:"before,omitempty"`
-	After            uint   `yaml:"after,omitempty"`
-	Content          string `yaml:"content"`
+	Type    string `yaml:"type"`
+	Before  uint   `yaml:"before,omitempty"`
+	After   uint   `yaml:"after,omitempty"`
+	Content string `yaml:"content"`
 }
 
 // A DefinitionTargetLXC represents LXC specific files as part of the metadata.
@@ -241,9 +240,8 @@ type DefinitionMappings struct {
 
 // DefinitionEnvVars defines custom environment variables.
 type DefinitionEnvVars struct {
-	DefinitionFilter `yaml:",inline"`
-	Key              string `yaml:"key"`
-	Value            string `yaml:"value"`
+	Key   string `yaml:"key"`
+	Value string `yaml:"value"`
 }
 
 // DefinitionEnv represents the config part of the environment section.
@@ -538,6 +536,10 @@ func (d *Definition) GetRunnableActions(trigger string, imageTarget ImageTarget)
 			continue
 		}
 
+		if !ApplyFilter(&action, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant, d.Targets.Type, imageTarget) {
+			continue
+		}
+
 		out = append(out, action)
 	}
 
@@ -552,7 +554,7 @@ func (d *Definition) GetEarlyPackages(action string) []string {
 	normal := []DefinitionPackagesSet{}
 
 	for _, set := range d.Packages.Sets {
-		if set.Early && set.Action == action {
+		if set.Early && set.Action == action && ApplyFilter(&set, d.Image.Release, d.Image.ArchitectureMapped, d.Image.Variant, d.Targets.Type, 0) {
 			early = append(early, set.Packages...)
 		} else {
 			normal = append(normal, set)
@@ -588,138 +590,6 @@ func (d *Definition) getMappedArchitecture() (string, error) {
 	}
 
 	return arch, nil
-}
-
-// ApplyFilter returns true if the filter matches.
-func (d *Definition) applyFilter(filter Filter, acceptedImageTargets ImageTarget) bool {
-	if len(filter.GetReleases()) > 0 && !shared.StringInSlice(d.Image.Release, filter.GetReleases()) {
-		return false
-	}
-
-	if len(filter.GetArchitectures()) > 0 && !shared.StringInSlice(d.Image.ArchitectureMapped, filter.GetArchitectures()) {
-		return false
-	}
-
-	if len(filter.GetVariants()) > 0 && !shared.StringInSlice(d.Image.Variant, filter.GetVariants()) {
-		return false
-	}
-
-	types := filter.GetTypes()
-
-	if (acceptedImageTargets == 0 || acceptedImageTargets&ImageTargetUndefined > 0) && len(types) == 0 {
-		return true
-	}
-
-	hasTargetType := func(targetType DefinitionFilterType) bool {
-		for _, t := range types {
-			if t == targetType {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	if acceptedImageTargets&ImageTargetAll > 0 {
-		if len(types) == 2 && hasTargetType(d.Targets.Type) {
-			return true
-		}
-	}
-
-	if acceptedImageTargets&ImageTargetContainer > 0 {
-		if d.Targets.Type == DefinitionFilterTypeContainer && hasTargetType(d.Targets.Type) {
-			return true
-		}
-	}
-
-	if acceptedImageTargets&ImageTargetVM > 0 {
-		if d.Targets.Type == DefinitionFilterTypeVM && hasTargetType(d.Targets.Type) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// ApplyFilters removes those parts of the definition which are excluded by the filters.
-func (d *Definition) ApplyFilters(imageTargets ImageTarget) {
-	newDefinition := Definition{
-		Actions:     []DefinitionAction{},
-		Environment: d.Environment,
-		Files:       []DefinitionFile{},
-		Image:       d.Image,
-		Mappings:    d.Mappings,
-		Packages:    d.Packages,
-		Source:      d.Source,
-		Targets:     d.Targets,
-	}
-
-	// Filter files
-	for _, file := range d.Files {
-		if !d.applyFilter(&file, imageTargets) {
-			continue
-		}
-
-		newDefinition.Files = append(newDefinition.Files, file)
-	}
-
-	// Filter repositories
-	newDefinition.Packages.Repositories = []DefinitionPackagesRepository{}
-
-	for _, repo := range d.Packages.Repositories {
-		if !d.applyFilter(&repo, imageTargets) {
-			continue
-		}
-
-		newDefinition.Packages.Repositories = append(newDefinition.Packages.Repositories, repo)
-	}
-
-	// Filter package sets
-	newDefinition.Packages.Sets = []DefinitionPackagesSet{}
-
-	for _, set := range d.Packages.Sets {
-		if !d.applyFilter(&set, imageTargets) {
-			continue
-		}
-
-		newDefinition.Packages.Sets = append(newDefinition.Packages.Sets, set)
-	}
-
-	// Filter actions
-	for _, action := range d.Actions {
-		if !d.applyFilter(&action, imageTargets) {
-			continue
-		}
-
-		newDefinition.Actions = append(newDefinition.Actions, action)
-	}
-
-	// Filter targets
-	newDefinition.Targets.LXC.Config = []DefinitionTargetLXCConfig{}
-
-	for _, config := range d.Targets.LXC.Config {
-		// Always add ImageTargetUndefined when handling LXC targets.
-		// These are only applied when running {build,pack}-lxc, and shouldn't require
-		// explicitly setting the "container" type filter.
-		if !d.applyFilter(&config, ImageTargetUndefined|imageTargets) {
-			continue
-		}
-
-		newDefinition.Targets.LXC.Config = append(newDefinition.Targets.LXC.Config, config)
-	}
-
-	// Filter environment variables
-	newDefinition.Environment.EnvVariables = []DefinitionEnvVars{}
-
-	for _, envVar := range d.Environment.EnvVariables {
-		if !d.applyFilter(&envVar, imageTargets) {
-			continue
-		}
-
-		newDefinition.Environment.EnvVariables = append(newDefinition.Environment.EnvVariables, envVar)
-	}
-
-	*d = newDefinition
 }
 
 func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, error) {
@@ -761,4 +631,55 @@ func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, 
 
 	// Return its value if it's a primitive type
 	return v, nil
+}
+
+// ApplyFilter returns true if the filter matches.
+func ApplyFilter(filter Filter, release string, architecture string, variant string, targetType DefinitionFilterType, acceptedImageTargets ImageTarget) bool {
+	if len(filter.GetReleases()) > 0 && !shared.StringInSlice(release, filter.GetReleases()) {
+		return false
+	}
+
+	if len(filter.GetArchitectures()) > 0 && !shared.StringInSlice(architecture, filter.GetArchitectures()) {
+		return false
+	}
+
+	if len(filter.GetVariants()) > 0 && !shared.StringInSlice(variant, filter.GetVariants()) {
+		return false
+	}
+
+	types := filter.GetTypes()
+
+	if (acceptedImageTargets == 0 || acceptedImageTargets&ImageTargetUndefined > 0) && len(types) == 0 {
+		return true
+	}
+
+	hasTargetType := func(targetType DefinitionFilterType) bool {
+		for _, t := range types {
+			if t == targetType {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	if acceptedImageTargets&ImageTargetAll > 0 {
+		if len(types) == 2 && hasTargetType(targetType) {
+			return true
+		}
+	}
+
+	if acceptedImageTargets&ImageTargetContainer > 0 {
+		if targetType == DefinitionFilterTypeContainer && hasTargetType(targetType) {
+			return true
+		}
+	}
+
+	if acceptedImageTargets&ImageTargetVM > 0 {
+		if targetType == DefinitionFilterTypeVM && hasTargetType(targetType) {
+			return true
+		}
+	}
+
+	return false
 }
