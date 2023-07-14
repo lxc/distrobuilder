@@ -179,7 +179,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 
 func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) error {
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(overlayDir, c.global.definition.Environment, nil)
+	exitChroot, err := shared.SetupChroot(overlayDir, *c.global.definition, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
@@ -388,7 +388,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	}
 
 	exitChroot, err := shared.SetupChroot(rootfsDir,
-		c.global.definition.Environment, mounts)
+		*c.global.definition, mounts)
 	if err != nil {
 		return fmt.Errorf("Failed to chroot: %w", err)
 	}

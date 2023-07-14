@@ -151,7 +151,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 	}
 
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
+	exitChroot, err := shared.SetupChroot(tempRootDir, shared.Definition{}, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
@@ -291,7 +291,7 @@ func (c *commonRHEL) unpackRaw(filePath, rootfsDir string, scriptRunner func() e
 	}
 
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(tempRootDir, shared.DefinitionEnv{}, nil)
+	exitChroot, err := shared.SetupChroot(tempRootDir, shared.Definition{}, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}

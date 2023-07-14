@@ -49,7 +49,7 @@ func (c *cmdBuildDir) command() *cobra.Command {
 			}
 
 			exitChroot, err := shared.SetupChroot(c.global.targetDir,
-				c.global.definition.Environment, nil)
+				*c.global.definition, nil)
 			if err != nil {
 				return fmt.Errorf("Failed to setup chroot in %q: %w", c.global.targetDir, err)
 			}

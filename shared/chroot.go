@@ -177,7 +177,7 @@ func killChrootProcesses(rootfs string) error {
 }
 
 // SetupChroot sets up mount and files, a reverter and then chroots for you.
-func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() error, error) {
+func SetupChroot(rootfs string, definition Definition, m []ChrootMount) (func() error, error) {
 	// Mount the rootfs
 	err := unix.Mount(rootfs, rootfs, "", unix.MS_BIND, "")
 	if err != nil {
@@ -248,6 +248,7 @@ func SetupChroot(rootfs string, envs DefinitionEnv, m []ChrootMount) (func() err
 	}
 
 	var env Environment
+	envs := definition.Environment
 
 	if envs.ClearDefaults {
 		env = Environment{}
