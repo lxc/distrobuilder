@@ -241,8 +241,9 @@ type DefinitionMappings struct {
 
 // DefinitionEnvVars defines custom environment variables.
 type DefinitionEnvVars struct {
-	Key   string `yaml:"key"`
-	Value string `yaml:"value"`
+	DefinitionFilter `yaml:",inline"`
+	Key              string `yaml:"key"`
+	Value            string `yaml:"value"`
 }
 
 // DefinitionEnv represents the config part of the environment section.
