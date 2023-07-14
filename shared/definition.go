@@ -171,10 +171,11 @@ type DefinitionSource struct {
 
 // A DefinitionTargetLXCConfig represents the config part of the metadata.
 type DefinitionTargetLXCConfig struct {
-	Type    string `yaml:"type"`
-	Before  uint   `yaml:"before,omitempty"`
-	After   uint   `yaml:"after,omitempty"`
-	Content string `yaml:"content"`
+	DefinitionFilter `yaml:",inline"`
+	Type             string `yaml:"type"`
+	Before           uint   `yaml:"before,omitempty"`
+	After            uint   `yaml:"after,omitempty"`
+	Content          string `yaml:"content"`
 }
 
 // A DefinitionTargetLXC represents LXC specific files as part of the metadata.
