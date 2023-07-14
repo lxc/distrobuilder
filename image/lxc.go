@@ -86,7 +86,13 @@ func (l *LXCImage) Build(compression string) error {
 func (l *LXCImage) createMetadata() error {
 	metaDir := filepath.Join(l.cacheDir, "metadata")
 
+	imageTargets := shared.ImageTargetUndefined | shared.ImageTargetContainer | shared.ImageTargetAll
+
 	for _, c := range l.definition.Targets.LXC.Config {
+		if !shared.ApplyFilter(&c, l.definition.Image.Release, l.definition.Image.ArchitectureMapped, l.definition.Image.Variant, l.definition.Targets.Type, imageTargets) {
+			continue
+		}
+
 		// If not specified, create files up to ${maxLXCCompatLevel}
 		if c.Before == 0 {
 			c.Before = maxLXCCompatLevel + 1
