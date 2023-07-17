@@ -108,7 +108,7 @@ func (s *alpineLinux) Run() error {
 	// Handle edge builds
 	if s.definition.Image.Release == "edge" {
 		// Upgrade to edge
-		exitChroot, err := shared.SetupChroot(s.rootfsDir, s.definition.Environment, nil)
+		exitChroot, err := shared.SetupChroot(s.rootfsDir, s.definition, nil)
 		if err != nil {
 			return fmt.Errorf("Failed to set up chroot: %w", err)
 		}

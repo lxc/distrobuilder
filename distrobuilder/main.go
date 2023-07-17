@@ -342,7 +342,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Setup the mounts and chroot into the rootfs
-	exitChroot, err := shared.SetupChroot(c.sourceDir, c.definition.Environment, nil)
+	exitChroot, err := shared.SetupChroot(c.sourceDir, *c.definition, nil)
 	if err != nil {
 		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}

@@ -171,10 +171,11 @@ type DefinitionSource struct {
 
 // A DefinitionTargetLXCConfig represents the config part of the metadata.
 type DefinitionTargetLXCConfig struct {
-	Type    string `yaml:"type"`
-	Before  uint   `yaml:"before,omitempty"`
-	After   uint   `yaml:"after,omitempty"`
-	Content string `yaml:"content"`
+	DefinitionFilter `yaml:",inline"`
+	Type             string `yaml:"type"`
+	Before           uint   `yaml:"before,omitempty"`
+	After            uint   `yaml:"after,omitempty"`
+	Content          string `yaml:"content"`
 }
 
 // A DefinitionTargetLXC represents LXC specific files as part of the metadata.
@@ -240,8 +241,9 @@ type DefinitionMappings struct {
 
 // DefinitionEnvVars defines custom environment variables.
 type DefinitionEnvVars struct {
-	Key   string `yaml:"key"`
-	Value string `yaml:"value"`
+	DefinitionFilter `yaml:",inline"`
+	Key              string `yaml:"key"`
+	Value            string `yaml:"value"`
 }
 
 // DefinitionEnv represents the config part of the environment section.
