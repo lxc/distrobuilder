@@ -170,7 +170,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	logger.Info("Mounting Windows ISO")
 
 	// Mount ISO
-	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "iso9660", "-o", "loop", args[0], c.global.sourceDir)
+	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "udf", "-o", "loop", args[0], c.global.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q at %q: %w", args[0], c.global.sourceDir, err)
 	}
