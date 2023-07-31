@@ -94,4 +94,4 @@ See [How to use `distrobuilder`](doc/howto/build.md) for instructions.
 
 ## Troubleshooting
 
-See [Troubleshoot `distrobuilder`](doc/howto/troubleshoot).
+See [Troubleshoot `distrobuilder`](doc/howto/troubleshoot.md).
