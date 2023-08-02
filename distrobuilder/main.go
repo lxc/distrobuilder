@@ -671,6 +671,8 @@ Description=Turn off network device
 Before=NetworkManager.service
 Before=systemd-networkd.service
 [Service]
+# do not turn off if there is a default route to 169.254.0.1, i.e. the device is a routed nic
+ExecCondition=/bin/sh -c '! /usr/bin/grep -qs 00000000.0100FEA9 /proc/net/route'
 ExecStart=-${ip_path} link set $1 down
 Type=oneshot
 RemainAfterExit=true
