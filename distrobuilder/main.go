@@ -706,6 +706,7 @@ fix_systemd_override_unit() {
 			[ "${systemd_version}" -ge 244 ] && echo "ProtectKernelLogs=no";
 			[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelModules=no";
 			[ "${systemd_version}" -ge 231 ] && echo "ReadWritePaths=";
+			[ "${systemd_version}" -ge 254 ] && echo "ImportCredential=";
 		fi
 	} > "${dropin_dir}/zzz-lxc-service.conf"
 }
