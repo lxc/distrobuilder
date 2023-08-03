@@ -695,6 +695,7 @@ fix_systemd_override_unit() {
 		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no";
 		[ "${systemd_version}" -ge 239 ] && echo "NoNewPrivileges=no";
 		[ "${systemd_version}" -ge 249 ] && echo "LoadCredential=";
+		[ "${systemd_version}" -ge 254 ] && echo "PrivateNetwork=no";
 
 		# Additional settings for privileged containers
 		if is_lxc_privileged_container; then
