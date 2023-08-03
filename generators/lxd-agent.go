@@ -150,7 +150,9 @@ WantedBy=multi-user.target
 		udevPath = filepath.Join("/", "usr", "lib", "udev", "rules.d")
 	}
 
-	lxdAgentRules := `ACTION=="add", SYMLINK=="virtio-ports/org.linuxcontainers.lxd", TAG+="systemd", ACTION=="add", RUN+="/bin/systemctl start lxd-agent.service"`
+	lxdAgentRules := `ACTION=="add", SYMLINK=="virtio-ports/org.linuxcontainers.lxd", TAG+="systemd"
+SYMLINK=="virtio-ports/org.linuxcontainers.lxd", RUN+="/bin/systemctl start lxd-agent.service"
+`
 	err = os.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-lxd-agent.rules"), []byte(lxdAgentRules), 0400)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, udevPath, "99-lxd-agent.rules"), err)
