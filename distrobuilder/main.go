@@ -708,6 +708,8 @@ fix_systemd_override_unit() {
 			[ "${systemd_version}" -ge 231 ] && echo "ReadWritePaths=";
 			[ "${systemd_version}" -ge 254 ] && echo "ImportCredential=";
 		fi
+
+		true;
 	} > "${dropin_dir}/zzz-lxc-service.conf"
 }
 
