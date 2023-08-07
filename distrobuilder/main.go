@@ -125,7 +125,7 @@ func main() {
 
 	app := &cobra.Command{
 		Use:   "distrobuilder",
-		Short: "System container and VM image builder for LXC and LXD",
+		Short: "System container and VM image builder for LXC and Incus",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// Quick checks
 			if os.Geteuid() != 0 {
@@ -205,10 +205,10 @@ func main() {
 	app.AddCommand(LXCCmd.commandBuild())
 	app.AddCommand(LXCCmd.commandPack())
 
-	// LXD sub-commands
-	LXDCmd := cmdLXD{global: &globalCmd}
-	app.AddCommand(LXDCmd.commandBuild())
-	app.AddCommand(LXDCmd.commandPack())
+	// Incus sub-commands
+	IncusCmd := cmdIncus{global: &globalCmd}
+	app.AddCommand(IncusCmd.commandBuild())
+	app.AddCommand(IncusCmd.commandPack())
 
 	// build-dir sub-command
 	buildDirCmd := cmdBuildDir{global: &globalCmd}
