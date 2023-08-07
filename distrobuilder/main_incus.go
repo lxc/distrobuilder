@@ -254,7 +254,7 @@ func (c *cmdIncus) runPack(cmd *cobra.Command, args []string, overlayDir string)
 }
 
 func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) error {
-	img := image.NewLXDImage(c.global.ctx, overlayDir, c.global.targetDir,
+	img := image.NewIncusImage(c.global.ctx, overlayDir, c.global.targetDir,
 		c.global.flagCacheDir, *c.global.definition)
 
 	imageTargets := shared.ImageTargetUndefined | shared.ImageTargetAll
@@ -277,7 +277,7 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 
 		c.global.logger.WithField("generator", file.Generator).Info("Running generator")
 
-		err = generator.RunLXD(img, c.global.definition.Targets.LXD)
+		err = generator.RunIncus(img, c.global.definition.Targets.LXD)
 		if err != nil {
 			return fmt.Errorf("Failed to create LXD data: %w", err)
 		}

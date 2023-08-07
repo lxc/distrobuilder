@@ -63,7 +63,7 @@ func TestHostsGeneratorRunLXD(t *testing.T) {
 		},
 	}
 
-	image := image.NewLXDImage(context.TODO(), cacheDir, "", cacheDir, definition)
+	image := image.NewIncusImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
 	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs", "etc"), 0755)
 	require.NoError(t, err)
@@ -71,7 +71,7 @@ func TestHostsGeneratorRunLXD(t *testing.T) {
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hosts"),
 		"127.0.0.1\tlocalhost\n127.0.0.1\tdistrobuilder\n")
 
-	err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
+	err = generator.RunIncus(image, shared.DefinitionTargetLXD{})
 	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "templates", "hosts.tpl"),

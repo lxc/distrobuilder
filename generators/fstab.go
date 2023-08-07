@@ -19,8 +19,8 @@ func (g *fstab) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 	return errors.New("fstab generator not supported for LXC")
 }
 
-// RunLXD writes to /etc/fstab.
-func (g *fstab) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+// RunIncus writes to /etc/fstab.
+func (g *fstab) RunIncus(img *image.IncusImage, target shared.DefinitionTargetLXD) error {
 	f, err := os.Create(filepath.Join(g.sourceDir, "etc/fstab"))
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", filepath.Join(g.sourceDir, "etc/fstab"), err)

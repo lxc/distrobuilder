@@ -33,8 +33,8 @@ func (g *dump) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) er
 	return nil
 }
 
-// RunLXD dumps content to a file.
-func (g *dump) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+// RunIncus dumps content to a file.
+func (g *dump) RunIncus(img *image.IncusImage, target shared.DefinitionTargetLXD) error {
 	content := g.defFile.Content
 
 	return g.run(content)

@@ -102,7 +102,7 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	require.IsType(t, &dump{}, generator)
 	require.NoError(t, err)
 
-	err = generator.RunLXD(nil, shared.DefinitionTargetLXD{
+	err = generator.RunIncus(nil, shared.DefinitionTargetLXD{
 		VM: shared.DefinitionTargetLXDVM{
 			Filesystem: "ext4",
 		}})
@@ -129,7 +129,7 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	require.IsType(t, &dump{}, generator)
 	require.NoError(t, err)
 
-	err = generator.RunLXD(nil, shared.DefinitionTargetLXD{
+	err = generator.RunIncus(nil, shared.DefinitionTargetLXD{
 		VM: shared.DefinitionTargetLXDVM{
 			Filesystem: "ext4",
 		}})
