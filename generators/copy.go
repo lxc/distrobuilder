@@ -22,7 +22,7 @@ func (g *copy) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) er
 }
 
 // RunIncus copies a file to the container.
-func (g *copy) RunIncus(img *image.IncusImage, target shared.DefinitionTargetLXD) error {
+func (g *copy) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	return g.Run()
 }
 

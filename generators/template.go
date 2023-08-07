@@ -24,7 +24,7 @@ func (g *template) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC
 }
 
 // RunIncus dumps content to a file.
-func (g *template) RunIncus(img *image.IncusImage, target shared.DefinitionTargetLXD) error {
+func (g *template) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	templateDir := filepath.Join(g.cacheDir, "templates")
 
 	err := os.MkdirAll(templateDir, 0755)

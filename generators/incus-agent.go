@@ -65,7 +65,7 @@ func (g *lxdAgent) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC
 }
 
 // RunIncus creates systemd unit files for the lxd-agent.
-func (g *lxdAgent) RunIncus(img *image.IncusImage, target shared.DefinitionTargetLXD) error {
+func (g *lxdAgent) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	initFile := filepath.Join(g.sourceDir, "sbin", "init")
 
 	fi, err := os.Lstat(initFile)

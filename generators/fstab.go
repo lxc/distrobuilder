@@ -20,7 +20,7 @@ func (g *fstab) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 }
 
 // RunIncus writes to /etc/fstab.
-func (g *fstab) RunIncus(img *image.IncusImage, target shared.DefinitionTargetLXD) error {
+func (g *fstab) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	f, err := os.Create(filepath.Join(g.sourceDir, "etc/fstab"))
 	if err != nil {
 		return fmt.Errorf("Failed to create file %q: %w", filepath.Join(g.sourceDir, "etc/fstab"), err)
