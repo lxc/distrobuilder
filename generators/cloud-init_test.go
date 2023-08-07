@@ -148,7 +148,7 @@ config:
 		require.IsType(t, &cloudInit{}, generator)
 		require.NoError(t, err)
 
-		err = generator.RunIncus(image, shared.DefinitionTargetLXD{})
+		err = generator.RunIncus(image, shared.DefinitionTargetIncus{})
 
 		if !tt.shouldFail {
 			require.NoError(t, err)

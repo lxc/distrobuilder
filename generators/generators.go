@@ -24,7 +24,7 @@ type generator interface {
 // Generator interface.
 type Generator interface {
 	RunLXC(*image.LXCImage, shared.DefinitionTargetLXC) error
-	RunIncus(*image.IncusImage, shared.DefinitionTargetLXD) error
+	RunIncus(*image.IncusImage, shared.DefinitionTargetIncus) error
 	Run() error
 }
 

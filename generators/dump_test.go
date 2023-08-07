@@ -86,8 +86,8 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 
 	def := shared.Definition{
 		Targets: shared.DefinitionTarget{
-			LXD: shared.DefinitionTargetLXD{
-				VM: shared.DefinitionTargetLXDVM{
+			Incus: shared.DefinitionTargetIncus{
+				VM: shared.DefinitionTargetIncusVM{
 					Filesystem: "ext4",
 				},
 			},
@@ -96,14 +96,14 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 
 	generator, err := Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Path:    "/hello/world",
-		Content: "hello {{ targets.lxd.vm.filesystem }}",
+		Content: "hello {{ targets.incus.vm.filesystem }}",
 		Pongo:   true,
 	}, def)
 	require.IsType(t, &dump{}, generator)
 	require.NoError(t, err)
 
-	err = generator.RunIncus(nil, shared.DefinitionTargetLXD{
-		VM: shared.DefinitionTargetLXDVM{
+	err = generator.RunIncus(nil, shared.DefinitionTargetIncus{
+		VM: shared.DefinitionTargetIncusVM{
 			Filesystem: "ext4",
 		}})
 	require.NoError(t, err)
@@ -124,13 +124,13 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 
 	generator, err = Load("dump", nil, cacheDir, rootfsDir, shared.DefinitionFile{
 		Path:    "/hello/world",
-		Content: "hello {{ targets.lxd.vm.filesystem }}",
+		Content: "hello {{ targets.incus.vm.filesystem }}",
 	}, def)
 	require.IsType(t, &dump{}, generator)
 	require.NoError(t, err)
 
-	err = generator.RunIncus(nil, shared.DefinitionTargetLXD{
-		VM: shared.DefinitionTargetLXDVM{
+	err = generator.RunIncus(nil, shared.DefinitionTargetIncus{
+		VM: shared.DefinitionTargetIncusVM{
 			Filesystem: "ext4",
 		}})
 	require.NoError(t, err)
@@ -145,5 +145,5 @@ func TestDumpGeneratorRunLXD(t *testing.T) {
 	_, err = io.Copy(&buffer, file)
 	require.NoError(t, err)
 
-	require.Equal(t, "hello {{ targets.lxd.vm.filesystem }}\n", buffer.String())
+	require.Equal(t, "hello {{ targets.incus.vm.filesystem }}\n", buffer.String())
 }

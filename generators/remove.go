@@ -18,7 +18,7 @@ func (g *remove) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) 
 }
 
 // RunIncus removes a path.
-func (g *remove) RunIncus(img *image.IncusImage, target shared.DefinitionTargetLXD) error {
+func (g *remove) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	return g.Run()
 }
 

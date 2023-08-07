@@ -42,7 +42,7 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "root", "template"), "--test--")
 
-	err = generator.RunIncus(image, shared.DefinitionTargetLXD{})
+	err = generator.RunIncus(image, shared.DefinitionTargetIncus{})
 	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "templates", "template.tpl"), "==test==\n")
@@ -74,7 +74,7 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 
 	image := image.NewIncusImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
-	err = generator.RunIncus(image, shared.DefinitionTargetLXD{})
+	err = generator.RunIncus(image, shared.DefinitionTargetIncus{})
 	require.NoError(t, err)
 
 	generator, err = Load("template", nil, cacheDir, rootfsDir, shared.DefinitionFile{
@@ -89,7 +89,7 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 	require.IsType(t, &template{}, generator)
 	require.NoError(t, err)
 
-	err = generator.RunIncus(image, shared.DefinitionTargetLXD{})
+	err = generator.RunIncus(image, shared.DefinitionTargetIncus{})
 	require.NoError(t, err)
 
 	testvalue := []string{"create", "copy"}

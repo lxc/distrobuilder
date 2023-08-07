@@ -184,22 +184,22 @@ type DefinitionTargetLXC struct {
 	Config        []DefinitionTargetLXCConfig `yaml:"config,omitempty"`
 }
 
-// DefinitionTargetLXDVM represents LXD VM specific options.
-type DefinitionTargetLXDVM struct {
+// DefinitionTargetIncusVM represents Incus VM specific options.
+type DefinitionTargetIncusVM struct {
 	Size       uint64 `yaml:"size,omitempty"`
 	Filesystem string `yaml:"filesystem,omitempty"`
 }
 
-// DefinitionTargetLXD represents LXD specific options.
-type DefinitionTargetLXD struct {
-	VM DefinitionTargetLXDVM `yaml:"vm,omitempty"`
+// DefinitionTargetIncus represents Incus specific options.
+type DefinitionTargetIncus struct {
+	VM DefinitionTargetIncusVM `yaml:"vm,omitempty"`
 }
 
 // A DefinitionTarget specifies target dependent files.
 type DefinitionTarget struct {
-	LXC  DefinitionTargetLXC  `yaml:"lxc,omitempty"`
-	LXD  DefinitionTargetLXD  `yaml:"lxd,omitempty"`
-	Type DefinitionFilterType // This field is internal only and used only for simplicity.
+	LXC   DefinitionTargetLXC   `yaml:"lxc,omitempty"`
+	Incus DefinitionTargetIncus `yaml:"incus,omitempty"`
+	Type  DefinitionFilterType  // This field is internal only and used only for simplicity.
 }
 
 // A DefinitionFile represents a file which is to be created inside to chroot.

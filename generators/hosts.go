@@ -61,7 +61,7 @@ func (g *hosts) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 }
 
 // RunIncus creates a hosts template.
-func (g *hosts) RunIncus(img *image.IncusImage, target shared.DefinitionTargetLXD) error {
+func (g *hosts) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	// Skip if the file doesn't exist
 	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil

@@ -277,7 +277,7 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 
 		c.global.logger.WithField("generator", file.Generator).Info("Running generator")
 
-		err = generator.RunIncus(img, c.global.definition.Targets.LXD)
+		err = generator.RunIncus(img, c.global.definition.Targets.Incus)
 		if err != nil {
 			return fmt.Errorf("Failed to create LXD data: %w", err)
 		}
@@ -303,7 +303,7 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 
 		imgFile := filepath.Join(c.global.flagCacheDir, imgFilename)
 
-		vm, err = newVM(c.global.ctx, imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
+		vm, err = newVM(c.global.ctx, imgFile, vmDir, c.global.definition.Targets.Incus.VM.Filesystem, c.global.definition.Targets.Incus.VM.Size)
 		if err != nil {
 			return fmt.Errorf("Failed to instantiate VM: %w", err)
 		}
