@@ -14,8 +14,8 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// A LXDImage represents a LXD image.
-type LXDImage struct {
+// An IncusImage represents an Incus image.
+type IncusImage struct {
 	sourceDir  string
 	targetDir  string
 	cacheDir   string
@@ -24,10 +24,10 @@ type LXDImage struct {
 	ctx        context.Context
 }
 
-// NewLXDImage returns a LXDImage.
-func NewLXDImage(ctx context.Context, sourceDir, targetDir, cacheDir string,
-	definition shared.Definition) *LXDImage {
-	return &LXDImage{
+// NewIncusImage returns an IncusImage.
+func NewIncusImage(ctx context.Context, sourceDir, targetDir, cacheDir string,
+	definition shared.Definition) *IncusImage {
+	return &IncusImage{
 		sourceDir,
 		targetDir,
 		cacheDir,
@@ -40,8 +40,8 @@ func NewLXDImage(ctx context.Context, sourceDir, targetDir, cacheDir string,
 	}
 }
 
-// Build creates a LXD image.
-func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, string, error) {
+// Build creates an Incus image.
+func (l *IncusImage) Build(unified bool, compression string, vm bool) (string, string, error) {
 	err := l.createMetadata()
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to create metadata: %w", err)
@@ -171,7 +171,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 	return imageFile, rootfsFile, nil
 }
 
-func (l *LXDImage) createMetadata() error {
+func (l *IncusImage) createMetadata() error {
 	var err error
 
 	l.Metadata.Architecture = l.definition.Image.Architecture

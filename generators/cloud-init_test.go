@@ -76,7 +76,7 @@ func TestCloudInitGeneratorRunLXD(t *testing.T) {
 		},
 	}
 
-	image := image.NewLXDImage(context.TODO(), cacheDir, "", cacheDir, definition)
+	image := image.NewIncusImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
 	tests := []struct {
 		name       string
@@ -148,7 +148,7 @@ config:
 		require.IsType(t, &cloudInit{}, generator)
 		require.NoError(t, err)
 
-		err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
+		err = generator.RunIncus(image, shared.DefinitionTargetLXD{})
 
 		if !tt.shouldFail {
 			require.NoError(t, err)

@@ -34,7 +34,7 @@ var lxdDef = shared.Definition{
 	},
 }
 
-func setupLXD(t *testing.T) *LXDImage {
+func setupLXD(t *testing.T) *IncusImage {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
@@ -43,7 +43,7 @@ func setupLXD(t *testing.T) *LXDImage {
 	err = os.MkdirAll(filepath.Join(cacheDir, "templates"), 0755)
 	require.NoError(t, err)
 
-	image := NewLXDImage(context.TODO(), cacheDir, "", cacheDir, lxdDef)
+	image := NewIncusImage(context.TODO(), cacheDir, "", cacheDir, lxdDef)
 
 	fail := true
 	defer func() {
@@ -77,7 +77,7 @@ func TestLXDBuild(t *testing.T) {
 	testLXDBuildUnifiedImage(t, image)
 }
 
-func testLXDBuildSplitImage(t *testing.T, image *LXDImage) {
+func testLXDBuildSplitImage(t *testing.T, image *IncusImage) {
 	// Create split tarball and squashfs.
 	imageFile, rootfsFile, err := image.Build(false, "xz", false)
 	require.NoError(t, err)
@@ -100,7 +100,7 @@ func testLXDBuildSplitImage(t *testing.T, image *LXDImage) {
 	os.Remove("rootfs.squashfs")
 }
 
-func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
+func testLXDBuildUnifiedImage(t *testing.T, image *IncusImage) {
 	// Create unified tarball with custom name.
 	_, _, err := image.Build(true, "xz", false)
 	require.NoError(t, err)
