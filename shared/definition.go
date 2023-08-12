@@ -380,6 +380,7 @@ func (d *Definition) Validate() error {
 		"rootfs-http",
 		"rockylinux-http",
 		"vyos-http",
+		"slackware-http",
 	}
 
 	if !shared.StringInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
@@ -400,6 +401,7 @@ func (d *Definition) Validate() error {
 			"xbps",
 			"zypper",
 			"luet",
+			"slackpkg",
 		}
 
 		if !shared.StringInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
@@ -464,6 +466,7 @@ func (d *Definition) Validate() error {
 		"plamolinux",
 		"voidlinux",
 		"funtoo",
+		"slackware",
 	}
 
 	architectureMap := strings.TrimSpace(d.Mappings.ArchitectureMap)

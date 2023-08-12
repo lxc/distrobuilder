@@ -68,6 +68,7 @@ var managers = map[string]func() manager{
 	"opkg":       func() manager { return &opkg{} },
 	"pacman":     func() manager { return &pacman{} },
 	"portage":    func() manager { return &portage{} },
+	"slackpkg":   func() manager { return &slackpkg{} },
 	"xbps":       func() manager { return &xbps{} },
 	"yum":        func() manager { return &yum{} },
 	"zypper":     func() manager { return &zypper{} },

@@ -41,6 +41,7 @@ Valid package manager are:
 * `opkg`
 * `pacman`
 * `portage`
+* `slackpkg`
 * `xbps`
 * `yum`
 * `zypper`
