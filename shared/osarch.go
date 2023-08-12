@@ -65,6 +65,11 @@ var funtooArchitectureNames = map[int]string{
 	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN: "arm64_generic",
 }
 
+var slackwareArchitectureNames = map[int]string{
+	osarch.ARCH_32BIT_INTEL_X86: "i586",
+	osarch.ARCH_64BIT_INTEL_X86: "x86_64",
+}
+
 var distroArchitecture = map[string]map[int]string{
 	"alpinelinux": alpineLinuxArchitectureNames,
 	"altlinux":    altLinuxArchitectureNames,
@@ -75,6 +80,7 @@ var distroArchitecture = map[string]map[int]string{
 	"plamolinux":  plamoLinuxArchitectureNames,
 	"voidlinux":   voidLinuxArchitectureNames,
 	"funtoo":      funtooArchitectureNames,
+	"slackware":   slackwareArchitectureNames,
 }
 
 // GetArch returns the correct architecture name used by the specified
