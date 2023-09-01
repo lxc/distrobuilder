@@ -47,6 +47,7 @@ var downloaders = map[string]func() downloader{
 	"ubuntu-http":          func() downloader { return &ubuntu{} },
 	"voidlinux-http":       func() downloader { return &voidlinux{} },
 	"vyos-http":            func() downloader { return &vyos{} },
+	"slackware-http":       func() downloader { return &slackware{} },
 }
 
 // Load loads and initializes a downloader.
