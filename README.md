@@ -1,5 +1,7 @@
 # distrobuilder
-System container and VM image builder for LXC and LXD
+System container and VM image builder for Incus and LXC.
+
+Incus images may also be compatible with Canonical's LXD.
 
 ## Status
 Type            | Service               | Status
@@ -11,22 +13,22 @@ Project status  | CII Best Practices    | [![CII Best Practices](https://bestpra
 ## Command line options
 
 <!-- Include start CLI -->
-The following are the command line options of `distrobuilder`. You can use `distrobuilder` to create container images for both LXC and LXD.
+The following are the command line options of `distrobuilder`. You can use `distrobuilder` to create container images for both Incus and LXC.
 
 ```bash
 $ distrobuilder
-System container and VM image builder for LXC and LXD
+System container and VM image builder for Incus and LXC
 
 Usage:
   distrobuilder [command]
 
 Available Commands:
   build-dir      Build plain rootfs
+  build-incus    Build Incus image from scratch
   build-lxc      Build LXC image from scratch
-  build-lxd      Build LXD image from scratch
   help           Help about any command
+  pack-incus     Create Incus image from existing rootfs
   pack-lxc       Create LXC image from existing rootfs
-  pack-lxd       Create LXD image from existing rootfs
   repack-windows Repack Windows ISO with drivers included
 
 Flags:
