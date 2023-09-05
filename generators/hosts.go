@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	lxd "github.com/canonical/lxd/shared"
-	"github.com/canonical/lxd/shared/api"
+	lxd "github.com/lxc/incus/shared"
+	"github.com/lxc/incus/shared/api"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"

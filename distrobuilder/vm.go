@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	lxd "github.com/canonical/lxd/shared"
+	lxd "github.com/lxc/incus/shared"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
