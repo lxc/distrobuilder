@@ -62,7 +62,7 @@ func TestCloudInitGeneratorRunLXC(t *testing.T) {
 	require.FileExists(t, filepath.Join(rootfsDir, "etc", "cloud", "cloud-init.disabled"))
 }
 
-func TestCloudInitGeneratorRunLXD(t *testing.T) {
+func TestCloudInitGeneratorRunIncus(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 

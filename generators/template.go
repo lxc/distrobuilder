@@ -54,7 +54,7 @@ func (g *template) RunIncus(img *image.IncusImage, target shared.DefinitionTarge
 			return fmt.Errorf("Failed to parse template: %w", err)
 		}
 
-		content, err = tpl.Execute(pongo2.Context{"lxd": target})
+		content, err = tpl.Execute(pongo2.Context{"incus": target})
 		if err != nil {
 			return fmt.Errorf("Failed to execute template: %w", err)
 		}
@@ -65,7 +65,7 @@ func (g *template) RunIncus(img *image.IncusImage, target shared.DefinitionTarge
 		return fmt.Errorf("Failed to write to content to %s template: %w", g.defFile.Name, err)
 	}
 
-	// Add to LXD templates
+	// Add to Incus templates
 	img.Metadata.Templates[g.defFile.Path] = &api.ImageMetadataTemplate{
 		Template:   template,
 		Properties: g.defFile.Template.Properties,

@@ -165,7 +165,7 @@ config:
 		targetPath = g.defFile.Path
 	}
 
-	// Add to LXD templates
+	// Add to Incus templates
 	img.Metadata.Templates[targetPath] = &api.ImageMetadataTemplate{
 		Template:   template,
 		Properties: properties,

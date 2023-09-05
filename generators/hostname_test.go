@@ -43,7 +43,7 @@ func TestHostnameGeneratorRunLXC(t *testing.T) {
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "LXC_NAME\n")
 }
 
-func TestHostnameGeneratorRunLXD(t *testing.T) {
+func TestHostnameGeneratorRunIncus(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 

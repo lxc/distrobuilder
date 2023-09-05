@@ -45,7 +45,7 @@ func TestHostsGeneratorRunLXC(t *testing.T) {
 		"127.0.0.1\tlocalhost\n127.0.0.1\tLXC_NAME\n")
 }
 
-func TestHostsGeneratorRunLXD(t *testing.T) {
+func TestHostsGeneratorRunIncus(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 

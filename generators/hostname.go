@@ -72,7 +72,7 @@ func (g *hostname) RunIncus(img *image.IncusImage, target shared.DefinitionTarge
 		return fmt.Errorf("Failed to write to hostname file: %w", err)
 	}
 
-	// Add to LXD templates
+	// Add to Incus templates
 	img.Metadata.Templates[g.defFile.Path] = &api.ImageMetadataTemplate{
 		Template:   "hostname.tpl",
 		Properties: g.defFile.Template.Properties,
