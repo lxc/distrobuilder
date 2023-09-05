@@ -345,7 +345,7 @@ func (d *Definition) SetDefaults() {
 		d.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.architecture_mapped }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
 	}
 
-	// Set default target type. This will only be overridden if building VMs for LXD.
+	// Set default target type. This will only be overridden if building VMs for Incus.
 	d.Targets.Type = DefinitionFilterTypeContainer
 }
 
@@ -445,7 +445,7 @@ func (d *Definition) Validate() error {
 		"hosts",
 		"remove",
 		"cloud-init",
-		"lxd-agent",
+		"incus-agent",
 		"fstab",
 	}
 

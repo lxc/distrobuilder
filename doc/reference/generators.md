@@ -10,7 +10,7 @@ Available generators are
 * [`hosts`](#hosts)
 * [`remove`](#remove)
 * [`template`](#template)
-* [`lxd-agent`](#lxd-agent)
+* [`incus-agent`](#incus-agent)
 * [`fstab`](#fstab)
 
 In the image definition YAML, they are listed under `files`.
@@ -108,9 +108,9 @@ The `when` key can be one or more of:
 
 See {ref}`lxd:image-format` in the LXD documentation for more information.
 
-## `lxd-agent`
+## `incus-agent`
 
-This generator creates the `systemd` unit files which are needed to start the `lxd-agent` in LXD VMs.
+This generator creates the `systemd` unit files which are needed to start the `incus-agent` in LXD VMs.
 
 ## `fstab`
 
