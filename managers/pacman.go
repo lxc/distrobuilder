@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	lxd "github.com/canonical/lxd/shared"
+	lxd "github.com/lxc/incus/shared"
 
 	"github.com/lxc/distrobuilder/shared"
 )

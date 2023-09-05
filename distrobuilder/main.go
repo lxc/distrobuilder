@@ -65,7 +65,7 @@ import (
 	"strings"
 	"time"
 
-	lxd "github.com/canonical/lxd/shared"
+	lxd "github.com/lxc/incus/shared"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"

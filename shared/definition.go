@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/canonical/lxd/shared"
-	lxdarch "github.com/canonical/lxd/shared/osarch"
+	"github.com/lxc/incus/shared"
+	lxdarch "github.com/lxc/incus/shared/osarch"
 )
 
 // ImageTarget represents the image target.

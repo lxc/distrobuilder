@@ -15,7 +15,7 @@ import (
 	"regexp"
 	"strings"
 
-	lxd "github.com/canonical/lxd/shared"
+	lxd "github.com/lxc/incus/shared"
 )
 
 // downloadChecksum downloads or opens URL, and matches fname against the
