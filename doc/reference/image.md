@@ -21,10 +21,10 @@ The `expiry` field describes the image expiry.
 The format is `\d+(s|m|h|d|w)` (seconds, minutes, hours, days, weeks), and defaults to 30 days (`30d`).
 It's also possible to define multiple such parts, e.g. `1h 30m 10s`.
 
-The `name` field is used in the LXD metadata as well as the output name for LXD unified tarballs.
+The `name` field is used in the Incus metadata as well as the output name for Incus unified tarballs.
 It defaults to `{{ image.distribution }}-{{ image.release }}-{{ image.architecture_mapped }}-{{ image.variant }}-{{ image.serial }}`.
 
 The `serial` field is the image's serial number.
 It can be anything and defaults to `YYYYmmdd_HHMM` (date format).
 
-The `variant` field can be anything and is used in the LXD metadata as well as for [filtering](filters.md).
+The `variant` field can be anything and is used in the Incus metadata as well as for [filtering](filters.md).

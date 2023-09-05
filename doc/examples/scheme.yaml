@@ -56,7 +56,7 @@ targets:
       - type: all
         content: |-
           lxc.arch = {{ image.architecture_personality }}
-  lxd:
+  incus:
     vm:
       size: 2147483648
       filesystem: ext4
