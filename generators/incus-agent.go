@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -100,7 +100,7 @@ func (g *lxdAgent) Run() error {
 
 func (g *lxdAgent) handleSystemd() error {
 	systemdPath := filepath.Join("/", "lib", "systemd")
-	if !lxd.PathExists(filepath.Join(g.sourceDir, systemdPath)) {
+	if !incus.PathExists(filepath.Join(g.sourceDir, systemdPath)) {
 		systemdPath = filepath.Join("/", "usr", "lib", "systemd")
 	}
 
@@ -146,7 +146,7 @@ WantedBy=multi-user.target
 
 	udevPath := filepath.Join("/", "lib", "udev", "rules.d")
 	stat, err := os.Lstat(filepath.Join(g.sourceDir, "lib", "udev"))
-	if err == nil && stat.Mode()&os.ModeSymlink != 0 || !lxd.PathExists(filepath.Dir(filepath.Join(g.sourceDir, udevPath))) {
+	if err == nil && stat.Mode()&os.ModeSymlink != 0 || !incus.PathExists(filepath.Dir(filepath.Join(g.sourceDir, udevPath))) {
 		udevPath = filepath.Join("/", "usr", "lib", "udev", "rules.d")
 	}
 

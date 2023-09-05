@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -81,7 +81,7 @@ func yumManageRepository(repoAction shared.DefinitionPackagesRepository) error {
 		targetFile = fmt.Sprintf("%s.repo", targetFile)
 	}
 
-	if !lxd.PathExists(filepath.Dir(targetFile)) {
+	if !incus.PathExists(filepath.Dir(targetFile)) {
 		err := os.MkdirAll(filepath.Dir(targetFile), 0755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(targetFile), err)

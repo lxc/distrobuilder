@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	client "github.com/lxc/incus/client"
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 	"github.com/lxc/incus/shared/api"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -45,7 +45,7 @@ func (c *cmdIncus) commandBuild() *cobra.Command {
 `, typeDescription, compressionDescription),
 		Args: cobra.RangeArgs(1, 2),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if !lxd.StringInSlice(c.flagType, []string{"split", "unified"}) {
+			if !incus.StringInSlice(c.flagType, []string{"split", "unified"}) {
 				return errors.New("--type needs to be one of ['split', 'unified']")
 			}
 
@@ -113,7 +113,7 @@ func (c *cmdIncus) commandPack() *cobra.Command {
 `, typeDescription, compressionDescription),
 		Args: cobra.RangeArgs(2, 3),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if !lxd.StringInSlice(c.flagType, []string{"split", "unified"}) {
+			if !incus.StringInSlice(c.flagType, []string{"split", "unified"}) {
 				return errors.New("--type needs to be one of ['split', 'unified']")
 			}
 
@@ -452,7 +452,7 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 	if importFlag.Changed {
 		path := ""
 
-		if lxd.PathExists("/var/snap/lxd/common/lxd") {
+		if incus.PathExists("/var/snap/lxd/common/lxd") {
 			path = "/var/snap/lxd/common/lxd/unix.socket"
 		}
 

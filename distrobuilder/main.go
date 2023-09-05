@@ -65,7 +65,7 @@ import (
 	"strings"
 	"time"
 
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -608,7 +608,7 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 // addSystemdGenerator creates a systemd-generator which runs on boot, and does some configuration around the system itself and networking.
 func addSystemdGenerator() error {
 	// Check if container has systemd
-	if !lxd.PathExists("/etc/systemd") {
+	if !incus.PathExists("/etc/systemd") {
 		return nil
 	}
 

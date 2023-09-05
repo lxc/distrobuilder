@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -152,7 +152,7 @@ func (s *plamolinux) downloadFiles(def shared.DefinitionImage, URL string, ignor
 
 		if strings.HasSuffix(target, ".txz") || strings.HasSuffix(target, ".tzst") {
 			pkgName := strings.Split(target, "-")[0]
-			if lxd.StringInSlice(pkgName, ignoredPkgs) {
+			if incus.StringInSlice(pkgName, ignoredPkgs) {
 				continue
 			}
 
