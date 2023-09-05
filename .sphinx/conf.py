@@ -36,7 +36,7 @@ myst_linkify_fuzzy_links=False
 myst_heading_anchors = 7
 
 intersphinx_mapping = {
-    'lxd': ('https://documentation.ubuntu.com/lxd/en/latest/', None)
+    'incus': ('https://linuxcontainers.org/incus/docs/main/', None)
 }
 
 if os.path.exists("../doc/substitutions.yaml"):
