@@ -60,21 +60,21 @@ The steps for building and launching the image depend on whether you want to use
 
 ### Create an image for LXD
 
-To build an image for LXD, run `distrobuilder`. We are using the `build-lxd` option to create an image for LXD.
+To build an image for LXD, run `distrobuilder`. We are using the `build-incus` option to create an image for LXD.
 
 - To create a container image:
 
   ```
-  sudo $HOME/go/bin/distrobuilder build-lxd ubuntu.yaml
+  sudo $HOME/go/bin/distrobuilder build-incus ubuntu.yaml
   ```
 
 - To create a VM image:
 
   ```
-  sudo $HOME/go/bin/distrobuilder build-lxd ubuntu.yaml --vm
+  sudo $HOME/go/bin/distrobuilder build-incus ubuntu.yaml --vm
   ```
 
-See {ref}`howto-build-lxd` for more information about the `build-lxd` command.
+See {ref}`howto-build-incus` for more information about the `build-incus` command.
 
 If the command is successful, you will get an output similar to the following (for a container image). The `incus.tar.xz` file is the description of the container image. The `rootfs.squasfs` file is the root file system (rootfs) of the container image. The set of these two files is the _container image_.
 

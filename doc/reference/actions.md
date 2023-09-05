@@ -30,5 +30,5 @@ After the package manager has installed the requested packages, all `post-packag
 For more on `packages`, see [packages](packages.md).
 
 And last, after the `files` section has been processed, all `post-files` actions are run.
-This action runs only for `build-lxc`, `build-lxd`, `pack-lxc`, and `pack-lxd`.
+This action runs only for `build-lxc`, `build-incus`, `pack-lxc`, and `pack-lxd`.
 For more on `files`, see [generators](generators.md).
