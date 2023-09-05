@@ -355,7 +355,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// only these sections will be processed.
 	imageTargets := shared.ImageTargetUndefined
 
-	// If we're running either build-lxc or build-lxd, include types which are
+	// If we're running either build-lxc or build-incus, include types which are
 	// meant for all.
 	if !isRunningBuildDir {
 		imageTargets |= shared.ImageTargetAll
@@ -365,9 +365,9 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	case "build-lxc":
 		// If we're running build-lxc, also process container-only sections.
 		imageTargets |= shared.ImageTargetContainer
-	case "build-lxd":
+	case "build-incus":
 		// Include either container-specific or vm-specific sections when
-		// running build-lxd.
+		// running build-incus.
 		ok, err := cmd.Flags().GetBool("vm")
 		if err != nil {
 			return fmt.Errorf(`Failed to get bool value of "vm": %w`, err)
