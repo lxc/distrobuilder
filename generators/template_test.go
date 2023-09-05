@@ -12,7 +12,7 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func TestTemplateGeneratorRunLXD(t *testing.T) {
+func TestTemplateGeneratorRunIncus(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
@@ -49,7 +49,7 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "root", "template"), "--test--")
 }
 
-func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
+func TestTemplateGeneratorRunIncusDefaultWhen(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 

@@ -77,7 +77,7 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 	require.Equal(t, "hello {{ targets.lxc.create_message }}\n", buffer.String())
 }
 
-func TestDumpGeneratorRunLXD(t *testing.T) {
+func TestDumpGeneratorRunIncus(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
