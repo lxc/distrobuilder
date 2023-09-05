@@ -4,7 +4,7 @@ discourse: 7519
 
 # Use `distrobuilder` to create images
 
-This guide shows you how to create an image for LXD or LXC.
+This guide shows you how to create an image for Incus or LXC.
 
 Before you start, you must install `distrobuilder`.
 See {doc}`../howto/install` for instructions.
@@ -26,7 +26,7 @@ The YAML configuration file contains an image template that gives instructions t
 Distrobuilder provides examples of YAML files for various distributions in the [examples directory](https://github.com/lxc/distrobuilder/tree/master/doc/examples).
 [`scheme.yaml`](https://github.com/lxc/distrobuilder/blob/master/doc/examples/scheme.yaml) is a standard template that includes all available options.
 
-Official LXD templates for various distributions are available in the [`lxc-ci` repository](https://github.com/lxc/lxc-ci/tree/master/images).
+Official Incus templates for various distributions are available in the [`lxc-ci` repository](https://github.com/lxc/lxc-ci/tree/master/images).
 ```
 
 In this example, we are creating an Ubuntu image.
@@ -44,7 +44,7 @@ You can define the following keys:
 |------------|------------------------------------------------------------------------------------------|--------------------------------|
 | `image`    | Defines distribution, architecture, release etc.                                         | {doc}`../reference/image`      |
 | `source`   | Defines main package source, keys etc.                                                   | {doc}`../reference/source`     |
-| `targets`  | Defines configuration for specific targets (e.g. LXD-client, instances etc.)             | {doc}`../reference/targets`    |
+| `targets`  | Defines configuration for specific targets (e.g. Incus, instances etc.)                  | {doc}`../reference/targets`    |
 | `files`    | Defines generators to modify files                                                       | {doc}`../reference/generators` |
 | `packages` | Defines packages for install or removal; adds repositories                               | {doc}`../reference/packages`   |
 | `actions`  | Defines scripts to be run after specific steps during image building                     | {doc}`../reference/actions`    |
@@ -56,11 +56,11 @@ When building a VM image, you should either build an image with cloud-init suppo
 
 ## Build and launch the image
 
-The steps for building and launching the image depend on whether you want to use it with LXD or with LXC.
+The steps for building and launching the image depend on whether you want to use it with Incus or with LXC.
 
-### Create an image for LXD
+### Create an image for Incus
 
-To build an image for LXD, run `distrobuilder`. We are using the `build-incus` option to create an image for LXD.
+To build an image for Incus, run `distrobuilder`. We are using the `build-incus` option to create an image for Incus.
 
 - To create a container image:
 
@@ -87,21 +87,21 @@ total 100960
 $
 ```
 
-#### Add the image to LXD
+#### Add the image to Incus
 
-To add the image to a LXD installation, use the `lxc image import` command as follows.
+To add the image to an Incus installation, use the `incus image import` command as follows.
 
 ```bash
-$ lxc image import incus.tar.xz rootfs.squashfs --alias mycontainerimage
+$ incus image import incus.tar.xz rootfs.squashfs --alias mycontainerimage
 Image imported with fingerprint: 009349195858651a0f883de804e64eb82e0ac8c0bc51880
 ```
 
-See {ref}`lxd:images-copy` for detailed information.
+See {ref}`incus:images-copy` for detailed information.
 
-Let's look at the image in LXD. The `ubuntu.yaml` had a setting to create an Ubuntu 20.04 (`focal`) image. The size is 98.58MB.
+Let's look at the image in Incus. The `ubuntu.yaml` had a setting to create an Ubuntu 20.04 (`focal`) image. The size is 98.58MB.
 
 ```bash
-$ lxc image list mycontainerimage
+$ incus image list mycontainerimage
 +------------------+--------------+--------+--------------+--------+---------+-----------------------------+
 |      ALIAS       | FINGERPRINT  | PUBLIC | DESCRIPTION  |  ARCH  |  SIZE   |         UPLOAD DATE         |
 +------------------+--------------+--------+--------------+--------+---------+-----------------------------+
@@ -109,20 +109,20 @@ $ lxc image list mycontainerimage
 +------------------+--------------+--------+--------------+--------+---------+-----------------------------+
 ```
 
-#### Launch a LXD container from the container image
+#### Launch an Incus container from the container image
 
-To launch a container from the freshly created image, use `lxc launch` as follows. Note that you do not specify a repository for the image (like `ubuntu:` or `images:`) because the image is located locally.
+To launch a container from the freshly created image, use `incus launch` as follows. Note that you do not specify a repository for the image (like `ubuntu:` or `images:`) because the image is located locally.
 
 ```bash
-$ lxc launch mycontainerimage c1
+$ incus launch mycontainerimage c1
 Creating c1
 Starting c1
 ```
 
 ### Create an image for LXC
 
-Using LXC containers instead of LXD may require the installation of `lxc-utils`.
-Having both LXC and LXD installed on the same system will probably cause confusion.
+Using LXC containers instead of Incus may require the installation of `lxc-utils`.
+Having both LXC and Incus installed on the same system will probably cause confusion.
 Use of raw LXC is generally discouraged due to the lack of automatic AppArmor
 protection.
 
@@ -160,7 +160,7 @@ lxc-start -n myContainerImage
 ```{youtube} https://www.youtube.com/watch?v=3PDMGwbbk48
 ```
 
-With LXD it's possible to run Windows VMs. All you need is a Windows ISO and a bunch of drivers.
+With Incus it's possible to run Windows VMs. All you need is a Windows ISO and a bunch of drivers.
 To make the installation a bit easier, `distrobuilder` added the `repack-windows` command. It takes a Windows ISO, and repacks it together with the necessary drivers.
 
 Currently, `distrobuilder` supports Windows 10, Windows Server 2012, Windows Server 2016, Windows Server 2019 and Windows Server 2022. The Windows version will automatically be detected, but in case this fails you can use the `--windows-version` flag to set it manually. It supports the values `w10`, `2k12`, `2k16`, `2k19` and `2k22` for Windows 10, Windows Server 2012, Windows Server 2016, Windows Server 2019 and Windows Server 2022 respectively.
@@ -182,15 +182,13 @@ distrobuilder repack-windows -h
 Run the following commands to initialize the VM, to configure (=increase) the allocated disk space and finally attach the full path of your prepared ISO file. Note that the installation of Windows 10 takes about 10GB (before updates), therefore a 30GB disk gives you about 20GB of free space.
 
 ```bash
-lxc init win10 --empty --vm -c security.secureboot=false
-lxc config device override win10 root size=30GiB
-lxc config device add win10 iso disk source=/path/to/Windows-repacked.iso boot.priority=10
+incus init win10 --empty --vm -c security.secureboot=false
+incus config device override win10 root size=30GiB
+incus config device add win10 iso disk source=/path/to/Windows-repacked.iso boot.priority=10
 ```
 
 Now, the VM win10 has been configured and it is ready to be started. The following command starts the virtual machine and opens up a VGA console so that we go through the graphical installation of Windows.
 
 ```bash
-lxc start win10 --console=vga
+incus start win10 --console=vga
 ```
-
-Taken from: [How to run a Windows virtual machine on LXD on Linux](https://blog.simos.info/how-to-run-a-windows-virtual-machine-on-lxd-on-linux/)
