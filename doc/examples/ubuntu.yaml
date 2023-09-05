@@ -139,8 +139,8 @@ files:
   types:
   - vm
 
-- name: lxd-agent
-  generator: lxd-agent
+- name: incus-agent
+  generator: incus-agent
   types:
   - vm
 
