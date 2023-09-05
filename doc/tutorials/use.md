@@ -76,12 +76,12 @@ To build an image for LXD, run `distrobuilder`. We are using the `build-lxd` opt
 
 See {ref}`howto-build-lxd` for more information about the `build-lxd` command.
 
-If the command is successful, you will get an output similar to the following (for a container image). The `lxd.tar.xz` file is the description of the container image. The `rootfs.squasfs` file is the root file system (rootfs) of the container image. The set of these two files is the _container image_.
+If the command is successful, you will get an output similar to the following (for a container image). The `incus.tar.xz` file is the description of the container image. The `rootfs.squasfs` file is the root file system (rootfs) of the container image. The set of these two files is the _container image_.
 
 ```bash
 $ ls -l
 total 100960
--rw-r--r-- 1 root   root         676 Oct  3 16:15 lxd.tar.xz
+-rw-r--r-- 1 root   root         676 Oct  3 16:15 incus.tar.xz
 -rw-r--r-- 1 root   root   103370752 Oct  3 16:15 rootfs.squashfs
 -rw-r--r-- 1 ubuntu ubuntu      7449 Oct  3 16:03 ubuntu.yaml
 $
@@ -92,7 +92,7 @@ $
 To add the image to a LXD installation, use the `lxc image import` command as follows.
 
 ```bash
-$ lxc image import lxd.tar.xz rootfs.squashfs --alias mycontainerimage
+$ lxc image import incus.tar.xz rootfs.squashfs --alias mycontainerimage
 Image imported with fingerprint: 009349195858651a0f883de804e64eb82e0ac8c0bc51880
 ```
 

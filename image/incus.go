@@ -78,7 +78,7 @@ func (l *IncusImage) Build(unified bool, compression string, vm bool) (string, s
 		fname, _ = shared.RenderTemplate(l.definition.Image.Name, l.definition)
 	} else {
 		// Default name for the unified tarball.
-		fname = "lxd"
+		fname = "incus"
 	}
 
 	rawImage := filepath.Join(l.cacheDir, fmt.Sprintf("%s.raw", fname))
@@ -161,7 +161,7 @@ func (l *IncusImage) Build(unified bool, compression string, vm bool) (string, s
 		}
 
 		// Create metadata tarball.
-		imageFile, err = shared.Pack(l.ctx, filepath.Join(l.targetDir, "lxd.tar"), compression,
+		imageFile, err = shared.Pack(l.ctx, filepath.Join(l.targetDir, "incus.tar"), compression,
 			l.cacheDir, paths...)
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to create metadata tarball: %w", err)

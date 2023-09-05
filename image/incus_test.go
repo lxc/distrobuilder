@@ -81,22 +81,22 @@ func testLXDBuildSplitImage(t *testing.T, image *IncusImage) {
 	// Create split tarball and squashfs.
 	imageFile, rootfsFile, err := image.Build(false, "xz", false)
 	require.NoError(t, err)
-	require.FileExists(t, "lxd.tar.xz")
+	require.FileExists(t, "incus.tar.xz")
 	require.FileExists(t, "rootfs.squashfs")
 	require.Equal(t, "rootfs.squashfs", filepath.Base(rootfsFile))
-	require.Equal(t, "lxd.tar.xz", filepath.Base(imageFile))
+	require.Equal(t, "incus.tar.xz", filepath.Base(imageFile))
 
-	os.Remove("lxd.tar.xz")
+	os.Remove("incus.tar.xz")
 	os.Remove("rootfs.squashfs")
 
 	imageFile, rootfsFile, err = image.Build(false, "gzip", false)
 	require.NoError(t, err)
-	require.FileExists(t, "lxd.tar.gz")
+	require.FileExists(t, "incus.tar.gz")
 	require.FileExists(t, "rootfs.squashfs")
 	require.Equal(t, "rootfs.squashfs", filepath.Base(rootfsFile))
-	require.Equal(t, "lxd.tar.gz", filepath.Base(imageFile))
+	require.Equal(t, "incus.tar.gz", filepath.Base(imageFile))
 
-	os.Remove("lxd.tar.gz")
+	os.Remove("incus.tar.gz")
 	os.Remove("rootfs.squashfs")
 }
 
@@ -118,9 +118,9 @@ func testLXDBuildUnifiedImage(t *testing.T, image *IncusImage) {
 	image.definition.Image.Name = ""
 	_, _, err = image.Build(true, "xz", false)
 	require.NoError(t, err)
-	defer os.Remove("lxd.tar.xz")
+	defer os.Remove("incus.tar.xz")
 
-	require.FileExists(t, "lxd.tar.xz")
+	require.FileExists(t, "incus.tar.xz")
 }
 
 func TestLXDCreateMetadata(t *testing.T) {
