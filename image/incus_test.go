@@ -16,7 +16,7 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-var lxdDef = shared.Definition{
+var incusDef = shared.Definition{
 	Image: shared.DefinitionImage{
 		Description:  "{{ image.distribution|capfirst }} {{ image. release }}",
 		Distribution: "ubuntu",
@@ -34,7 +34,7 @@ var lxdDef = shared.Definition{
 	},
 }
 
-func setupLXD(t *testing.T) *LXDImage {
+func setupIncus(t *testing.T) *IncusImage {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
@@ -43,64 +43,64 @@ func setupLXD(t *testing.T) *LXDImage {
 	err = os.MkdirAll(filepath.Join(cacheDir, "templates"), 0755)
 	require.NoError(t, err)
 
-	image := NewLXDImage(context.TODO(), cacheDir, "", cacheDir, lxdDef)
+	image := NewIncusImage(context.TODO(), cacheDir, "", cacheDir, incusDef)
 
 	fail := true
 	defer func() {
 		if fail {
-			teardownLXD(t)
+			teardownIncus(t)
 		}
 	}()
 
 	// Check cache directory
 	require.Equal(t, cacheDir, image.cacheDir)
-	require.Equal(t, lxdDef, image.definition)
+	require.Equal(t, incusDef, image.definition)
 
-	lxdDef.SetDefaults()
+	incusDef.SetDefaults()
 
-	err = lxdDef.Validate()
+	err = incusDef.Validate()
 	require.NoError(t, err)
 
 	fail = false
 	return image
 }
 
-func teardownLXD(t *testing.T) {
+func teardownIncus(t *testing.T) {
 	os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder-test"))
 }
 
-func TestLXDBuild(t *testing.T) {
-	image := setupLXD(t)
-	defer teardownLXD(t)
+func TestIncusBuild(t *testing.T) {
+	image := setupIncus(t)
+	defer teardownIncus(t)
 
-	testLXDBuildSplitImage(t, image)
-	testLXDBuildUnifiedImage(t, image)
+	testIncusBuildSplitImage(t, image)
+	testIncusBuildUnifiedImage(t, image)
 }
 
-func testLXDBuildSplitImage(t *testing.T, image *LXDImage) {
+func testIncusBuildSplitImage(t *testing.T, image *IncusImage) {
 	// Create split tarball and squashfs.
 	imageFile, rootfsFile, err := image.Build(false, "xz", false)
 	require.NoError(t, err)
-	require.FileExists(t, "lxd.tar.xz")
+	require.FileExists(t, "incus.tar.xz")
 	require.FileExists(t, "rootfs.squashfs")
 	require.Equal(t, "rootfs.squashfs", filepath.Base(rootfsFile))
-	require.Equal(t, "lxd.tar.xz", filepath.Base(imageFile))
+	require.Equal(t, "incus.tar.xz", filepath.Base(imageFile))
 
-	os.Remove("lxd.tar.xz")
+	os.Remove("incus.tar.xz")
 	os.Remove("rootfs.squashfs")
 
 	imageFile, rootfsFile, err = image.Build(false, "gzip", false)
 	require.NoError(t, err)
-	require.FileExists(t, "lxd.tar.gz")
+	require.FileExists(t, "incus.tar.gz")
 	require.FileExists(t, "rootfs.squashfs")
 	require.Equal(t, "rootfs.squashfs", filepath.Base(rootfsFile))
-	require.Equal(t, "lxd.tar.gz", filepath.Base(imageFile))
+	require.Equal(t, "incus.tar.gz", filepath.Base(imageFile))
 
-	os.Remove("lxd.tar.gz")
+	os.Remove("incus.tar.gz")
 	os.Remove("rootfs.squashfs")
 }
 
-func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
+func testIncusBuildUnifiedImage(t *testing.T, image *IncusImage) {
 	// Create unified tarball with custom name.
 	_, _, err := image.Build(true, "xz", false)
 	require.NoError(t, err)
@@ -118,14 +118,14 @@ func testLXDBuildUnifiedImage(t *testing.T, image *LXDImage) {
 	image.definition.Image.Name = ""
 	_, _, err = image.Build(true, "xz", false)
 	require.NoError(t, err)
-	defer os.Remove("lxd.tar.xz")
+	defer os.Remove("incus.tar.xz")
 
-	require.FileExists(t, "lxd.tar.xz")
+	require.FileExists(t, "incus.tar.xz")
 }
 
-func TestLXDCreateMetadata(t *testing.T) {
-	image := setupLXD(t)
-	defer teardownLXD(t)
+func TestIncusCreateMetadata(t *testing.T) {
+	image := setupIncus(t)
+	defer teardownIncus(t)
 
 	err := image.createMetadata()
 	require.NoError(t, err)
@@ -148,24 +148,24 @@ func TestLXDCreateMetadata(t *testing.T) {
 		{
 			"Properties[os]",
 			image.Metadata.Properties["os"],
-			lxdDef.Image.Distribution,
+			incusDef.Image.Distribution,
 		},
 		{
 			"Properties[release]",
 			image.Metadata.Properties["release"],
-			lxdDef.Image.Release,
+			incusDef.Image.Release,
 		},
 		{
 			"Properties[description]",
 			image.Metadata.Properties["description"],
-			fmt.Sprintf("%s %s", cases.Title(language.English).String(lxdDef.Image.Distribution),
-				lxdDef.Image.Release),
+			fmt.Sprintf("%s %s", cases.Title(language.English).String(incusDef.Image.Distribution),
+				incusDef.Image.Release),
 		},
 		{
 			"Properties[name]",
 			image.Metadata.Properties["name"],
-			fmt.Sprintf("%s-%s-%s-%s", strings.ToLower(lxdDef.Image.Distribution),
-				lxdDef.Image.Release, "x86_64", lxdDef.Image.Serial),
+			fmt.Sprintf("%s-%s-%s-%s", strings.ToLower(incusDef.Image.Distribution),
+				incusDef.Image.Release, "x86_64", incusDef.Image.Serial),
 		},
 	}
 

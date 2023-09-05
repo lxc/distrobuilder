@@ -10,7 +10,7 @@ Available generators are
 * [`hosts`](#hosts)
 * [`remove`](#remove)
 * [`template`](#template)
-* [`lxd-agent`](#lxd-agent)
+* [`incus-agent`](#incus-agent)
 * [`fstab`](#fstab)
 
 In the image definition YAML, they are listed under `files`.
@@ -45,7 +45,7 @@ If `pongo` is `true`, the values of `path`, `content`, and `source` are rendered
 
 For LXC images, the generator disables cloud-init by disabling any cloud-init services, and creates the file `cloud-init.disable` which is checked by `cloud-init` on startup.
 
-For LXD images, the generator creates templates depending on the provided name.
+For Incus images, the generator creates templates depending on the provided name.
 Valid names are `user-data`, `meta-data`, `vendor-data` and `network-config`.
 The default `path` if not defined otherwise is `/var/lib/cloud/seed/nocloud-net/<name>`.
 Setting `path`, `content` or `template.properties` will override the default values.
@@ -80,14 +80,14 @@ Copying will be done according to the following rules:
 For LXC images, the host name generator writes the LXC specific string `LXC_NAME` to the `hostname` file set in `path`.
 If the path doesn't exist, the generator does nothing.
 
-For LXD images, the generator creates a template for `path`.
+For Incus images, the generator creates a template for `path`.
 If the path doesn't exist, the generator does nothing.
 
 ## `hosts`
 
 For LXC images, the generator adds the entry `127.0.0.1 LXC_NAME` to the hosts file set in `path`.
 
-For LXD images, the generator creates a template for the hosts file set in `path`, adding an entry for `127.0.0.1 {{ container.name }}`.
+For Incus images, the generator creates a template for the hosts file set in `path`, adding an entry for `127.0.0.1 {{ container.name }}`.
 
 ## `remove`
 
@@ -95,7 +95,7 @@ The generator removes the file set in `path` from the container's root file syst
 
 ## `template`
 
-This generator creates a custom LXD template.
+This generator creates a custom Incus template.
 The `name` field is used as the template's file name.
 The `path` defines the target file in the container's root file system.
 The `properties` key is a map of the template properties.
@@ -106,11 +106,11 @@ The `when` key can be one or more of:
 * copy (run when a container is created from an existing one)
 * start (run every time the container is started)
 
-See {ref}`lxd:image-format` in the LXD documentation for more information.
+See {ref}`incus:image-format` in the Incus documentation for more information.
 
-## `lxd-agent`
+## `incus-agent`
 
-This generator creates the `systemd` unit files which are needed to start the `lxd-agent` in LXD VMs.
+This generator creates the `systemd` unit files which are needed to start the `incus-agent` in Incus VMs.
 
 ## `fstab`
 
@@ -122,6 +122,6 @@ LABEL=rootfs  /         <fs>  <options>  0 0
 LABEL=UEFI    /boot/efi vfat  defaults   0 0
 ```
 
-The file system is taken from the LXD target (see [targets](targets.md)) which defaults to `ext4`.
+The file system is taken from the Incus target (see [targets](targets.md)) which defaults to `ext4`.
 The options are generated depending on the file system.
 You cannot override them.

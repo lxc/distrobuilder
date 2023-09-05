@@ -8,14 +8,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/canonical/lxd/shared/api"
+	"github.com/lxc/incus/shared/api"
 	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/shared"
 )
 
-// A LXDImage represents a LXD image.
-type LXDImage struct {
+// An IncusImage represents an Incus image.
+type IncusImage struct {
 	sourceDir  string
 	targetDir  string
 	cacheDir   string
@@ -24,10 +24,10 @@ type LXDImage struct {
 	ctx        context.Context
 }
 
-// NewLXDImage returns a LXDImage.
-func NewLXDImage(ctx context.Context, sourceDir, targetDir, cacheDir string,
-	definition shared.Definition) *LXDImage {
-	return &LXDImage{
+// NewIncusImage returns an IncusImage.
+func NewIncusImage(ctx context.Context, sourceDir, targetDir, cacheDir string,
+	definition shared.Definition) *IncusImage {
+	return &IncusImage{
 		sourceDir,
 		targetDir,
 		cacheDir,
@@ -40,8 +40,8 @@ func NewLXDImage(ctx context.Context, sourceDir, targetDir, cacheDir string,
 	}
 }
 
-// Build creates a LXD image.
-func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, string, error) {
+// Build creates an Incus image.
+func (l *IncusImage) Build(unified bool, compression string, vm bool) (string, string, error) {
 	err := l.createMetadata()
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to create metadata: %w", err)
@@ -78,7 +78,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 		fname, _ = shared.RenderTemplate(l.definition.Image.Name, l.definition)
 	} else {
 		// Default name for the unified tarball.
-		fname = "lxd"
+		fname = "incus"
 	}
 
 	rawImage := filepath.Join(l.cacheDir, fmt.Sprintf("%s.raw", fname))
@@ -161,7 +161,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 		}
 
 		// Create metadata tarball.
-		imageFile, err = shared.Pack(l.ctx, filepath.Join(l.targetDir, "lxd.tar"), compression,
+		imageFile, err = shared.Pack(l.ctx, filepath.Join(l.targetDir, "incus.tar"), compression,
 			l.cacheDir, paths...)
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to create metadata tarball: %w", err)
@@ -171,7 +171,7 @@ func (l *LXDImage) Build(unified bool, compression string, vm bool) (string, str
 	return imageFile, rootfsFile, nil
 }
 
-func (l *LXDImage) createMetadata() error {
+func (l *IncusImage) createMetadata() error {
 	var err error
 
 	l.Metadata.Architecture = l.definition.Image.Architecture

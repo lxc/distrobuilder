@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	lxd "github.com/canonical/lxd/shared"
-	"github.com/canonical/lxd/shared/api"
+	incus "github.com/lxc/incus/shared"
+	"github.com/lxc/incus/shared/api"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -19,7 +19,7 @@ type hostname struct {
 // RunLXC creates a hostname template.
 func (g *hostname) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) error {
 	// Skip if the file doesn't exist
-	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
+	if !incus.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil
 	}
 
@@ -46,10 +46,10 @@ func (g *hostname) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC
 	return nil
 }
 
-// RunLXD creates a hostname template.
-func (g *hostname) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+// RunIncus creates a hostname template.
+func (g *hostname) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	// Skip if the file doesn't exist
-	if !lxd.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
+	if !incus.PathExists(filepath.Join(g.sourceDir, g.defFile.Path)) {
 		return nil
 	}
 
@@ -72,7 +72,7 @@ func (g *hostname) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD
 		return fmt.Errorf("Failed to write to hostname file: %w", err)
 	}
 
-	// Add to LXD templates
+	// Add to Incus templates
 	img.Metadata.Templates[g.defFile.Path] = &api.ImageMetadataTemplate{
 		Template:   "hostname.tpl",
 		Properties: g.defFile.Template.Properties,

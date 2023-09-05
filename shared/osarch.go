@@ -3,7 +3,7 @@ package shared
 import (
 	"fmt"
 
-	"github.com/canonical/lxd/shared/osarch"
+	"github.com/lxc/incus/shared/osarch"
 )
 
 var alpineLinuxArchitectureNames = map[int]string{

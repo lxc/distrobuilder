@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	lxd "github.com/canonical/lxd/shared"
+	incus "github.com/lxc/incus/shared"
 	"github.com/stretchr/testify/require"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -137,6 +137,6 @@ func TestCreateGPGKeyring(t *testing.T) {
 	keyring, err = c.CreateGPGKeyring()
 	require.NoError(t, err)
 
-	require.False(t, lxd.PathExists(keyring), "File should not exist")
+	require.False(t, incus.PathExists(keyring), "File should not exist")
 	os.RemoveAll(path.Dir(keyring))
 }

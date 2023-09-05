@@ -43,7 +43,7 @@ func TestHostnameGeneratorRunLXC(t *testing.T) {
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "LXC_NAME\n")
 }
 
-func TestHostnameGeneratorRunLXD(t *testing.T) {
+func TestHostnameGeneratorRunIncus(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
@@ -61,14 +61,14 @@ func TestHostnameGeneratorRunLXD(t *testing.T) {
 		},
 	}
 
-	image := image.NewLXDImage(context.TODO(), cacheDir, "", cacheDir, definition)
+	image := image.NewIncusImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
 	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs", "etc"), 0755)
 	require.NoError(t, err)
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "etc", "hostname"), "hostname")
 
-	err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
+	err = generator.RunIncus(image, shared.DefinitionTargetIncus{})
 	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "templates", "hostname.tpl"), "{{ container.name }}\n")

@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	lxd "github.com/canonical/lxd/shared"
+	incus "github.com/lxc/incus/shared"
 	"golang.org/x/sys/unix"
 	"gopkg.in/antchfx/htmlquery.v1"
 
@@ -158,7 +158,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 
 	var rootfsImage string
 	squashfsImage := filepath.Join(isoDir, "LiveOS", "squashfs.img")
-	if lxd.PathExists(squashfsImage) {
+	if incus.PathExists(squashfsImage) {
 		// The squashfs.img contains an image containing the rootfs, so first
 		// mount squashfs.img
 		err = shared.RunCommand(s.ctx, nil, nil, "mount", "-t", "squashfs", "-o", "ro", squashfsImage, squashfsDir)
@@ -242,7 +242,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 
 			defer f.Close()
 
-			_, err = lxd.DownloadFileHash(s.ctx, http.DefaultClient, "", nil, nil, elem[0], elem[1], "", nil, f)
+			_, err = incus.DownloadFileHash(s.ctx, http.DefaultClient, "", nil, nil, elem[0], elem[1], "", nil, f)
 			if err != nil {
 				return fmt.Errorf("Failed to download %q: %w", elem[1], err)
 			}
@@ -257,7 +257,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 		return fmt.Errorf("Failed to setup chroot: %w", err)
 	}
 
-	if !lxd.PathExists("/bin") && lxd.PathExists("/usr/bin") {
+	if !incus.PathExists("/bin") && incus.PathExists("/usr/bin") {
 		err = os.Symlink("/usr/bin", "/bin")
 		if err != nil {
 			return fmt.Errorf("Failed to create /bin symlink: %w", err)

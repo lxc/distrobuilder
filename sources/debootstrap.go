@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	lxd "github.com/canonical/lxd/shared"
+	incus "github.com/lxc/incus/shared"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -24,7 +24,7 @@ func (s *debootstrap) Run() error {
 	release := strings.ToLower(s.definition.Image.Release)
 
 	// Enable merged /usr by default, and disable it for certain distros/releases
-	if distro == "ubuntu" && lxd.StringInSlice(release, []string{"xenial", "bionic"}) || distro == "mint" && lxd.StringInSlice(release, []string{"tara", "tessa", "tina", "tricia", "ulyana"}) || distro == "devuan" {
+	if distro == "ubuntu" && incus.StringInSlice(release, []string{"xenial", "bionic"}) || distro == "mint" && incus.StringInSlice(release, []string{"tara", "tessa", "tina", "tricia", "ulyana"}) || distro == "devuan" {
 		args = append(args, "--no-merged-usr")
 	} else {
 		args = append(args, "--merged-usr")
@@ -86,7 +86,7 @@ func (s *debootstrap) Run() error {
 	// If s.definition.Source.SameAs is set, create a symlink in /usr/share/debootstrap/scripts
 	// pointing release to s.definition.Source.SameAs.
 	scriptPath := filepath.Join("/usr/share/debootstrap/scripts", s.definition.Image.Release)
-	if !lxd.PathExists(scriptPath) && s.definition.Source.SameAs != "" {
+	if !incus.PathExists(scriptPath) && s.definition.Source.SameAs != "" {
 		err := os.Symlink(s.definition.Source.SameAs, scriptPath)
 		if err != nil {
 			return fmt.Errorf("Failed to create symlink: %w", err)

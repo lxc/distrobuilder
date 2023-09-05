@@ -28,13 +28,13 @@ Global Flags:
 
 To build a plain rootfs, run `distrobuilder build-dir`.
 The command takes an image definition file and an output directory as positional arguments.
-Running `build-dir` is useful if one wants to build both LXC and LXD images.
+Running `build-dir` is useful if one wants to build both LXC and Incus images.
 In that case one can simply run
 
 ```shell
 distrobuilder build-dir def.yaml /path/to/rootfs
 distrobuilder pack-lxc def.yaml /path/to/rootfs /path/to/output
-distrobuilder pack-lxd def.yaml /path/to/rootfs /path/to/output
+distrobuilder pack-incus def.yaml /path/to/rootfs /path/to/output
 ```
 
 (howto-build-lxc)=
@@ -85,12 +85,12 @@ After building the image, the rootfs will be destroyed.
 The `pack-lxc` sub-command can be used to create an image from an existing rootfs.
 The rootfs won't be deleted afterwards.
 
-(howto-build-lxd)=
-## LXD image
+(howto-build-incus)=
+## Incus image
 
 ```shell
-$ distrobuilder build-lxd --help
-Build LXD image from scratch
+$ distrobuilder build-incus --help
+Build Incus image from scratch
 
 Depending on the type, it either outputs a unified (single tarball)
 or split image (tarball + squashfs or qcow2 image). The --type flag can take one of the
@@ -114,16 +114,16 @@ For supported compression methods, a compression level can be specified with
 method-N, where N is an integer, e.g. gzip-9.
 
 Usage:
-  distrobuilder build-lxd <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-lxd] [flags]
+  distrobuilder build-incus <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-incus] [flags]
 
 Flags:
-      --compression             Type of compression to use (default "xz")
-  -h, --help                    help for build-lxd
-      --import-into-lxd[="-"]   Import built image into LXD
-      --keep-sources            Keep sources after build (default true)
-      --sources-dir             Sources directory for distribution tarballs (default "/tmp/distrobuilder")
-      --type                    Type of tarball to create (default "split")
-      --vm                      Create a qcow2 image for VMs
+      --compression               Type of compression to use (default "xz")
+  -h, --help                      help for build-incus
+      --import-into-incus[="-"]   Import built image into Incus
+      --keep-sources              Keep sources after build (default true)
+      --sources-dir               Sources directory for distribution tarballs (default "/tmp/distrobuilder")
+      --type                      Type of tarball to create (default "split")
+      --vm                        Create a qcow2 image for VMs
 
 Global Flags:
       --cache-dir         Cache directory
@@ -135,9 +135,9 @@ Global Flags:
       --version           Print version number
 ```
 
-Running the `build-lxd` sub-command creates a LXD image.
+Running the `build-incus` sub-command creates an Incus image.
 If `--type=split`, it outputs two files.
-The metadata tarball will always be named `lxd.tar.xz`.
+The metadata tarball will always be named `incus.tar.xz`.
 When creating a container image, the second file will be `rootfs.squashfs`.
 When creating a VM image, the second file will be `disk.qcow2`.
 If `--type=unified`, a unified tarball named `<image.name>.tar.xz` is created.
@@ -147,12 +147,12 @@ If `--compression` is set, the tarballs will use the provided compression instea
 
 Setting `--vm` will create a `qcow2` image which is used for virtual machines.
 
-If `--import-into-lxd` is set, the resulting image is imported into LXD.
+If `--import-into-incus` is set, the resulting image is imported into Incus.
 It basically runs `lxc image import <image>`.
 Per default, it doesn't create an alias.
-This can be changed by calling it as `--import-into-lxd=<alias>`.
+This can be changed by calling it as `--import-into-incus=<alias>`.
 
 After building the image, the rootfs will be destroyed.
 
-The `pack-lxd` sub-command can be used to create an image from an existing rootfs.
+The `pack-incus` sub-command can be used to create an image from an existing rootfs.
 The rootfs won't be deleted afterwards.

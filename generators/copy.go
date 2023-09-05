@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	lxd "github.com/canonical/lxd/shared"
+	incus "github.com/lxc/incus/shared"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -21,8 +21,8 @@ func (g *copy) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) er
 	return g.Run()
 }
 
-// RunLXD copies a file to the container.
-func (g *copy) RunLXD(img *image.LXDImage, target shared.DefinitionTargetLXD) error {
+// RunIncus copies a file to the container.
+func (g *copy) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	return g.Run()
 }
 
@@ -173,7 +173,7 @@ func (g *copy) copyFile(src, dest string, defFile shared.DefinitionFile) error {
 		return fmt.Errorf("Failed to create directory %q: %w", dir, err)
 	}
 
-	err = lxd.FileCopy(src, dest)
+	err = incus.FileCopy(src, dest)
 	if err != nil {
 		return fmt.Errorf("Failed to copy file %q to %q: %w", src, dest, err)
 	}

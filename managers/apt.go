@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	lxd "github.com/canonical/lxd/shared"
+	incus "github.com/lxc/incus/shared"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -63,7 +63,7 @@ func (m *apt) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 		}
 	}
 
-	if !lxd.PathExists(filepath.Dir(targetFile)) {
+	if !incus.PathExists(filepath.Dir(targetFile)) {
 		err := os.MkdirAll(filepath.Dir(targetFile), 0755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(targetFile), err)

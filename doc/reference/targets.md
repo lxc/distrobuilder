@@ -12,7 +12,7 @@ targets:
               after: <uint>
               content: <string>
             - ...
-    lxd:
+    incus:
         vm:
             size: <uint>
             filesystem: <string>
@@ -32,7 +32,7 @@ If your desired compatibility level is 3 for example, you would use `before: 4` 
 
 `content` describes the configuration which is to be written to the configuration file.
 
-## LXD
+## Incus
 
 Valid keys are `size` and `filesystem`.
 The former specifies the VM image size in bytes.

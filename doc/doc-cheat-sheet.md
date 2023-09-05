@@ -187,13 +187,13 @@ To reference a documentation page, use MyST syntax to automatically extract the 
   - [](index)
   -
   - Do not use.
-* - `[LXD documentation](index)`
-  - [LXD documentation](index)
-  - [LXD documentation](index)
+* - `[Distrobuilder documentation](index)`
+  - [Distrobuilder documentation](index)
+  - [Distrobuilder documentation](index)
   - Preferred when overriding the link text.
-* - `` {doc}`LXD documentation <index>` ``
-  - {doc}`LXD documentation <index>`
-  - {doc}<span></span>`LXD documentation <index>`
+* - `` {doc}`Distrobuiledr documentation <index>` ``
+  - {doc}`Distrobuilder documentation <index>`
+  - {doc}<span></span>`Distrobuilder documentation <index>`
   - Alternative when overriding the link text.
 
 ```

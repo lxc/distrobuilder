@@ -8,9 +8,9 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	client "github.com/canonical/lxd/client"
-	lxd "github.com/canonical/lxd/shared"
-	"github.com/canonical/lxd/shared/api"
+	client "github.com/lxc/incus/client"
+	incus "github.com/lxc/incus/shared"
+	"github.com/lxc/incus/shared/api"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
@@ -21,22 +21,23 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-type cmdLXD struct {
+type cmdIncus struct {
 	cmdBuild *cobra.Command
 	cmdPack  *cobra.Command
 	global   *cmdGlobal
 
-	flagType          string
-	flagCompression   string
-	flagVM            bool
-	flagImportIntoLXD string
+	flagType            string
+	flagCompression     string
+	flagVM              bool
+	flagImportIntoIncus string
 }
 
-func (c *cmdLXD) commandBuild() *cobra.Command {
+func (c *cmdIncus) commandBuild() *cobra.Command {
 	c.cmdBuild = &cobra.Command{
-		Use:   "build-lxd <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-lxd]",
-		Short: "Build LXD image from scratch",
-		Long: fmt.Sprintf(`Build LXD image from scratch
+		Use:     "build-incus <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-incus]",
+		Aliases: []string{"build-lxd"},
+		Short:   "Build Incus image from scratch",
+		Long: fmt.Sprintf(`Build Incus image from scratch
 
 %s
 
@@ -44,7 +45,7 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 `, typeDescription, compressionDescription),
 		Args: cobra.RangeArgs(1, 2),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if !lxd.StringInSlice(c.flagType, []string{"split", "unified"}) {
+			if !incus.StringInSlice(c.flagType, []string{"split", "unified"}) {
 				return errors.New("--type needs to be one of ['split', 'unified']")
 			}
 
@@ -93,19 +94,18 @@ func (c *cmdLXD) commandBuild() *cobra.Command {
 	c.cmdBuild.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create"+"``")
 	c.cmdBuild.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use"+"``")
 	c.cmdBuild.Flags().BoolVar(&c.flagVM, "vm", false, "Create a qcow2 image for VMs"+"``")
-	c.cmdBuild.Flags().StringVar(&c.flagImportIntoLXD, "import-into-lxd", "", "Import built image into LXD"+"``")
-	c.cmdBuild.Flags().Lookup("import-into-lxd").NoOptDefVal = "-"
-	c.cmdBuild.Flags().StringVar(&c.global.flagSourcesDir, "sources-dir", filepath.Join(os.TempDir(), "distrobuilder"), "Sources directory for distribution tarballs"+"``")
+	c.cmdBuild.Flags().StringVar(&c.flagImportIntoIncus, "import-into-incus", "", "Import built image into Incus"+"``")
 	c.cmdBuild.Flags().BoolVar(&c.global.flagKeepSources, "keep-sources", true, "Keep sources after build"+"``")
 
 	return c.cmdBuild
 }
 
-func (c *cmdLXD) commandPack() *cobra.Command {
+func (c *cmdIncus) commandPack() *cobra.Command {
 	c.cmdPack = &cobra.Command{
-		Use:   "pack-lxd <filename|-> <source dir> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-lxd]",
-		Short: "Create LXD image from existing rootfs",
-		Long: fmt.Sprintf(`Create LXD image from existing rootfs
+		Use:     "pack-incus <filename|-> <source dir> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-incus]",
+		Aliases: []string{"pack-lxd"},
+		Short:   "Create Incus image from existing rootfs",
+		Long: fmt.Sprintf(`Create Incus image from existing rootfs
 
 %s
 
@@ -113,7 +113,7 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 `, typeDescription, compressionDescription),
 		Args: cobra.RangeArgs(2, 3),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if !lxd.StringInSlice(c.flagType, []string{"split", "unified"}) {
+			if !incus.StringInSlice(c.flagType, []string{"split", "unified"}) {
 				return errors.New("--type needs to be one of ['split', 'unified']")
 			}
 
@@ -171,13 +171,13 @@ func (c *cmdLXD) commandPack() *cobra.Command {
 	c.cmdPack.Flags().StringVar(&c.flagType, "type", "split", "Type of tarball to create")
 	c.cmdPack.Flags().StringVar(&c.flagCompression, "compression", "xz", "Type of compression to use")
 	c.cmdPack.Flags().BoolVar(&c.flagVM, "vm", false, "Create a qcow2 image for VMs"+"``")
-	c.cmdPack.Flags().StringVar(&c.flagImportIntoLXD, "import-into-lxd", "", "Import built image into LXD"+"``")
-	c.cmdPack.Flags().Lookup("import-into-lxd").NoOptDefVal = "-"
+	c.cmdPack.Flags().StringVar(&c.flagImportIntoIncus, "import-into-incus", "", "Import built image into Incus"+"``")
+	c.cmdPack.Flags().Lookup("import-into-incus").NoOptDefVal = "-"
 
 	return c.cmdPack
 }
 
-func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) error {
+func (c *cmdIncus) runPack(cmd *cobra.Command, args []string, overlayDir string) error {
 	// Setup the mounts and chroot into the rootfs
 	exitChroot, err := shared.SetupChroot(overlayDir, *c.global.definition, nil)
 	if err != nil {
@@ -253,8 +253,8 @@ func (c *cmdLXD) runPack(cmd *cobra.Command, args []string, overlayDir string) e
 	return nil
 }
 
-func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error {
-	img := image.NewLXDImage(c.global.ctx, overlayDir, c.global.targetDir,
+func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) error {
+	img := image.NewIncusImage(c.global.ctx, overlayDir, c.global.targetDir,
 		c.global.flagCacheDir, *c.global.definition)
 
 	imageTargets := shared.ImageTargetUndefined | shared.ImageTargetAll
@@ -277,9 +277,9 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		c.global.logger.WithField("generator", file.Generator).Info("Running generator")
 
-		err = generator.RunLXD(img, c.global.definition.Targets.LXD)
+		err = generator.RunIncus(img, c.global.definition.Targets.Incus)
 		if err != nil {
-			return fmt.Errorf("Failed to create LXD data: %w", err)
+			return fmt.Errorf("Failed to create Incus data: %w", err)
 		}
 	}
 
@@ -303,7 +303,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 
 		imgFile := filepath.Join(c.global.flagCacheDir, imgFilename)
 
-		vm, err = newVM(c.global.ctx, imgFile, vmDir, c.global.definition.Targets.LXD.VM.Filesystem, c.global.definition.Targets.LXD.VM.Size)
+		vm, err = newVM(c.global.ctx, imgFile, vmDir, c.global.definition.Targets.Incus.VM.Filesystem, c.global.definition.Targets.Incus.VM.Size)
 		if err != nil {
 			return fmt.Errorf("Failed to instantiate VM: %w", err)
 		}
@@ -351,7 +351,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 			return fmt.Errorf("Failed to mount UEFI partition: %w", err)
 		}
 
-		// We cannot use LXD's rsync package as that uses the --delete flag which
+		// We cannot use Incus' rsync package as that uses the --delete flag which
 		// causes an issue due to the boot/efi directory being present.
 		err = shared.RsyncLocal(c.global.ctx, overlayDir+"/", vmDir)
 		if err != nil {
@@ -440,25 +440,21 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 		}
 	}
 
-	c.global.logger.WithFields(logrus.Fields{"type": c.flagType, "vm": c.flagVM, "compression": c.flagCompression}).Info("Creating LXD image")
+	c.global.logger.WithFields(logrus.Fields{"type": c.flagType, "vm": c.flagVM, "compression": c.flagCompression}).Info("Creating Incus image")
 
 	imageFile, rootfsFile, err := img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
-		return fmt.Errorf("Failed to create LXD image: %w", err)
+		return fmt.Errorf("Failed to create Incus image: %w", err)
 	}
 
-	importFlag := cmd.Flags().Lookup("import-into-lxd")
+	importFlag := cmd.Flags().Lookup("import-into-incus")
 
 	if importFlag.Changed {
 		path := ""
 
-		if lxd.PathExists("/var/snap/lxd/common/lxd") {
-			path = "/var/snap/lxd/common/lxd/unix.socket"
-		}
-
-		server, err := client.ConnectLXDUnix(path, nil)
+		server, err := client.ConnectIncusUnix(path, nil)
 		if err != nil {
-			return fmt.Errorf("Failed to connect to LXD: %w", err)
+			return fmt.Errorf("Failed to connect to Incus: %w", err)
 		}
 
 		image := api.ImagesPost{
@@ -510,7 +506,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 			return fmt.Errorf("Failed to create image: %w", err)
 		}
 
-		// Don't create alias if the flag value is equal to the NoOptDefVal (the default value if --import-into-lxd flag is set without any value).
+		// Don't create alias if the flag value is equal to the NoOptDefVal (the default value if --import-into-incus flag is set without any value).
 		if importFlag.Value.String() == importFlag.NoOptDefVal {
 			return nil
 		}
@@ -539,7 +535,7 @@ func (c *cmdLXD) run(cmd *cobra.Command, args []string, overlayDir string) error
 	return nil
 }
 
-func (c *cmdLXD) checkVMDependencies() error {
+func (c *cmdIncus) checkVMDependencies() error {
 	dependencies := []string{"btrfs", "mkfs.ext4", "mkfs.vfat", "qemu-img", "rsync", "sgdisk"}
 
 	for _, dep := range dependencies {

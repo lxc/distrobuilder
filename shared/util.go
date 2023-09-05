@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/canonical/lxd/shared"
+	"github.com/lxc/incus/shared"
 	"golang.org/x/sys/unix"
 	"gopkg.in/flosch/pongo2.v3"
 	yaml "gopkg.in/yaml.v2"

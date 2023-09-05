@@ -12,7 +12,7 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-func TestTemplateGeneratorRunLXD(t *testing.T) {
+func TestTemplateGeneratorRunIncus(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
@@ -35,21 +35,21 @@ func TestTemplateGeneratorRunLXD(t *testing.T) {
 	require.IsType(t, &template{}, generator)
 	require.NoError(t, err)
 
-	image := image.NewLXDImage(context.TODO(), cacheDir, "", cacheDir, definition)
+	image := image.NewIncusImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
 	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs", "root"), 0755)
 	require.NoError(t, err)
 
 	createTestFile(t, filepath.Join(cacheDir, "rootfs", "root", "template"), "--test--")
 
-	err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
+	err = generator.RunIncus(image, shared.DefinitionTargetIncus{})
 	require.NoError(t, err)
 
 	validateTestFile(t, filepath.Join(cacheDir, "templates", "template.tpl"), "==test==\n")
 	validateTestFile(t, filepath.Join(cacheDir, "rootfs", "root", "template"), "--test--")
 }
 
-func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
+func TestTemplateGeneratorRunIncusDefaultWhen(t *testing.T) {
 	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
@@ -72,9 +72,9 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 	require.IsType(t, &template{}, generator)
 	require.NoError(t, err)
 
-	image := image.NewLXDImage(context.TODO(), cacheDir, "", cacheDir, definition)
+	image := image.NewIncusImage(context.TODO(), cacheDir, "", cacheDir, definition)
 
-	err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
+	err = generator.RunIncus(image, shared.DefinitionTargetIncus{})
 	require.NoError(t, err)
 
 	generator, err = Load("template", nil, cacheDir, rootfsDir, shared.DefinitionFile{
@@ -89,7 +89,7 @@ func TestTemplateGeneratorRunLXDDefaultWhen(t *testing.T) {
 	require.IsType(t, &template{}, generator)
 	require.NoError(t, err)
 
-	err = generator.RunLXD(image, shared.DefinitionTargetLXD{})
+	err = generator.RunIncus(image, shared.DefinitionTargetIncus{})
 	require.NoError(t, err)
 
 	testvalue := []string{"create", "copy"}

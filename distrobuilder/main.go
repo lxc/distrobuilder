@@ -65,7 +65,7 @@ import (
 	"strings"
 	"time"
 
-	lxd "github.com/canonical/lxd/shared"
+	incus "github.com/lxc/incus/shared"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -125,7 +125,7 @@ func main() {
 
 	app := &cobra.Command{
 		Use:   "distrobuilder",
-		Short: "System container and VM image builder for LXC and LXD",
+		Short: "System container and VM image builder for LXC and Incus",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// Quick checks
 			if os.Geteuid() != 0 {
@@ -205,10 +205,10 @@ func main() {
 	app.AddCommand(LXCCmd.commandBuild())
 	app.AddCommand(LXCCmd.commandPack())
 
-	// LXD sub-commands
-	LXDCmd := cmdLXD{global: &globalCmd}
-	app.AddCommand(LXDCmd.commandBuild())
-	app.AddCommand(LXDCmd.commandPack())
+	// Incus sub-commands
+	IncusCmd := cmdIncus{global: &globalCmd}
+	app.AddCommand(IncusCmd.commandBuild())
+	app.AddCommand(IncusCmd.commandPack())
 
 	// build-dir sub-command
 	buildDirCmd := cmdBuildDir{global: &globalCmd}
@@ -306,7 +306,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Failed to get definition: %w", err)
 	}
 
-	// Create cache directory if we also plan on creating LXC or LXD images
+	// Create cache directory if we also plan on creating LXC or Incus images
 	if !isRunningBuildDir {
 		err = os.MkdirAll(c.flagCacheDir, 0755)
 		if err != nil {
@@ -355,7 +355,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// only these sections will be processed.
 	imageTargets := shared.ImageTargetUndefined
 
-	// If we're running either build-lxc or build-lxd, include types which are
+	// If we're running either build-lxc or build-incus, include types which are
 	// meant for all.
 	if !isRunningBuildDir {
 		imageTargets |= shared.ImageTargetAll
@@ -365,9 +365,9 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	case "build-lxc":
 		// If we're running build-lxc, also process container-only sections.
 		imageTargets |= shared.ImageTargetContainer
-	case "build-lxd":
+	case "build-incus":
 		// Include either container-specific or vm-specific sections when
-		// running build-lxd.
+		// running build-incus.
 		ok, err := cmd.Flags().GetBool("vm")
 		if err != nil {
 			return fmt.Errorf(`Failed to get bool value of "vm": %w`, err)
@@ -608,7 +608,7 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 // addSystemdGenerator creates a systemd-generator which runs on boot, and does some configuration around the system itself and networking.
 func addSystemdGenerator() error {
 	// Check if container has systemd
-	if !lxd.PathExists("/etc/systemd") {
+	if !incus.PathExists("/etc/systemd") {
 		return nil
 	}
 
@@ -632,6 +632,11 @@ is_lxc_privileged_container() {
 # is_lxd_vm succeeds if we're running inside a LXD VM
 is_lxd_vm() {
 	[ -e /dev/virtio-ports/org.linuxcontainers.lxd ]
+}
+
+# is_incus_vm succeeds if we're running inside an Incus VM
+is_incus_vm() {
+	[ -e /dev/virtio-ports/org.linuxcontainers.incus ]
 }
 
 # is_in_path succeeds if the given file exists in on of the paths
@@ -754,10 +759,10 @@ EOF
 }
 
 ## Main logic
-# Nothing to do in LXD VM but deployed in case it is later converted to a container
-is_lxd_vm && exit 0
+# Nothing to do in Incus VM but deployed in case it is later converted to a container
+is_incus_vm || is_lxd_vm && exit 0
 
-# Exit immediately if not a LXC/LXD container
+# Exit immediately if not an Incus/LXC container
 is_lxc_container || exit 0
 
 # Check for NetworkManager

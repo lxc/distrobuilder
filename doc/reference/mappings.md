@@ -1,6 +1,6 @@
 # Mappings
 
-`mappings` describes an architecture mapping between the architectures from those used in LXD and those used by the distribution.
+`mappings` describes an architecture mapping between the architectures from those used in Incus and those used by the distribution.
 These mappings are useful if you for example want to build a `x86_64` image but the source tarball contains `amd64` as its architecture.
 
 ```yaml

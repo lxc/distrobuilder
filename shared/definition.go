@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/canonical/lxd/shared"
-	lxdarch "github.com/canonical/lxd/shared/osarch"
+	"github.com/lxc/incus/shared"
+	incusArch "github.com/lxc/incus/shared/osarch"
 )
 
 // ImageTarget represents the image target.
@@ -184,22 +184,22 @@ type DefinitionTargetLXC struct {
 	Config        []DefinitionTargetLXCConfig `yaml:"config,omitempty"`
 }
 
-// DefinitionTargetLXDVM represents LXD VM specific options.
-type DefinitionTargetLXDVM struct {
+// DefinitionTargetIncusVM represents Incus VM specific options.
+type DefinitionTargetIncusVM struct {
 	Size       uint64 `yaml:"size,omitempty"`
 	Filesystem string `yaml:"filesystem,omitempty"`
 }
 
-// DefinitionTargetLXD represents LXD specific options.
-type DefinitionTargetLXD struct {
-	VM DefinitionTargetLXDVM `yaml:"vm,omitempty"`
+// DefinitionTargetIncus represents Incus specific options.
+type DefinitionTargetIncus struct {
+	VM DefinitionTargetIncusVM `yaml:"vm,omitempty"`
 }
 
 // A DefinitionTarget specifies target dependent files.
 type DefinitionTarget struct {
-	LXC  DefinitionTargetLXC  `yaml:"lxc,omitempty"`
-	LXD  DefinitionTargetLXD  `yaml:"lxd,omitempty"`
-	Type DefinitionFilterType // This field is internal only and used only for simplicity.
+	LXC   DefinitionTargetLXC   `yaml:"lxc,omitempty"`
+	Incus DefinitionTargetIncus `yaml:"incus,omitempty"`
+	Type  DefinitionFilterType  // This field is internal only and used only for simplicity.
 }
 
 // A DefinitionFile represents a file which is to be created inside to chroot.
@@ -345,7 +345,7 @@ func (d *Definition) SetDefaults() {
 		d.Image.Description = "{{ image.distribution|capfirst }} {{ image.release }} {{ image.architecture_mapped }}{% if image.variant != \"default\" %} ({{ image.variant }}){% endif %} ({{ image.serial }})"
 	}
 
-	// Set default target type. This will only be overridden if building VMs for LXD.
+	// Set default target type. This will only be overridden if building VMs for Incus.
 	d.Targets.Type = DefinitionFilterTypeContainer
 }
 
@@ -445,7 +445,7 @@ func (d *Definition) Validate() error {
 		"hosts",
 		"remove",
 		"cloud-init",
-		"lxd-agent",
+		"incus-agent",
 		"fstab",
 	}
 
@@ -509,19 +509,19 @@ func (d *Definition) Validate() error {
 	d.Image.ArchitectureMapped = archMapped
 
 	// Kernel architecture and personality
-	archID, err := lxdarch.ArchitectureId(d.Image.Architecture)
+	archID, err := incusArch.ArchitectureId(d.Image.Architecture)
 	if err != nil {
 		return fmt.Errorf("Failed to get architecture ID: %w", err)
 	}
 
-	archName, err := lxdarch.ArchitectureName(archID)
+	archName, err := incusArch.ArchitectureName(archID)
 	if err != nil {
 		return fmt.Errorf("Failed to get architecture name: %w", err)
 	}
 
 	d.Image.ArchitectureKernel = archName
 
-	archPersonality, err := lxdarch.ArchitecturePersonality(archID)
+	archPersonality, err := incusArch.ArchitecturePersonality(archID)
 	if err != nil {
 		return fmt.Errorf("Failed to get architecture personality: %w", err)
 	}
