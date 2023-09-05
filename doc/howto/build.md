@@ -34,7 +34,7 @@ In that case one can simply run
 ```shell
 distrobuilder build-dir def.yaml /path/to/rootfs
 distrobuilder pack-lxc def.yaml /path/to/rootfs /path/to/output
-distrobuilder pack-lxd def.yaml /path/to/rootfs /path/to/output
+distrobuilder pack-incus def.yaml /path/to/rootfs /path/to/output
 ```
 
 (howto-build-lxc)=
@@ -154,5 +154,5 @@ This can be changed by calling it as `--import-into-lxd=<alias>`.
 
 After building the image, the rootfs will be destroyed.
 
-The `pack-lxd` sub-command can be used to create an image from an existing rootfs.
+The `pack-incus` sub-command can be used to create an image from an existing rootfs.
 The rootfs won't be deleted afterwards.
