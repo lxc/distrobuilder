@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/lxc/incus/shared"
-	lxdarch "github.com/lxc/incus/shared/osarch"
+	incusArch "github.com/lxc/incus/shared/osarch"
 )
 
 // ImageTarget represents the image target.
@@ -506,19 +506,19 @@ func (d *Definition) Validate() error {
 	d.Image.ArchitectureMapped = archMapped
 
 	// Kernel architecture and personality
-	archID, err := lxdarch.ArchitectureId(d.Image.Architecture)
+	archID, err := incusArch.ArchitectureId(d.Image.Architecture)
 	if err != nil {
 		return fmt.Errorf("Failed to get architecture ID: %w", err)
 	}
 
-	archName, err := lxdarch.ArchitectureName(archID)
+	archName, err := incusArch.ArchitectureName(archID)
 	if err != nil {
 		return fmt.Errorf("Failed to get architecture name: %w", err)
 	}
 
 	d.Image.ArchitectureKernel = archName
 
-	archPersonality, err := lxdarch.ArchitecturePersonality(archID)
+	archPersonality, err := incusArch.ArchitecturePersonality(archID)
 	if err != nil {
 		return fmt.Errorf("Failed to get architecture personality: %w", err)
 	}

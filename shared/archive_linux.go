@@ -8,13 +8,13 @@ import (
 	"os"
 	"strings"
 
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 	"golang.org/x/sys/unix"
 )
 
 // Unpack unpacks a tarball.
 func Unpack(file string, path string) error {
-	extractArgs, extension, _, err := lxd.DetectCompression(file)
+	extractArgs, extension, _, err := incus.DetectCompression(file)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func Unpack(file string, path string) error {
 
 		// Limit unsquashfs chunk size to 10% of memory and up to 256MB (default)
 		// When running on a low memory system, also disable multi-processing
-		mem, err := lxd.DeviceTotalMemory()
+		mem, err := incus.DeviceTotalMemory()
 		mem = mem / 1024 / 1024 / 10
 		if err == nil && mem < 256 {
 			args = append(args, "-da", fmt.Sprintf("%d", mem), "-fr", fmt.Sprintf("%d", mem), "-p", "1")
@@ -56,11 +56,11 @@ func Unpack(file string, path string) error {
 		return fmt.Errorf("Unsupported image format: %s", extension)
 	}
 
-	err = lxd.RunCommandWithFds(context.TODO(), reader, nil, command, args...)
+	err = incus.RunCommandWithFds(context.TODO(), reader, nil, command, args...)
 	if err != nil {
 		// We can't create char/block devices in unpriv containers so ignore related errors.
 		if command == "unsquashfs" {
-			var runError *lxd.RunError
+			var runError *incus.RunError
 
 			ok := errors.As(err, &runError)
 			if !ok || runError.StdErr().String() == "" {

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 	"github.com/lxc/incus/shared/ioprogress"
 	"github.com/sirupsen/logrus"
 
@@ -145,7 +145,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 
 	if checksum == "" {
 		err = shared.Retry(func() error {
-			_, err = lxd.DownloadFileHash(s.ctx, s.client, "distrobuilder", progress, nil, imagePath, file, "", nil, image)
+			_, err = incus.DownloadFileHash(s.ctx, s.client, "distrobuilder", progress, nil, imagePath, file, "", nil, image)
 			if err != nil {
 				os.Remove(imagePath)
 			}
@@ -160,7 +160,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 					hashFunc.Reset()
 				}
 
-				_, err = lxd.DownloadFileHash(s.ctx, s.client, "distrobuilder", progress, nil, imagePath, file, h, hashFunc, image)
+				_, err = incus.DownloadFileHash(s.ctx, s.client, "distrobuilder", progress, nil, imagePath, file, h, hashFunc, image)
 				if err == nil {
 					break
 				}

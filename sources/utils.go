@@ -15,7 +15,7 @@ import (
 	"regexp"
 	"strings"
 
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 )
 
 // downloadChecksum downloads or opens URL, and matches fname against the
@@ -46,7 +46,7 @@ func downloadChecksum(ctx context.Context, client *http.Client, targetDir string
 		done := make(chan struct{})
 		defer close(done)
 
-		_, err = lxd.DownloadFileHash(ctx, client, "distrobuilder", nil, nil, "", URL, "", hashFunc, tempFile)
+		_, err = incus.DownloadFileHash(ctx, client, "distrobuilder", nil, nil, "", URL, "", hashFunc, tempFile)
 		// ignore hash mismatch
 		if err != nil && !strings.HasPrefix(err.Error(), "Hash mismatch") {
 			return nil, err

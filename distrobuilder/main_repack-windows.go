@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/flosch/pongo2"
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
@@ -110,7 +110,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	} else {
 		supportedVersions := []string{"w11", "w10", "2k19", "2k12", "2k16", "2k22"}
 
-		if !lxd.StringInSlice(c.flagWindowsVersion, supportedVersions) {
+		if !incus.StringInSlice(c.flagWindowsVersion, supportedVersions) {
 			return fmt.Errorf("Version must be one of %v", supportedVersions)
 		}
 	}
@@ -126,7 +126,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	} else {
 		supportedArchitectures := []string{"amd64", "ARM64"}
 
-		if !lxd.StringInSlice(c.flagWindowsArchitecture, supportedArchitectures) {
+		if !incus.StringInSlice(c.flagWindowsArchitecture, supportedArchitectures) {
 			return fmt.Errorf("Architecture must be one of %v", supportedArchitectures)
 		}
 	}
@@ -191,7 +191,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 		virtioISOPath = filepath.Join(c.global.flagSourcesDir, "windows", "virtio-win.iso")
 
-		if !lxd.PathExists(virtioISOPath) {
+		if !incus.PathExists(virtioISOPath) {
 			err := os.MkdirAll(filepath.Dir(virtioISOPath), 0755)
 			if err != nil {
 				return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(virtioISOPath), err)
@@ -208,7 +208,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 			logger.Info("Downloading drivers ISO")
 
-			_, err = lxd.DownloadFileHash(c.global.ctx, &client, "", nil, nil, "virtio-win.iso", virtioURL, "", nil, f)
+			_, err = incus.DownloadFileHash(c.global.ctx, &client, "", nil, nil, "virtio-win.iso", virtioURL, "", nil, f)
 			if err != nil {
 				f.Close()
 				os.Remove(virtioISOPath)
@@ -219,7 +219,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		}
 	}
 
-	if !lxd.PathExists(driverPath) {
+	if !incus.PathExists(driverPath) {
 		err := os.MkdirAll(driverPath, 0755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", driverPath, err)
@@ -354,7 +354,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	wimFile := filepath.Join(path)
 	wimPath := filepath.Join(c.global.flagCacheDir, "wim")
 
-	if !lxd.PathExists(wimPath) {
+	if !incus.PathExists(wimPath) {
 		err := os.MkdirAll(wimPath, 0755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", wimPath, err)
@@ -542,7 +542,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 		sourceDir := filepath.Join(driverPath, driver, c.flagWindowsVersion, c.flagWindowsArchitecture)
 		targetBasePath := filepath.Join(dirs["filerepository"], info.PackageName)
 
-		if !lxd.PathExists(targetBasePath) {
+		if !incus.PathExists(targetBasePath) {
 			err := os.MkdirAll(targetBasePath, 0755)
 			if err != nil {
 				return fmt.Errorf("Failed to create directory %q: %w", targetBasePath, err)
@@ -554,7 +554,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 			targetPath := filepath.Join(targetBasePath, filepath.Base(path))
 
 			// Copy driver files
-			if lxd.StringInSlice(ext, []string{".cat", ".dll", ".inf", ".sys"}) {
+			if incus.StringInSlice(ext, []string{".cat", ".dll", ".inf", ".sys"}) {
 				logger.WithFields(logrus.Fields{"src": path, "dest": targetPath}).Debug("Copying file")
 
 				err := shared.Copy(path, targetPath)

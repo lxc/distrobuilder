@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	lxd "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -52,7 +52,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 
 	var rootfsImage string
 	squashfsImage := filepath.Join(isoDir, "LiveOS", "squashfs.img")
-	if lxd.PathExists(squashfsImage) {
+	if incus.PathExists(squashfsImage) {
 		// The squashfs.img contains an image containing the rootfs, so first
 		// mount squashfs.img
 		err = shared.RunCommand(c.ctx, nil, nil, "mount", "-t", "squashfs", "-o", "ro", squashfsImage, squashfsDir)
@@ -88,15 +88,15 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 	packagesDir := filepath.Join(isoDir, "Packages")
 	repodataDir := filepath.Join(isoDir, "repodata")
 
-	if !lxd.PathExists(packagesDir) {
+	if !incus.PathExists(packagesDir) {
 		packagesDir = filepath.Join(isoDir, "BaseOS", "Packages")
 	}
 
-	if !lxd.PathExists(repodataDir) {
+	if !incus.PathExists(repodataDir) {
 		repodataDir = filepath.Join(isoDir, "BaseOS", "repodata")
 	}
 
-	if lxd.PathExists(packagesDir) {
+	if incus.PathExists(packagesDir) {
 		entries, err := os.ReadDir(packagesDir)
 		if err != nil {
 			return fmt.Errorf("Failed reading directory %q: %w", packagesDir, err)
@@ -110,7 +110,7 @@ func (c *commonRHEL) unpackISO(filePath, rootfsDir string, scriptRunner func(str
 		}
 	}
 
-	if lxd.PathExists(packagesDir) && lxd.PathExists(repodataDir) {
+	if incus.PathExists(packagesDir) && incus.PathExists(repodataDir) {
 		// Create cdrom repo for yum
 		err = os.MkdirAll(filepath.Join(tempRootDir, "mnt", "cdrom"), 0755)
 		if err != nil {
@@ -209,7 +209,7 @@ func (c *commonRHEL) unpackRootfsImage(imageFile string, target string) error {
 	rootfsDir := installDir
 	rootfsFile := filepath.Join(installDir, "LiveOS", "rootfs.img")
 
-	if lxd.PathExists(rootfsFile) {
+	if incus.PathExists(rootfsFile) {
 		rootfsDir, err = os.MkdirTemp(c.cacheDir, "temp_")
 		if err != nil {
 			return fmt.Errorf("Failed to create temporary directory: %w", err)
