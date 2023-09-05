@@ -279,7 +279,7 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 
 		err = generator.RunIncus(img, c.global.definition.Targets.Incus)
 		if err != nil {
-			return fmt.Errorf("Failed to create LXD data: %w", err)
+			return fmt.Errorf("Failed to create Incus data: %w", err)
 		}
 	}
 
@@ -351,7 +351,7 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 			return fmt.Errorf("Failed to mount UEFI partition: %w", err)
 		}
 
-		// We cannot use LXD's rsync package as that uses the --delete flag which
+		// We cannot use Incus' rsync package as that uses the --delete flag which
 		// causes an issue due to the boot/efi directory being present.
 		err = shared.RsyncLocal(c.global.ctx, overlayDir+"/", vmDir)
 		if err != nil {
@@ -440,11 +440,11 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 		}
 	}
 
-	c.global.logger.WithFields(logrus.Fields{"type": c.flagType, "vm": c.flagVM, "compression": c.flagCompression}).Info("Creating LXD image")
+	c.global.logger.WithFields(logrus.Fields{"type": c.flagType, "vm": c.flagVM, "compression": c.flagCompression}).Info("Creating Incus image")
 
 	imageFile, rootfsFile, err := img.Build(c.flagType == "unified", c.flagCompression, c.flagVM)
 	if err != nil {
-		return fmt.Errorf("Failed to create LXD image: %w", err)
+		return fmt.Errorf("Failed to create Incus image: %w", err)
 	}
 
 	importFlag := cmd.Flags().Lookup("import-into-incus")
@@ -452,13 +452,9 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 	if importFlag.Changed {
 		path := ""
 
-		if incus.PathExists("/var/snap/lxd/common/lxd") {
-			path = "/var/snap/lxd/common/lxd/unix.socket"
-		}
-
 		server, err := client.ConnectIncusUnix(path, nil)
 		if err != nil {
-			return fmt.Errorf("Failed to connect to LXD: %w", err)
+			return fmt.Errorf("Failed to connect to Incus: %w", err)
 		}
 
 		image := api.ImagesPost{
@@ -510,7 +506,7 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 			return fmt.Errorf("Failed to create image: %w", err)
 		}
 
-		// Don't create alias if the flag value is equal to the NoOptDefVal (the default value if --import-into-lxd flag is set without any value).
+		// Don't create alias if the flag value is equal to the NoOptDefVal (the default value if --import-into-incus flag is set without any value).
 		if importFlag.Value.String() == importFlag.NoOptDefVal {
 			return nil
 		}

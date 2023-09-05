@@ -306,7 +306,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Failed to get definition: %w", err)
 	}
 
-	// Create cache directory if we also plan on creating LXC or LXD images
+	// Create cache directory if we also plan on creating LXC or Incus images
 	if !isRunningBuildDir {
 		err = os.MkdirAll(c.flagCacheDir, 0755)
 		if err != nil {
@@ -634,6 +634,11 @@ is_lxd_vm() {
 	[ -e /dev/virtio-ports/org.linuxcontainers.lxd ]
 }
 
+# is_incus_vm succeeds if we're running inside an Incus VM
+is_incus_vm() {
+	[ -e /dev/virtio-ports/org.linuxcontainers.incus ]
+}
+
 # is_in_path succeeds if the given file exists in on of the paths
 is_in_path() {
 	# Don't use $PATH as that may not include all relevant paths
@@ -754,10 +759,10 @@ EOF
 }
 
 ## Main logic
-# Nothing to do in LXD VM but deployed in case it is later converted to a container
-is_lxd_vm && exit 0
+# Nothing to do in Incus VM but deployed in case it is later converted to a container
+is_incus_vm || is_lxd_vm && exit 0
 
-# Exit immediately if not a LXC/LXD container
+# Exit immediately if not an Incus/LXC container
 is_lxc_container || exit 0
 
 # Check for NetworkManager
