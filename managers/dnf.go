@@ -24,6 +24,7 @@ func (m *dnf) load() error {
 		},
 		install: []string{
 			"install",
+			"--nobest",
 		},
 		remove: []string{
 			"remove",
