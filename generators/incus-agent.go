@@ -55,7 +55,7 @@ rmdir "${PREFIX}/.mnt"
 chown -R root:root "${PREFIX}"
 
 # Legacy.
-if [ -e "${PREFIX}/lxd-agent" ]; then
+if [ ! -e "${PREFIX}/incus-agent" ] && [ -e "${PREFIX}/lxd-agent" ]; then
     ln -s lxd-agent "${PREFIX}"/incus-agent
 fi
 
