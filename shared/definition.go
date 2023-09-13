@@ -365,6 +365,7 @@ func (d *Definition) Validate() error {
 		"centos-http",
 		"springdalelinux-http",
 		"debootstrap",
+		"rpmbootstrap",
 		"fedora-http",
 		"gentoo-http",
 		"ubuntu-http",
