@@ -71,6 +71,12 @@ func (m *yum) load() error {
 }
 
 func (m *yum) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
+	// Run rpmdb --rebuilddb
+	err := shared.RunCommand(m.ctx, nil, nil, "rpmdb", "--rebuilddb")
+	if err != nil {
+		return fmt.Errorf("failed to run rpmdb --rebuilddb: %w", err)
+	}
+
 	return yumManageRepository(repoAction)
 }
 
