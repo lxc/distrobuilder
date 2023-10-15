@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strconv"
 
-	incus "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared/util"
 	"golang.org/x/sys/unix"
 )
 

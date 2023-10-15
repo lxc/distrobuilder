@@ -65,7 +65,7 @@ import (
 	"strings"
 	"time"
 
-	incus "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"

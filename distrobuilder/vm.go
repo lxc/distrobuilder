@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	incus "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared/util"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -29,7 +29,7 @@ func newVM(ctx context.Context, imageFile, rootfsDir, fs string, size uint64) (*
 		fs = "ext4"
 	}
 
-	if !incus.StringInSlice(fs, []string{"btrfs", "ext4"}) {
+	if !incus.ValueInSlice(fs, []string{"btrfs", "ext4"}) {
 		return nil, fmt.Errorf("Unsupported fs: %s", fs)
 	}
 

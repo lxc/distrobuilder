@@ -2,11 +2,12 @@ package generators
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	incus "github.com/lxc/incus/shared"
+	"github.com/lxc/incus/shared/util"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -173,17 +174,58 @@ func (g *copy) copyFile(src, dest string, defFile shared.DefinitionFile) error {
 		return fmt.Errorf("Failed to create directory %q: %w", dir, err)
 	}
 
-	err = incus.FileCopy(src, dest)
+	fi, err := os.Lstat(src)
 	if err != nil {
-		return fmt.Errorf("Failed to copy file %q to %q: %w", src, dest, err)
+		return fmt.Errorf("Failed to access source path %q: %w", src, err)
 	}
 
-	out, err := os.Open(dest)
+	if fi.Mode()&os.ModeSymlink != 0 {
+		// Handle symlinks.
+		target, err := os.Readlink(src)
+		if err != nil {
+			return err
+		}
+
+		if util.PathExists(dest) {
+			err = os.Remove(dest)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = os.Symlink(target, dest)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	in, err := os.Open(src)
 	if err != nil {
-		return fmt.Errorf("Failed to open file %q: %w", dest, err)
+		return fmt.Errorf("Failed to open file %q: %w", src, err)
+	}
+
+	defer in.Close()
+
+	out, err := os.Create(dest)
+	if err != nil {
+		if os.IsExist(err) {
+			out, err = os.OpenFile(dest, os.O_WRONLY, 0644)
+			if err != nil {
+				return fmt.Errorf("Failed to open file %q: %w", dest, err)
+			}
+		} else {
+			return fmt.Errorf("Failed to open file %q: %w", dest, err)
+		}
 	}
 
 	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return fmt.Errorf("Failed to copy file %q: %w", dest, err)
+	}
 
 	err = updateFileAccess(out, defFile)
 	if err != nil {

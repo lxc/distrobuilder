@@ -4,7 +4,7 @@ import (
 	"log"
 	"testing"
 
-	"github.com/lxc/incus/shared"
+	"github.com/lxc/incus/shared/osarch"
 	"github.com/stretchr/testify/require"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -14,9 +14,9 @@ func TestSetDefinitionDefaults(t *testing.T) {
 
 	def.SetDefaults()
 
-	uname, _ := shared.Uname()
+	localArch, _ := osarch.ArchitectureGetLocal()
 
-	require.Equal(t, uname.Machine, def.Image.Architecture)
+	require.Equal(t, localArch, def.Image.Architecture)
 	require.Equal(t, "30d", def.Image.Expiry)
 }
 

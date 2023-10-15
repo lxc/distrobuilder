@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	incus "github.com/lxc/incus/shared"
 	"github.com/lxc/incus/shared/api"
+	incus "github.com/lxc/incus/shared/util"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"

@@ -15,7 +15,7 @@ import (
 	"regexp"
 	"strings"
 
-	incus "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared/util"
 )
 
 // downloadChecksum downloads or opens URL, and matches fname against the

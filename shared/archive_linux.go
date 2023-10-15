@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 
-	incus "github.com/lxc/incus/shared"
 	"github.com/lxc/incus/shared/archive"
 	"github.com/lxc/incus/shared/subprocess"
 	"golang.org/x/sys/unix"
@@ -43,17 +42,7 @@ func Unpack(file string, path string) error {
 		// unsquashfs does not support reading from stdin,
 		// so ProgressTracker is not possible.
 		command = "unsquashfs"
-		args = append(args, "-f", "-d", path, "-n")
-
-		// Limit unsquashfs chunk size to 10% of memory and up to 256MB (default)
-		// When running on a low memory system, also disable multi-processing
-		mem, err := incus.DeviceTotalMemory()
-		mem = mem / 1024 / 1024 / 10
-		if err == nil && mem < 256 {
-			args = append(args, "-da", fmt.Sprintf("%d", mem), "-fr", fmt.Sprintf("%d", mem), "-p", "1")
-		}
-
-		args = append(args, file)
+		args = append(args, "-f", "-d", path, "-n", file)
 	} else {
 		return fmt.Errorf("Unsupported image format: %s", extension)
 	}
