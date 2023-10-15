@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	incus "github.com/lxc/incus/shared"
 	"github.com/lxc/incus/shared/api"
+	incus "github.com/lxc/incus/shared/util"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
@@ -29,7 +29,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 				return nil
 			}
 
-			if incus.StringInSlice(info.Name(), []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"}) {
+			if incus.ValueInSlice(info.Name(), []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"}) {
 				err := os.Remove(path)
 				if err != nil {
 					return fmt.Errorf("Failed to remove file %q: %w", path, err)

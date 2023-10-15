@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/flosch/pongo2"
-	incus "github.com/lxc/incus/shared"
+	incus "github.com/lxc/incus/shared/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
@@ -110,7 +110,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	} else {
 		supportedVersions := []string{"w11", "w10", "2k19", "2k12", "2k16", "2k22"}
 
-		if !incus.StringInSlice(c.flagWindowsVersion, supportedVersions) {
+		if !incus.ValueInSlice(c.flagWindowsVersion, supportedVersions) {
 			return fmt.Errorf("Version must be one of %v", supportedVersions)
 		}
 	}
@@ -126,7 +126,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	} else {
 		supportedArchitectures := []string{"amd64", "ARM64"}
 
-		if !incus.StringInSlice(c.flagWindowsArchitecture, supportedArchitectures) {
+		if !incus.ValueInSlice(c.flagWindowsArchitecture, supportedArchitectures) {
 			return fmt.Errorf("Architecture must be one of %v", supportedArchitectures)
 		}
 	}
@@ -554,7 +554,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 			targetPath := filepath.Join(targetBasePath, filepath.Base(path))
 
 			// Copy driver files
-			if incus.StringInSlice(ext, []string{".cat", ".dll", ".inf", ".sys"}) {
+			if incus.ValueInSlice(ext, []string{".cat", ".dll", ".inf", ".sys"}) {
 				logger.WithFields(logrus.Fields{"src": path, "dest": targetPath}).Debug("Copying file")
 
 				err := shared.Copy(path, targetPath)
