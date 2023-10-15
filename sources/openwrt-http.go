@@ -89,7 +89,7 @@ func (s *openwrt) Run() error {
 	} else {
 		switch s.definition.Image.ArchitectureMapped {
 		case "x86_64":
-			if strings.HasPrefix(release, "21.02") || strings.HasPrefix(release, "22.03") {
+			if strings.HasPrefix(release, "21.02") || strings.HasPrefix(release, "22.03") || strings.HasPrefix(release, "23.05") {
 				fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
 					strings.Replace(architecturePath, "/", "-", 1))
 			} else {
