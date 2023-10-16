@@ -29,6 +29,7 @@ It needs to be one of
 * `fedora-http`
 * `funtoo-http`
 * `gentoo-http`
+* `nixos-http`
 * `openeuler-http`
 * `opensuse-http`
 * `openwrt-http`

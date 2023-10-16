@@ -36,6 +36,7 @@ var downloaders = map[string]func() downloader{
 	"fedora-http":          func() downloader { return &fedora{} },
 	"funtoo-http":          func() downloader { return &funtoo{} },
 	"gentoo-http":          func() downloader { return &gentoo{} },
+	"nixos-http":           func() downloader { return &nixos{} },
 	"openeuler-http":       func() downloader { return &openEuler{} },
 	"opensuse-http":        func() downloader { return &opensuse{} },
 	"openwrt-http":         func() downloader { return &openwrt{} },
