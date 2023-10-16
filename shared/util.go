@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lxc/incus/shared"
+	"github.com/lxc/incus/shared/util"
 	"golang.org/x/sys/unix"
 	"gopkg.in/flosch/pongo2.v3"
 	yaml "gopkg.in/yaml.v2"
@@ -135,7 +135,7 @@ func compressTarball(ctx context.Context, filename, compression string) (string,
 	}
 
 	// If supported, use as many threads as possible.
-	if shared.StringInSlice(compression, []string{"zstd", "xz", "lzma"}) {
+	if util.ValueInSlice(compression, []string{"zstd", "xz", "lzma"}) {
 		args = append(args, "--threads=0")
 	}
 
@@ -385,7 +385,7 @@ func ParseSquashfsCompression(compression string) (string, *int, error) {
 		compression = "lzo"
 	}
 
-	if shared.StringInSlice(compression, []string{"gzip", "lzo", "lz4", "xz", "zstd", "lzma"}) {
+	if util.ValueInSlice(compression, []string{"gzip", "lzo", "lz4", "xz", "zstd", "lzma"}) {
 		return compression, nil, nil
 	}
 
