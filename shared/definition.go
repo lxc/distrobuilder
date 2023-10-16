@@ -383,6 +383,7 @@ func (d *Definition) Validate() error {
 		"rockylinux-http",
 		"vyos-http",
 		"slackware-http",
+		"nixos-http",
 	}
 
 	if !util.ValueInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
