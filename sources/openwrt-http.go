@@ -85,6 +85,7 @@ func (s *openwrt) Run() error {
 		case "aarch64":
 			fname = fmt.Sprintf("openwrt-%s%s-default-rootfs.tar.gz", releaseInFilename,
 				strings.Replace(architecturePath, "/", "-", 1))
+		}
 	} else {
 		switch s.definition.Image.ArchitectureMapped {
 		case "x86_64":
