@@ -56,6 +56,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"embed"
 	"errors"
 	"fmt"
 	"io"
@@ -75,6 +76,9 @@ import (
 	"github.com/lxc/distrobuilder/shared/version"
 	"github.com/lxc/distrobuilder/sources"
 )
+
+//go:embed lxc.generator
+var lxcGenerator embed.FS
 
 var typeDescription = `Depending on the type, it either outputs a unified (single tarball)
 or split image (tarball + squashfs or qcow2 image). The --type flag can take one of the
@@ -612,256 +616,17 @@ func addSystemdGenerator() error {
 		return nil
 	}
 
-	content := `#!/bin/sh
-# NOTE: systemctl is not available for systemd-generators
-set -eu
-
-# disable localisation (faster grep)
-export LC_ALL=C
-
-## Helper functions
-# is_lxc_container succeeds if we're running inside a LXC container
-is_lxc_container() {
-	grep -qa container=lxc /proc/1/environ
-}
-
-is_lxc_privileged_container() {
-	grep -qw 4294967295$ /proc/self/uid_map
-}
-
-# is_lxd_vm succeeds if we're running inside a LXD VM
-is_lxd_vm() {
-	[ -e /dev/virtio-ports/org.linuxcontainers.lxd ]
-}
-
-# is_incus_vm succeeds if we're running inside an Incus VM
-is_incus_vm() {
-	[ -e /dev/virtio-ports/org.linuxcontainers.incus ]
-}
-
-# is_in_path succeeds if the given file exists in on of the paths
-is_in_path() {
-	# Don't use $PATH as that may not include all relevant paths
-	for path in /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin; do
-		[ -e "${path}/$1" ] && return 0
-	done
-
-	return 1
-}
-
-## Fix functions
-# fix_ro_paths avoids udevd issues with /sys and /proc being writable
-fix_ro_paths() {
-	mkdir -p "/run/systemd/system/$1.d"
-	cat <<-EOF > "/run/systemd/system/$1.d/zzz-lxc-ropath.conf"
-[Service]
-BindReadOnlyPaths=/sys /proc
-EOF
-}
-
-# fix_nm_link_state forces the network interface to a DOWN state ahead of NetworkManager starting up
-fix_nm_link_state() {
-	[ -e "/sys/class/net/$1" ] || return 0
-	ip_path=
-	if [ -f /sbin/ip ]; then
-		ip_path=/sbin/ip
-	elif [ -f /bin/ip ]; then
-		ip_path=/bin/ip
-	else
-		return 0
-	fi
-	cat <<-EOF > /run/systemd/system/network-device-down.service
-[Unit]
-Description=Turn off network device
-Before=NetworkManager.service
-Before=systemd-networkd.service
-[Service]
-# do not turn off if there is a default route to 169.254.0.1, i.e. the device is a routed nic
-ExecCondition=/bin/sh -c '! /usr/bin/grep -qs 00000000.0100FEA9 /proc/net/route'
-ExecStart=-${ip_path} link set $1 down
-Type=oneshot
-RemainAfterExit=true
-[Install]
-WantedBy=default.target
-EOF
-	mkdir -p /run/systemd/system/default.target.wants
-	ln -sf /run/systemd/system/network-device-down.service /run/systemd/system/default.target.wants/network-device-down.service
-}
-
-# fix_systemd_override_unit generates a unit specific override
-fix_systemd_override_unit() {
-	dropin_dir="/run/systemd/${1}.d"
-	mkdir -p "${dropin_dir}"
-	{
-		echo "[Service]";
-		[ "${systemd_version}" -ge 247 ] && echo "ProcSubset=all";
-		[ "${systemd_version}" -ge 247 ] && echo "ProtectProc=default";
-		[ "${systemd_version}" -ge 232 ] && echo "ProtectControlGroups=no";
-		[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelTunables=no";
-		[ "${systemd_version}" -ge 239 ] && echo "NoNewPrivileges=no";
-		[ "${systemd_version}" -ge 249 ] && echo "LoadCredential=";
-		[ "${systemd_version}" -ge 254 ] && echo "PrivateNetwork=no";
-
-		# Additional settings for privileged containers
-		if is_lxc_privileged_container; then
-			echo "ProtectHome=no";
-			echo "ProtectSystem=no";
-			echo "PrivateDevices=no";
-			echo "PrivateTmp=no";
-			[ "${systemd_version}" -ge 244 ] && echo "ProtectKernelLogs=no";
-			[ "${systemd_version}" -ge 232 ] && echo "ProtectKernelModules=no";
-			[ "${systemd_version}" -ge 231 ] && echo "ReadWritePaths=";
-			[ "${systemd_version}" -ge 254 ] && echo "ImportCredential=";
-		fi
-
-		true;
-	} > "${dropin_dir}/zzz-lxc-service.conf"
-}
-
-# fix_systemd_mask masks the systemd unit
-fix_systemd_mask() {
-	ln -sf /dev/null "/run/systemd/system/$1"
-}
-
-# fix_systemd_udev_trigger overrides the systemd-udev-trigger.service to match the latest version
-# of the file which uses "ExecStart=-" instead of "ExecStart=".
-fix_systemd_udev_trigger() {
-	cmd=
-	if [ -f /usr/bin/udevadm ]; then
-		cmd=/usr/bin/udevadm
-	elif [ -f /sbin/udevadm ]; then
-		cmd=/sbin/udevadm
-	elif [ -f /bin/udevadm ]; then
-		cmd=/bin/udevadm
-	else
-		return 0
-	fi
-
-	mkdir -p /run/systemd/system/systemd-udev-trigger.service.d
-	cat <<-EOF > /run/systemd/system/systemd-udev-trigger.service.d/zzz-lxc-override.conf
-[Service]
-ExecStart=
-ExecStart=-${cmd} trigger --type=subsystems --action=add
-ExecStart=-${cmd} trigger --type=devices --action=add
-EOF
-}
-
-# fix_systemd_sysctl overrides the systemd-sysctl.service to use "ExecStart=-" instead of "ExecStart=".
-fix_systemd_sysctl() {
-	cmd=/usr/lib/systemd/systemd-sysctl
-	! [ -e "${cmd}" ] && cmd=/lib/systemd/systemd-sysctl
-	mkdir -p /run/systemd/system/systemd-sysctl.service.d
-	cat <<-EOF > /run/systemd/system/systemd-sysctl.service.d/zzz-lxc-override.conf
-[Service]
-ExecStart=
-ExecStart=-${cmd}
-EOF
-}
-
-## Main logic
-# Nothing to do in Incus VM but deployed in case it is later converted to a container
-is_incus_vm || is_lxd_vm && exit 0
-
-# Exit immediately if not an Incus/LXC container
-is_lxc_container || exit 0
-
-# Check for NetworkManager
-nm_exists=0
-
-is_in_path NetworkManager && nm_exists=1
-
-# Determine systemd version
-for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
-	[ -x "${path}" ] || continue
-
-	systemd_version="$("${path}" --version | head -n1 | cut -d' ' -f2)"
-	break
-done
-
-# Determine distro name and release
-ID=""
-if [ -e /etc/os-release ]; then
-	. /etc/os-release
-fi
-
-# Overriding some systemd features is only needed if security.nesting=false
-# in which case, /dev/.lxc will be missing
-if [ ! -d /dev/.lxc ]; then
-	# Apply systemd overrides
-	if [ "${systemd_version}" -ge 244 ]; then
-		fix_systemd_override_unit system/service
-	else
-		# Setup per-unit overrides
-		find /lib/systemd /etc/systemd /run/systemd /usr/lib/systemd -name "*.service" -type f | sed 's#/\(lib\|etc\|run\|usr/lib\)/systemd/##g'| while read -r service_file; do
-			fix_systemd_override_unit "${service_file}"
-		done
-	fi
-
-	# Workarounds for privileged containers.
-	if { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; } && ! is_lxc_privileged_container; then
-		fix_ro_paths systemd-networkd.service
-		fix_ro_paths systemd-resolved.service
-	fi
-fi
-
-# Ignore failures on some units.
-fix_systemd_udev_trigger
-fix_systemd_sysctl
-
-# Mask some units.
-fix_systemd_mask dev-hugepages.mount
-fix_systemd_mask run-ribchester-general.mount
-fix_systemd_mask systemd-hwdb-update.service
-fix_systemd_mask systemd-journald-audit.socket
-fix_systemd_mask systemd-modules-load.service
-fix_systemd_mask systemd-pstore.service
-fix_systemd_mask ua-messaging.service
-fix_systemd_mask systemd-firstboot.service
-fix_systemd_mask systemd-binfmt.service
-if [ ! -e /dev/tty1 ]; then
-	fix_systemd_mask vconsole-setup-kludge@tty1.service
-fi
-
-if [ -d /etc/udev ]; then
-	mkdir -p /run/udev/rules.d
-	cat <<-EOF > /run/udev/rules.d/90-lxc-net.rules
-# This file was created by distrobuilder.
-#
-# Its purpose is to convince NetworkManager to treat the eth0 veth
-# interface like a regular Ethernet. NetworkManager ordinarily doesn't
-# like to manage the veth interfaces, because they are typically configured
-# by container management tooling for specialized purposes.
-
-ACTION=="add|change|move", ENV{ID_NET_DRIVER}=="veth", ENV{INTERFACE}=="eth[0-9]*", ENV{NM_UNMANAGED}="0"
-EOF
-fi
-
-# Workarounds for NetworkManager in containers
-if [ "${nm_exists}" -eq 1 ]; then
-	fix_nm_link_state eth0
-fi
-
-# Allow masking units created by the lxc system-generator.
-for d in /etc/systemd/system /usr/lib/systemd/system /lib/systemd/system; do
-	if ! [ -d "${d}" ]; then
-		continue
-	fi
-
-	find "${d}" -maxdepth 1 -type l | while read -r f; do
-		unit="$(basename "${f}")"
-
-		if [ "${unit}" = "network-device-down.service" ] && [ "$(readlink "${f}")" = "/dev/null" ]; then
-			fix_systemd_mask "${unit}"
-		fi
-	done
-done
-`
 	err := os.MkdirAll("/etc/systemd/system-generators", 0755)
 	if err != nil {
 		return fmt.Errorf("Failed creating directory: %w", err)
 	}
 
-	err = os.WriteFile("/etc/systemd/system-generators/lxc", []byte(content), 0755)
+	content, err := lxcGenerator.ReadFile("lxc.generator")
+	if err != nil {
+		return fmt.Errorf("Failed reading lxc.generator: %w", err)
+	}
+
+	err = os.WriteFile("/etc/systemd/system-generators/lxc", content, 0755)
 	if err != nil {
 		return fmt.Errorf("Failed creating system generator: %w", err)
 	}
