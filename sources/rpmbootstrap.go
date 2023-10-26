@@ -12,13 +12,19 @@ type rpmbootstrap struct {
 	common
 }
 
-func (s *rpmbootstrap) repodirs() (dir string, err error) {
-	// check whether yum command exists
-	if err = shared.RunCommand(s.ctx, nil, nil, "yum", "--version"); err != nil {
-		err = fmt.Errorf("yum command not found, sudo apt-get install yum to install it and try again: %w", err)
-		return
+func (s *rpmbootstrap) yumordnf() (cmd string, err error) {
+	// check whether yum or dnf command exists
+	for _, cmd = range []string{"yum", "dnf"} {
+		if err = shared.RunCommand(s.ctx, nil, nil, cmd, "--version"); err == nil {
+			return
+		}
 	}
+	cmd = ""
+	err = fmt.Errorf("Command yum or dnf not found, sudo apt-get install yum or sudo apt-get install dnf and try again")
+	return
+}
 
+func (s *rpmbootstrap) repodirs() (dir string, err error) {
 	reposdir := path.Join(s.sourcesDir, "etc", "yum.repos.d")
 	err = os.MkdirAll(reposdir, 0755)
 	if err != nil {
@@ -41,7 +47,12 @@ func (s *rpmbootstrap) repodirs() (dir string, err error) {
 }
 
 // Run runs yum --installroot.
-func (s *rpmbootstrap) Run() error {
+func (s *rpmbootstrap) Run() (err error) {
+	cmd, err := s.yumordnf()
+	if err != nil {
+		return err
+	}
+
 	repodir, err := s.repodirs()
 	if err != nil {
 		return err
@@ -77,7 +88,7 @@ func (s *rpmbootstrap) Run() error {
 	args = append(args, pkgs...)
 
 	// Install
-	if err = shared.RunCommand(s.ctx, nil, nil, "yum", args...); err != nil {
+	if err = shared.RunCommand(s.ctx, nil, nil, cmd, args...); err != nil {
 		return err
 	}
 
