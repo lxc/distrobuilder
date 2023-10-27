@@ -25,7 +25,8 @@ func (c *cmdValidate) command() *cobra.Command {
 
 			return nil
 		},
-		SilenceUsage: true,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
 
 	c.cmdValidate.Flags().StringSliceVarP(&c.global.flagOptions, "options", "o",
