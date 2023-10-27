@@ -121,6 +121,7 @@ type cmdGlobal struct {
 	overlayCleanup func()
 	ctx            context.Context
 	cancel         context.CancelFunc
+	subCommand     *cobra.Command
 }
 
 func main() {
@@ -136,6 +137,11 @@ func main() {
 				fmt.Fprintf(os.Stderr, "You must be root to run this tool\n")
 				os.Exit(1)
 			}
+
+			// Keep track of the current subcommand. When app.Execute() fails, there's no way of
+			// knowing which command failed. However, we want to know this as we call postRun in
+			// case of an error, and handle the "validate" subcommand differently in that function.
+			globalCmd.subCommand = cmd
 
 			var err error
 
@@ -237,7 +243,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Failed running distrobuilder: %s\n", err.Error())
 		}
 
-		_ = globalCmd.postRun(nil, nil)
+		_ = globalCmd.postRun(globalCmd.subCommand, nil)
 		os.Exit(1)
 	}
 }
