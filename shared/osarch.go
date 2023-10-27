@@ -8,6 +8,7 @@ import (
 
 var alpineLinuxArchitectureNames = map[int]string{
 	osarch.ARCH_32BIT_INTEL_X86:           "x86",
+	osarch.ARCH_64BIT_INTEL_X86:           "x86_64",
 	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN: "armv7",
 }
 
