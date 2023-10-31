@@ -1,6 +1,8 @@
 module github.com/lxc/distrobuilder
 
-go 1.18
+go 1.21.0
+
+toolchain go1.21.3
 
 exclude (
 	github.com/rootless-containers/proto v0.1.0
