@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	incus "github.com/lxc/incus/shared/util"
@@ -24,7 +25,7 @@ func (s *debootstrap) Run() error {
 	release := strings.ToLower(s.definition.Image.Release)
 
 	// Enable merged /usr by default, and disable it for certain distros/releases
-	if distro == "ubuntu" && incus.ValueInSlice(release, []string{"xenial", "bionic"}) || distro == "mint" && incus.ValueInSlice(release, []string{"tara", "tessa", "tina", "tricia", "ulyana"}) || distro == "devuan" {
+	if distro == "ubuntu" && slices.Contains([]string{"xenial", "bionic"}, release) || distro == "mint" && slices.Contains([]string{"tara", "tessa", "tina", "tricia", "ulyana"}, release) || distro == "devuan" {
 		args = append(args, "--no-merged-usr")
 	} else {
 		args = append(args, "--merged-usr")

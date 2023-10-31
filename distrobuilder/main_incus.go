@@ -7,10 +7,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 
 	client "github.com/lxc/incus/client"
 	"github.com/lxc/incus/shared/api"
-	incus "github.com/lxc/incus/shared/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
@@ -45,7 +45,7 @@ func (c *cmdIncus) commandBuild() *cobra.Command {
 `, typeDescription, compressionDescription),
 		Args: cobra.RangeArgs(1, 2),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if !incus.ValueInSlice(c.flagType, []string{"split", "unified"}) {
+			if !slices.Contains([]string{"split", "unified"}, c.flagType) {
 				return errors.New("--type needs to be one of ['split', 'unified']")
 			}
 
@@ -113,7 +113,7 @@ func (c *cmdIncus) commandPack() *cobra.Command {
 `, typeDescription, compressionDescription),
 		Args: cobra.RangeArgs(2, 3),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if !incus.ValueInSlice(c.flagType, []string{"split", "unified"}) {
+			if !slices.Contains([]string{"split", "unified"}, c.flagType) {
 				return errors.New("--type needs to be one of ['split', 'unified']")
 			}
 
