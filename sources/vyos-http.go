@@ -1,10 +1,12 @@
 package sources
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/google/go-github/v56/github"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -12,22 +14,50 @@ import (
 
 type vyos struct {
 	common
+
+	fname string
+	fpath string
 }
 
 func (s *vyos) Run() error {
-	isoURL := "https://s3-us.vyos.io/rolling/current/vyos-rolling-latest.iso"
-
-	fpath, err := s.DownloadHash(s.definition.Image, isoURL, "", nil)
+	err := s.downloadImage(s.definition)
 	if err != nil {
-		return fmt.Errorf("Failed downloading ISO: %w", err)
+		return fmt.Errorf("Failed to download image: %w", err)
 	}
 
-	err = s.unpackISO(filepath.Join(fpath, "vyos-rolling-latest.iso"), s.rootfsDir)
+	return s.unpackISO(filepath.Join(s.fpath, s.fname), s.rootfsDir)
+}
+
+func (s *vyos) downloadImage(definition shared.Definition) error {
+	var err error
+
+	ctx := context.Background()
+	client := github.NewClient(nil)
+	owner := "vyos"
+	repo := "vyos-rolling-nightly-builds"
+
+	latestRelease, _, err := client.Repositories.GetLatestRelease(ctx, owner, repo)
 	if err != nil {
-		return fmt.Errorf("Failed unpacking ISO: %w", err)
+		return fmt.Errorf("Failed to get latest release, %w", err)
 	}
 
-	return nil
+	isoURL := ""
+	assets := latestRelease.Assets
+	for _, a := range assets {
+		ext := filepath.Ext(a.GetName())
+		if ext == ".iso" {
+			isoURL = a.GetBrowserDownloadURL()
+			s.fname = a.GetName()
+		}
+	}
+
+	if isoURL == "" {
+		return fmt.Errorf("Failed to get latest release URL.")
+	}
+
+	s.fpath, err = s.DownloadHash(s.definition.Image, isoURL, "", nil)
+
+	return err
 }
 
 func (s *vyos) unpackISO(filePath string, rootfsDir string) error {
