@@ -233,7 +233,7 @@ func (c *cmdIncus) runPack(cmd *cobra.Command, args []string, overlayDir string)
 		return fmt.Errorf("Failed to manage packages: %w", err)
 	}
 
-	c.global.logger.Info("Running hooks", "trigger", "post-packages")
+	c.global.logger.WithField("trigger", "post-packages").Info("Running hooks")
 
 	// Run post packages hook
 	for _, hook := range c.global.definition.GetRunnableActions("post-packages", imageTargets) {

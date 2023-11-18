@@ -83,7 +83,7 @@ var lxcDef = shared.Definition{
 
 func lxcCacheDir() string {
 	wd, _ := os.Getwd()
-	return filepath.Join(wd, "distrobuilder-test")
+	return filepath.Join(wd, "distrobuilder-test-lxc")
 }
 
 func setupLXC() *LXCImage {

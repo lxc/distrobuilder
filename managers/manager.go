@@ -41,9 +41,10 @@ type managerCommands struct {
 
 // Manager represents a package manager.
 type Manager struct {
-	mgr manager
-	def shared.Definition
-	ctx context.Context
+	mgr    manager
+	def    shared.Definition
+	ctx    context.Context
+	logger *logrus.Logger
 }
 
 type manager interface {
@@ -90,7 +91,7 @@ func Load(ctx context.Context, managerName string, logger *logrus.Logger, defini
 		return nil, fmt.Errorf("Failed to load manager %q: %w", managerName, err)
 	}
 
-	return &Manager{def: definition, mgr: d, ctx: ctx}, nil
+	return &Manager{def: definition, mgr: d, ctx: ctx, logger: logger}, nil
 }
 
 // ManagePackages manages packages.
@@ -121,6 +122,8 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 		if err != nil {
 			return fmt.Errorf("Failed to update: %w", err)
 		}
+
+		m.logger.WithField("trigger", "post-update").Info("Running hooks")
 
 		// Run post update hook
 		for _, action := range m.def.GetRunnableActions("post-update", imageTarget) {
