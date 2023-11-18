@@ -35,7 +35,7 @@ var incusDef = shared.Definition{
 }
 
 func setupIncus(t *testing.T) *IncusImage {
-	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
+	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test-incus")
 
 	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
 	require.NoError(t, err)
@@ -66,7 +66,7 @@ func setupIncus(t *testing.T) *IncusImage {
 }
 
 func teardownIncus(t *testing.T) {
-	os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder-test"))
+	os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder-test-incus"))
 }
 
 func TestIncusBuild(t *testing.T) {
