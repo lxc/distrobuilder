@@ -64,11 +64,14 @@ To compile `distrobuilder` from source, first install the Go programming languag
     sudo apt update
     sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git
     ```
+
 - ArchLinux-based:
     ```
     sudo pacman -Syu
     sudo pacman -S go debootstrap rsync gnupg squashfs-tools git --needed
     ```
+
+NOTE: Distrobuilder requires Go 1.20 or higher, if your distribution doesn't have a recent enough version available, [get it from upstream](https://go.dev/doc/install).
 
 Second, download the source code of the `distrobuilder` repository (this repository).
 
