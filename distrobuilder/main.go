@@ -375,7 +375,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	case "build-lxc":
 		// If we're running build-lxc, also process container-only sections.
 		imageTargets |= shared.ImageTargetContainer
-	case "build-incus":
+	case "build-incus", "build-lxd":
 		// Include either container-specific or vm-specific sections when
 		// running build-incus.
 		ok, err := cmd.Flags().GetBool("vm")
