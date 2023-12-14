@@ -24,13 +24,13 @@ func TestGetLatestRelease(t *testing.T) {
 		{
 			"https://repo.openeuler.org/",
 			"20.03",
-			"20.03-LTS-SP3",
+			"20.03-LTS-SP4",
 			false,
 		},
 		{
 			"https://repo.openeuler.org/",
 			"20.03-LTS",
-			"20.03-LTS-SP3",
+			"20.03-LTS-SP4",
 			false,
 		},
 		{
