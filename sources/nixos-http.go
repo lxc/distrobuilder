@@ -12,7 +12,13 @@ type nixos struct {
 }
 
 func (s *nixos) Run() error {
-	tarballURL := fmt.Sprintf("https://hydra.nixos.org/job/nixos/trunk-combined/nixos.lxdContainerImage.%s-linux/latest/download-by-type/file/system-tarball", s.definition.Image.ArchitectureMapped)
+	hydraRelease := fmt.Sprintf("release-%s", s.definition.Image.Release)
+
+	if s.definition.Image.Release == "unstable" {
+		hydraRelease = "trunk-combined"
+	}
+
+	tarballURL := fmt.Sprintf("https://hydra.nixos.org/job/nixos/%s/nixos.lxdContainerImage.%s-linux/latest/download-by-type/file/system-tarball", hydraRelease, s.definition.Image.ArchitectureMapped)
 
 	fpath, err := s.DownloadHash(s.definition.Image, tarballURL, "", nil)
 	if err != nil {
