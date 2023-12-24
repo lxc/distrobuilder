@@ -65,7 +65,7 @@ var managers = map[string]func() manager{
 	"dnf":        func() manager { return &dnf{} },
 	"egoportage": func() manager { return &egoportage{} },
 	"equo":       func() manager { return &equo{} },
-	"luet":       func() manager { return &luet{} },
+	"anise":      func() manager { return &anise{} },
 	"opkg":       func() manager { return &opkg{} },
 	"pacman":     func() manager { return &pacman{} },
 	"portage":    func() manager { return &portage{} },

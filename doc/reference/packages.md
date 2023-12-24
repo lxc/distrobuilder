@@ -37,7 +37,7 @@ Valid package manager are:
 * `dnf`
 * `egoportage` (combination of `portage` and `ego`)
 * `equo`
-* `luet`
+* `anise`
 * `opkg`
 * `pacman`
 * `portage`
