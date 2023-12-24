@@ -403,7 +403,7 @@ func (d *Definition) Validate() error {
 			"equo",
 			"xbps",
 			"zypper",
-			"luet",
+			"anise",
 			"slackpkg",
 		}
 

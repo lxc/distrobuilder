@@ -12,42 +12,44 @@ import (
 	"github.com/lxc/distrobuilder/shared"
 )
 
-type luet struct {
+type anise struct {
 	common
 }
 
-func (m *luet) load() error {
+func (m *anise) load() error {
 	m.commands = managerCommands{
-		clean:   "luet",
-		install: "luet",
-		refresh: "luet",
-		remove:  "luet",
-		update:  "luet",
+		clean:   "anise",
+		install: "anise",
+		refresh: "anise",
+		remove:  "anise",
+		update:  "anise",
 	}
 
 	m.flags = managerFlags{
 		global: []string{},
 		clean: []string{
-			"cleanup",
+			"cleanup", "--purge-repos",
 		},
 		install: []string{
-			"install",
+			// Forcing always override of the protected
+			// files. Not needed on image creation.
+			"install", "--skip-config-protect",
 		},
 		refresh: []string{
-			"repo", "update",
+			"repo", "update", "--force",
 		},
 		remove: []string{
-			"uninstall",
+			"uninstall", "--skip-config-protect",
 		},
 		update: []string{
-			"upgrade",
+			"upgrade", "--sync-repos", "--skip-config-protect",
 		},
 	}
 
 	return nil
 }
 
-func (m *luet) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
+func (m *anise) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
 	var targetFile string
 
 	if repoAction.Name == "" {
@@ -59,9 +61,9 @@ func (m *luet) manageRepository(repoAction shared.DefinitionPackagesRepository) 
 	}
 
 	if strings.HasSuffix(repoAction.Name, ".yml") {
-		targetFile = filepath.Join("/etc/luet/repos.conf.d", repoAction.Name)
+		targetFile = filepath.Join("/etc/anise/repos.conf.d", repoAction.Name)
 	} else {
-		targetFile = filepath.Join("/etc/luet/repos.conf.d", repoAction.Name+".yml")
+		targetFile = filepath.Join("/etc/anise/repos.conf.d", repoAction.Name+".yml")
 	}
 
 	if !incus.PathExists(filepath.Dir(targetFile)) {
