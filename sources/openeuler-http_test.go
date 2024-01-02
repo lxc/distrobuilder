@@ -18,7 +18,7 @@ func TestGetLatestRelease(t *testing.T) {
 		{
 			"https://repo.openeuler.org/",
 			"22.03",
-			"22.03-LTS-SP2",
+			"22.03-LTS-SP3",
 			false,
 		},
 		{
