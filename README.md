@@ -62,13 +62,13 @@ To compile `distrobuilder` from source, first install the Go programming languag
 - Debian-based:
     ```
     sudo apt update
-    sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git
+    sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git make
     ```
 
 - ArchLinux-based:
     ```
     sudo pacman -Syu
-    sudo pacman -S go debootstrap rsync gnupg squashfs-tools git --needed
+    sudo pacman -S go debootstrap rsync gnupg squashfs-tools git make --needed
     ```
 
 NOTE: Distrobuilder requires Go 1.20 or higher, if your distribution doesn't have a recent enough version available, [get it from upstream](https://go.dev/doc/install).
@@ -86,11 +86,12 @@ cd ./distrobuilder
 make
 ```
 
-Finally, you can run `distrobuilder` as follows. You may also add to your $PATH the directory `$HOME/go/bin/` so that you do not need to run the command with the full path.
-
+Finally, you can run `distrobuilder` as follows.
 ```
 $HOME/go/bin/distrobuilder
 ```
+
+You may also add the directory `$HOME/go/bin/` to your $PATH so that you do not need to run the command with the full path.
 <!-- Include end installing -->
 
 ## How to use
