@@ -76,6 +76,8 @@ NOTE: Distrobuilder requires Go 1.20 or higher, if your distribution doesn't hav
 Second, download the source code of the `distrobuilder` repository (this repository).
 
 ```
+mkdir -p $HOME/go/src/github.com/lxc/
+cd $HOME/go/src/github.com/lxc/
 git clone https://github.com/lxc/distrobuilder
 ```
 
