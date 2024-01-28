@@ -17,39 +17,57 @@ import (
 var incusAgentSetupScript = `#!/bin/sh
 set -eu
 PREFIX="/run/incus_agent"
+CDROM="/dev/disk/by-id/scsi-0QEMU_QEMU_CD-ROM_incus_agent"
 
 # Functions.
 mount_virtiofs() {
-    mount -t virtiofs config "${PREFIX}/.mnt" >/dev/null 2>&1
+    mount -t virtiofs config "${PREFIX}.mnt" >/dev/null 2>&1
 }
 
 mount_9p() {
-    /sbin/modprobe 9pnet_virtio >/dev/null 2>&1 || true
-    /bin/mount -t 9p config "${PREFIX}/.mnt" -o access=0,trans=virtio,size=1048576 >/dev/null 2>&1
+    modprobe 9pnet_virtio >/dev/null 2>&1 || true
+    mount -t 9p config "${PREFIX}.mnt" -o access=0,trans=virtio,size=1048576 >/dev/null 2>&1
+}
+
+mount_cdrom() {
+    mount "${CDROM}" "${PREFIX}.mnt" >/dev/null 2>&1
 }
 
 fail() {
+    # Check if we already have an agent in place.
+    # This will typically be true during restart in the case of a cdrom-based setup.
+    if [ -x "${PREFIX}/incus-agent" ]; then
+        echo "${1}, re-using existing agent"
+        exit 0
+    fi
+
+    # Cleanup and fail.
     umount -l "${PREFIX}" >/dev/null 2>&1 || true
+    eject "${CDROM}" >/dev/null 2>&1 || true
     rmdir "${PREFIX}" >/dev/null 2>&1 || true
-    echo "${1}"
+    echo "${1}, failing"
+
     exit 1
 }
+
+# Try getting an agent drive.
+mkdir -p "${PREFIX}.mnt"
+mount_9p || mount_virtiofs || mount_cdrom || fail "Couldn't mount 9p or cdrom"
 
 # Setup the mount target.
 umount -l "${PREFIX}" >/dev/null 2>&1 || true
 mkdir -p "${PREFIX}"
 mount -t tmpfs tmpfs "${PREFIX}" -o mode=0700,size=50M
-mkdir -p "${PREFIX}/.mnt"
-
-# Try virtiofs first.
-mount_virtiofs || mount_9p || fail "Couldn't mount virtiofs or 9p, failing."
 
 # Copy the data.
-cp -Ra "${PREFIX}/.mnt/"* "${PREFIX}"
+cp -Ra "${PREFIX}.mnt/"* "${PREFIX}"
 
 # Unmount the temporary mount.
-umount "${PREFIX}/.mnt"
-rmdir "${PREFIX}/.mnt"
+umount "${PREFIX}.mnt"
+rmdir "${PREFIX}.mnt"
+
+# Eject the cdrom in case it's present.
+eject "${CDROM}" >/dev/null 2>&1 || true
 
 # Fix up permissions.
 chown -R root:root "${PREFIX}"
@@ -114,8 +132,7 @@ func (g *incusAgent) handleSystemd() error {
 	incusAgentServiceUnit := fmt.Sprintf(`[Unit]
 Description=Incus - agent
 Documentation=https://linuxcontainers.org/incus/docs/main/
-ConditionPathExistsGlob=/dev/virtio-ports/org.linuxcontainers.*
-Before=cloud-init.target cloud-init.service cloud-init-local.service
+Before=multi-user.target cloud-init.target cloud-init.service cloud-init-local.service
 DefaultDependencies=no
 
 [Service]
@@ -127,9 +144,6 @@ Restart=on-failure
 RestartSec=5s
 StartLimitInterval=60
 StartLimitBurst=10
-
-[Install]
-WantedBy=multi-user.target
 `, systemdPath)
 
 	path := filepath.Join(g.sourceDir, systemdPath, "system", "incus-agent.service")
@@ -137,11 +151,6 @@ WantedBy=multi-user.target
 	err := os.WriteFile(path, []byte(incusAgentServiceUnit), 0644)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", path, err)
-	}
-
-	err = os.Symlink(path, filepath.Join(g.sourceDir, "/etc/systemd/system/multi-user.target.wants/incus-agent.service"))
-	if err != nil {
-		return fmt.Errorf("Failed to create symlink %q: %w", filepath.Join(g.sourceDir, "/etc/systemd/system/multi-user.target.wants/incus-agent.service"), err)
 	}
 
 	path = filepath.Join(g.sourceDir, systemdPath, "incus-agent-setup")
@@ -157,12 +166,10 @@ WantedBy=multi-user.target
 		udevPath = filepath.Join("/", "usr", "lib", "udev", "rules.d")
 	}
 
-	incusAgentRules := `ACTION=="add", SYMLINK=="virtio-ports/org.linuxcontainers.incus", TAG+="systemd"
-SYMLINK=="virtio-ports/org.linuxcontainers.incus", RUN+="/bin/systemctl start incus-agent.service"
+	incusAgentRules := `SYMLINK=="virtio-ports/org.linuxcontainers.incus", TAG+="systemd", ENV{SYSTEMD_WANTS}+="incus-agent.service"
 
 # Legacy.
-ACTION=="add", SYMLINK=="virtio-ports/org.linuxcontainers.lxd", TAG+="systemd"
-SYMLINK=="virtio-ports/org.linuxcontainers.lxd", RUN+="/bin/systemctl start incus-agent.service"
+SYMLINK=="virtio-ports/org.linuxcontainers.lxd", TAG+="systemd", ENV{SYSTEMD_WANTS}+="lxd-agent.service"
 `
 	err = os.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-incus-agent.rules"), []byte(incusAgentRules), 0400)
 	if err != nil {
