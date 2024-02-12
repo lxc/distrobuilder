@@ -41,6 +41,7 @@ is_in_path() {
 fix_ro_paths() {
 	mkdir -p "/run/systemd/system/$1.d"
 	cat <<-EOF > "/run/systemd/system/$1.d/zzz-lxc-ropath.conf"
+		# This file was created by distrobuilder
 		[Service]
 		BindReadOnlyPaths=/sys /proc
 		EOF
@@ -58,6 +59,7 @@ fix_nm_link_state() {
 		return 0
 	fi
 	cat <<-EOF > /run/systemd/system/network-device-down.service
+		# This file was created by distrobuilder
 		[Unit]
 		Description=Turn off network device
 		Before=NetworkManager.service
@@ -126,6 +128,7 @@ fix_systemd_udev_trigger() {
 
 	mkdir -p /run/systemd/system/systemd-udev-trigger.service.d
 	cat <<-EOF > /run/systemd/system/systemd-udev-trigger.service.d/zzz-lxc-override.conf
+		# This file was created by distrobuilder
 		[Service]
 		ExecStart=
 		ExecStart=-${cmd} trigger --type=subsystems --action=add
@@ -139,6 +142,7 @@ fix_systemd_sysctl() {
 	! [ -e "${cmd}" ] && cmd=/lib/systemd/systemd-sysctl
 	mkdir -p /run/systemd/system/systemd-sysctl.service.d
 	cat <<-EOF > /run/systemd/system/systemd-sysctl.service.d/zzz-lxc-override.conf
+		# This file was created by distrobuilder
 		[Service]
 		ExecStart=
 		ExecStart=-${cmd}
