@@ -41,9 +41,9 @@ is_in_path() {
 fix_ro_paths() {
 	mkdir -p "/run/systemd/system/$1.d"
 	cat <<-EOF > "/run/systemd/system/$1.d/zzz-lxc-ropath.conf"
-[Service]
-BindReadOnlyPaths=/sys /proc
-EOF
+		[Service]
+		BindReadOnlyPaths=/sys /proc
+		EOF
 }
 
 # fix_nm_link_state forces the network interface to a DOWN state ahead of NetworkManager starting up
@@ -58,19 +58,19 @@ fix_nm_link_state() {
 		return 0
 	fi
 	cat <<-EOF > /run/systemd/system/network-device-down.service
-[Unit]
-Description=Turn off network device
-Before=NetworkManager.service
-Before=systemd-networkd.service
-[Service]
-# do not turn off if there is a default route to 169.254.0.1, i.e. the device is a routed nic
-ExecCondition=/bin/sh -c '! /usr/bin/grep -qs 00000000.0100FEA9 /proc/net/route'
-ExecStart=-${ip_path} link set $1 down
-Type=oneshot
-RemainAfterExit=true
-[Install]
-WantedBy=default.target
-EOF
+		[Unit]
+		Description=Turn off network device
+		Before=NetworkManager.service
+		Before=systemd-networkd.service
+		[Service]
+		# do not turn off if there is a default route to 169.254.0.1, i.e. the device is a routed nic
+		ExecCondition=/bin/sh -c '! /usr/bin/grep -qs 00000000.0100FEA9 /proc/net/route'
+		ExecStart=-${ip_path} link set $1 down
+		Type=oneshot
+		RemainAfterExit=true
+		[Install]
+		WantedBy=default.target
+		EOF
 	mkdir -p /run/systemd/system/default.target.wants
 	ln -sf /run/systemd/system/network-device-down.service /run/systemd/system/default.target.wants/network-device-down.service
 }
@@ -126,11 +126,11 @@ fix_systemd_udev_trigger() {
 
 	mkdir -p /run/systemd/system/systemd-udev-trigger.service.d
 	cat <<-EOF > /run/systemd/system/systemd-udev-trigger.service.d/zzz-lxc-override.conf
-[Service]
-ExecStart=
-ExecStart=-${cmd} trigger --type=subsystems --action=add
-ExecStart=-${cmd} trigger --type=devices --action=add
-EOF
+		[Service]
+		ExecStart=
+		ExecStart=-${cmd} trigger --type=subsystems --action=add
+		ExecStart=-${cmd} trigger --type=devices --action=add
+		EOF
 }
 
 # fix_systemd_sysctl overrides the systemd-sysctl.service to use "ExecStart=-" instead of "ExecStart=".
@@ -139,10 +139,10 @@ fix_systemd_sysctl() {
 	! [ -e "${cmd}" ] && cmd=/lib/systemd/systemd-sysctl
 	mkdir -p /run/systemd/system/systemd-sysctl.service.d
 	cat <<-EOF > /run/systemd/system/systemd-sysctl.service.d/zzz-lxc-override.conf
-[Service]
-ExecStart=
-ExecStart=-${cmd}
-EOF
+		[Service]
+		ExecStart=
+		ExecStart=-${cmd}
+		EOF
 }
 
 ## Main logic
@@ -212,15 +212,15 @@ fi
 if [ -d /etc/udev ]; then
 	mkdir -p /run/udev/rules.d
 	cat <<-EOF > /run/udev/rules.d/90-lxc-net.rules
-# This file was created by distrobuilder.
-#
-# Its purpose is to convince NetworkManager to treat the eth0 veth
-# interface like a regular Ethernet. NetworkManager ordinarily doesn't
-# like to manage the veth interfaces, because they are typically configured
-# by container management tooling for specialized purposes.
+		# This file was created by distrobuilder.
+		#
+		# Its purpose is to convince NetworkManager to treat the eth0 veth
+		# interface like a regular Ethernet. NetworkManager ordinarily doesn't
+		# like to manage the veth interfaces, because they are typically configured
+		# by container management tooling for specialized purposes.
 
-ACTION=="add|change|move", ENV{ID_NET_DRIVER}=="veth", ENV{INTERFACE}=="eth[0-9]*", ENV{NM_UNMANAGED}="0"
-EOF
+		ACTION=="add|change|move", ENV{ID_NET_DRIVER}=="veth", ENV{INTERFACE}=="eth[0-9]*", ENV{NM_UNMANAGED}="0"
+		EOF
 fi
 
 # Workarounds for NetworkManager in containers
