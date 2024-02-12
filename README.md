@@ -71,7 +71,7 @@ To compile `distrobuilder` from source, first install the Go programming languag
     sudo pacman -S go debootstrap rsync gnupg squashfs-tools git make --needed
     ```
 
-NOTE: Distrobuilder requires Go 1.20 or higher, if your distribution doesn't have a recent enough version available, [get it from upstream](https://go.dev/doc/install).
+NOTE: Distrobuilder requires Go 1.21 or higher, if your distribution doesn't have a recent enough version available, [get it from upstream](https://go.dev/doc/install).
 
 Second, download the source code of the `distrobuilder` repository (this repository).
 
