@@ -12,6 +12,7 @@ is_lxc_container() {
 }
 
 is_lxc_privileged_container() {
+	# The full positive 32-bit range is available
 	grep -qw 4294967295$ /proc/self/uid_map
 }
 
