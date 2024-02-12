@@ -172,6 +172,7 @@ done
 # Determine distro name and release
 ID=""
 if [ -e /etc/os-release ]; then
+	# shellcheck disable=SC1091
 	. /etc/os-release
 fi
 
