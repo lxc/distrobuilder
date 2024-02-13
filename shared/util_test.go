@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/flosch/pongo2/v4"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/flosch/pongo2.v3"
 )
 
 func TestRenderTemplate(t *testing.T) {
