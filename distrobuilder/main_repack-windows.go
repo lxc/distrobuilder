@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/flosch/pongo2"
+	"github.com/flosch/pongo2/v4"
 	incus "github.com/lxc/incus/shared/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

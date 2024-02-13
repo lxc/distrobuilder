@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/flosch/pongo2/v4"
 	"github.com/lxc/incus/shared/util"
 	"golang.org/x/sys/unix"
-	"gopkg.in/flosch/pongo2.v3"
 	yaml "gopkg.in/yaml.v2"
 )
 
