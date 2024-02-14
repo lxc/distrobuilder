@@ -13,7 +13,9 @@ import (
 )
 
 func TestDumpGeneratorRunLXC(t *testing.T) {
-	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
+	cacheDir, err := os.MkdirTemp(os.TempDir(), "distrobuilder-test-")
+	require.NoError(t, err)
+
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
 	setup(t, cacheDir)
@@ -78,7 +80,9 @@ func TestDumpGeneratorRunLXC(t *testing.T) {
 }
 
 func TestDumpGeneratorRunIncus(t *testing.T) {
-	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
+	cacheDir, err := os.MkdirTemp(os.TempDir(), "distrobuilder-test-")
+	require.NoError(t, err)
+
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
 	setup(t, cacheDir)

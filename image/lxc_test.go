@@ -86,35 +86,35 @@ func lxcCacheDir() string {
 	return filepath.Join(wd, "distrobuilder-test-lxc")
 }
 
-func setupLXC() *LXCImage {
-	return NewLXCImage(context.TODO(), lxcCacheDir(), "", lxcCacheDir(), lxcDef)
-}
+func setupLXC() (*LXCImage, string) {
+	cacheDir := lxcCacheDir()
 
-func teardownLXC() {
-	os.RemoveAll(lxcCacheDir())
+	return NewLXCImage(context.TODO(), cacheDir, "", cacheDir, lxcDef), cacheDir
 }
 
 func TestNewLXCImage(t *testing.T) {
-	image := NewLXCImage(context.TODO(), lxcCacheDir(), "", lxcCacheDir(), lxcDef)
-	defer teardownLXC()
+	cacheDir := lxcCacheDir()
 
-	require.Equal(t, lxcCacheDir(), image.cacheDir)
+	image := NewLXCImage(context.TODO(), cacheDir, "", cacheDir, lxcDef)
+	defer os.RemoveAll(cacheDir)
+
+	require.Equal(t, cacheDir, image.cacheDir)
 	require.Equal(t, lxcDef, image.definition)
 }
 
 func TestLXCAddTemplate(t *testing.T) {
-	image := setupLXC()
-	defer teardownLXC()
+	image, cacheDir := setupLXC()
+	defer os.RemoveAll(cacheDir)
 
 	// Make sure templates file is empty.
-	_, err := os.Stat(filepath.Join(lxcCacheDir(), "metadata", "templates"))
+	_, err := os.Stat(filepath.Join(cacheDir, "metadata", "templates"))
 	require.EqualError(t, err, fmt.Sprintf("stat %s: no such file or directory",
-		filepath.Join(lxcCacheDir(), "metadata", "templates")))
+		filepath.Join(cacheDir, "metadata", "templates")))
 
 	// Add first template entry.
 	err = image.AddTemplate("/path/file1")
 	require.NoError(t, err)
-	file, err := os.Open(filepath.Join(lxcCacheDir(), "metadata", "templates"))
+	file, err := os.Open(filepath.Join(cacheDir, "metadata", "templates"))
 	require.NoError(t, err)
 
 	// Copy file content to buffer.
@@ -128,7 +128,7 @@ func TestLXCAddTemplate(t *testing.T) {
 	// Add second template entry.
 	err = image.AddTemplate("/path/file2")
 	require.NoError(t, err)
-	file, err = os.Open(filepath.Join(lxcCacheDir(), "metadata", "templates"))
+	file, err = os.Open(filepath.Join(cacheDir, "metadata", "templates"))
 	require.NoError(t, err)
 
 	// Copy file content to buffer.
@@ -141,10 +141,10 @@ func TestLXCAddTemplate(t *testing.T) {
 }
 
 func TestLXCBuild(t *testing.T) {
-	image := setupLXC()
-	defer teardownLXC()
+	image, cacheDir := setupLXC()
+	defer os.RemoveAll(cacheDir)
 
-	err := os.MkdirAll(filepath.Join(lxcCacheDir(), "rootfs"), 0755)
+	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
 	require.NoError(t, err)
 
 	err = image.Build("xz")
@@ -163,8 +163,8 @@ func TestLXCBuild(t *testing.T) {
 }
 
 func TestLXCCreateMetadataBasic(t *testing.T) {
-	defaultImage := setupLXC()
-	defer teardownLXC()
+	defaultImage, cacheDir := setupLXC()
+	defer os.RemoveAll(cacheDir)
 
 	tests := []struct {
 		name          string
@@ -209,9 +209,9 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 			"",
 			func(l LXCImage) *LXCImage {
 				// Create /dev and device file.
-				err := os.MkdirAll(filepath.Join(lxcCacheDir(), "rootfs", "dev"), 0755)
+				err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "dev"), 0755)
 				require.NoError(t, err)
-				err = unix.Mknod(filepath.Join(lxcCacheDir(), "rootfs", "dev", "null"), unix.S_IFCHR, 0)
+				err = unix.Mknod(filepath.Join(cacheDir, "rootfs", "dev", "null"), unix.S_IFCHR, 0)
 				require.NoError(t, err)
 				return &l
 			},
@@ -230,7 +230,7 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 	}
 
 	// Verify create-message template
-	f, err := os.Open(filepath.Join(lxcCacheDir(), "metadata", "create-message"))
+	f, err := os.Open(filepath.Join(cacheDir, "metadata", "create-message"))
 	require.NoError(t, err)
 	defer f.Close()
 
@@ -243,8 +243,8 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 }
 
 func TestLXCCreateMetadataConfig(t *testing.T) {
-	image := setupLXC()
-	defer teardownLXC()
+	image, cacheDir := setupLXC()
+	defer os.RemoveAll(cacheDir)
 
 	tests := []struct {
 		configFile string
@@ -297,7 +297,7 @@ func TestLXCCreateMetadataConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		log.Printf("Checking '%s'", tt.configFile)
-		file, err := os.Open(filepath.Join(lxcCacheDir(), "metadata", tt.configFile))
+		file, err := os.Open(filepath.Join(cacheDir, "metadata", tt.configFile))
 		require.NoError(t, err)
 
 		var buffer bytes.Buffer
@@ -309,9 +309,9 @@ func TestLXCCreateMetadataConfig(t *testing.T) {
 }
 
 func TestLXCPackMetadata(t *testing.T) {
-	image := setupLXC()
+	image, cacheDir := setupLXC()
 	defer func() {
-		teardownLXC()
+		os.RemoveAll(cacheDir)
 		os.Remove("meta.tar.xz")
 	}()
 
@@ -328,14 +328,14 @@ func TestLXCPackMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	// Provoke error by removing the metadata directory
-	os.RemoveAll(filepath.Join(lxcCacheDir(), "metadata"))
+	os.RemoveAll(filepath.Join(cacheDir, "metadata"))
 	err = image.packMetadata()
 	require.Error(t, err)
 }
 
 func TestLXCWriteMetadata(t *testing.T) {
-	image := setupLXC()
-	defer teardownLXC()
+	image, cacheDir := setupLXC()
+	defer os.RemoveAll(cacheDir)
 
 	// Should fail due to invalid path
 	err := image.writeMetadata("/path/file", "", false)

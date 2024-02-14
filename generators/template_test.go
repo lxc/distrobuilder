@@ -13,7 +13,9 @@ import (
 )
 
 func TestTemplateGeneratorRunIncus(t *testing.T) {
-	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
+	cacheDir, err := os.MkdirTemp(os.TempDir(), "distrobuilder-test-")
+	require.NoError(t, err)
+
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
 	setup(t, cacheDir)
@@ -50,7 +52,9 @@ func TestTemplateGeneratorRunIncus(t *testing.T) {
 }
 
 func TestTemplateGeneratorRunIncusDefaultWhen(t *testing.T) {
-	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test")
+	cacheDir, err := os.MkdirTemp(os.TempDir(), "distrobuilder-test-")
+	require.NoError(t, err)
+
 	rootfsDir := filepath.Join(cacheDir, "rootfs")
 
 	setup(t, cacheDir)

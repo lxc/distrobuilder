@@ -34,10 +34,11 @@ var incusDef = shared.Definition{
 	},
 }
 
-func setupIncus(t *testing.T) *IncusImage {
-	cacheDir := filepath.Join(os.TempDir(), "distrobuilder-test-incus")
+func setupIncus(t *testing.T) (*IncusImage, string) {
+	cacheDir, err := os.MkdirTemp(os.TempDir(), "distrobuilder-test-")
+	require.NoError(t, err)
 
-	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
+	err = os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
 	require.NoError(t, err)
 
 	err = os.MkdirAll(filepath.Join(cacheDir, "templates"), 0755)
@@ -48,7 +49,7 @@ func setupIncus(t *testing.T) *IncusImage {
 	fail := true
 	defer func() {
 		if fail {
-			teardownIncus(t)
+			os.RemoveAll(cacheDir)
 		}
 	}()
 
@@ -62,16 +63,12 @@ func setupIncus(t *testing.T) *IncusImage {
 	require.NoError(t, err)
 
 	fail = false
-	return image
-}
-
-func teardownIncus(t *testing.T) {
-	os.RemoveAll(filepath.Join(os.TempDir(), "distrobuilder-test-incus"))
+	return image, cacheDir
 }
 
 func TestIncusBuild(t *testing.T) {
-	image := setupIncus(t)
-	defer teardownIncus(t)
+	image, cacheDir := setupIncus(t)
+	defer os.RemoveAll(cacheDir)
 
 	testIncusBuildSplitImage(t, image)
 	testIncusBuildUnifiedImage(t, image)
@@ -124,8 +121,8 @@ func testIncusBuildUnifiedImage(t *testing.T, image *IncusImage) {
 }
 
 func TestIncusCreateMetadata(t *testing.T) {
-	image := setupIncus(t)
-	defer teardownIncus(t)
+	image, cacheDir := setupIncus(t)
+	defer os.RemoveAll(cacheDir)
 
 	err := image.createMetadata()
 	require.NoError(t, err)
