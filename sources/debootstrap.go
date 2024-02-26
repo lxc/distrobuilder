@@ -24,7 +24,7 @@ func (s *debootstrap) Run() error {
 	release := strings.ToLower(s.definition.Image.Release)
 
 	// Enable merged /usr by default, and disable it for certain distros/releases
-	if distro == "ubuntu" && incus.ValueInSlice(release, []string{"xenial", "bionic"}) || distro == "mint" && incus.ValueInSlice(release, []string{"tara", "tessa", "tina", "tricia", "ulyana"}) || distro == "devuan" {
+	if distro == "ubuntu" && incus.ValueInSlice(release, []string{"xenial", "bionic", "noble"}) || distro == "mint" && incus.ValueInSlice(release, []string{"tara", "tessa", "tina", "tricia", "ulyana"}) || distro == "devuan" {
 		args = append(args, "--no-merged-usr")
 	} else {
 		args = append(args, "--merged-usr")
