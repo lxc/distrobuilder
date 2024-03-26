@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -110,7 +111,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	} else {
 		supportedVersions := []string{"w11", "w10", "2k19", "2k12", "2k16", "2k22"}
 
-		if !incus.ValueInSlice(c.flagWindowsVersion, supportedVersions) {
+		if !slices.Contains(supportedVersions, c.flagWindowsVersion) {
 			return fmt.Errorf("Version must be one of %v", supportedVersions)
 		}
 	}
@@ -126,7 +127,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	} else {
 		supportedArchitectures := []string{"amd64", "ARM64"}
 
-		if !incus.ValueInSlice(c.flagWindowsArchitecture, supportedArchitectures) {
+		if !slices.Contains(supportedArchitectures, c.flagWindowsArchitecture) {
 			return fmt.Errorf("Architecture must be one of %v", supportedArchitectures)
 		}
 	}
@@ -554,7 +555,7 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 			targetPath := filepath.Join(targetBasePath, filepath.Base(path))
 
 			// Copy driver files
-			if incus.ValueInSlice(ext, []string{".cat", ".dll", ".inf", ".sys"}) {
+			if slices.Contains([]string{".cat", ".dll", ".inf", ".sys"}, ext) {
 				logger.WithFields(logrus.Fields{"src": path, "dest": targetPath}).Debug("Copying file")
 
 				err := shared.Copy(path, targetPath)

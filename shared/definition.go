@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/lxc/incus/shared/osarch"
 	incusArch "github.com/lxc/incus/shared/osarch"
-	"github.com/lxc/incus/shared/util"
 )
 
 // ImageTarget represents the image target.
@@ -386,7 +386,7 @@ func (d *Definition) Validate() error {
 		"nixos-http",
 	}
 
-	if !util.ValueInSlice(strings.TrimSpace(d.Source.Downloader), validDownloaders) {
+	if !slices.Contains(validDownloaders, strings.TrimSpace(d.Source.Downloader)) {
 		return fmt.Errorf("source.downloader must be one of %v", validDownloaders)
 	}
 
@@ -407,7 +407,7 @@ func (d *Definition) Validate() error {
 			"slackpkg",
 		}
 
-		if !util.ValueInSlice(strings.TrimSpace(d.Packages.Manager), validManagers) {
+		if !slices.Contains(validManagers, strings.TrimSpace(d.Packages.Manager)) {
 			return fmt.Errorf("packages.manager must be one of %v", validManagers)
 		}
 
@@ -453,7 +453,7 @@ func (d *Definition) Validate() error {
 	}
 
 	for _, file := range d.Files {
-		if !util.ValueInSlice(strings.TrimSpace(file.Generator), validGenerators) {
+		if !slices.Contains(validGenerators, strings.TrimSpace(file.Generator)) {
 			return fmt.Errorf("files.*.generator must be one of %v", validGenerators)
 		}
 	}
@@ -474,7 +474,7 @@ func (d *Definition) Validate() error {
 
 	architectureMap := strings.TrimSpace(d.Mappings.ArchitectureMap)
 	if architectureMap != "" {
-		if !util.ValueInSlice(architectureMap, validMappings) {
+		if !slices.Contains(validMappings, architectureMap) {
 			return fmt.Errorf("mappings.architecture_map must be one of %v", validMappings)
 		}
 	}
@@ -487,7 +487,7 @@ func (d *Definition) Validate() error {
 	}
 
 	for _, action := range d.Actions {
-		if !util.ValueInSlice(action.Trigger, validTriggers) {
+		if !slices.Contains(validTriggers, action.Trigger) {
 			return fmt.Errorf("actions.*.trigger must be one of %v", validTriggers)
 		}
 	}
@@ -498,7 +498,7 @@ func (d *Definition) Validate() error {
 	}
 
 	for _, set := range d.Packages.Sets {
-		if !util.ValueInSlice(set.Action, validPackageActions) {
+		if !slices.Contains(validPackageActions, set.Action) {
 			return fmt.Errorf("packages.*.set.*.action must be one of %v", validPackageActions)
 		}
 	}
@@ -643,15 +643,15 @@ func getFieldByTag(v reflect.Value, t reflect.Type, tag string) (reflect.Value, 
 
 // ApplyFilter returns true if the filter matches.
 func ApplyFilter(filter Filter, release string, architecture string, variant string, targetType DefinitionFilterType, acceptedImageTargets ImageTarget) bool {
-	if len(filter.GetReleases()) > 0 && !util.ValueInSlice(release, filter.GetReleases()) {
+	if len(filter.GetReleases()) > 0 && !slices.Contains(filter.GetReleases(), release) {
 		return false
 	}
 
-	if len(filter.GetArchitectures()) > 0 && !util.ValueInSlice(architecture, filter.GetArchitectures()) {
+	if len(filter.GetArchitectures()) > 0 && !slices.Contains(filter.GetArchitectures(), architecture) {
 		return false
 	}
 
-	if len(filter.GetVariants()) > 0 && !util.ValueInSlice(variant, filter.GetVariants()) {
+	if len(filter.GetVariants()) > 0 && !slices.Contains(filter.GetVariants(), variant) {
 		return false
 	}
 

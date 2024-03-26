@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -29,7 +30,7 @@ func newVM(ctx context.Context, imageFile, rootfsDir, fs string, size uint64) (*
 		fs = "ext4"
 	}
 
-	if !incus.ValueInSlice(fs, []string{"btrfs", "ext4"}) {
+	if !slices.Contains([]string{"btrfs", "ext4"}, fs) {
 		return nil, fmt.Errorf("Unsupported fs: %s", fs)
 	}
 

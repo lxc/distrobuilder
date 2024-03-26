@@ -5,8 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-
-	incus "github.com/lxc/incus/shared/util"
+	"slices"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -100,7 +99,7 @@ func (m *pacman) setupTrustedKeys() error {
 
 	var keyring string
 
-	if incus.ValueInSlice(runtime.GOARCH, []string{"arm", "arm64"}) {
+	if slices.Contains([]string{"arm", "arm64"}, runtime.GOARCH) {
 		keyring = "archlinuxarm"
 	} else {
 		keyring = "archlinux"
@@ -124,7 +123,7 @@ func (m *pacman) setMirrorlist() error {
 
 	var mirror string
 
-	if incus.ValueInSlice(runtime.GOARCH, []string{"arm", "arm64"}) {
+	if slices.Contains([]string{"arm", "arm64"}, runtime.GOARCH) {
 		mirror = "Server = http://mirror.archlinuxarm.org/$arch/$repo"
 	} else {
 		mirror = "Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch"
