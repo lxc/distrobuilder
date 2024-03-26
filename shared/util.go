@@ -8,12 +8,12 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/flosch/pongo2/v4"
-	"github.com/lxc/incus/shared/util"
 	"golang.org/x/sys/unix"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -135,7 +135,7 @@ func compressTarball(ctx context.Context, filename, compression string) (string,
 	}
 
 	// If supported, use as many threads as possible.
-	if util.ValueInSlice(compression, []string{"zstd", "xz", "lzma"}) {
+	if slices.Contains([]string{"zstd", "xz", "lzma"}, compression) {
 		args = append(args, "--threads=0")
 	}
 
@@ -385,7 +385,7 @@ func ParseSquashfsCompression(compression string) (string, *int, error) {
 		compression = "lzo"
 	}
 
-	if util.ValueInSlice(compression, []string{"gzip", "lzo", "lz4", "xz", "zstd", "lzma"}) {
+	if slices.Contains([]string{"gzip", "lzo", "lz4", "xz", "zstd", "lzma"}, compression) {
 		return compression, nil, nil
 	}
 
