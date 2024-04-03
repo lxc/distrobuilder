@@ -322,7 +322,7 @@ actions:
     update-grub
     grub-install --uefi-secure-boot --target="${TARGET}-efi" --no-nvram --removable
     update-grub
-    sed -i "s#root=[^ ]*#root=/dev/sda2#g" /boot/grub/grub.cfg
+    sed -i "s#root=[^ ]*#root=${DISTROBUILDER_ROOT_UUID}#g" /boot/grub/grub.cfg
   types:
   - vm
 
