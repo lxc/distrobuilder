@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lxc/incus/shared/ioprogress"
-	incus "github.com/lxc/incus/shared/util"
+	"github.com/lxc/incus/v6/shared/ioprogress"
+	incus "github.com/lxc/incus/v6/shared/util"
 	"github.com/sirupsen/logrus"
 
 	"github.com/lxc/distrobuilder/shared"

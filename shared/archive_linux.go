@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/lxc/incus/shared/archive"
-	"github.com/lxc/incus/shared/subprocess"
+	"github.com/lxc/incus/v6/shared/archive"
+	"github.com/lxc/incus/v6/shared/subprocess"
 	"golang.org/x/sys/unix"
 )
 

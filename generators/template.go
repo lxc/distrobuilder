@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/flosch/pongo2/v4"
-	"github.com/lxc/incus/shared/api"
+	"github.com/lxc/incus/v6/shared/api"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
