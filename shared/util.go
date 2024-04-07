@@ -18,6 +18,11 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+const (
+	ContextKeyEnviron = ContextKey("environ")
+	EnvRootUUID       = "DISTROBUILDER_ROOT_UUID"
+)
+
 // EnvVariable represents a environment variable.
 type EnvVariable struct {
 	Value string
@@ -26,6 +31,9 @@ type EnvVariable struct {
 
 // Environment represents a set of environment variables.
 type Environment map[string]EnvVariable
+
+// ContextKey type.
+type ContextKey string
 
 // Copy copies a file.
 func Copy(src, dest string) error {
@@ -56,6 +64,10 @@ func Copy(src, dest string) error {
 // RunCommand runs a command. Stdout is written to the given io.Writer. If nil, it's written to the real stdout. Stderr is always written to the real stderr.
 func RunCommand(ctx context.Context, stdin io.Reader, stdout io.Writer, name string, arg ...string) error {
 	cmd := exec.CommandContext(ctx, name, arg...)
+	env, ok := ctx.Value(ContextKeyEnviron).([]string)
+	if ok && len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 
 	if stdin != nil {
 		cmd.Stdin = stdin
