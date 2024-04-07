@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	incus "github.com/lxc/incus/shared/util"
+	incus "github.com/lxc/incus/v6/shared/util"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/shared"

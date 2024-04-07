@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lxc/incus/shared/osarch"
-	incusArch "github.com/lxc/incus/shared/osarch"
+	"github.com/lxc/incus/v6/shared/osarch"
+	incusArch "github.com/lxc/incus/v6/shared/osarch"
 )
 
 // ImageTarget represents the image target.

@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/lxc/incus/shared/api"
-	incus "github.com/lxc/incus/shared/util"
+	"github.com/lxc/incus/v6/shared/api"
+	incus "github.com/lxc/incus/v6/shared/util"
 
 	"github.com/lxc/distrobuilder/image"
 	"github.com/lxc/distrobuilder/shared"
