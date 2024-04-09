@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -181,7 +182,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 	// Mount windows ISO
 	logger.Infof("Mounting Windows ISO to dir: %q", c.global.sourceDir)
-	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "udf", "-o", "loop", args[0], c.global.sourceDir)
+	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "udf", "-o", "loop,ro", args[0], c.global.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q at %q: %w", args[0], c.global.sourceDir, err)
 	}
@@ -204,7 +205,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 	// Mount driver ISO
 	logger.Infof("Mounting driver ISO to dir %q", driverPath)
-	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "iso9660", "-o", "loop", c.flagDrivers, driverPath)
+	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "iso9660", "-o", "loop,ro", c.flagDrivers, driverPath)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q at %q: %w", c.flagDrivers, driverPath, err)
 	}
@@ -361,12 +362,24 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	}
 
 	version := strings.Split(stdout.String(), "\n")[0]
-
+	genArgs := []string{"--allow-limited-size"}
 	if strings.HasPrefix(version, "mkisofs") {
-		err = shared.RunCommand(c.global.ctx, nil, nil, "genisoimage", "-iso-level", "3", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
-	} else {
-		err = shared.RunCommand(c.global.ctx, nil, nil, "genisoimage", "--allow-limited-size", "-l", "-no-emul-boot", "-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
+		genArgs = []string{"-iso-level", "3"}
 	}
+
+	genArgs = append(genArgs, "-input-charset", "utf-8", "-l", "-no-emul-boot",
+		"-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
+	err = shared.RunCommand(context.WithValue(c.global.ctx, shared.ContextKeyStderr,
+		shared.WriteFunc(func(b []byte) (int, error) {
+			for i := range b {
+				if b[i] == '\n' {
+					b[i] = '\r'
+				}
+			}
+
+			return os.Stderr.Write(b)
+		})),
+		nil, nil, "genisoimage", genArgs...)
 
 	if err != nil {
 		return fmt.Errorf("Failed to generate ISO: %w", err)
