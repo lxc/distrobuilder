@@ -31,6 +31,11 @@ type cmdRepackWindows struct {
 	flagDrivers             string
 	flagWindowsVersion      string
 	flagWindowsArchitecture string
+
+	defaultDrivers         string
+	supportedVersions      []string
+	supportedArchitectures []string
+	umounts                []string
 }
 
 func init() {
@@ -45,8 +50,13 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 		Args:    cobra.ExactArgs(2),
 		PreRunE: c.preRun,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			logger := c.global.logger
 			defer func() {
-				_ = unix.Unmount(c.global.sourceDir, 0)
+				for i := len(c.umounts) - 1; i >= 0; i-- {
+					dir := c.umounts[i]
+					logger.Infof("Umount dir %q", dir)
+					_ = unix.Unmount(dir, 0)
+				}
 			}()
 
 			sourceDir := filepath.Dir(args[0])
@@ -59,13 +69,13 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 
 				err := unix.Statfs(dir, &stat)
 				if err != nil {
-					c.global.logger.WithFields(logrus.Fields{"dir": dir, "err": err}).Warn("Failed to get directory information")
+					logger.WithFields(logrus.Fields{"dir": dir, "err": err}).Warn("Failed to get directory information")
 					continue
 				}
 
 				// Since there's no magic number for virtiofs, we need to check FUSE_SUPER_MAGIC (which is not defined in the unix package).
 				if stat.Type == 0x65735546 {
-					c.global.logger.Warn("FUSE filesystem detected, disabling overlay")
+					logger.Warn("FUSE filesystem detected, disabling overlay")
 					c.global.flagDisableOverlay = true
 					break
 				}
@@ -89,9 +99,14 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&c.flagDrivers, "drivers", "", "Path to drivers ISO"+"``")
-	cmd.Flags().StringVar(&c.flagWindowsVersion, "windows-version", "", "Windows version to repack"+"``")
-	cmd.Flags().StringVar(&c.flagWindowsArchitecture, "windows-arch", "", "Windows architecture to repack"+"``")
+	c.defaultDrivers = "virtio-win.iso"
+	c.supportedVersions = []string{"w11", "w10", "2k19", "2k12", "2k16", "2k22"}
+	c.supportedArchitectures = []string{"amd64", "ARM64"}
+	cmd.Flags().StringVar(&c.flagDrivers, "drivers", c.defaultDrivers, "Path to virtio windowns drivers ISO file"+"``")
+	cmd.Flags().StringVar(&c.flagWindowsVersion, "windows-version", "",
+		"Windows version to repack, must be one of ["+strings.Join(c.supportedVersions, ", ")+"]``")
+	cmd.Flags().StringVar(&c.flagWindowsArchitecture, "windows-arch", "",
+		"Windows architecture to repack, must be one of ["+strings.Join(c.supportedArchitectures, ", ")+"]``")
 
 	return cmd
 }
@@ -109,10 +124,8 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 		c.flagWindowsVersion = detectedVersion
 	} else {
-		supportedVersions := []string{"w11", "w10", "2k19", "2k12", "2k16", "2k22"}
-
-		if !slices.Contains(supportedVersions, c.flagWindowsVersion) {
-			return fmt.Errorf("Version must be one of %v", supportedVersions)
+		if !slices.Contains(c.supportedVersions, c.flagWindowsVersion) {
+			return fmt.Errorf("Version must be one of %v", c.supportedVersions)
 		}
 	}
 
@@ -125,10 +138,8 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 		c.flagWindowsArchitecture = detectedArchitecture
 	} else {
-		supportedArchitectures := []string{"amd64", "ARM64"}
-
-		if !slices.Contains(supportedArchitectures, c.flagWindowsArchitecture) {
-			return fmt.Errorf("Architecture must be one of %v", supportedArchitectures)
+		if !slices.Contains(c.supportedArchitectures, c.flagWindowsArchitecture) {
+			return fmt.Errorf("Architecture must be one of %v", c.supportedArchitectures)
 		}
 	}
 
@@ -168,58 +179,22 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Failed to create directory %q: %w", c.global.sourceDir, err)
 	}
 
-	logger.Info("Mounting Windows ISO")
-
-	// Mount ISO
+	// Mount windows ISO
+	logger.Infof("Mounting Windows ISO to dir: %q", c.global.sourceDir)
 	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "udf", "-o", "loop", args[0], c.global.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q at %q: %w", args[0], c.global.sourceDir, err)
 	}
 
-	success = true
-	return nil
-}
+	c.umounts = append(c.umounts, c.global.sourceDir)
 
-func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir string) error {
-	logger := c.global.logger
-
-	driverPath := filepath.Join(c.global.flagCacheDir, "drivers")
-	virtioISOPath := c.flagDrivers
-
-	if virtioISOPath == "" {
-		// Download vioscsi driver
-		virtioURL := "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/virtio-win.iso"
-
-		virtioISOPath = filepath.Join(c.global.flagSourcesDir, "windows", "virtio-win.iso")
-
-		if !incus.PathExists(virtioISOPath) {
-			err := os.MkdirAll(filepath.Dir(virtioISOPath), 0755)
-			if err != nil {
-				return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(virtioISOPath), err)
-			}
-
-			f, err := os.Create(virtioISOPath)
-			if err != nil {
-				return fmt.Errorf("Failed to create file %q: %w", virtioISOPath, err)
-			}
-
-			defer f.Close()
-
-			var client http.Client
-
-			logger.Info("Downloading drivers ISO")
-
-			_, err = incus.DownloadFileHash(c.global.ctx, &client, "", nil, nil, "virtio-win.iso", virtioURL, "", nil, f)
-			if err != nil {
-				f.Close()
-				os.Remove(virtioISOPath)
-				return fmt.Errorf("Failed to download %q: %w", virtioURL, err)
-			}
-
-			f.Close()
-		}
+	// Check virtio ISO path
+	err = c.checkVirtioISOPath()
+	if err != nil {
+		return fmt.Errorf("Failed to check virtio ISO Path: %w", err)
 	}
 
+	driverPath := filepath.Join(c.global.flagCacheDir, "drivers")
 	if !incus.PathExists(driverPath) {
 		err := os.MkdirAll(driverPath, 0755)
 		if err != nil {
@@ -227,17 +202,69 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		}
 	}
 
-	logger.Info("Mounting driver ISO")
-
 	// Mount driver ISO
-	err := shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "iso9660", "-o", "loop", virtioISOPath, driverPath)
+	logger.Infof("Mounting driver ISO to dir %q", driverPath)
+	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "iso9660", "-o", "loop", c.flagDrivers, driverPath)
 	if err != nil {
-		return fmt.Errorf("Failed to mount %q at %q: %w", virtioISOPath, driverPath, err)
+		return fmt.Errorf("Failed to mount %q at %q: %w", c.flagDrivers, driverPath, err)
 	}
 
+	c.umounts = append(c.umounts, driverPath)
+	success = true
+	return nil
+}
+
+func (c *cmdRepackWindows) checkVirtioISOPath() (err error) {
+	logger := c.global.logger
+	virtioISOPath := c.flagDrivers
+	if virtioISOPath == "" {
+		virtioISOPath = c.defaultDrivers
+	}
+
+	if incus.PathExists(virtioISOPath) {
+		c.flagDrivers = virtioISOPath
+		return
+	}
+
+	virtioISOPath = filepath.Join(c.global.flagSourcesDir, "windows", c.defaultDrivers)
+	if incus.PathExists(virtioISOPath) {
+		c.flagDrivers = virtioISOPath
+		return
+	}
+
+	// Download vioscsi driver
+	virtioURL := "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/" + c.defaultDrivers
+	err = os.MkdirAll(filepath.Dir(virtioISOPath), 0755)
+	if err != nil {
+		return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(virtioISOPath), err)
+	}
+
+	f, err := os.Create(virtioISOPath)
+	if err != nil {
+		return fmt.Errorf("Failed to create file %q: %w", virtioISOPath, err)
+	}
+
+	removeNeeded := false
 	defer func() {
-		_ = unix.Unmount(driverPath, 0)
+		f.Close()
+		if c.global.flagCleanup && removeNeeded {
+			os.Remove(virtioISOPath)
+		}
 	}()
+
+	logger.Info("Downloading drivers ISO")
+	_, err = incus.DownloadFileHash(c.global.ctx, http.DefaultClient, "", nil, nil, c.defaultDrivers, virtioURL, "", nil, f)
+	if err != nil {
+		removeNeeded = true
+		return fmt.Errorf("Failed to download %q: %w", virtioURL, err)
+	}
+
+	c.flagDrivers = virtioISOPath
+	return
+}
+
+func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir string) error {
+	logger := c.global.logger
 
 	var sourcesDir string
 
