@@ -3,6 +3,7 @@ package shared
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/flosch/pongo2/v4"
@@ -215,5 +216,74 @@ func TestSquashfsParseCompression(t *testing.T) {
 				require.Equal(t, tt.expectedLevel, *level)
 			}
 		}
+	}
+}
+
+func TestCaseInsensitive(t *testing.T) {
+	tcs := []struct {
+		input string
+		want  string
+	}{
+		{"sources", "[sS][oO][uU][rR][cC][eE][sS]"},
+		{"boot.wim", "[bB][oO][oO][tT]\\.[wW][iI][mM]"},
+		{"install.wim", "[iI][nN][sS][tT][aA][lL][lL]\\.[wW][iI][mM]"},
+		{"sources/boot.wim", "[sS][oO][uU][rR][cC][eE][sS]/[bB][oO][oO][tT]\\.[wW][iI][mM]"},
+		{"sources/install.wim", "[sS][oO][uU][rR][cC][eE][sS]/[iI][nN][sS][tT][aA][lL][lL]\\.[wW][iI][mM]"},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.input, func(t *testing.T) {
+			pattern := CaseInsensitive(tc.input)
+			if pattern != tc.want {
+				t.Fatal(pattern, tc.input, tc.want)
+			}
+		})
+	}
+}
+
+func TestFindFirstMatch(t *testing.T) {
+	tcs := []struct {
+		name   string
+		actual string
+	}{
+		{"sources/boot.wim", "sources/boot.wim"},
+		{"sources/install.wim", "sources/install.wim"},
+		{"sources/install.wim", "SOURCES/INSTALL.wim"},
+		{"sources/boot.wim", "sources/BOOT.WIM"},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			dir, err := filepath.Abs("testing")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			actual := filepath.Join(dir, tc.actual)
+			err = os.MkdirAll(filepath.Dir(actual), 0755)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			f, err := os.Create(actual)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = f.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			defer os.RemoveAll(dir)
+			want, err := FindFirstMatch(dir, tc.name)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if want != actual {
+				t.Fatal(want, actual)
+			}
+		})
 	}
 }

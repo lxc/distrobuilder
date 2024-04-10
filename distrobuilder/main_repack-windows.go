@@ -266,52 +266,14 @@ func (c *cmdRepackWindows) checkVirtioISOPath() (err error) {
 
 func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir string) error {
 	logger := c.global.logger
-
-	var sourcesDir string
-
-	entries, err := os.ReadDir(overlayDir)
+	bootWim, err := shared.FindFirstMatch(overlayDir, "sources", "boot.wim")
 	if err != nil {
-		return fmt.Errorf("Failed to read directory %q: %w", overlayDir, err)
+		return fmt.Errorf("Unable to find boot.wim: %w", err)
 	}
 
-	for _, entry := range entries {
-		if strings.ToLower(entry.Name()) == "sources" {
-			sourcesDir = filepath.Join(overlayDir, entry.Name())
-			break
-		}
-	}
-
-	entries, err = os.ReadDir(sourcesDir)
+	installWim, err := shared.FindFirstMatch(overlayDir, "sources", "install.wim")
 	if err != nil {
-		return fmt.Errorf("Failed to read directory %q: %w", sourcesDir, err)
-	}
-
-	var bootWim string
-	var installWim string
-
-	// Find boot.wim and install.wim but consider their case.
-	for _, entry := range entries {
-		if bootWim != "" && installWim != "" {
-			break
-		}
-
-		if strings.ToLower(entry.Name()) == "boot.wim" {
-			bootWim = filepath.Join(sourcesDir, entry.Name())
-			continue
-		}
-
-		if strings.ToLower(entry.Name()) == "install.wim" {
-			installWim = filepath.Join(sourcesDir, entry.Name())
-			continue
-		}
-	}
-
-	if bootWim == "" {
-		return errors.New("Unable to find boot.wim")
-	}
-
-	if installWim == "" {
-		return errors.New("Unable to find install.wim")
+		return fmt.Errorf("Unable to find install.wim: %w", err)
 	}
 
 	var buf bytes.Buffer
@@ -391,9 +353,10 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	logger := c.global.logger
 
-	// Mount VIM file
+	// Mount wim file
 	wimFile := filepath.Join(path)
-	wimPath := filepath.Join(c.global.flagCacheDir, "wim")
+	wimIndex := strconv.Itoa(index)
+	wimPath := filepath.Join(c.global.flagCacheDir, "wim", wimIndex)
 
 	if !incus.PathExists(wimPath) {
 		err := os.MkdirAll(wimPath, 0755)
@@ -404,7 +367,7 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 
 	success := false
 
-	err := shared.RunCommand(c.global.ctx, nil, nil, "wimlib-imagex", "mountrw", wimFile, strconv.Itoa(index), wimPath, "--allow-other")
+	err := shared.RunCommand(c.global.ctx, nil, nil, "wimlib-imagex", "mountrw", wimFile, wimIndex, wimPath, "--allow-other")
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q: %w", filepath.Base(wimFile), err)
 	}
@@ -418,22 +381,6 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	dirs, err := c.getWindowsDirectories(wimPath)
 	if err != nil {
 		return fmt.Errorf("Failed to get required windows directories: %w", err)
-	}
-
-	if dirs["filerepository"] == "" {
-		return errors.New("Failed to determine windows/system32/driverstore/filerepository path")
-	}
-
-	if dirs["inf"] == "" {
-		return errors.New("Failed to determine windows/inf path")
-	}
-
-	if dirs["config"] == "" {
-		return errors.New("Failed to determine windows/system32/config path")
-	}
-
-	if dirs["drivers"] == "" {
-		return errors.New("Failed to determine windows/system32/drivers path")
 	}
 
 	logger.WithFields(logrus.Fields{"file": filepath.Base(path), "index": index}).Info("Modifying WIM file")
@@ -466,99 +413,29 @@ func (c *cmdRepackWindows) checkDependencies() error {
 	return nil
 }
 
-func (c *cmdRepackWindows) getWindowsDirectories(wimPath string) (map[string]string, error) {
-	windowsPath := ""
-	system32Path := ""
-	driverStorePath := ""
-	dirs := make(map[string]string)
-
-	entries, err := os.ReadDir(wimPath)
+func (c *cmdRepackWindows) getWindowsDirectories(wimPath string) (dirs map[string]string, err error) {
+	dirs = map[string]string{}
+	dirs["inf"], err = shared.FindFirstMatch(wimPath, "windows", "inf")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to determine windows/inf path: %w", err)
 	}
 
-	// Get windows directory
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		if regexp.MustCompile(`^(?i)windows$`).MatchString(entry.Name()) {
-			windowsPath = filepath.Join(wimPath, entry.Name())
-			break
-		}
-	}
-
-	entries, err = os.ReadDir(windowsPath)
+	dirs["config"], err = shared.FindFirstMatch(wimPath, "windows", "system32", "config")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to determine windows/system32/config path: %w", err)
 	}
 
-	for _, entry := range entries {
-		if dirs["inf"] != "" && system32Path != "" {
-			break
-		}
-
-		if !entry.IsDir() {
-			continue
-		}
-
-		if regexp.MustCompile(`^(?i)inf$`).MatchString(entry.Name()) {
-			dirs["inf"] = filepath.Join(windowsPath, entry.Name())
-			continue
-		}
-
-		if regexp.MustCompile(`^(?i)system32$`).MatchString(entry.Name()) {
-			system32Path = filepath.Join(windowsPath, entry.Name())
-		}
-	}
-
-	entries, err = os.ReadDir(system32Path)
+	dirs["drivers"], err = shared.FindFirstMatch(wimPath, "windows", "system32", "drivers")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to determine windows/system32/drivers path: %w", err)
 	}
 
-	for _, entry := range entries {
-		if dirs["config"] != "" && dirs["drivers"] != "" && driverStorePath != "" {
-			break
-		}
-
-		if !entry.IsDir() {
-			continue
-		}
-
-		if regexp.MustCompile(`^(?i)config$`).MatchString(entry.Name()) {
-			dirs["config"] = filepath.Join(system32Path, entry.Name())
-			continue
-		}
-
-		if regexp.MustCompile(`^(?i)drivers$`).MatchString(entry.Name()) {
-			dirs["drivers"] = filepath.Join(system32Path, entry.Name())
-			continue
-		}
-
-		if regexp.MustCompile(`^(?i)driverstore$`).MatchString(entry.Name()) {
-			driverStorePath = filepath.Join(system32Path, entry.Name())
-		}
-	}
-
-	entries, err = os.ReadDir(driverStorePath)
+	dirs["filerepository"], err = shared.FindFirstMatch(wimPath, "windows", "system32", "driverstore", "filerepository")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to determine windows/system32/driverstore/filerepository path: %w", err)
 	}
 
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		if regexp.MustCompile(`^(?i)filerepository$`).MatchString(entry.Name()) {
-			dirs["filerepository"] = filepath.Join(driverStorePath, entry.Name())
-			break
-		}
-	}
-
-	return dirs, nil
+	return
 }
 
 func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {

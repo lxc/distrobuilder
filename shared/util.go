@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
@@ -36,10 +37,51 @@ type Environment map[string]EnvVariable
 // ContextKey type.
 type ContextKey string
 
+// WriteFunc type.
 type WriteFunc func([]byte) (int, error)
 
+// Write implements io.Writer interface.
 func (w WriteFunc) Write(b []byte) (int, error) {
 	return w(b)
+}
+
+// CaseInsensitive returns case insensive pattern used by filepath.Glob or filepath.Match.
+func CaseInsensitive(s string) (pattern string) {
+	s1 := strings.ToLower(s)
+	s2 := strings.ToUpper(s)
+	for i := range s {
+		a := s1[i : i+1]
+		b := s2[i : i+1]
+		if a != b {
+			pattern += "[" + a + b + "]"
+		} else if a != "/" {
+			pattern += "\\" + a
+		} else {
+			pattern += "/"
+		}
+	}
+	return
+}
+
+// FindFirstMatch find the first file case insensitive.
+func FindFirstMatch(dir string, elem ...string) (found string, err error) {
+	names := []string{dir}
+	for _, name := range elem {
+		names = append(names, CaseInsensitive(name))
+	}
+
+	matches, err := filepath.Glob(filepath.Join(names...))
+	if err != nil {
+		return
+	}
+
+	if len(matches) == 0 {
+		err = fmt.Errorf("No match found")
+		return
+	}
+
+	found = matches[0]
+	return
 }
 
 // Copy copies a file.
