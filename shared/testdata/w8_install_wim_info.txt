@@ -1,0 +1,43 @@
+WIM Information:
+----------------
+Path:           install.wim
+GUID:           0xe46cb79f5de1f7458c96f3c1ce71d19f
+Version:        68864
+Image Count:    1
+Compression:    LZX
+Chunk Size:     32768 bytes
+Part Number:    1/1
+Boot Index:     0
+Size:           2920155755 bytes
+Attributes:     Integrity info, Relative path junction
+
+Available Images:
+-----------------
+Index:                  1
+Name:                   Windows 8 Enterprise
+Description:            Windows 8 Enterprise
+Display Name:           Windows 8 企业版
+Display Description:    Windows 8 企业版
+Directory Count:        18457
+File Count:             83427
+Total Bytes:            12454110871
+Hard Link Bytes:        4972983529
+Creation Time:          Thu Jul 26 11:57:02 2012 UTC
+Last Modification Time: Thu Jul 26 11:58:17 2012 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             Enterprise
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          2
+Build:                  9200
+Service Pack Build:     16384
+Service Pack Level:     0
+Flags:                  Enterprise
+WIMBoot compatible:     no

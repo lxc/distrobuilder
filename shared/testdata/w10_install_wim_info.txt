@@ -1,0 +1,322 @@
+WIM Information:
+----------------
+Path:           /var/cache/distrobuilder.2829399338/overlay/sources/install.wim
+GUID:           0x83308dce643e814ab27ae27324240703
+Version:        68864
+Image Count:    11
+Compression:    LZX
+Chunk Size:     32768 bytes
+Part Number:    1/1
+Boot Index:     0
+Size:           5181241894 bytes
+Attributes:     Relative path junction
+
+Available Images:
+-----------------
+Index:                  1
+Name:                   Windows 10 Home
+Description:            Windows 10 Home
+Display Name:           Windows 10 Home
+Display Description:    Windows 10 Home
+Directory Count:        27984
+File Count:             101011
+Total Bytes:            15139674619
+Hard Link Bytes:        5830525713
+Creation Time:          Fri May 05 12:37:37 2023 UTC
+Last Modification Time: Fri May 05 13:18:27 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             Core
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  Core
+WIMBoot compatible:     no
+
+Index:                  2
+Name:                   Windows 10 Home N
+Description:            Windows 10 Home N
+Display Name:           Windows 10 Home N
+Display Description:    Windows 10 Home N
+Directory Count:        26994
+File Count:             95743
+Total Bytes:            14368233902
+Hard Link Bytes:        5556484512
+Creation Time:          Fri May 05 12:38:17 2023 UTC
+Last Modification Time: Fri May 05 13:18:52 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             CoreN
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  CoreN
+WIMBoot compatible:     no
+
+Index:                  3
+Name:                   Windows 10 Home Single Language
+Description:            Windows 10 Home Single Language
+Display Name:           Windows 10 Home Single Language
+Display Description:    Windows 10 Home Single Language
+Directory Count:        27984
+File Count:             101012
+Total Bytes:            15142346396
+Hard Link Bytes:        5830525713
+Creation Time:          Fri May 05 12:40:09 2023 UTC
+Last Modification Time: Fri May 05 13:19:17 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             CoreSingleLanguage
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  CoreSingleLanguage
+WIMBoot compatible:     no
+
+Index:                  4
+Name:                   Windows 10 Education
+Description:            Windows 10 Education
+Display Name:           Windows 10 Education
+Display Description:    Windows 10 Education
+Directory Count:        28159
+File Count:             102183
+Total Bytes:            15475605732
+Hard Link Bytes:        5999734917
+Creation Time:          Fri May 05 12:42:39 2023 UTC
+Last Modification Time: Fri May 05 13:19:48 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             Education
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  Education
+WIMBoot compatible:     no
+
+Index:                  5
+Name:                   Windows 10 Education N
+Description:            Windows 10 Education N
+Display Name:           Windows 10 Education N
+Display Description:    Windows 10 Education N
+Directory Count:        27169
+File Count:             97065
+Total Bytes:            14684197328
+Hard Link Bytes:        5725186773
+Creation Time:          Fri May 05 12:56:17 2023 UTC
+Last Modification Time: Fri May 05 13:20:14 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             EducationN
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  EducationN
+WIMBoot compatible:     no
+
+Index:                  6
+Name:                   Windows 10 Pro
+Description:            Windows 10 Pro
+Display Name:           Windows 10 Pro
+Display Description:    Windows 10 Pro
+Directory Count:        28159
+File Count:             102180
+Total Bytes:            15472691215
+Hard Link Bytes:        5999734917
+Creation Time:          Fri May 05 12:35:48 2023 UTC
+Last Modification Time: Fri May 05 13:20:40 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             Professional
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  Professional
+WIMBoot compatible:     no
+
+Index:                  7
+Name:                   Windows 10 Pro N
+Description:            Windows 10 Pro N
+Display Name:           Windows 10 Pro N
+Display Description:    Windows 10 Pro N
+Directory Count:        27169
+File Count:             97061
+Total Bytes:            14702310788
+Hard Link Bytes:        5725186773
+Creation Time:          Fri May 05 12:43:52 2023 UTC
+Last Modification Time: Fri May 05 13:21:04 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ProfessionalN
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  ProfessionalN
+WIMBoot compatible:     no
+
+Index:                  8
+Name:                   Windows 10 Pro Education
+Description:            Windows 10 Pro Education
+Display Name:           Windows 10 Pro Education
+Display Description:    Windows 10 Pro Education
+Directory Count:        28159
+File Count:             102181
+Total Bytes:            15475544150
+Hard Link Bytes:        5999734917
+Creation Time:          Fri May 05 12:38:04 2023 UTC
+Last Modification Time: Fri May 05 13:21:29 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ProfessionalEducation
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  ProfessionalEducation
+WIMBoot compatible:     no
+
+Index:                  9
+Name:                   Windows 10 Pro Education N
+Description:            Windows 10 Pro Education N
+Display Name:           Windows 10 Pro Education N
+Display Description:    Windows 10 Pro Education N
+Directory Count:        27169
+File Count:             97063
+Total Bytes:            14684134846
+Hard Link Bytes:        5725186773
+Creation Time:          Fri May 05 12:50:02 2023 UTC
+Last Modification Time: Fri May 05 13:21:53 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ProfessionalEducationN
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  ProfessionalEducationN
+WIMBoot compatible:     no
+
+Index:                  10
+Name:                   Windows 10 Pro for Workstations
+Description:            Windows 10 Pro for Workstations
+Display Name:           Windows 10 Pro for Workstations
+Display Description:    Windows 10 Pro for Workstations
+Directory Count:        28159
+File Count:             102182
+Total Bytes:            15475574941
+Hard Link Bytes:        5999734917
+Creation Time:          Fri May 05 12:40:21 2023 UTC
+Last Modification Time: Fri May 05 13:22:18 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ProfessionalWorkstation
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  ProfessionalWorkstation
+WIMBoot compatible:     no
+
+Index:                  11
+Name:                   Windows 10 Pro N for Workstations
+Description:            Windows 10 Pro N for Workstations
+Display Name:           Windows 10 Pro N for Workstations
+Display Description:    Windows 10 Pro N for Workstations
+Directory Count:        27169
+File Count:             97064
+Total Bytes:            14684166087
+Hard Link Bytes:        5725186773
+Creation Time:          Fri May 05 12:53:04 2023 UTC
+Last Modification Time: Fri May 05 13:22:42 2023 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ProfessionalWorkstationN
+Installation Type:      Client
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  19041
+Service Pack Build:     2965
+Service Pack Level:     0
+Flags:                  ProfessionalWorkstationN
+WIMBoot compatible:     no

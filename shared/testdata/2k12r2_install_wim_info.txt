@@ -1,0 +1,43 @@
+WIM Information:
+----------------
+Path:           mnt/sources/install.wim
+GUID:           0x93729e9c55a84446aa29e70356e722ef
+Version:        68864
+Image Count:    1
+Compression:    LZX
+Chunk Size:     32768 bytes
+Part Number:    1/1
+Boot Index:     0
+Size:           3468252747 bytes
+Attributes:     Integrity info, Relative path junction
+
+Available Images:
+-----------------
+Index:                  1
+Name:                   Windows Server 2012 R2 SERVERSOLUTION
+Description:            Windows Server 2012 R2 SERVERSOLUTION
+Display Name:           Windows Server 2012 R2 Essentials
+Display Description:    This option is useful when a GUI is required—for example, to provide backward compatibility for an application that cannot be run on a Server Core installation. All server roles and features are supported. You can switch to a different installation option later. See "Windows Server Installation Options."
+Directory Count:        18861
+File Count:             80441
+Total Bytes:            12568990555
+Hard Link Bytes:        5015987674
+Creation Time:          Thu Aug 22 16:18:40 2013 UTC
+Last Modification Time: Thu Aug 22 16:19:13 2013 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ServerSolution
+Installation Type:      Server
+HAL:                    acpiapic
+Product Type:           ServerNT
+Product Suite:          Terminal Server
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          3
+Build:                  9600
+Service Pack Build:     16384
+Service Pack Level:     0
+Flags:                  ServerSolution
+WIMBoot compatible:     no

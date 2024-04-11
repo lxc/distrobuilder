@@ -1,0 +1,38 @@
+WIM Information:
+----------------
+Path:           winpe/amd64/media/sources/boot.wim
+GUID:           0x36f532ff377d1545a1c46bb542ec2d33
+Version:        68864
+Image Count:    1
+Compression:    LZX
+Chunk Size:     32768 bytes
+Part Number:    1/1
+Boot Index:     1
+Size:           479260185 bytes
+Attributes:     Relative path junction
+
+Available Images:
+-----------------
+Index:                  1
+Name:                   Microsoft Windows PE (amd64)
+Description:            Microsoft Windows PE (amd64)
+Directory Count:        5223
+File Count:             21703
+Total Bytes:            2894943499
+Hard Link Bytes:        1412981622
+Creation Time:          Sun Jun 11 03:56:01 2023 UTC
+Last Modification Time: Mon Apr 08 06:26:00 2024 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             WindowsPE
+Installation Type:      WindowsPE
+Product Type:           WinNT
+Languages:              en-US
+Default Language:       en-US
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  25398
+Service Pack Build:     1
+Service Pack Level:     0
+WIMBoot compatible:     no

@@ -1,0 +1,126 @@
+WIM Information:
+----------------
+Path:           mnt/sources/install.wim
+GUID:           0x41a6deaaee02144bbab39f7b76702517
+Version:        68864
+Image Count:    4
+Compression:    LZX
+Chunk Size:     32768 bytes
+Part Number:    1/1
+Boot Index:     0
+Size:           4679623853 bytes
+Attributes:     Relative path junction
+
+Available Images:
+-----------------
+Index:                  1
+Name:                   Windows Server 2019 SERVERSTANDARDCORE
+Description:            Windows Server 2019 SERVERSTANDARDCORE
+Display Name:           Windows Server 2019 Standard
+Display Description:    （推荐）此选项忽略大部分 Windows 图形环境。通过命令提示符和 PowerShell，或者远程使用 Windows Admin Center 或 其他工具进行管理。
+Directory Count:        17111
+File Count:             76416
+Total Bytes:            8795959091
+Hard Link Bytes:        3133166041
+Creation Time:          Mon Apr 13 18:58:20 2020 UTC
+Last Modification Time: Mon Apr 13 19:17:17 2020 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ServerStandard
+Installation Type:      Server Core
+Product Type:           ServerNT
+Product Suite:          Enterprise
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  17763
+Service Pack Build:     1158
+Service Pack Level:     0
+Flags:                  ServerStandardCore
+WIMBoot compatible:     no
+
+Index:                  2
+Name:                   Windows Server 2019 SERVERSTANDARD
+Description:            Windows Server 2019 SERVERSTANDARD
+Display Name:           Windows Server 2019 Standard (桌面体验)
+Display Description:    此选项将安装的完整的 Windows 图形环境，占用额外的驱动器空间。如果你想要使用 Windows 桌面或需要桌面的应用，则 它会很有用。
+Directory Count:        26077
+File Count:             115879
+Total Bytes:            15049640427
+Hard Link Bytes:        6147591299
+Creation Time:          Mon Apr 13 19:02:23 2020 UTC
+Last Modification Time: Mon Apr 13 19:19:36 2020 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ServerStandard
+Installation Type:      Server
+Product Type:           ServerNT
+Product Suite:          Enterprise
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  17763
+Service Pack Build:     1158
+Service Pack Level:     0
+Flags:                  ServerStandard
+WIMBoot compatible:     no
+
+Index:                  3
+Name:                   Windows Server 2019 SERVERDATACENTERCORE
+Description:            Windows Server 2019 SERVERDATACENTERCORE
+Display Name:           Windows Server 2019 Datacenter
+Display Description:    （推荐）此选项忽略大部分 Windows 图形环境。通过命令提示符和 PowerShell，或者远程使用 Windows Admin Center 或 其他工具进行管理。
+Directory Count:        17086
+File Count:             76143
+Total Bytes:            8801472338
+Hard Link Bytes:        3131056604
+Creation Time:          Mon Apr 13 18:57:30 2020 UTC
+Last Modification Time: Mon Apr 13 19:19:52 2020 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ServerDatacenter
+Installation Type:      Server Core
+Product Type:           ServerNT
+Product Suite:          Enterprise
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  17763
+Service Pack Build:     1158
+Service Pack Level:     0
+Flags:                  ServerDataCenterCore
+WIMBoot compatible:     no
+
+Index:                  4
+Name:                   Windows Server 2019 SERVERDATACENTER
+Description:            Windows Server 2019 SERVERDATACENTER
+Display Name:           Windows Server 2019 Datacenter (桌面体验)
+Display Description:    此选项将安装的完整的 Windows 图形环境，占用额外的驱动器空间。如果你想要使用 Windows 桌面或需要桌面的应用，则 它会很有用。
+Directory Count:        26050
+File Count:             115606
+Total Bytes:            15026918402
+Hard Link Bytes:        6144572172
+Creation Time:          Mon Apr 13 19:02:49 2020 UTC
+Last Modification Time: Mon Apr 13 19:20:20 2020 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             ServerDatacenter
+Installation Type:      Server
+Product Type:           ServerNT
+Product Suite:          Enterprise
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  17763
+Service Pack Build:     1158
+Service Pack Level:     0
+Flags:                  ServerDataCenter
+WIMBoot compatible:     no
