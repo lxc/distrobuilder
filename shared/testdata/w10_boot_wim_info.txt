@@ -1,0 +1,64 @@
+WIM Information:
+----------------
+Path:           sources/boot.wim
+GUID:           0x4f947169f6bbed469d0e2b31835e905a
+Version:        68864
+Image Count:    2
+Compression:    LZX
+Chunk Size:     32768 bytes
+Part Number:    1/1
+Boot Index:     2
+Size:           554679257 bytes
+Attributes:     Relative path junction
+
+Available Images:
+-----------------
+Index:                  1
+Name:                   Microsoft Windows PE (x64)
+Description:            Microsoft Windows PE (x64)
+Directory Count:        3906
+File Count:             17894
+Total Bytes:            1863578357
+Hard Link Bytes:        879328479
+Creation Time:          Sat Sep 15 13:29:29 2018 UTC
+Last Modification Time: Wed Mar 06 01:31:43 2019 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             WindowsPE
+Installation Type:      WindowsPE
+Product Type:           WinNT
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  17763
+Service Pack Build:     316
+Service Pack Level:     0
+Flags:                  9
+WIMBoot compatible:     no
+
+Index:                  2
+Name:                   Microsoft Windows Setup (x64)
+Description:            Microsoft Windows Setup (x64)
+Directory Count:        3942
+File Count:             18369
+Total Bytes:            2031424470
+Hard Link Bytes:        960282446
+Creation Time:          Sat Sep 15 13:29:51 2018 UTC
+Last Modification Time: Wed Mar 06 01:34:13 2019 UTC
+Architecture:           x86_64
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             WindowsPE
+Installation Type:      WindowsPE
+Product Type:           WinNT
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          10
+Minor Version:          0
+Build:                  17763
+Service Pack Build:     316
+Service Pack Level:     0
+Flags:                  2
+WIMBoot compatible:     no

@@ -101,7 +101,7 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 	}
 
 	c.defaultDrivers = "virtio-win.iso"
-	c.supportedVersions = []string{"w11", "w10", "2k19", "2k12", "2k16", "2k22"}
+	c.supportedVersions = []string{"w11", "w10", "w8", "w7", "2k19", "2k12", "2k16", "2k22", "2k3", "2k8", "xp", "2k12r2", "2k8r2", "w8.1"}
 	c.supportedArchitectures = []string{"amd64", "ARM64"}
 	cmd.Flags().StringVar(&c.flagDrivers, "drivers", c.defaultDrivers, "Path to virtio windowns drivers ISO file"+"``")
 	cmd.Flags().StringVar(&c.flagWindowsVersion, "windows-version", "",
@@ -117,13 +117,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	logger := c.global.logger
 
 	if c.flagWindowsVersion == "" {
-		detectedVersion := detectWindowsVersion(filepath.Base(args[0]))
-
-		if detectedVersion == "" {
-			return errors.New("Failed to detect Windows version. Please provide the version using the --windows-version flag")
-		}
-
-		c.flagWindowsVersion = detectedVersion
+		c.flagWindowsVersion = shared.DetectWindowsVersion(filepath.Base(args[0]))
 	} else {
 		if !slices.Contains(c.supportedVersions, c.flagWindowsVersion) {
 			return fmt.Errorf("Version must be one of %v", c.supportedVersions)
@@ -131,13 +125,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	}
 
 	if c.flagWindowsArchitecture == "" {
-		detectedArchitecture := detectWindowsArchitecture(filepath.Base(args[0]))
-
-		if detectedArchitecture == "" {
-			return errors.New("Failed to detect Windows architecture. Please provide the architecture using the --windows-arch flag")
-		}
-
-		c.flagWindowsArchitecture = detectedArchitecture
+		c.flagWindowsArchitecture = shared.DetectWindowsArchitecture(filepath.Base(args[0]))
 	} else {
 		if !slices.Contains(c.supportedArchitectures, c.flagWindowsArchitecture) {
 			return fmt.Errorf("Architecture must be one of %v", c.supportedArchitectures)
@@ -276,43 +264,42 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		return fmt.Errorf("Unable to find install.wim: %w", err)
 	}
 
-	var buf bytes.Buffer
-
-	err = shared.RunCommand(c.global.ctx, nil, &buf, "wimlib-imagex", "info", installWim)
+	bootWimInfo, err := c.getWimInfo(bootWim)
 	if err != nil {
-		return fmt.Errorf("Failed to retrieve wim file information: %w", err)
+		return fmt.Errorf("Failed to get boot wim info: %w", err)
 	}
 
-	indexes := []int{}
-	scanner := bufio.NewScanner(&buf)
+	installWimInfo, err := c.getWimInfo(installWim)
+	if err != nil {
+		return fmt.Errorf("Failed to get install wim info: %w", err)
+	}
 
-	for scanner.Scan() {
-		text := scanner.Text()
+	if c.flagWindowsVersion == "" {
+		c.flagWindowsVersion = shared.DetectWindowsVersion(installWimInfo.Name(1))
+	}
 
-		if strings.HasPrefix(text, "Index") {
-			fields := strings.Split(text, " ")
+	if c.flagWindowsArchitecture == "" {
+		c.flagWindowsArchitecture = shared.DetectWindowsArchitecture(installWimInfo.Architecture(1))
+	}
 
-			index, err := strconv.Atoi(fields[len(fields)-1])
-			if err != nil {
-				return fmt.Errorf("Failed to determine wim file indexes: %w", err)
-			}
+	if c.flagWindowsVersion == "" {
+		return errors.New("Failed to detect Windows version. Please provide the version using the --windows-version flag")
+	}
 
-			indexes = append(indexes, index)
-		}
+	if c.flagWindowsArchitecture == "" {
+		return errors.New("Failed to detect Windows architecture. Please provide the architecture using the --windows-arch flag")
 	}
 
 	// This injects the drivers into the installation process
-	err = c.modifyWim(bootWim, 2)
+	err = c.modifyWim(bootWim, bootWimInfo)
 	if err != nil {
-		return fmt.Errorf("Failed to modify index 2 of %q: %w", filepath.Base(bootWim), err)
+		return fmt.Errorf("Failed to modify wim %q: %w", filepath.Base(bootWim), err)
 	}
 
 	// This injects the drivers into the final OS
-	for _, idx := range indexes {
-		err = c.modifyWim(installWim, idx)
-		if err != nil {
-			return fmt.Errorf("Failed to modify index %d of %q: %w", idx, filepath.Base(installWim), err)
-		}
+	err = c.modifyWim(installWim, installWimInfo)
+	if err != nil {
+		return fmt.Errorf("Failed to modify wim %q: %w", filepath.Base(installWim), err)
 	}
 
 	logger.Info("Generating new ISO")
@@ -350,14 +337,43 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	return nil
 }
 
-func (c *cmdRepackWindows) modifyWim(path string, index int) error {
-	logger := c.global.logger
+func (c *cmdRepackWindows) getWimInfo(wimFile string) (info shared.WimInfo, err error) {
+	wimName := filepath.Base(wimFile)
+	var buf bytes.Buffer
+	err = shared.RunCommand(c.global.ctx, nil, &buf, "wimlib-imagex", "info", wimFile)
+	if err != nil {
+		err = fmt.Errorf("Failed to retrieve wim %q information: %w", wimName, err)
+		return
+	}
 
-	// Mount wim file
-	wimFile := filepath.Join(path)
+	info, err = shared.ParseWimInfo(&buf)
+	if err != nil {
+		err = fmt.Errorf("Failed to parse wim info %s: %w", wimFile, err)
+		return
+	}
+
+	return
+}
+
+func (c *cmdRepackWindows) modifyWim(wimFile string, info shared.WimInfo) (err error) {
+	wimName := filepath.Base(wimFile)
+	// Injects the drivers
+	for idx := 1; idx <= info.ImageCount(); idx++ {
+		name := info.Name(idx)
+		err = c.modifyWimIndex(wimFile, idx, name)
+		if err != nil {
+			return fmt.Errorf("Failed to modify index %d=%s of %q: %w", idx, name, wimName, err)
+		}
+	}
+	return
+}
+
+func (c *cmdRepackWindows) modifyWimIndex(wimFile string, index int, name string) error {
 	wimIndex := strconv.Itoa(index)
 	wimPath := filepath.Join(c.global.flagCacheDir, "wim", wimIndex)
-
+	wimName := filepath.Base(wimFile)
+	logger := c.global.logger.WithFields(logrus.Fields{"wim": strings.TrimSuffix(wimName, ".wim"),
+		"idx": wimIndex + ":" + name})
 	if !incus.PathExists(wimPath) {
 		err := os.MkdirAll(wimPath, 0755)
 		if err != nil {
@@ -366,10 +382,11 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 	}
 
 	success := false
-
+	logger.Info("Mounting")
+	// Mount wim file
 	err := shared.RunCommand(c.global.ctx, nil, nil, "wimlib-imagex", "mountrw", wimFile, wimIndex, wimPath, "--allow-other")
 	if err != nil {
-		return fmt.Errorf("Failed to mount %q: %w", filepath.Base(wimFile), err)
+		return fmt.Errorf("Failed to mount %q: %w", wimName, err)
 	}
 
 	defer func() {
@@ -383,17 +400,17 @@ func (c *cmdRepackWindows) modifyWim(path string, index int) error {
 		return fmt.Errorf("Failed to get required windows directories: %w", err)
 	}
 
-	logger.WithFields(logrus.Fields{"file": filepath.Base(path), "index": index}).Info("Modifying WIM file")
-
+	logger.Info("Modifying")
 	// Create registry entries and copy files
 	err = c.injectDrivers(dirs)
 	if err != nil {
 		return fmt.Errorf("Failed to inject drivers: %w", err)
 	}
 
+	logger.Info("Unmounting")
 	err = shared.RunCommand(c.global.ctx, nil, nil, "wimlib-imagex", "unmount", wimPath, "--commit")
 	if err != nil {
-		return fmt.Errorf("Failed to unmount WIM image: %w", err)
+		return fmt.Errorf("Failed to unmount WIM image %q: %w", wimName, err)
 	}
 
 	success = true
@@ -603,44 +620,6 @@ func (c *cmdRepackWindows) injectDrivers(dirs map[string]string) error {
 	}
 
 	return nil
-}
-
-func detectWindowsVersion(fileName string) string {
-	aliases := map[string][]string{
-		"w11":  {"w11", "win11", "windows.?11"},
-		"w10":  {"w10", "win10", "windows.?10"},
-		"2k19": {"2k19", "w2k19", "win2k19", "windows.?server.?2019"},
-		"2k12": {"2k12", "w2k12", "win2k12", "windows.?server.?2012"},
-		"2k16": {"2k16", "w2k16", "win2k16", "windows.?server.?2016"},
-		"2k22": {"2k22", "w2k22", "win2k22", "windows.?server.?2022"},
-	}
-
-	for k, v := range aliases {
-		for _, alias := range v {
-			if regexp.MustCompile(fmt.Sprintf("(?i)%s", alias)).MatchString(fileName) {
-				return k
-			}
-		}
-	}
-
-	return ""
-}
-
-func detectWindowsArchitecture(fileName string) string {
-	aliases := map[string][]string{
-		"amd64": {"amd64", "x64"},
-		"ARM64": {"arm64"},
-	}
-
-	for k, v := range aliases {
-		for _, alias := range v {
-			if regexp.MustCompile(fmt.Sprintf("(?i)%s", alias)).MatchString(fileName) {
-				return k
-			}
-		}
-	}
-
-	return ""
 }
 
 // toHex is a pongo2 filter which converts the provided value to a hex value understood by the Windows registry.
