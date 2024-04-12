@@ -9,6 +9,14 @@ import (
 	"strings"
 )
 
+var (
+	SupportedWindowsVersions = []string{
+		"w11", "w10", "w8", "w7", "2k19", "2k12", "2k16",
+		"2k22", "2k3", "2k8", "xp", "2k12r2", "2k8r2", "w8.1"}
+	SupportedWindowsArchitectures = []string{
+		"amd64", "ARM64", "x86"}
+)
+
 type WimInfo map[int]map[string]string
 
 func (info WimInfo) ImageCount() int {
@@ -25,6 +33,20 @@ func (info WimInfo) MajorVersion(index int) string {
 
 func (info WimInfo) Architecture(index int) string {
 	return info[index]["Architecture"]
+}
+
+type Aliases map[string][]string
+
+func (as Aliases) MatchString(desc string) string {
+	for k, v := range as {
+		for _, a := range v {
+			if regexp.MustCompile(fmt.Sprintf("(?i)%s", a)).MatchString(desc) {
+				return k
+			}
+		}
+	}
+
+	return ""
 }
 
 func ParseWimInfo(r io.Reader) (info WimInfo, err error) {
@@ -84,22 +106,17 @@ func ParseWimInfo(r io.Reader) (info WimInfo, err error) {
 	return
 }
 
-func DetectWindowsVersion(desc string) string {
-	aliases := map[string][]string{
+func DetectWindowsVersion(desc string) (version string) {
+	version = Aliases{
 		"2k12r2": {"2k12r2", "w2k12r2", "win2k12r2", "windows.?server.?2012?.r2"},
 		"2k8r2":  {"2k8r2", "w2k8r2", "win2k8r2", "windows.?server.?2008?.r2"},
 		"w8.1":   {"w8.1", "win8.1", "windows.?8.1"},
+	}.MatchString(desc)
+	if version != "" {
+		return
 	}
 
-	for k, v := range aliases {
-		for _, alias := range v {
-			if regexp.MustCompile(fmt.Sprintf("(?i)%s", alias)).MatchString(desc) {
-				return k
-			}
-		}
-	}
-
-	aliases = map[string][]string{
+	return Aliases{
 		"w11":  {"w11", "win11", "windows.?11"},
 		"w10":  {"w10", "win10", "windows.?10"},
 		"w8":   {"w8", "win8", "windows.?8"},
@@ -111,32 +128,19 @@ func DetectWindowsVersion(desc string) string {
 		"2k3":  {"2k3", "w2k3", "win2k3", "windows.?server.?2003"},
 		"2k8":  {"2k8", "w2k8", "win2k8", "windows.?server.?2008"},
 		"xp":   {"xp", "wxp", "winxp", "windows.?xp"},
-	}
-
-	for k, v := range aliases {
-		for _, alias := range v {
-			if regexp.MustCompile(fmt.Sprintf("(?i)%s", alias)).MatchString(desc) {
-				return k
-			}
-		}
-	}
-
-	return ""
+	}.MatchString(desc)
 }
 
-func DetectWindowsArchitecture(desc string) string {
-	aliases := map[string][]string{
+func DetectWindowsArchitecture(desc string) (arch string) {
+	arch = Aliases{
 		"amd64": {"amd64", "x64", "x86_64"},
 		"ARM64": {"arm64", "aarch64"},
+	}.MatchString(desc)
+	if arch != "" {
+		return
 	}
 
-	for k, v := range aliases {
-		for _, alias := range v {
-			if regexp.MustCompile(fmt.Sprintf("(?i)%s", alias)).MatchString(desc) {
-				return k
-			}
-		}
-	}
-
-	return ""
+	return Aliases{
+		"x86": {"x86_32", "x86"},
+	}.MatchString(desc)
 }

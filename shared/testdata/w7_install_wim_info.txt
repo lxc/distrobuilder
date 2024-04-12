@@ -1,0 +1,159 @@
+WIM Information:
+----------------
+Path:           mnt/sources/install.wim
+GUID:           0x4ff490bcaa35fe489fa00b6c63c6b4d7
+Version:        68864
+Image Count:    5
+Compression:    LZX
+Chunk Size:     32768 bytes
+Part Number:    1/1
+Boot Index:     0
+Size:           2241959924 bytes
+Attributes:     Integrity info, Relative path junction
+
+Available Images:
+-----------------
+Index:                  1
+Name:                   Windows 7 STARTER
+Description:            Windows 7 STARTER
+Display Name:           Windows 7 简易版
+Display Description:    Windows 7 简易版
+Directory Count:        9550
+File Count:             47318
+Total Bytes:            7983637109
+Hard Link Bytes:        3045021372
+Creation Time:          Tue Jul 14 05:24:44 2009 UTC
+Last Modification Time: Tue Jul 14 09:14:17 2009 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             Starter
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7600
+Service Pack Build:     16385
+Service Pack Level:     0
+Flags:                  Starter
+WIMBoot compatible:     no
+
+Index:                  2
+Name:                   Windows 7 HOMEBASIC
+Description:            Windows 7 HOMEBASIC
+Display Name:           Windows 7 家庭普通版
+Display Description:    Windows 7 家庭普通版
+Directory Count:        9561
+File Count:             47403
+Total Bytes:            8003795881
+Hard Link Bytes:        3060203459
+Creation Time:          Tue Jul 14 05:24:44 2009 UTC
+Last Modification Time: Tue Jul 14 09:15:04 2009 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             HomeBasic
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7600
+Service Pack Build:     16385
+Service Pack Level:     0
+Flags:                  HomeBasic
+WIMBoot compatible:     no
+
+Index:                  3
+Name:                   Windows 7 HOMEPREMIUM
+Description:            Windows 7 HOMEPREMIUM
+Display Name:           Windows 7 家庭高级版
+Display Description:    Windows 7 家庭高级版
+Directory Count:        9779
+File Count:             48416
+Total Bytes:            8445655979
+Hard Link Bytes:        3439427655
+Creation Time:          Tue Jul 14 05:24:44 2009 UTC
+Last Modification Time: Tue Jul 14 09:15:50 2009 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             HomePremium
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7600
+Service Pack Build:     16385
+Service Pack Level:     0
+Flags:                  HomePremium
+WIMBoot compatible:     no
+
+Index:                  4
+Name:                   Windows 7 PROFESSIONAL
+Description:            Windows 7 PROFESSIONAL
+Display Name:           Windows 7 专业版
+Display Description:    Windows 7 专业版
+Directory Count:        9836
+File Count:             48866
+Total Bytes:            8326968857
+Hard Link Bytes:        3305882953
+Creation Time:          Tue Jul 14 05:24:44 2009 UTC
+Last Modification Time: Tue Jul 14 09:16:14 2009 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             Professional
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7600
+Service Pack Build:     16385
+Service Pack Level:     0
+Flags:                  Professional
+WIMBoot compatible:     no
+
+Index:                  5
+Name:                   Windows 7 ULTIMATE
+Description:            Windows 7 ULTIMATE
+Display Name:           Windows 7 旗舰版
+Display Description:    Windows 7 旗舰版
+Directory Count:        9866
+File Count:             49019
+Total Bytes:            8485352280
+Hard Link Bytes:        3463057728
+Creation Time:          Tue Jul 14 05:24:44 2009 UTC
+Last Modification Time: Tue Jul 14 09:16:39 2009 UTC
+Architecture:           x86
+Product Name:           Microsoft® Windows® Operating System
+Edition ID:             Ultimate
+Installation Type:      Client
+HAL:                    acpiapic
+Product Type:           WinNT
+Product Suite:          Terminal Server
+Languages:              zh-CN
+Default Language:       zh-CN
+System Root:            WINDOWS
+Major Version:          6
+Minor Version:          1
+Build:                  7600
+Service Pack Build:     16385
+Service Pack Level:     0
+Flags:                  Ultimate
+WIMBoot compatible:     no
