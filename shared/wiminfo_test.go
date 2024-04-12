@@ -67,6 +67,7 @@ func TestDetectWindowsVersion(t *testing.T) {
 		{"testdata/2k19_install_wim_info.txt", "2k19", "amd64"},
 		{"testdata/w8_install_wim_info.txt", "w8", "amd64"},
 		{"testdata/2k12r2_install_wim_info.txt", "2k12r2", "amd64"},
+		{"testdata/w7_install_wim_info.txt", "w7", "x86"},
 	}
 
 	for _, tc := range tcs {
@@ -185,6 +186,11 @@ func TestDetectWindowsVersionFromFilename(t *testing.T) {
 			args{"Windows_Server_2k12.iso"},
 			"2k12",
 		},
+		{
+			"Windows 7",
+			args{"cn_windows_7_professional_x86_dvd_x15-65790.iso"},
+			"w7",
+		},
 	}
 
 	for _, tt := range tests {
@@ -216,6 +222,11 @@ func TestDetectWindowsArchitectureFromFilename(t *testing.T) {
 			"Windows 11 (2)",
 			args{"Win10_22H2_English_arm64.iso"},
 			"ARM64",
+		},
+		{
+			"Windows 7",
+			args{"cn_windows_7_professional_x86_dvd_x15-65790.iso"},
+			"x86",
 		},
 	}
 

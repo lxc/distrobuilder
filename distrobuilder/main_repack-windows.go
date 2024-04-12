@@ -33,10 +33,8 @@ type cmdRepackWindows struct {
 	flagWindowsVersion      string
 	flagWindowsArchitecture string
 
-	defaultDrivers         string
-	supportedVersions      []string
-	supportedArchitectures []string
-	umounts                []string
+	defaultDrivers string
+	umounts        []string
 }
 
 func init() {
@@ -101,13 +99,11 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 	}
 
 	c.defaultDrivers = "virtio-win.iso"
-	c.supportedVersions = []string{"w11", "w10", "w8", "w7", "2k19", "2k12", "2k16", "2k22", "2k3", "2k8", "xp", "2k12r2", "2k8r2", "w8.1"}
-	c.supportedArchitectures = []string{"amd64", "ARM64"}
 	cmd.Flags().StringVar(&c.flagDrivers, "drivers", c.defaultDrivers, "Path to virtio windowns drivers ISO file"+"``")
 	cmd.Flags().StringVar(&c.flagWindowsVersion, "windows-version", "",
-		"Windows version to repack, must be one of ["+strings.Join(c.supportedVersions, ", ")+"]``")
+		"Windows version to repack, must be one of ["+strings.Join(shared.SupportedWindowsVersions, ", ")+"]``")
 	cmd.Flags().StringVar(&c.flagWindowsArchitecture, "windows-arch", "",
-		"Windows architecture to repack, must be one of ["+strings.Join(c.supportedArchitectures, ", ")+"]``")
+		"Windows architecture to repack, must be one of ["+strings.Join(shared.SupportedWindowsArchitectures, ", ")+"]``")
 
 	return cmd
 }
@@ -119,16 +115,16 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	if c.flagWindowsVersion == "" {
 		c.flagWindowsVersion = shared.DetectWindowsVersion(filepath.Base(args[0]))
 	} else {
-		if !slices.Contains(c.supportedVersions, c.flagWindowsVersion) {
-			return fmt.Errorf("Version must be one of %v", c.supportedVersions)
+		if !slices.Contains(shared.SupportedWindowsVersions, c.flagWindowsVersion) {
+			return fmt.Errorf("Version must be one of %v", shared.SupportedWindowsVersions)
 		}
 	}
 
 	if c.flagWindowsArchitecture == "" {
 		c.flagWindowsArchitecture = shared.DetectWindowsArchitecture(filepath.Base(args[0]))
 	} else {
-		if !slices.Contains(c.supportedArchitectures, c.flagWindowsArchitecture) {
-			return fmt.Errorf("Architecture must be one of %v", c.supportedArchitectures)
+		if !slices.Contains(shared.SupportedWindowsArchitectures, c.flagWindowsArchitecture) {
+			return fmt.Errorf("Architecture must be one of %v", shared.SupportedWindowsArchitectures)
 		}
 	}
 
