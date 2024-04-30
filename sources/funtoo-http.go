@@ -3,14 +3,8 @@ package sources
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"path/filepath"
-	"regexp"
-	"sort"
-	"strings"
-
-	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
 )
@@ -42,43 +36,9 @@ func (s *funtoo) Run() error {
 		s.definition.Source.URL, s.definition.Image.Release,
 		topLevelArch, s.definition.Image.ArchitectureMapped)
 
-	releaseDates, err := s.getReleaseDates(baseURL)
-	if err != nil {
-		return fmt.Errorf("Failed to get release dates: %w", err)
-	}
-
-	var fname string
-	var tarball string
-
-	// Find a valid release tarball
-	for i := len(releaseDates) - 1; i >= 0; i-- {
-		fname = fmt.Sprintf("stage3-%s-%s-%s.tar.xz",
-			s.definition.Image.ArchitectureMapped, s.definition.Image.Release, releaseDates[i])
-		tarball = fmt.Sprintf("%s/%s/%s", baseURL, releaseDates[i], fname)
-
-		var (
-			resp *http.Response
-			err  error
-		)
-
-		err = shared.Retry(func() error {
-			resp, err = http.Head(tarball)
-			if err != nil {
-				return fmt.Errorf("Failed to call HEAD on %q: %w", tarball, err)
-			}
-
-			return nil
-		}, 3)
-		if err != nil {
-			return err
-		}
-
-		if resp.StatusCode == http.StatusNotFound {
-			continue
-		}
-
-		break
-	}
+	// Get the latest release tarball.
+	fname := "stage3-latest.tar.xz"
+	tarball := fmt.Sprintf("%s/%s", baseURL, fname)
 
 	url, err := url.Parse(tarball)
 	if err != nil {
@@ -125,30 +85,4 @@ func (s *funtoo) Run() error {
 	}
 
 	return nil
-}
-
-func (s *funtoo) getReleaseDates(URL string) ([]string, error) {
-	doc, err := htmlquery.LoadURL(URL)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to load URL %q: %w", URL, err)
-	}
-
-	re := regexp.MustCompile(`^\d{4}\-\d{2}\-\d{2}/?$`)
-
-	var dirs []string
-
-	for _, node := range htmlquery.Find(doc, `//a[@href]/text()`) {
-		if re.MatchString(node.Data) {
-			dirs = append(dirs, strings.TrimSuffix(node.Data, "/"))
-		}
-	}
-
-	if len(dirs) == 0 {
-		return nil, errors.New("Failed to get release dates")
-	}
-
-	// Sort dirs in case they're out-of-order
-	sort.Strings(dirs)
-
-	return dirs, nil
 }
