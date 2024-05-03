@@ -40,7 +40,7 @@ func (s *archlinux) Run() error {
 	var tarball string
 
 	if s.definition.Image.ArchitectureMapped == "x86_64" {
-		fname = fmt.Sprintf("archlinux-bootstrap-%s-%s.tar.gz",
+		fname = fmt.Sprintf("archlinux-bootstrap-%s-%s.tar.zst",
 			release, s.definition.Image.ArchitectureMapped)
 		tarball = fmt.Sprintf("%s/%s/%s", s.definition.Source.URL,
 			release, fname)
