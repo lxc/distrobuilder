@@ -307,13 +307,22 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	}
 
 	version := strings.Split(stdout.String(), "\n")[0]
-	genArgs := []string{"--allow-limited-size"}
+	genArgs := []string{"-l", "-iso-level", "4", "-no-emul-boot",
+		"-b", "boot/etfsboot.com", "-boot-load-seg", "0",
+		"-boot-load-size", "8", "-eltorito-alt-boot"}
 	if strings.HasPrefix(version, "mkisofs") {
-		genArgs = []string{"-iso-level", "3"}
+		genArgs = append(genArgs,
+			"-eltorito-platform", "efi", "-no-emul-boot",
+			"-b", "efi/microsoft/boot/efisys.bin",
+			"-boot-load-size", "1", "-UDF")
+	} else {
+		genArgs = append(genArgs,
+			"--allow-limited-size", "-no-emul-boot",
+			"-e", "efi/microsoft/boot/efisys.bin",
+			"-boot-load-size", "1", "-udf")
 	}
 
-	genArgs = append(genArgs, "-input-charset", "utf-8", "-l", "-no-emul-boot",
-		"-b", "efi/microsoft/boot/efisys.bin", "-o", args[1], overlayDir)
+	genArgs = append(genArgs, "-o", args[1], overlayDir)
 	err = shared.RunCommand(context.WithValue(c.global.ctx, shared.ContextKeyStderr,
 		shared.WriteFunc(func(b []byte) (int, error) {
 			for i := range b {
