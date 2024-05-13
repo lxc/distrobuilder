@@ -54,10 +54,10 @@ func CaseInsensitive(s string) (pattern string) {
 		b := s2[i : i+1]
 		if a != b {
 			pattern += "[" + a + b + "]"
-		} else if a != "/" {
-			pattern += "\\" + a
+		} else if strings.Contains("?*[]/", a) {
+			pattern += a
 		} else {
-			pattern += "/"
+			pattern += "\\" + a
 		}
 	}
 	return
@@ -70,13 +70,14 @@ func FindFirstMatch(dir string, elem ...string) (found string, err error) {
 		names = append(names, CaseInsensitive(name))
 	}
 
-	matches, err := filepath.Glob(filepath.Join(names...))
+	pattern := filepath.Join(names...)
+	matches, err := filepath.Glob(pattern)
 	if err != nil {
 		return
 	}
 
 	if len(matches) == 0 {
-		err = fmt.Errorf("No match found")
+		err = fmt.Errorf("No match found %s", pattern)
 		return
 	}
 
