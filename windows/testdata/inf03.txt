@@ -1,0 +1,27 @@
+;/*++
+;
+;Copyright (c) 2008-2023 Red Hat Inc.
+;
+;
+;Module Name:
+;    viostor.inf
+;
+;Abstract:
+;
+;Installation Notes:
+;    Step by step driver installation wiki:
+;        https://github.com/virtio-win/kvm-guest-drivers-windows/wiki/Driver-installation
+;
+;--*/
+
+;[Version]
+Signature="$Windows NT$"
+Class=SCSIAdapter
+;ClassGUID={4d36e97b-e325-11ce-bfc1-08002be10318}
+ClassGUID={4D36E97B-E325-11CE-BFC1-08002BE10318}
+Provider=%VENDOR%
+DriverVer = 02/25/2024,100.94.104.24800
+CatalogFile=viostor.cat
+DriverPackageType = PlugAndPlay
+DriverPackageDisplayName = %VioStorScsi.DeviceDesc%
+PnpLockdown=1
