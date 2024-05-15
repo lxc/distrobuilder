@@ -31,4 +31,5 @@ For more on `packages`, see [packages](packages.md).
 
 And last, after the `files` section has been processed, all `post-files` actions are run.
 This action runs only for `build-lxc`, `build-incus`, `pack-lxc`, and `pack-incus`.
+You can also force enable post-files for `build-dir` with option `--with-post-files`
 For more on `files`, see [generators](generators.md).
