@@ -167,7 +167,7 @@ is_in_path NetworkManager && nm_exists=1
 for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
 	[ -x "${path}" ] || continue
 
-	systemd_version="$("${path}" --version | head -n1 | cut -d' ' -f2)"
+	systemd_version="$("${path}" --version | head -n1 | cut -d' ' -f2 | cut -d'~' -f1)"
 	break
 done
 
