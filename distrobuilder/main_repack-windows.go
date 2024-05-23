@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/hex"
@@ -11,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -101,9 +99,9 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 	c.defaultDrivers = "virtio-win.iso"
 	cmd.Flags().StringVar(&c.flagDrivers, "drivers", c.defaultDrivers, "Path to virtio windowns drivers ISO file"+"``")
 	cmd.Flags().StringVar(&c.flagWindowsVersion, "windows-version", "",
-		"Windows version to repack, must be one of ["+strings.Join(shared.SupportedWindowsVersions, ", ")+"]``")
+		"Windows version to repack, must be one of ["+strings.Join(windows.SupportedWindowsVersions, ", ")+"]``")
 	cmd.Flags().StringVar(&c.flagWindowsArchitecture, "windows-arch", "",
-		"Windows architecture to repack, must be one of ["+strings.Join(shared.SupportedWindowsArchitectures, ", ")+"]``")
+		"Windows architecture to repack, must be one of ["+strings.Join(windows.SupportedWindowsArchitectures, ", ")+"]``")
 
 	return cmd
 }
@@ -113,18 +111,18 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	logger := c.global.logger
 
 	if c.flagWindowsVersion == "" {
-		c.flagWindowsVersion = shared.DetectWindowsVersion(filepath.Base(args[0]))
+		c.flagWindowsVersion = windows.DetectWindowsVersion(filepath.Base(args[0]))
 	} else {
-		if !slices.Contains(shared.SupportedWindowsVersions, c.flagWindowsVersion) {
-			return fmt.Errorf("Version must be one of %v", shared.SupportedWindowsVersions)
+		if !slices.Contains(windows.SupportedWindowsVersions, c.flagWindowsVersion) {
+			return fmt.Errorf("Version must be one of %v", windows.SupportedWindowsVersions)
 		}
 	}
 
 	if c.flagWindowsArchitecture == "" {
-		c.flagWindowsArchitecture = shared.DetectWindowsArchitecture(filepath.Base(args[0]))
+		c.flagWindowsArchitecture = windows.DetectWindowsArchitecture(filepath.Base(args[0]))
 	} else {
-		if !slices.Contains(shared.SupportedWindowsArchitectures, c.flagWindowsArchitecture) {
-			return fmt.Errorf("Architecture must be one of %v", shared.SupportedWindowsArchitectures)
+		if !slices.Contains(windows.SupportedWindowsArchitectures, c.flagWindowsArchitecture) {
+			return fmt.Errorf("Architecture must be one of %v", windows.SupportedWindowsArchitectures)
 		}
 	}
 
@@ -271,11 +269,11 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	}
 
 	if c.flagWindowsVersion == "" {
-		c.flagWindowsVersion = shared.DetectWindowsVersion(installWimInfo.Name(1))
+		c.flagWindowsVersion = windows.DetectWindowsVersion(installWimInfo.Name(1))
 	}
 
 	if c.flagWindowsArchitecture == "" {
-		c.flagWindowsArchitecture = shared.DetectWindowsArchitecture(installWimInfo.Architecture(1))
+		c.flagWindowsArchitecture = windows.DetectWindowsArchitecture(installWimInfo.Architecture(1))
 	}
 
 	if c.flagWindowsVersion == "" {
@@ -342,7 +340,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	return nil
 }
 
-func (c *cmdRepackWindows) getWimInfo(wimFile string) (info shared.WimInfo, err error) {
+func (c *cmdRepackWindows) getWimInfo(wimFile string) (info windows.WimInfo, err error) {
 	wimName := filepath.Base(wimFile)
 	var buf bytes.Buffer
 	err = shared.RunCommand(c.global.ctx, nil, &buf, "wimlib-imagex", "info", wimFile)
@@ -351,7 +349,7 @@ func (c *cmdRepackWindows) getWimInfo(wimFile string) (info shared.WimInfo, err 
 		return
 	}
 
-	info, err = shared.ParseWimInfo(&buf)
+	info, err = windows.ParseWimInfo(&buf)
 	if err != nil {
 		err = fmt.Errorf("Failed to parse wim info %s: %w", wimFile, err)
 		return
@@ -360,7 +358,7 @@ func (c *cmdRepackWindows) getWimInfo(wimFile string) (info shared.WimInfo, err 
 	return
 }
 
-func (c *cmdRepackWindows) modifyWim(wimFile string, info shared.WimInfo) (err error) {
+func (c *cmdRepackWindows) modifyWim(wimFile string, info windows.WimInfo) (err error) {
 	wimName := filepath.Base(wimFile)
 	// Injects the drivers
 	for idx := 1; idx <= info.ImageCount(); idx++ {
@@ -505,7 +503,7 @@ func (c *cmdRepackWindows) injectDrivers(infDir, driversDir, filerepositoryDir, 
 			}
 		}
 
-		classGuid, err := parseDriverClassGuid(driverName, filepath.Join(infDir, infFilename))
+		classGuid, err := windows.ParseDriverClassGuid(driverName, filepath.Join(infDir, infFilename))
 		if err != nil {
 			return err
 		}
@@ -587,33 +585,6 @@ func (c *cmdRepackWindows) injectDrivers(infDir, driversDir, filerepositoryDir, 
 	}
 
 	return nil
-}
-
-func parseDriverClassGuid(driverName, infPath string) (classGuid string, err error) {
-	// Retrieve the ClassGuid which is needed for the Windows registry entries.
-	file, err := os.Open(infPath)
-	if err != nil {
-		err = fmt.Errorf("Failed to open driver %s inf %s: %w", driverName, infPath, err)
-		return
-	}
-
-	defer func() {
-		file.Close()
-		if classGuid == "" {
-			err = fmt.Errorf("Failed to parse driver %s classGuid %s", driverName, infPath)
-		}
-	}()
-	re := regexp.MustCompile(`(?i)^ClassGuid[ ]*=[ ]*(.+)$`)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		matches := re.FindStringSubmatch(scanner.Text())
-		if len(matches) > 1 {
-			classGuid = strings.TrimSpace(matches[1])
-			return
-		}
-	}
-
-	return
 }
 
 // toHex is a pongo2 filter which converts the provided value to a hex value understood by the Windows registry.
