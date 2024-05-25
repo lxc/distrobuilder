@@ -21,6 +21,7 @@ type vm struct {
 	loopDevice string
 	rootFS     string
 	rootfsDir  string
+	bootfsDir  string
 	size       uint64
 	ctx        context.Context
 }
@@ -250,7 +251,7 @@ func (v *vm) createRootFS() error {
 		}
 
 		defer func() {
-			_ = shared.RunCommand(v.ctx, nil, nil, "umount", v.rootfsDir)
+			_ = v.umountPartition(v.rootfsDir)
 		}()
 
 		return shared.RunCommand(v.ctx, nil, nil, "btrfs", "subvolume", "create", fmt.Sprintf("%s/@", v.rootfsDir))
@@ -289,12 +290,30 @@ func (v *vm) mountUEFIPartition() error {
 		return errors.New("Disk image not mounted")
 	}
 
-	mountpoint := filepath.Join(v.rootfsDir, "boot", "efi")
+	v.bootfsDir = filepath.Join(v.rootfsDir, "boot", "efi")
 
-	err := os.MkdirAll(mountpoint, 0755)
+	err := os.MkdirAll(v.bootfsDir, 0755)
 	if err != nil {
-		return fmt.Errorf("Failed to create directory %q: %w", mountpoint, err)
+		return fmt.Errorf("Failed to create directory %q: %w", v.bootfsDir, err)
 	}
 
-	return shared.RunCommand(v.ctx, nil, nil, "mount", "-t", "vfat", v.getUEFIDevFile(), mountpoint, "-o", "discard")
+	return shared.RunCommand(v.ctx, nil, nil, "mount", "-t", "vfat", v.getUEFIDevFile(), v.bootfsDir, "-o", "discard")
+}
+
+func (v *vm) umountPartition(mountpoint string) (err error) {
+	err = v.checkMountpoint(mountpoint)
+	if err != nil {
+		return
+	}
+
+	return shared.RunCommand(v.ctx, nil, nil, "umount", "-R", mountpoint)
+}
+
+func (v *vm) checkMountpoint(mountpoint string) (err error) {
+	err = shared.RunCommand(v.ctx, nil, nil, "mountpoint", mountpoint)
+	if err != nil {
+		err = fmt.Errorf("%s not mounted: %w", mountpoint, err)
+	}
+
+	return err
 }
