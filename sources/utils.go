@@ -168,6 +168,11 @@ func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []st
 
 	if keyserver != "" {
 		args = append(args, "--keyserver", keyserver)
+		httpProxy := getEnvHttpProxy()
+		if httpProxy != "" {
+			args = append(args, "--keyserver-options",
+				fmt.Sprintf("http-proxy=%s", httpProxy))
+		}
 	}
 
 	args = append(args, append([]string{"--recv-keys"}, fingerprints...)...)
@@ -215,4 +220,15 @@ func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []st
 	}
 
 	return true, nil
+}
+
+func getEnvHttpProxy() (httpProxy string) {
+	for _, key := range []string{"http_proxy",
+		"HTTP_PROXY", "https_proxy", "HTTPS_PROXY"} {
+		if httpProxy = os.Getenv(key); httpProxy != "" {
+			return
+		}
+	}
+
+	return
 }
