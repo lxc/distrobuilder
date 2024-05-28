@@ -2,7 +2,10 @@ package sources
 
 import (
 	"bytes"
+	"context"
+	_ "embed"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -145,5 +148,129 @@ Z4iksZrx82g=
 	for _, tt := range tests {
 		got := getChecksum(tt.args.fname, tt.args.hashLen, tt.args.r)
 		require.Equal(t, tt.want, got)
+	}
+}
+
+var (
+	//go:embed "testdata/key1.pub"
+	testdataKey1 string
+	//go:embed "testdata/key2.pub"
+	testdataKey2 string
+	//go:embed "testdata/key3.pub"
+	testdataKey3 string
+	//go:embed "testdata/key4.pub"
+	testdataKey4 string
+	//go:embed "testdata/key5.pub"
+	testdataKey5 string
+)
+
+func TestShowFingerprint(t *testing.T) {
+	tcs := []struct {
+		publicKey string
+		want      string
+	}{
+		{testdataKey1, "A1BD8E9D78F7FE5C3E65D8AF8B48AD6246925553"},
+		{testdataKey2, "F6ECB3762474EDA9D21B7022871920D1991BC93C"},
+		{testdataKey3, "790BC7277767219C42C86F933B4FE6ACC0B21F32"},
+		{testdataKey4, "CF24B9C038097D8A44958E2C8DEBDA68B48282A4"},
+		{testdataKey5, "C1DAC52D1664E8A4386DBA430946FCA2C105B9DE"},
+		{"invalid public key", ""},
+	}
+
+	for _, tc := range tcs {
+		t.Run("", func(t *testing.T) {
+			gpgDir, err := os.MkdirTemp("", "gpg")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			defer func() {
+				os.RemoveAll(gpgDir)
+			}()
+			fingerprint, err := showFingerprint(context.Background(), gpgDir, tc.publicKey)
+			if tc.want == "" {
+				if err == nil {
+					t.Fatal(err)
+				}
+			} else {
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if fingerprint != tc.want {
+					t.Fatal(fingerprint, tc.want)
+				}
+			}
+		})
+	}
+}
+
+func TestImportPublicKeys(t *testing.T) {
+	tcs := []struct {
+		publicKeys []string
+		want       string
+	}{
+		{[]string{testdataKey1, testdataKey2, testdataKey3, testdataKey4, testdataKey5}, "OK"},
+		{[]string{testdataKey1, testdataKey2, testdataKey3, testdataKey4, testdataKey5, testdataKey1}, "OK"},
+		{[]string{testdataKey1, testdataKey2, testdataKey3, testdataKey4, testdataKey5, "invalid public key"}, "NotOK"},
+	}
+
+	for _, tc := range tcs {
+		t.Run("", func(t *testing.T) {
+			gpgDir, err := os.MkdirTemp("", "gpg")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			defer func() {
+				os.RemoveAll(gpgDir)
+			}()
+			err = importPublicKeys(context.Background(), gpgDir, tc.publicKeys)
+			if tc.want == "OK" {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				if err == nil {
+					t.Fatal()
+				}
+			}
+		})
+	}
+}
+
+func TestRecvGPGKeys(t *testing.T) {
+	tcs := []struct {
+		keys []string
+		want bool
+	}{
+		{[]string{testdataKey1, testdataKey2, testdataKey3, testdataKey4, testdataKey5}, true},
+		{[]string{testdataKey1, testdataKey2, testdataKey3, testdataKey4, testdataKey5,
+			`-----BEGIN PGP PUBLIC KEY BLOCK-----
+invalid public key`}, false},
+	}
+
+	for _, tc := range tcs {
+		t.Run("", func(t *testing.T) {
+			gpgDir, err := os.MkdirTemp("", "gpg")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			want, err := recvGPGKeys(context.Background(), gpgDir, "", tc.keys)
+			if want != tc.want {
+				t.Fatal(want, tc.want, err)
+			}
+
+			if tc.want {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				if err == nil {
+					t.Fatal()
+				}
+			}
+		})
 	}
 }

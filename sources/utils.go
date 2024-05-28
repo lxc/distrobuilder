@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	incus "github.com/lxc/incus/v6/shared/util"
@@ -136,36 +137,111 @@ func getChecksum(fname string, hashLen int, r io.Reader) []string {
 	return nil
 }
 
-func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []string) (bool, error) {
-	args := []string{"--homedir", gpgDir}
+func gpgCommandContext(ctx context.Context, gpgDir string, args ...string) (cmd *exec.Cmd) {
+	cmd = exec.CommandContext(ctx, "gpg", append([]string{"--homedir", gpgDir}, args...)...)
+	cmd.Env = append(os.Environ(), "LANG=C.UTF-8")
+	return
+}
 
-	var fingerprints []string
-	var publicKeys []string
-
-	for _, k := range keys {
-		if strings.HasPrefix(strings.TrimSpace(k), "-----BEGIN PGP PUBLIC KEY BLOCK-----") {
-			publicKeys = append(publicKeys, strings.TrimSpace(k))
-		} else {
-			fingerprints = append(fingerprints, strings.TrimSpace(k))
-		}
+func showFingerprint(ctx context.Context, gpgDir string, publicKey string) (fingerprint string, err error) {
+	cmd := gpgCommandContext(ctx, gpgDir, "--show-keys")
+	cmd.Stdin = strings.NewReader(publicKey)
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stdout
+	err = cmd.Run()
+	if err != nil {
+		err = fmt.Errorf("%s", stdout.String())
+		return
 	}
 
-	for _, f := range publicKeys {
-		args := append(args, "--import")
+	lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if notFingerprint(line) {
+			continue
+		}
 
-		cmd := exec.CommandContext(ctx, "gpg", args...)
+		fingerprint = line
+		return
+	}
+
+	if fingerprint == "" {
+		err = fmt.Errorf("failed to get fingerprint from public key: %s, %v", publicKey, lines)
+		return
+	}
+
+	return
+}
+
+func notFingerprint(line string) bool {
+	return len(line) != 40 ||
+		strings.HasPrefix(line, "/") ||
+		strings.HasPrefix(line, "-") ||
+		strings.HasPrefix(line, "pub") ||
+		strings.HasPrefix(line, "sub") ||
+		strings.HasPrefix(line, "uid")
+}
+
+func listFingerprints(ctx context.Context, gpgDir string) (fingerprints []string, err error) {
+	cmd := gpgCommandContext(ctx, gpgDir, "--list-keys")
+	var buffer bytes.Buffer
+	cmd.Stdout = &buffer
+	err = cmd.Run()
+	if err != nil {
+		return
+	}
+
+	lines := strings.Split(buffer.String(), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if notFingerprint(line) {
+			continue
+		}
+
+		fingerprints = append(fingerprints, line)
+	}
+
+	return
+}
+
+func importPublicKeys(ctx context.Context, gpgDir string, publicKeys []string) (err error) {
+	fingerprints := make([]string, len(publicKeys))
+	for i, f := range publicKeys {
+		fingerprints[i], err = showFingerprint(ctx, gpgDir, f)
+		if err != nil {
+			return
+		}
+
+		cmd := gpgCommandContext(ctx, gpgDir, "--import")
 		cmd.Stdin = strings.NewReader(f)
-		cmd.Env = append(os.Environ(), "LANG=C.UTF-8")
 
 		var buffer bytes.Buffer
 		cmd.Stderr = &buffer
-
-		err := cmd.Run()
+		err = cmd.Run()
 		if err != nil {
-			return false, fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
+			err = fmt.Errorf("failed to run: %s: %s",
+				strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
+			return
 		}
 	}
 
+	importedFingerprints, err := listFingerprints(ctx, gpgDir)
+	if err != nil {
+		return
+	}
+
+	for i, fingerprint := range fingerprints {
+		if !slices.Contains(importedFingerprints, fingerprint) {
+			err = fmt.Errorf("fingerprint %s of publickey %s not imported", fingerprint, publicKeys[i])
+			return
+		}
+	}
+	return
+}
+
+func recvFingerprints(ctx context.Context, gpgDir string, keyserver string, fingerprints []string) (err error) {
+	args := []string{}
 	if keyserver != "" {
 		args = append(args, "--keyserver", keyserver)
 		httpProxy := getEnvHttpProxy()
@@ -175,17 +251,15 @@ func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []st
 		}
 	}
 
-	args = append(args, append([]string{"--recv-keys"}, fingerprints...)...)
-
-	cmd := exec.CommandContext(ctx, "gpg", args...)
-	cmd.Env = append(os.Environ(), "LANG=C.UTF-8")
-
+	args = append(args, "--recv-keys")
+	cmd := gpgCommandContext(ctx, gpgDir, append(args, fingerprints...)...)
 	var buffer bytes.Buffer
 	cmd.Stderr = &buffer
 
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
-		return false, fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
+		err = fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
+		return
 	}
 
 	// Verify output
@@ -204,7 +278,6 @@ func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []st
 	if len(importedKeys) < len(fingerprints) {
 		for _, j := range fingerprints {
 			found := false
-
 			for _, k := range importedKeys {
 				if strings.HasSuffix(j, k) {
 					found = true
@@ -215,8 +288,32 @@ func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []st
 				missingKeys = append(missingKeys, j)
 			}
 		}
+		err = fmt.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
+	}
 
-		return false, fmt.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
+	return
+}
+
+func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []string) (bool, error) {
+	var fingerprints []string
+	var publicKeys []string
+
+	for _, k := range keys {
+		if strings.HasPrefix(strings.TrimSpace(k), "-----BEGIN PGP PUBLIC KEY BLOCK-----") {
+			publicKeys = append(publicKeys, strings.TrimSpace(k))
+		} else {
+			fingerprints = append(fingerprints, strings.TrimSpace(k))
+		}
+	}
+
+	err := importPublicKeys(ctx, gpgDir, publicKeys)
+	if err != nil {
+		return false, err
+	}
+
+	err = recvFingerprints(ctx, gpgDir, keyserver, fingerprints)
+	if err != nil {
+		return false, err
 	}
 
 	return true, nil
