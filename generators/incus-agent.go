@@ -72,11 +72,6 @@ eject "${CDROM}" >/dev/null 2>&1 || true
 # Fix up permissions.
 chown -R root:root "${PREFIX}"
 
-# Legacy.
-if [ ! -e "${PREFIX}/incus-agent" ] && [ -e "${PREFIX}/lxd-agent" ]; then
-    ln -s lxd-agent "${PREFIX}"/incus-agent
-fi
-
 # Attempt to restore SELinux labels.
 restorecon -R "${PREFIX}" >/dev/null 2>&1 || true
 
@@ -170,9 +165,6 @@ StartLimitBurst=10
 	}
 
 	incusAgentRules := `SYMLINK=="virtio-ports/org.linuxcontainers.incus", TAG+="systemd", ENV{SYSTEMD_WANTS}+="incus-agent.service"
-
-# Legacy.
-SYMLINK=="virtio-ports/org.linuxcontainers.lxd", TAG+="systemd", ENV{SYSTEMD_WANTS}+="incus-agent.service"
 `
 	err = os.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-incus-agent.rules"), []byte(incusAgentRules), 0400)
 	if err != nil {

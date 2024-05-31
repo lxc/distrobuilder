@@ -38,9 +38,6 @@ var generators = map[string]func() generator{
 	"incus-agent": func() generator { return &incusAgent{} },
 	"remove":      func() generator { return &remove{} },
 	"template":    func() generator { return &template{} },
-
-	// Legacy.
-	"lxd-agent": func() generator { return &incusAgent{} },
 }
 
 // Load loads and initializes a generator.

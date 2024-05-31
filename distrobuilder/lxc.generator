@@ -16,11 +16,6 @@ is_lxc_privileged_container() {
 	grep -qw 4294967295$ /proc/self/uid_map
 }
 
-# is_lxd_vm succeeds if we're running inside a LXD VM
-is_lxd_vm() {
-	[ -e /dev/virtio-ports/org.linuxcontainers.lxd ]
-}
-
 # is_incus_vm succeeds if we're running inside an Incus VM
 is_incus_vm() {
 	[ -e /dev/virtio-ports/org.linuxcontainers.incus ]
@@ -154,7 +149,7 @@ fix_systemd_sysctl() {
 
 ## Main logic
 # Nothing to do in Incus VM but deployed in case it is later converted to a container
-is_incus_vm || is_lxd_vm && exit 0
+is_incus_vm && exit 0
 
 # Exit immediately if not an Incus/LXC container
 is_lxc_container || exit 0

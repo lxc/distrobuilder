@@ -118,8 +118,6 @@ LV
 LVM
 LXC
 LXCFS
-LXD
-LXD's
 MAAS
 macOS
 macvlan
