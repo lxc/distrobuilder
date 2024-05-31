@@ -1,8 +1,6 @@
 # distrobuilder
 System container and VM image builder for Incus and LXC.
 
-Incus images may also be compatible with Canonical's LXD.
-
 ## Status
 Type            | Service               | Status
 ---             | ---                   | ---

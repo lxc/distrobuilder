@@ -1,7 +1,3 @@
----
-discourse: 7519
----
-
 # Use `distrobuilder` to create images
 
 This guide shows you how to create an image for Incus or LXC.
@@ -156,9 +152,6 @@ lxc-start -n myContainerImage
 ```
 
 ## Repack Windows ISO
-
-```{youtube} https://www.youtube.com/watch?v=3PDMGwbbk48
-```
 
 With Incus it's possible to run Windows VMs. All you need is a Windows ISO and a bunch of drivers.
 To make the installation a bit easier, `distrobuilder` added the `repack-windows` command. It takes a Windows ISO, and repacks it together with the necessary drivers.

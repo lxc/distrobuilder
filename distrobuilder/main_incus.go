@@ -35,9 +35,8 @@ type cmdIncus struct {
 
 func (c *cmdIncus) commandBuild() *cobra.Command {
 	c.cmdBuild = &cobra.Command{
-		Use:     "build-incus <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-incus]",
-		Aliases: []string{"build-lxd"},
-		Short:   "Build Incus image from scratch",
+		Use:   "build-incus <filename|-> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-incus]",
+		Short: "Build Incus image from scratch",
 		Long: fmt.Sprintf(`Build Incus image from scratch
 
 %s
@@ -104,9 +103,8 @@ func (c *cmdIncus) commandBuild() *cobra.Command {
 
 func (c *cmdIncus) commandPack() *cobra.Command {
 	c.cmdPack = &cobra.Command{
-		Use:     "pack-incus <filename|-> <source dir> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-incus]",
-		Aliases: []string{"pack-lxd"},
-		Short:   "Create Incus image from existing rootfs",
+		Use:   "pack-incus <filename|-> <source dir> [target dir] [--type=TYPE] [--compression=COMPRESSION] [--import-into-incus]",
+		Short: "Create Incus image from existing rootfs",
 		Long: fmt.Sprintf(`Create Incus image from existing rootfs
 
 %s
