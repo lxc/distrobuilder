@@ -4,11 +4,6 @@ go 1.21
 
 toolchain go1.21.5
 
-exclude (
-	github.com/rootless-containers/proto v0.1.0
-	github.com/rootless-containers/proto/go-proto v0.0.0-20221103010429-bc555ef10687
-)
-
 require (
 	github.com/flosch/pongo2/v4 v4.0.2
 	github.com/google/go-github/v56 v56.0.0

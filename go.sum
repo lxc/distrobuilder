@@ -348,6 +348,7 @@ github.com/prometheus/procfs v0.0.5/go.mod h1:4A/X28fw3Fc593LaREMrKMqOKvUAntwMDa
 github.com/quasilyte/go-consistent v0.0.0-20190521200055-c6f3937de18c/go.mod h1:5STLWrekHfjyYwxBRVRXNOSewLJ3PWfDJd1VyTS21fI=
 github.com/rogpeppe/fastuuid v1.1.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
+github.com/rootless-containers/proto v0.1.0/go.mod h1:vgkUFZbQd0gcE/K/ZwtE4MYjZPu0UNHLXIQxhyqAFh8=
 github.com/rootless-containers/proto/go-proto v0.0.0-20210921234734-69430b6543fb/go.mod h1:LLjEAc6zmycfeN7/1fxIphWQPjHpTt7ElqT7eVf8e4A=
 github.com/rootless-containers/proto/go-proto v0.0.0-20230421021042-4cd87ebadd67 h1:58jvc5cZ+hGKidQ4Z37/+rj9eQxRRjOOsqNEwPSZXR4=
 github.com/rootless-containers/proto/go-proto v0.0.0-20230421021042-4cd87ebadd67/go.mod h1:LLjEAc6zmycfeN7/1fxIphWQPjHpTt7ElqT7eVf8e4A=
