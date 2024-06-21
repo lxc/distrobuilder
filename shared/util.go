@@ -63,15 +63,26 @@ func CaseInsensitive(s string) (pattern string) {
 	return
 }
 
-// FindFirstMatch find the first file case insensitive.
+// FindFirstMatch find the first matched file case insensitive.
 func FindFirstMatch(dir string, elem ...string) (found string, err error) {
+	matches, err := FindAllMatches(dir, elem...)
+	if err != nil {
+		return
+	}
+
+	found = matches[0]
+	return
+}
+
+// FindAllMatches find all the matched files case insensitive.
+func FindAllMatches(dir string, elem ...string) (matches []string, err error) {
 	names := []string{dir}
 	for _, name := range elem {
 		names = append(names, CaseInsensitive(name))
 	}
 
 	pattern := filepath.Join(names...)
-	matches, err := filepath.Glob(pattern)
+	matches, err = filepath.Glob(pattern)
 	if err != nil {
 		return
 	}
@@ -81,7 +92,6 @@ func FindFirstMatch(dir string, elem ...string) (found string, err error) {
 		return
 	}
 
-	found = matches[0]
 	return
 }
 
