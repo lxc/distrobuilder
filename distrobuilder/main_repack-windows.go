@@ -481,25 +481,29 @@ func (c *cmdRepackWindows) injectDrivers(infDir, driversDir, filerepositoryDir, 
 		}
 
 		for ext, dir := range map[string]string{"inf": infDir, "cat": driversDir, "dll": driversDir, "sys": driversDir} {
-			driverPath, err := shared.FindFirstMatch(sourceDir, fmt.Sprintf("*.%s", ext))
+			sourceMatches, err := shared.FindAllMatches(sourceDir, fmt.Sprintf("*.%s", ext))
 			if err != nil {
 				logger.Debugf("failed to find first match %q %q", driverName, ext)
 				continue
 			}
 
-			targetName := filepath.Base(driverPath)
-			if err = shared.Copy(driverPath, filepath.Join(targetBaseDir, targetName)); err != nil {
-				return err
-			}
+			for _, sourcePath := range sourceMatches {
+				targetName := filepath.Base(sourcePath)
+				targetPath := filepath.Join(targetBaseDir, targetName)
+				if err = shared.Copy(sourcePath, targetPath); err != nil {
+					return err
+				}
 
-			if ext == "cat" {
-				continue
-			} else if ext == "inf" {
-				targetName = infFilename
-			}
+				if ext == "cat" {
+					continue
+				} else if ext == "inf" {
+					targetName = infFilename
+				}
 
-			if err = shared.Copy(driverPath, filepath.Join(dir, targetName)); err != nil {
-				return err
+				targetPath = filepath.Join(dir, targetName)
+				if err = shared.Copy(sourcePath, targetPath); err != nil {
+					return err
+				}
 			}
 		}
 
