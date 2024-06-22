@@ -62,6 +62,11 @@ mount -t tmpfs tmpfs "${PREFIX}" -o mode=0700,size=50M
 # Copy the data.
 cp -Ra "${PREFIX}.mnt/"* "${PREFIX}"
 
+# Link agent
+if [ ! -x "${PREFIX}"/incus-agent ]; then
+    ln -s "${PREFIX}"/*-agent "${PREFIX}"/incus-agent
+fi
+
 # Unmount the temporary mount.
 umount "${PREFIX}.mnt"
 rmdir "${PREFIX}.mnt"
@@ -164,7 +169,7 @@ StartLimitBurst=10
 		udevPath = filepath.Join("/", "usr", "lib", "udev", "rules.d")
 	}
 
-	incusAgentRules := `SYMLINK=="virtio-ports/org.linuxcontainers.incus", TAG+="systemd", ENV{SYSTEMD_WANTS}+="incus-agent.service"
+	incusAgentRules := `SYMLINK=="virtio-ports/org.linuxcontainers.*", TAG+="systemd", ENV{SYSTEMD_WANTS}+="incus-agent.service"
 `
 	err = os.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-incus-agent.rules"), []byte(incusAgentRules), 0400)
 	if err != nil {
