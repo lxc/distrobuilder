@@ -326,5 +326,14 @@ actions:
   types:
   - vm
 
+- trigger: post-files
+  action: |-
+    #!/bin/sh
+    set -eux
+    sed -e '/^# Unmount.*/i [ -x "${PREFIX}"/incus-agent ] || ln -s "${PREFIX}"/*-agent "${PREFIX}"/incus-agent\n' -i /usr/lib/systemd/incus-agent-setup
+    sed -e 's/org.linuxcontainers.incus/org.linuxcontainers.*/g' -i /usr/lib/udev/rules.d/99-incus-agent.rules
+  types:
+  - vm
+
 mappings:
   architecture_map: debian
