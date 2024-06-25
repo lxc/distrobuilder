@@ -71,7 +71,7 @@ To compile `distrobuilder` from source, first install the Go programming languag
 
 - Red Hat-based:
     ```
-    sudo dnf update
+	sudo dnf check-update
     sudo dnf install golang debootstrap rsync gnupg2 squashfs-tools git make
     ```
 
