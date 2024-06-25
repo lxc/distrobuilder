@@ -155,7 +155,7 @@ func (v *vm) mountImage() error {
 
 	lsblkOutput := strings.TrimSpace(out.String())
 	deviceNumbers := strings.Split(lsblkOutput, "\n")
-	if len(deviceNumbers) != 2 {
+	if len(deviceNumbers) < 2 {
 		return fmt.Errorf("Failed to list block devices: %s", lsblkOutput)
 	}
 
