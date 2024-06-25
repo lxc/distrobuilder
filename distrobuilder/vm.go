@@ -153,36 +153,19 @@ func (v *vm) mountImage() error {
 		return fmt.Errorf("Failed to list block devices: %w", err)
 	}
 
-	lsblkOutput := strings.TrimSpace(out.String())
-	deviceNumbers := strings.Split(lsblkOutput, "\n")
-	if len(deviceNumbers) != 2 {
-		return fmt.Errorf("Failed to list block devices: %s", lsblkOutput)
-	}
-
-	parseMajorMinor := func(i int) (major, minor uint32, err error) {
-		fields := strings.Split(deviceNumbers[i], ":")
-
-		num, err := strconv.Atoi(fields[0])
-		if err != nil {
-			err = fmt.Errorf("Failed to parse %q: %w", fields[0], err)
-			return
-		}
-
-		major = uint32(num)
-		num, err = strconv.Atoi(fields[1])
-		if err != nil {
-			err = fmt.Errorf("Failed to parse %q: %w", fields[1], err)
-			return
-		}
-
-		minor = uint32(num)
-		return
-	}
+	deviceNumbers := strings.Split(out.String(), "\n")
 
 	if !incus.PathExists(v.getUEFIDevFile()) {
-		major, minor, err := parseMajorMinor(0)
+		fields := strings.Split(deviceNumbers[1], ":")
+
+		major, err := strconv.Atoi(fields[0])
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to parse %q: %w", fields[0], err)
+		}
+
+		minor, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return fmt.Errorf("Failed to parse %q: %w", fields[1], err)
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
@@ -194,9 +177,16 @@ func (v *vm) mountImage() error {
 	}
 
 	if !incus.PathExists(v.getRootfsDevFile()) {
-		major, minor, err := parseMajorMinor(1)
+		fields := strings.Split(deviceNumbers[2], ":")
+
+		major, err := strconv.Atoi(fields[0])
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to parse %q: %w", fields[0], err)
+		}
+
+		minor, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return fmt.Errorf("Failed to parse %q: %w", fields[1], err)
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
