@@ -112,11 +112,12 @@ func (v *vm) createEmptyDiskImage() error {
 	return nil
 }
 
-func (v *vm) createPartitions() error {
-	args := [][]string{
-		{"--zap-all"},
-		{"--new=1::+100M", "-t 1:EF00"},
-		{"--new=2::", "-t 2:8300"},
+func (v *vm) createPartitions(args ...[]string) error {
+	if len(args) == 0 {
+		args = [][]string{
+			{"--zap-all"},
+			{"--new=1::+100M", "-t 1:EF00"},
+			{"--new=2::", "-t 2:8300"}}
 	}
 
 	for _, cmd := range args {
@@ -129,75 +130,120 @@ func (v *vm) createPartitions() error {
 	return nil
 }
 
-func (v *vm) mountImage() error {
+func (v *vm) lsblkLoopDevice() (parseMajorMinor func(int) (uint32, uint32, error), num int, err error) {
+	var out strings.Builder
+	// Ensure the partitions are accessible. This part is usually only needed
+	// if building inside of a container.
+	err = shared.RunCommand(v.ctx, nil, &out, "lsblk", "--raw", "--output", "MAJ:MIN", "--noheadings", v.loopDevice)
+	if err != nil {
+		err = fmt.Errorf("Failed to list block devices: %w", err)
+		return
+	}
+
+	lsblkOutput := strings.TrimSpace(out.String())
+	// Output sample:
+	// 7:1    -- loop device
+	// 259:2  -- partition 1
+	// 259:3  -- partition 2
+	deviceNumbers := strings.Split(lsblkOutput, "\n")
+	num = len(deviceNumbers)
+	parseMajorMinor = func(i int) (major, minor uint32, err error) {
+		if i >= num {
+			err = fmt.Errorf("failed to parse major minor for %d >= %d", i, num)
+			return
+		}
+
+		fields := strings.Split(deviceNumbers[i], ":")
+		num, err := strconv.Atoi(fields[0])
+		if err != nil {
+			err = fmt.Errorf("Failed to parse %q: %w", fields[0], err)
+			return
+		}
+
+		major = uint32(num)
+		num, err = strconv.Atoi(fields[1])
+		if err != nil {
+			err = fmt.Errorf("Failed to parse %q: %w", fields[1], err)
+			return
+		}
+
+		minor = uint32(num)
+		return
+	}
+
+	return
+}
+
+func (v *vm) losetup() (err error) {
+	var out strings.Builder
+	err = shared.RunCommand(v.ctx, nil, &out, "losetup", "-P", "-f", "--show", v.imageFile)
+	if err != nil {
+		err = fmt.Errorf("Failed to setup loop device: %w", err)
+		return
+	}
+
+	err = shared.RunCommand(v.ctx, nil, nil, "udevadm", "settle")
+	if err != nil {
+		err = fmt.Errorf("Failed to wait loop device ready: %w", err)
+		return
+	}
+
+	v.loopDevice = strings.TrimSpace(out.String())
+	return
+}
+
+func (v *vm) mountImage() (err error) {
 	// If loopDevice is set, it probably is already mounted.
 	if v.loopDevice != "" {
 		return nil
 	}
 
-	var out strings.Builder
-
-	err := shared.RunCommand(v.ctx, nil, &out, "losetup", "-P", "-f", "--show", v.imageFile)
+	err = v.losetup()
 	if err != nil {
-		return fmt.Errorf("Failed to setup loop device: %w", err)
+		return err
 	}
 
-	v.loopDevice = strings.TrimSpace(out.String())
-
-	out.Reset()
-
-	// Ensure the partitions are accessible. This part is usually only needed
-	// if building inside of a container.
-	err = shared.RunCommand(v.ctx, nil, &out, "lsblk", "--raw", "--output", "MAJ:MIN", "--noheadings", v.loopDevice)
+	parseMajorMinor, num, err := v.lsblkLoopDevice()
 	if err != nil {
-		return fmt.Errorf("Failed to list block devices: %w", err)
+		return
+	} else if num != 3 {
+		err = fmt.Errorf("Failed to list block devices")
+		return
 	}
-
-	deviceNumbers := strings.Split(out.String(), "\n")
 
 	if !incus.PathExists(v.getUEFIDevFile()) {
-		fields := strings.Split(deviceNumbers[1], ":")
-
-		major, err := strconv.Atoi(fields[0])
+		var major, minor uint32
+		major, minor, err = parseMajorMinor(1)
 		if err != nil {
-			return fmt.Errorf("Failed to parse %q: %w", fields[0], err)
-		}
-
-		minor, err := strconv.Atoi(fields[1])
-		if err != nil {
-			return fmt.Errorf("Failed to parse %q: %w", fields[1], err)
+			return
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
 
 		err = unix.Mknod(v.getUEFIDevFile(), unix.S_IFBLK|0644, int(dev))
 		if err != nil {
-			return fmt.Errorf("Failed to create block device %q: %w", v.getUEFIDevFile(), err)
+			err = fmt.Errorf("Failed to create block device %q: %w", v.getUEFIDevFile(), err)
+			return
 		}
 	}
 
 	if !incus.PathExists(v.getRootfsDevFile()) {
-		fields := strings.Split(deviceNumbers[2], ":")
-
-		major, err := strconv.Atoi(fields[0])
+		var major, minor uint32
+		major, minor, err = parseMajorMinor(2)
 		if err != nil {
-			return fmt.Errorf("Failed to parse %q: %w", fields[0], err)
-		}
-
-		minor, err := strconv.Atoi(fields[1])
-		if err != nil {
-			return fmt.Errorf("Failed to parse %q: %w", fields[1], err)
+			return
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
 
 		err = unix.Mknod(v.getRootfsDevFile(), unix.S_IFBLK|0644, int(dev))
 		if err != nil {
-			return fmt.Errorf("Failed to create block device %q: %w", v.getRootfsDevFile(), err)
+			err = fmt.Errorf("Failed to create block device %q: %w", v.getRootfsDevFile(), err)
+			return
 		}
 	}
 
-	return nil
+	return
 }
 
 func (v *vm) umountImage() error {
