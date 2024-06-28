@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	incus "github.com/lxc/incus/v6/shared/util"
@@ -32,6 +33,11 @@ func (s *debootstrap) Run() error {
 
 	if s.definition.Source.SkipVerification {
 		args = append(args, "--no-check-gpg")
+	}
+
+	if s.definition.Image.Distribution == "devuan" && slices.Contains([]string{"beowulf", "chimaera"}, s.definition.Image.Release) {
+		// Workaround for debootstrap attempting to fetch non-existent usr-is-merged.
+		args = append(args, "--exclude=usr-is-merged")
 	}
 
 	earlyPackagesInstall := s.definition.GetEarlyPackages("install")
