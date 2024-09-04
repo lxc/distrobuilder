@@ -167,7 +167,7 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 func (m *Manager) ManageRepositories(imageTarget shared.ImageTarget) error {
 	var err error
 
-	if m.def.Packages.Repositories == nil || len(m.def.Packages.Repositories) == 0 {
+	if len(m.def.Packages.Repositories) == 0 {
 		return nil
 	}
 

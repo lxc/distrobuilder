@@ -273,7 +273,7 @@ func SetupChroot(rootfs string, definition Definition, m []ChrootMount) (func() 
 		}
 	}
 
-	if envs.EnvVariables != nil && len(envs.EnvVariables) > 0 {
+	if len(envs.EnvVariables) > 0 {
 		imageTargets := ImageTargetUndefined | ImageTargetAll
 
 		if definition.Targets.Type == DefinitionFilterTypeContainer {
