@@ -250,12 +250,18 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	logger := c.global.logger
 	bootWim, err := shared.FindFirstMatch(overlayDir, "sources", "boot.wim")
 	if err != nil {
-		return fmt.Errorf("Unable to find boot.wim: %w", err)
+		bootWim, err = shared.FindFirstMatch(overlayDir, "sources", "boot.esd")
+		if err != nil {
+			return fmt.Errorf("Unable to find boot.wim or boot.esd: %w", err)
+		}
 	}
 
 	installWim, err := shared.FindFirstMatch(overlayDir, "sources", "install.wim")
 	if err != nil {
-		return fmt.Errorf("Unable to find install.wim: %w", err)
+		installWim, err = shared.FindFirstMatch(overlayDir, "sources", "install.esd")
+		if err != nil {
+			return fmt.Errorf("Unable to find install.wim or install.esd: %w", err)
+		}
 	}
 
 	bootWimInfo, err := c.getWimInfo(bootWim)
@@ -375,8 +381,7 @@ func (c *cmdRepackWindows) modifyWimIndex(wimFile string, index int, name string
 	wimIndex := strconv.Itoa(index)
 	wimPath := filepath.Join(c.global.flagCacheDir, "wim", wimIndex)
 	wimName := filepath.Base(wimFile)
-	logger := c.global.logger.WithFields(logrus.Fields{"wim": strings.TrimSuffix(wimName, ".wim"),
-		"idx": wimIndex + ":" + name})
+	logger := c.global.logger.WithFields(logrus.Fields{"wim": wimName, "idx": wimIndex + ":" + name})
 	if !incus.PathExists(wimPath) {
 		err := os.MkdirAll(wimPath, 0755)
 		if err != nil {
