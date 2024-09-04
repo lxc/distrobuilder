@@ -2,6 +2,7 @@ VERSION=$(shell grep "var Version" shared/version/version.go | cut -d'"' -f2)
 ARCHIVE=distrobuilder-$(VERSION).tar
 GO111MODULE=on
 SPHINXENV=.sphinx/venv/bin/activate
+GOPATH=$(shell go env GOPATH)
 
 .PHONY: default
 default:
@@ -75,8 +76,8 @@ doc-lint:
 
 .PHONY: static-analysis
 static-analysis:
-ifeq ($(shell command -v golangci-lint 2> /dev/null),)
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.0
+ifeq ($(shell command -v golangci-lint),)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH)/bin
 endif
-	golangci-lint run --timeout 5m
+	$(GOPATH)/bin/golangci-lint run --timeout 5m
 	run-parts $(shell run-parts -V 2> /dev/null 1> /dev/null && echo -n "--exit-on-error --regex '.sh'") test/lint
