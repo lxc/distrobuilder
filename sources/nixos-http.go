@@ -12,20 +12,28 @@ type nixos struct {
 }
 
 func (s *nixos) Run() error {
-	hydraRelease := fmt.Sprintf("release-%s", s.definition.Image.Release)
+	hydraProject := "nixos"
+
+	hydraJobset := fmt.Sprintf("release-%s", s.definition.Image.Release)
+	releaseAttr := "lxdContainerImage"
+	hydraBuildProduct := "system-tarball"
 
 	if s.definition.Image.Release == "unstable" {
-		hydraRelease = "trunk-combined"
+		hydraJobset = "trunk-combined"
+		releaseAttr = "incusContainerImage"
+		hydraBuildProduct = "squashfs-image"
 	}
 
-	tarballURL := fmt.Sprintf("https://hydra.nixos.org/job/nixos/%s/nixos.lxdContainerImage.%s-linux/latest/download-by-type/file/system-tarball", hydraRelease, s.definition.Image.ArchitectureMapped)
+	hydraJob := fmt.Sprintf("nixos.%s.%s-linux", releaseAttr, s.definition.Image.ArchitectureMapped)
 
-	fpath, err := s.DownloadHash(s.definition.Image, tarballURL, "", nil)
+	imageURL := fmt.Sprintf("https://hydra.nixos.org/job/%s/%s/%s/latest/download-by-type/file/%s", hydraProject, hydraJobset, hydraJob, hydraBuildProduct)
+
+	fpath, err := s.DownloadHash(s.definition.Image, imageURL, "", nil)
 	if err != nil {
-		return fmt.Errorf("Failed downloading tarball: %w", err)
+		return fmt.Errorf("Failed downloading rootfs: %w", err)
 	}
 
-	err = shared.Unpack(filepath.Join(fpath, "system-tarball"), s.rootfsDir)
+	err = shared.Unpack(filepath.Join(fpath, hydraBuildProduct), s.rootfsDir)
 	if err != nil {
 		return fmt.Errorf("Failed unpacking rootfs: %w", err)
 	}
