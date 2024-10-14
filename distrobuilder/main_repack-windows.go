@@ -304,13 +304,22 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 	logger.Info("Generating new ISO")
 	var stdout strings.Builder
+	var software string
 
 	err = shared.RunCommand(c.global.ctx, nil, &stdout, "genisoimage", "--version")
 	if err != nil {
-		return fmt.Errorf("Failed to determine version of genisoimage: %w", err)
+		err = shared.RunCommand(c.global.ctx, nil, &stdout, "mkisofs", "--version")
+		if err != nil {
+			return fmt.Errorf("Failed to determine version of genisoimage or mkisofs: %w", err)
+		} else {
+			software = "mkisofs"
+		}
+	} else {
+		software = "genisoimage"
 	}
 
 	version := strings.Split(stdout.String(), "\n")[0]
+
 	genArgs := []string{"-l", "-iso-level", "4", "-no-emul-boot",
 		"-b", "boot/etfsboot.com", "-boot-load-seg", "0",
 		"-boot-load-size", "8", "-eltorito-alt-boot"}
@@ -337,7 +346,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 			return os.Stderr.Write(b)
 		})),
-		nil, nil, "genisoimage", genArgs...)
+		nil, nil, software, genArgs...)
 
 	if err != nil {
 		return fmt.Errorf("Failed to generate ISO: %w", err)
@@ -426,13 +435,19 @@ func (c *cmdRepackWindows) modifyWimIndex(wimFile string, index int, name string
 }
 
 func (c *cmdRepackWindows) checkDependencies() error {
-	dependencies := []string{"genisoimage", "hivexregedit", "rsync", "wimlib-imagex"}
+	dependencies := []string{"hivexregedit", "rsync", "wimlib-imagex"}
 
 	for _, dep := range dependencies {
 		_, err := exec.LookPath(dep)
 		if err != nil {
 			return fmt.Errorf("Required tool %q is missing", dep)
 		}
+	}
+
+	_, err := exec.LookPath("genisoimage")
+	_, err1 := exec.LookPath("mkisofs")
+	if err != nil && err1 != nil {
+		return fmt.Errorf("Required tool genisoimage or mkisofs is missing")
 	}
 
 	return nil
