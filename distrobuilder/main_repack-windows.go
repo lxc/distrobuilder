@@ -489,7 +489,7 @@ func (c *cmdRepackWindows) injectDrivers(infDir, driversDir, filerepositoryDir, 
 	softwareRegistry := "Windows Registry Editor Version 5.00"
 	for driverName, driverInfo := range windows.Drivers {
 		logger.WithField("driver", driverName).Debug("Injecting driver")
-		infFilename := fmt.Sprintf("oem%d.inf", i)
+		infFilename := fmt.Sprintf("oem-virtio-incus%d.inf", i)
 		sourceDir := filepath.Join(driverPath, driverName, c.flagWindowsVersion, c.flagWindowsArchitecture)
 		targetBaseDir := filepath.Join(filerepositoryDir, driverInfo.PackageName)
 		if !incus.PathExists(targetBaseDir) {
