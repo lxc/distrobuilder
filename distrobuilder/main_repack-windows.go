@@ -500,7 +500,7 @@ func (c *cmdRepackWindows) injectDrivers(infDir, driversDir, filerepositoryDir, 
 			}
 		}
 
-		for ext, dir := range map[string]string{"inf": infDir, "cat": driversDir, "dll": driversDir, "sys": driversDir} {
+		for ext, dir := range map[string]string{"inf": infDir, "cat": driversDir, "dll": driversDir, "exe": driversDir, "sys": driversDir} {
 			sourceMatches, err := shared.FindAllMatches(sourceDir, fmt.Sprintf("*.%s", ext))
 			if err != nil {
 				logger.Debugf("failed to find first match %q %q", driverName, ext)
@@ -514,7 +514,7 @@ func (c *cmdRepackWindows) injectDrivers(infDir, driversDir, filerepositoryDir, 
 					return err
 				}
 
-				if ext == "cat" {
+				if ext == "cat" || ext == "exe" {
 					continue
 				} else if ext == "inf" {
 					targetName = infFilename
