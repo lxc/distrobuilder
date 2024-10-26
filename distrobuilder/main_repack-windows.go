@@ -489,7 +489,7 @@ func (c *cmdRepackWindows) injectDrivers(infDir, driversDir, filerepositoryDir, 
 	softwareRegistry := "Windows Registry Editor Version 5.00"
 	for driverName, driverInfo := range windows.Drivers {
 		logger.WithField("driver", driverName).Debug("Injecting driver")
-		infFilename := fmt.Sprintf("oem%d.inf", i)
+		infFilename := fmt.Sprintf("oem-virtio-incus%d.inf", i)
 		sourceDir := filepath.Join(driverPath, driverName, c.flagWindowsVersion, c.flagWindowsArchitecture)
 		targetBaseDir := filepath.Join(filerepositoryDir, driverInfo.PackageName)
 		if !incus.PathExists(targetBaseDir) {
@@ -500,7 +500,7 @@ func (c *cmdRepackWindows) injectDrivers(infDir, driversDir, filerepositoryDir, 
 			}
 		}
 
-		for ext, dir := range map[string]string{"inf": infDir, "cat": driversDir, "dll": driversDir, "sys": driversDir} {
+		for ext, dir := range map[string]string{"inf": infDir, "cat": driversDir, "dll": driversDir, "exe": driversDir, "sys": driversDir} {
 			sourceMatches, err := shared.FindAllMatches(sourceDir, fmt.Sprintf("*.%s", ext))
 			if err != nil {
 				logger.Debugf("failed to find first match %q %q", driverName, ext)
@@ -514,7 +514,7 @@ func (c *cmdRepackWindows) injectDrivers(infDir, driversDir, filerepositoryDir, 
 					return err
 				}
 
-				if ext == "cat" {
+				if ext == "cat" || ext == "exe" {
 					continue
 				} else if ext == "inf" {
 					targetName = infFilename
