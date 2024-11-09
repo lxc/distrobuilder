@@ -83,10 +83,10 @@ files:
   - bionic
   - eoan
   - focal
-  - groovy
-  - hirsute
-  - impish
   - jammy
+  - noble
+  - oracular
+  - plucky
   types:
   - container
   variants:
@@ -105,10 +105,10 @@ files:
   - bionic
   - eoan
   - focal
-  - groovy
-  - hirsute
-  - impish
   - jammy
+  - noble
+  - oracular
+  - plucky
   types:
   - vm
   variants:
@@ -216,10 +216,10 @@ packages:
     - disco
     - eoan
     - focal
-    - groovy
-    - hirsute
-    - impish
     - jammy
+    - noble
+    - oracular
+    - plucky
     types:
     - vm
 
@@ -230,10 +230,10 @@ packages:
     - bionic
     - eoan
     - focal
-    - groovy
-    - hirsute
-    - impish
     - jammy
+    - noble
+    - oracular
+    - plucky
     types:
     - vm
 
@@ -289,10 +289,10 @@ actions:
   - bionic
   - eoan
   - focal
-  - groovy
-  - hirsute
-  - impish
   - jammy
+  - noble
+  - oracular
+  - plucky
 
 - trigger: post-packages
   action: |-
