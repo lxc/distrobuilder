@@ -29,7 +29,7 @@ func (s *opensuse) Run() error {
 	var fname string
 
 	if s.definition.Source.URL == "" {
-		s.definition.Source.URL = "https://mirrorcache-us.opensuse.org/download"
+		s.definition.Source.URL = "https://mirrorcache-eu.opensuse.org/download"
 	}
 
 	tarballPath, err := s.getPathToTarball(s.definition.Source.URL, s.definition.Image.Release,
