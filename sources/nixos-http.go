@@ -15,13 +15,16 @@ func (s *nixos) Run() error {
 	hydraProject := "nixos"
 
 	hydraJobset := fmt.Sprintf("release-%s", s.definition.Image.Release)
-	releaseAttr := "lxdContainerImage"
-	hydraBuildProduct := "system-tarball"
+	releaseAttr := "incusContainerImage"
+	hydraBuildProduct := "squashfs-image"
+
+	if s.definition.Image.Release == "24.05" {
+		releaseAttr = "lxdContainerImage"
+		hydraBuildProduct = "system-tarball"
+	}
 
 	if s.definition.Image.Release == "unstable" {
 		hydraJobset = "trunk-combined"
-		releaseAttr = "incusContainerImage"
-		hydraBuildProduct = "squashfs-image"
 	}
 
 	hydraJob := fmt.Sprintf("nixos.%s.%s-linux", releaseAttr, s.definition.Image.ArchitectureMapped)
