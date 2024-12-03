@@ -60,7 +60,7 @@ To compile `distrobuilder` from source, first install the Go programming languag
 - Debian-based:
     ```
     sudo apt update
-    sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git make
+    sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git make build-essential
     ```
 
 - ArchLinux-based:
