@@ -42,6 +42,16 @@ fix_ro_paths() {
 		EOF
 }
 
+# fix_ro_run is a workaround for units failing to write in /run due to ProtectSystem=strict
+fix_ro_run() {
+	mkdir -p "/run/systemd/system/$1.d"
+	cat <<-EOF > "/run/systemd/system/$1.d/zzz-lxc-rorun.conf"
+		# This file was created by distrobuilder
+		[Service]
+		ReadWritePaths=/run
+		EOF
+}
+
 # fix_nm_link_state forces the network interface to a DOWN state ahead of NetworkManager starting up
 fix_nm_link_state() {
 	[ -e "/sys/class/net/$1" ] || return 0
@@ -197,6 +207,9 @@ fi
 # Ignore failures on some units.
 fix_systemd_udev_trigger
 fix_systemd_sysctl
+
+# Fix issues with /run not being writable.
+fix_ro_run systemd-nsresourced.service
 
 # Mask some units.
 fix_systemd_mask dev-hugepages.mount
