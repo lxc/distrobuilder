@@ -197,8 +197,8 @@ if [ ! -d /dev/.lxc ]; then
 		done
 	fi
 
-	# Workarounds for privileged containers.
-	if { [ "${ID}" = "altlinux" ] || [ "${ID}" = "arch" ] || [ "${ID}" = "fedora" ]; } && ! is_lxc_privileged_container; then
+	# Workarounds for unprivileged containers.
+	if ! is_lxc_privileged_container; then
 		fix_ro_paths systemd-networkd.service
 		fix_ro_paths systemd-resolved.service
 	fi
