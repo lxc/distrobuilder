@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"gopkg.in/antchfx/htmlquery.v1"
+	"github.com/antchfx/htmlquery"
 
 	"github.com/lxc/distrobuilder/shared"
 )
