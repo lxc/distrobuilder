@@ -10,9 +10,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/antchfx/htmlquery"
 	incus "github.com/lxc/incus/v6/shared/util"
 	"golang.org/x/sys/unix"
-	"gopkg.in/antchfx/htmlquery.v1"
 
 	"github.com/lxc/distrobuilder/shared"
 )
