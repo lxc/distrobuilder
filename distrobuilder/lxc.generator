@@ -38,7 +38,7 @@ fix_ro_paths() {
 	cat <<-EOF > "/run/systemd/system/$1.d/zzz-lxc-ropath.conf"
 		# This file was created by distrobuilder
 		[Service]
-		BindReadOnlyPaths=/sys /proc
+		BindReadOnlyPaths=/sys
 		EOF
 }
 
