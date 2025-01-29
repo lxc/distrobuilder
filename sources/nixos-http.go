@@ -18,11 +18,6 @@ func (s *nixos) Run() error {
 	releaseAttr := "incusContainerImage"
 	hydraBuildProduct := "squashfs-image"
 
-	if s.definition.Image.Release == "24.05" {
-		releaseAttr = "lxdContainerImage"
-		hydraBuildProduct = "system-tarball"
-	}
-
 	if s.definition.Image.Release == "unstable" {
 		hydraJobset = "trunk-combined"
 	}
