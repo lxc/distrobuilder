@@ -29,16 +29,16 @@ func (s *openwrt) Run() error {
 
 	switch s.definition.Image.ArchitectureMapped {
 	case "x86_64":
-		architecturePath = strings.Replace(s.definition.Image.ArchitectureMapped, "_", "/", 1)
+		architecturePath = "x86/64"
 	case "armv7l":
-		if strings.HasPrefix(release, "21.02") || strings.HasPrefix(release, "22.03") {
+		if strings.HasPrefix(release, "22.03") {
 			architecturePath = "armvirt/32"
 		} else {
 			architecturePath = "armsr/armv7"
 		}
 
 	case "aarch64":
-		if strings.HasPrefix(release, "21.02") || strings.HasPrefix(release, "22.03") {
+		if strings.HasPrefix(release, "22.03") {
 			architecturePath = "armvirt/64"
 		} else {
 			architecturePath = "armsr/armv8"
@@ -75,7 +75,7 @@ func (s *openwrt) Run() error {
 
 	var fname string
 
-	if strings.HasPrefix(release, "21.02") || strings.HasPrefix(release, "22.03") {
+	if strings.HasPrefix(release, "22.03") {
 		switch s.definition.Image.ArchitectureMapped {
 		case "x86_64":
 			fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
