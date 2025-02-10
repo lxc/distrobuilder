@@ -15,16 +15,16 @@ func TestOpenWrtHTTP_getLatestServiceRelease(t *testing.T) {
 		want    *regexp.Regexp
 	}{
 		{
-			"21.02",
-			regexp.MustCompile(`21\.02\.\d+`),
-		},
-		{
 			"22.03",
 			regexp.MustCompile(`22\.03\.\d+`),
 		},
 		{
 			"23.05",
 			regexp.MustCompile(`23\.05\.\d+`),
+		},
+		{
+			"24.10",
+			regexp.MustCompile(`24\.10\.\d+`),
 		},
 	}
 
