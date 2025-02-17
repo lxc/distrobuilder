@@ -81,14 +81,12 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 
 	logger := r.logger
 
-	i := 0
-
 	driversRegistry := "Windows Registry Editor Version 5.00"
 	systemRegistry := "Windows Registry Editor Version 5.00"
 	softwareRegistry := "Windows Registry Editor Version 5.00"
 	for driverName, driverInfo := range Drivers {
 		logger.WithField("driver", driverName).Debug("Injecting driver")
-		infFilename := fmt.Sprintf("oem-virtio-incus%d.inf", i)
+		infFilename := ""
 		sourceDir := filepath.Join(driverPath, driverName, r.windowsVersion, r.windowsArchitecture)
 		targetBaseDir := filepath.Join(dirs["filerepository"], driverInfo.PackageName)
 		if !incus.PathExists(targetBaseDir) {
@@ -116,7 +114,8 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 				if ext == "cat" || ext == "exe" {
 					continue
 				} else if ext == "inf" {
-					targetName = infFilename
+					targetName = "oem-" + targetName
+					infFilename = targetName
 				}
 
 				targetPath = filepath.Join(dir, targetName)
@@ -182,8 +181,6 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 
 			softwareRegistry = fmt.Sprintf("%s\n\n%s", softwareRegistry, out)
 		}
-
-		i++
 	}
 
 	logger.WithField("hivefile", "DRIVERS").Debug("Updating Windows registry")
