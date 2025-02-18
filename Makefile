@@ -6,8 +6,6 @@ GOPATH=$(shell go env GOPATH)
 
 .PHONY: default
 default:
-	go env -w GOCACHE=$(shell go env GOCACHE)
-	$(shell go env | grep -v GOENV | sed "s/'//g" > $(shell go env GOENV))
 	gofmt -s -w .
 	go install -v ./...
 	@echo "distrobuilder built successfully"
