@@ -17,8 +17,8 @@ jobs:
       fail-fast: false
       matrix:
         go:
-          - 1.22.x
-          - 1.23.x
+          - oldstable
+          - stable
         os:
           - ubuntu-22.04
           - ubuntu-24.04
