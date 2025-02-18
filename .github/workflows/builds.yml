@@ -9,10 +9,10 @@ permissions:
 jobs:
   doc:
     name: Documentation (Sphinx)
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build docs
         run: make doc

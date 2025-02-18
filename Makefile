@@ -6,16 +6,14 @@ GOPATH=$(shell go env GOPATH)
 
 .PHONY: default
 default:
-	go env -w GOCACHE=$(shell go env GOCACHE)
-	$(shell go env | grep -v GOENV | sed "s/'//g" > $(shell go env GOENV))
 	gofmt -s -w .
 	go install -v ./...
 	@echo "distrobuilder built successfully"
 
 .PHONY: update-gomod
 update-gomod:
-	go get -t -v -d -u ./...
-	go mod tidy -go=1.22.7
+	go get -t -v -u ./...
+	go mod tidy -go=1.23.0
 	go get toolchain@none
 	@echo "Dependencies updated"
 
