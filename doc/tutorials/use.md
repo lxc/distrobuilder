@@ -156,7 +156,7 @@ lxc-start -n myContainerImage
 With Incus it's possible to run Windows VMs. All you need is a Windows ISO and a bunch of drivers.
 To make the installation a bit easier, `distrobuilder` added the `repack-windows` command. It takes a Windows ISO, and repacks it together with the necessary drivers.
 
-Currently, `distrobuilder` supports Windows 10, Windows Server 2012, Windows Server 2016, Windows Server 2019 and Windows Server 2022. The Windows version will automatically be detected, but in case this fails you can use the `--windows-version` flag to set it manually. It supports the values `w10`, `2k12`, `2k16`, `2k19` and `2k22` for Windows 10, Windows Server 2012, Windows Server 2016, Windows Server 2019 and Windows Server 2022 respectively.
+Currently, `distrobuilder` supports Windows 11, Windows 10, Windows 8.1, Windows 8, Windows 7, Windows XP, Windows Server 2022, Windows Server 2019, Windows Server 2016, Windows Server 2012 R2, Windows Server 2012, Windows Server 2008 R2, Windows Server 2008 and Windows Server 2003. The Windows version will automatically be detected, but in case this fails you can use the `--windows-version` flag to set it manually. It supports the values `w11`, `w10`, `w8.1`, `w8`, `w7`, `xp`, `2k22`, `2k19`, `2k16`, `2k12r2`, `2k12`, `2k8r2`, `2k8` and `2k3` for Windows 11, Windows 10, Windows 8.1, Windows 8, Windows 7, Windows XP, Windows Server 2022, Windows Server 2019, Windows Server 2016, Windows Server 2012 R2, Windows Server 2012, Windows Server 2008 R2, Windows Server 2008 and Windows Server 2003 respectively.
 
 Here's how to repack a Windows ISO:
 
