@@ -4,7 +4,7 @@ System container and VM image builder for Incus and LXC.
 ## Status
 Type            | Service               | Status
 ---             | ---                   | ---
-CI              | GitHub                | [![Build Status](https://github.com/lxc/distrobuilder/workflows/CI%20tests/badge.svg)](https://github.com/lxc/distrobuilder/actions)
+CI              | GitHub                | [![Build Status](https://github.com/lxc/distrobuilder/workflows/Tests/badge.svg)](https://github.com/lxc/distrobuilder/actions)
 Project status  | CII Best Practices    | [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/1728/badge)](https://bestpractices.coreinfrastructure.org/projects/1728)
 
 
