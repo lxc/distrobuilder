@@ -358,6 +358,7 @@ func (d *Definition) Validate() error {
 
 	validDownloaders := []string{
 		"almalinux-http",
+		"alpaquita-http",
 		"alpinelinux-http",
 		"alt-http",
 		"apertis-http",
