@@ -19,6 +19,7 @@ source:
 The `downloader` field defines a downloader which pulls a rootfs image which will be used as a starting point.
 It needs to be one of
 
+* `alpaquita-http`
 * `alpinelinux-http`
 * `alt-http`
 * `apertis-http`
@@ -52,6 +53,7 @@ The `keyserver` defaults to `hkps.pool.sks-keyservers.net` if none is provided.
 The `variant` field is only used in a few distributions and defaults to `default`.
 Here's a list downloaders and their possible variants:
 
+* `alpaquita-http`: `musl`, `glibc`
 * `centos-http`: `minimal`, `netinstall`, `LiveDVD`
 * `debootstrap`: `default`, `minbase`, `buildd`, `fakechroot`
 * `ubuntu-http`: `default`, `core`

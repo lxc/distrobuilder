@@ -25,6 +25,7 @@ type Downloader interface {
 
 var downloaders = map[string]func() downloader{
 	"almalinux-http":       func() downloader { return &almalinux{} },
+	"alpaquita-http":       func() downloader { return &alpaquita{} },
 	"alpinelinux-http":     func() downloader { return &alpineLinux{} },
 	"alt-http":             func() downloader { return &altLinux{} },
 	"apertis-http":         func() downloader { return &apertis{} },
