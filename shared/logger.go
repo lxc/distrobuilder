@@ -17,6 +17,8 @@ func GetLogger(debug bool) (*logrus.Logger, error) {
 		PadLevelText:  true,
 	}
 
+	formatter.EnvironmentOverrideColors = true
+
 	logger.Formatter = &formatter
 
 	if debug {
