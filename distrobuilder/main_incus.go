@@ -265,9 +265,33 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 		imageTargets |= shared.ImageTargetContainer
 	}
 
-	for _, file := range c.global.definition.Files {
+	// Maps symbolic user/group names to their numeric IDs using information from passwd and group files.
+	userMap, groupMap, err := parsePasswdAndGroupFiles(overlayDir)
+	if err != nil {
+		c.global.logger.WithField("overlay", overlayDir).Warn("Could not parse passwd/group file: %w", err)
+	}
+
+	for i, file := range c.global.definition.Files {
 		if !shared.ApplyFilter(&file, c.global.definition.Image.Release, c.global.definition.Image.ArchitectureMapped, c.global.definition.Image.Variant, c.global.definition.Targets.Type, imageTargets) {
 			continue
+		}
+
+		if file.UID != "" && !isNumeric(file.UID) {
+			uid, exists := userMap[file.UID]
+			if exists {
+				c.global.definition.Files[i].UID = uid
+			} else {
+				c.global.logger.WithField("generator", file.Generator).Warnf("Could not find UID for user %q", file.UID)
+			}
+		}
+
+		if file.UID != "" && !isNumeric(file.GID) {
+			gid, exists := groupMap[file.GID]
+			if exists {
+				c.global.definition.Files[i].GID = gid
+			} else {
+				c.global.logger.WithField("generator", file.Generator).Warnf("Could not find GID for group %q", file.GID)
+			}
 		}
 
 		generator, err := generators.Load(file.Generator, c.global.logger, c.global.flagCacheDir, overlayDir, file, *c.global.definition)
