@@ -60,19 +60,19 @@ To compile `distrobuilder` from source, first install the Go programming languag
 - Debian-based:
     ```
     sudo apt update
-    sudo apt install -y golang-go debootstrap rsync gpg squashfs-tools git make build-essential
+    sudo apt install -y golang-go gcc debootstrap rsync gpg squashfs-tools git make build-essential libguestfs-tools wimtools genisoimage
     ```
 
 - ArchLinux-based:
     ```
     sudo pacman -Syu
-    sudo pacman -S go debootstrap rsync gnupg squashfs-tools git make --needed
+    sudo pacman -S go gcc debootstrap rsync gnupg squashfs-tools git make hivex cdrtools wimlib --needed
     ```
 
 - Red Hat-based:
     ```
 	sudo dnf check-update
-    sudo dnf install golang debootstrap rsync gnupg2 squashfs-tools git make
+    sudo dnf install golang gcc debootstrap rsync gnupg2 squashfs-tools git make hivex genisoimage
     ```
 
 NOTE: Distrobuilder requires Go 1.21 or higher, if your distribution doesn't have a recent enough version available, [get it from upstream](https://go.dev/doc/install).
