@@ -40,7 +40,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -qq update
-          sudo apt-get install -y squashfs-tools
+          sudo apt-get install -y \
+            pipx \
+            squashfs-tools
+
+          # With pipx >= 1.5.0, we could use pipx --global instead.
+          PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin \
+            pipx install codespell
 
       - name: Update Go modules
         run: make update-gomod

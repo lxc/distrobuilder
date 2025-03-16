@@ -79,5 +79,9 @@ static-analysis:
 ifeq ($(shell command -v golangci-lint),)
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH)/bin
 endif
+ifeq ($(shell command -v codespell),)
+	echo "Please install codespell"
+	exit 1
+endif
 	$(GOPATH)/bin/golangci-lint run --timeout 5m
 	run-parts $(shell run-parts -V 2> /dev/null 1> /dev/null && echo -n "--exit-on-error --regex '.sh'") test/lint
