@@ -136,7 +136,7 @@ fi
 
 yum_args="--disablerepo=* --enablerepo=cdrom"
 
-# newest install.img doesnt have rpm installed,
+# newest install.img doesn't have rpm installed,
 # so install rpm firstly
 if [ -z "$(which rpmkeys)" ]; then
 	cd /mnt/cdrom/Packages
