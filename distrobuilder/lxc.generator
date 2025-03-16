@@ -16,11 +16,6 @@ is_lxc_privileged_container() {
 	grep -qw 4294967295$ /proc/self/uid_map
 }
 
-# is_incus_vm succeeds if we're running inside an Incus VM
-is_incus_vm() {
-	[ -e /dev/virtio-ports/org.linuxcontainers.incus ]
-}
-
 # is_in_path succeeds if the given file exists in on of the paths
 is_in_path() {
 	# Don't use $PATH as that may not include all relevant paths
@@ -158,9 +153,6 @@ fix_systemd_sysctl() {
 }
 
 ## Main logic
-# Nothing to do in Incus VM but deployed in case it is later converted to a container
-is_incus_vm && exit 0
-
 # Exit immediately if not an Incus/LXC container
 is_lxc_container || exit 0
 
@@ -176,13 +168,6 @@ for path in /usr/lib/systemd/systemd /lib/systemd/systemd; do
 	systemd_version="$("${path}" --version | head -n1 | cut -d' ' -f2 | cut -d'~' -f1)"
 	break
 done
-
-# Determine distro name and release
-ID=""
-if [ -e /etc/os-release ]; then
-	# shellcheck disable=SC1091
-	. /etc/os-release
-fi
 
 # Overriding some systemd features is only needed if security.nesting=false
 # in which case, /dev/.lxc will be missing
