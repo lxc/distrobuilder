@@ -60,7 +60,7 @@ To compile `distrobuilder` from source, first install the Go programming languag
 - Debian-based:
     ```
     sudo apt update
-    sudo apt install -y golang-go gcc debootstrap rsync gpg squashfs-tools git make build-essential libguestfs-tools wimtools genisoimage
+    sudo apt install -y golang-go gcc debootstrap rsync gpg squashfs-tools git make build-essential libwin-hivex-perl wimtools genisoimage
     ```
 
 - ArchLinux-based:
