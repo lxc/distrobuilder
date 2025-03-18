@@ -358,7 +358,7 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 
 		err = vm.mountRootPartition()
 		if err != nil {
-			return fmt.Errorf("failed to mount root partion: %w", err)
+			return fmt.Errorf("failed to mount root partition: %w", err)
 		}
 
 		defer func() {
