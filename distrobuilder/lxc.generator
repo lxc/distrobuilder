@@ -2,7 +2,7 @@
 # NOTE: systemctl is not available for systemd-generators
 set -eu
 
-# disable localisation (faster grep)
+# disable localization (faster grep)
 export LC_ALL=C
 
 ## Helper functions
