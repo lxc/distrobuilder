@@ -146,6 +146,8 @@ See the [image section](../reference/image.md) for more on the image name.
 If `--compression` is set, the tarballs will use the provided compression instead of `xz`.
 
 Setting `--vm` will create a `qcow2` image which is used for virtual machines.
+This requires some extra tools to be installed on your host - see [How to
+install `distrobuilder`](install.md) for instructions.
 
 If `--import-into-incus` is set, the resulting image is imported into Incus.
 It basically runs `lxc image import <image>`.
