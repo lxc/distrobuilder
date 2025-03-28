@@ -98,6 +98,18 @@ $HOME/go/bin/distrobuilder
 ```
 
 You may also add the directory `$HOME/go/bin/` to your $PATH so that you do not need to run the command with the full path.
+
+## Runtime dependencies for building VM images
+
+If you intend to build Incus VM images (via `distrobuilder build-incus --vm`),
+your system will need certain tools installed:
+
+- Debian-based:
+    ```
+    sudo apt update
+    sudo apt install -y btrfs-progs dosfstools qemu-kvm
+    ```
+
 <!-- Include end installing -->
 
 ## How to use
