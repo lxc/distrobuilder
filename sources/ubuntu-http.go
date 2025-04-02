@@ -110,7 +110,7 @@ func (s ubuntu) unpack(filePath, rootDir string) error {
 		return fmt.Errorf("Failed to remove directory %q: %w", rootDir, err)
 	}
 
-	err = os.MkdirAll(rootDir, 0755)
+	err = os.MkdirAll(rootDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", rootDir, err)
 	}

@@ -146,14 +146,14 @@ StartLimitBurst=10
 
 	path := filepath.Join(g.sourceDir, systemdPath, "system", "incus-agent.service")
 
-	err := os.WriteFile(path, []byte(incusAgentServiceUnit), 0644)
+	err := os.WriteFile(path, []byte(incusAgentServiceUnit), 0o644)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", path, err)
 	}
 
 	path = filepath.Join(g.sourceDir, systemdPath, "incus-agent-setup")
 
-	err = os.WriteFile(path, []byte(incusAgentSetupScript), 0755)
+	err = os.WriteFile(path, []byte(incusAgentSetupScript), 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", path, err)
 	}
@@ -166,7 +166,7 @@ StartLimitBurst=10
 
 	incusAgentRules := `SYMLINK=="virtio-ports/org.linuxcontainers.incus", TAG+="systemd", ENV{SYSTEMD_WANTS}+="incus-agent.service"
 `
-	err = os.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-incus-agent.rules"), []byte(incusAgentRules), 0400)
+	err = os.WriteFile(filepath.Join(g.sourceDir, udevPath, "99-incus-agent.rules"), []byte(incusAgentRules), 0o400)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, udevPath, "99-incus-agent.rules"), err)
 	}
@@ -192,7 +192,7 @@ depend() {
 }
 `
 
-	err := os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/incus-agent"), []byte(incusAgentScript), 0755)
+	err := os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/incus-agent"), []byte(incusAgentScript), 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/incus-agent"), err)
 	}
@@ -209,7 +209,7 @@ command=/usr/local/bin/incus-agent-setup
 required_dirs=/dev/virtio-ports/
 `
 
-	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/incus-agent-setup"), []byte(incusConfigShareMountScript), 0755)
+	err = os.WriteFile(filepath.Join(g.sourceDir, "/etc/init.d/incus-agent-setup"), []byte(incusConfigShareMountScript), 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(g.sourceDir, "/etc/init.d/incus-agent-setup"), err)
 	}
@@ -221,7 +221,7 @@ required_dirs=/dev/virtio-ports/
 
 	path := filepath.Join(g.sourceDir, "/usr/local/bin", "incus-agent-setup")
 
-	err = os.WriteFile(path, []byte(incusAgentSetupScript), 0755)
+	err = os.WriteFile(path, []byte(incusAgentSetupScript), 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", path, err)
 	}

@@ -144,7 +144,7 @@ func (s *alpineLinux) Run() error {
 	}
 
 	// Fix bad permissions in Alpine tarballs
-	err = os.Chmod(s.rootfsDir, 0755)
+	err = os.Chmod(s.rootfsDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to chmod %q: %w", s.rootfsDir, err)
 	}

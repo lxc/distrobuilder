@@ -320,8 +320,10 @@ func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []st
 }
 
 func getEnvHttpProxy() (httpProxy string) {
-	for _, key := range []string{"http_proxy",
-		"HTTP_PROXY", "https_proxy", "HTTPS_PROXY"} {
+	for _, key := range []string{
+		"http_proxy",
+		"HTTP_PROXY", "https_proxy", "HTTPS_PROXY",
+	} {
 		if httpProxy = os.Getenv(key); httpProxy != "" {
 			return
 		}

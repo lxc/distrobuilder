@@ -31,7 +31,7 @@ func (g *hosts) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC) e
 	}
 
 	// Replace hostname with placeholder
-	content = []byte(strings.Replace(string(content), "distrobuilder", "LXC_NAME", -1))
+	content = []byte(strings.ReplaceAll(string(content), "distrobuilder", "LXC_NAME"))
 
 	// Add a new line if needed
 	if !strings.Contains(string(content), "LXC_NAME") {
@@ -70,7 +70,7 @@ func (g *hosts) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIn
 	templateDir := filepath.Join(g.cacheDir, "templates")
 
 	// Create templates path
-	err := os.MkdirAll(templateDir, 0755)
+	err := os.MkdirAll(templateDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", templateDir, err)
 	}
@@ -82,7 +82,7 @@ func (g *hosts) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIn
 	}
 
 	// Replace hostname with placeholder
-	content = []byte(strings.Replace(string(content), "distrobuilder", "{{ container.name }}", -1))
+	content = []byte(strings.ReplaceAll(string(content), "distrobuilder", "{{ container.name }}"))
 
 	// Add a new line if needed
 	if !strings.Contains(string(content), "{{ container.name }}") {
@@ -90,7 +90,7 @@ func (g *hosts) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIn
 	}
 
 	// Write the template
-	err = os.WriteFile(filepath.Join(templateDir, "hosts.tpl"), content, 0644)
+	err = os.WriteFile(filepath.Join(templateDir, "hosts.tpl"), content, 0o644)
 	if err != nil {
 		return fmt.Errorf("Failed to write file %q: %w", filepath.Join(templateDir, "hosts.tpl"), err)
 	}

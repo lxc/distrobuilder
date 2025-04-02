@@ -27,7 +27,7 @@ func (g *template) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLXC
 func (g *template) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	templateDir := filepath.Join(g.cacheDir, "templates")
 
-	err := os.MkdirAll(templateDir, 0755)
+	err := os.MkdirAll(templateDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", templateDir, err)
 	}

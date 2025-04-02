@@ -14,7 +14,7 @@ import (
 
 func setup(t *testing.T, cacheDir string) {
 	// Create rootfs directory
-	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
+	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0o755)
 	require.NoError(t, err)
 }
 

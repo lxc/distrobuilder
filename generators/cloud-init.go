@@ -48,7 +48,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 	path := filepath.Join(g.sourceDir, "/etc/cloud")
 
 	if !incus.PathExists(path) {
-		err := os.MkdirAll(path, 0755)
+		err := os.MkdirAll(path, 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", path, err)
 		}
@@ -71,7 +71,7 @@ func (g *cloudInit) RunLXC(img *image.LXCImage, target shared.DefinitionTargetLX
 func (g *cloudInit) RunIncus(img *image.IncusImage, target shared.DefinitionTargetIncus) error {
 	templateDir := filepath.Join(g.cacheDir, "templates")
 
-	err := os.MkdirAll(templateDir, 0755)
+	err := os.MkdirAll(templateDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", templateDir, err)
 	}

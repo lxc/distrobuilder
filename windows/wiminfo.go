@@ -12,9 +12,12 @@ import (
 var (
 	SupportedWindowsVersions = []string{
 		"w11", "w10", "w8", "w7", "2k19", "2k12", "2k16",
-		"2k22", "2k3", "2k8", "xp", "2k12r2", "2k8r2", "w8.1"}
+		"2k22", "2k3", "2k8", "xp", "2k12r2", "2k8r2", "w8.1",
+	}
+
 	SupportedWindowsArchitectures = []string{
-		"amd64", "ARM64", "x86"}
+		"amd64", "ARM64", "x86",
+	}
 )
 
 type WimInfo map[int]map[string]string

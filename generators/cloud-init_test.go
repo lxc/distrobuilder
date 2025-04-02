@@ -29,10 +29,10 @@ func TestCloudInitGeneratorRunLXC(t *testing.T) {
 	require.NoError(t, err)
 
 	// Prepare rootfs
-	err = os.MkdirAll(filepath.Join(rootfsDir, "etc", "runlevels"), 0755)
+	err = os.MkdirAll(filepath.Join(rootfsDir, "etc", "runlevels"), 0o755)
 	require.NoError(t, err)
 
-	err = os.MkdirAll(filepath.Join(rootfsDir, "etc", "cloud"), 0755)
+	err = os.MkdirAll(filepath.Join(rootfsDir, "etc", "cloud"), 0o755)
 	require.NoError(t, err)
 
 	for _, f := range []string{"cloud-init-local", "cloud-config", "cloud-init", "cloud-final"} {

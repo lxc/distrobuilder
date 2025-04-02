@@ -37,7 +37,7 @@ func (s *busybox) Run() error {
 
 	sourceDir := filepath.Join(s.cacheDir, "src")
 
-	err = os.MkdirAll(sourceDir, 0755)
+	err = os.MkdirAll(sourceDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", sourceDir, err)
 	}
@@ -91,7 +91,7 @@ mv ${source_dir}/busybox "${rootfs_dir}/bin/busybox"
 
 		s.logger.Debugf("Creating directory %q", path)
 
-		err = os.MkdirAll(filepath.Dir(path), 0755)
+		err = os.MkdirAll(filepath.Dir(path), 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(path), err)
 		}
@@ -105,7 +105,7 @@ mv ${source_dir}/busybox "${rootfs_dir}/bin/busybox"
 	}
 
 	for _, path := range []string{"dev", "mnt", "proc", "root", "sys", "tmp"} {
-		err := os.Mkdir(filepath.Join(s.rootfsDir, path), 0755)
+		err := os.Mkdir(filepath.Join(s.rootfsDir, path), 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", filepath.Join(s.rootfsDir, path), err)
 		}

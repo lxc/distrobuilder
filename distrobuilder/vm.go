@@ -99,7 +99,7 @@ func (v *vm) createEmptyDiskImage() error {
 
 	defer f.Close()
 
-	err = f.Chmod(0600)
+	err = f.Chmod(0o600)
 	if err != nil {
 		return fmt.Errorf("Failed to chmod %s: %w", v.imageFile, err)
 	}
@@ -117,7 +117,8 @@ func (v *vm) createPartitions(args ...[]string) error {
 		args = [][]string{
 			{"--zap-all"},
 			{"--new=1::+100M", "-t 1:EF00"},
-			{"--new=2::", "-t 2:8300"}}
+			{"--new=2::", "-t 2:8300"},
+		}
 	}
 
 	for _, cmd := range args {
@@ -220,7 +221,7 @@ func (v *vm) mountImage() (err error) {
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
 
-		err = unix.Mknod(v.getUEFIDevFile(), unix.S_IFBLK|0644, int(dev))
+		err = unix.Mknod(v.getUEFIDevFile(), unix.S_IFBLK|0o644, int(dev))
 		if err != nil {
 			err = fmt.Errorf("Failed to create block device %q: %w", v.getUEFIDevFile(), err)
 			return
@@ -236,7 +237,7 @@ func (v *vm) mountImage() (err error) {
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
 
-		err = unix.Mknod(v.getRootfsDevFile(), unix.S_IFBLK|0644, int(dev))
+		err = unix.Mknod(v.getRootfsDevFile(), unix.S_IFBLK|0o644, int(dev))
 		if err != nil {
 			err = fmt.Errorf("Failed to create block device %q: %w", v.getRootfsDevFile(), err)
 			return
@@ -338,7 +339,7 @@ func (v *vm) mountUEFIPartition() error {
 
 	v.bootfsDir = filepath.Join(v.rootfsDir, "boot", "efi")
 
-	err := os.MkdirAll(v.bootfsDir, 0755)
+	err := os.MkdirAll(v.bootfsDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", v.bootfsDir, err)
 	}

@@ -142,9 +142,10 @@ func (m *Manager) ManagePackages(imageTarget shared.ImageTarget) error {
 	}
 
 	for _, set := range optimizePackageSets(validSets) {
-		if set.Action == "install" {
+		switch set.Action {
+		case "install":
 			err = m.mgr.install(set.Packages, set.Flags)
-		} else if set.Action == "remove" {
+		case "remove":
 			err = m.mgr.remove(set.Packages, set.Flags)
 		}
 

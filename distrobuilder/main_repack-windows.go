@@ -141,7 +141,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 	success := false
 
-	err = os.Mkdir(c.global.flagCacheDir, 0755)
+	err = os.Mkdir(c.global.flagCacheDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", c.global.flagCacheDir, err)
 	}
@@ -155,7 +155,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	c.global.sourceDir = filepath.Join(c.global.flagCacheDir, "source")
 
 	// Create source path
-	err = os.MkdirAll(c.global.sourceDir, 0755)
+	err = os.MkdirAll(c.global.sourceDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", c.global.sourceDir, err)
 	}
@@ -177,7 +177,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 
 	driverPath := filepath.Join(c.global.flagCacheDir, "drivers")
 	if !incus.PathExists(driverPath) {
-		err := os.MkdirAll(driverPath, 0755)
+		err := os.MkdirAll(driverPath, 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", driverPath, err)
 		}
@@ -215,7 +215,7 @@ func (c *cmdRepackWindows) checkVirtioISOPath() (err error) {
 
 	// Download vioscsi driver
 	virtioURL := "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/" + c.defaultDrivers
-	err = os.MkdirAll(filepath.Dir(virtioISOPath), 0755)
+	err = os.MkdirAll(filepath.Dir(virtioISOPath), 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(virtioISOPath), err)
 	}
@@ -322,9 +322,12 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 
 	version := strings.Split(stdout.String(), "\n")[0]
 
-	genArgs := []string{"-l", "-iso-level", "4", "-no-emul-boot",
+	genArgs := []string{
+		"-l", "-iso-level", "4", "-no-emul-boot",
 		"-b", "boot/etfsboot.com", "-boot-load-seg", "0",
-		"-boot-load-size", "8", "-eltorito-alt-boot"}
+		"-boot-load-size", "8", "-eltorito-alt-boot",
+	}
+
 	if strings.HasPrefix(version, "mkisofs") {
 		genArgs = append(genArgs,
 			"-eltorito-platform", "efi", "-no-emul-boot",
@@ -349,7 +352,6 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 			return os.Stderr.Write(b)
 		})),
 		nil, nil, software, genArgs...)
-
 	if err != nil {
 		return fmt.Errorf("Failed to generate ISO: %w", err)
 	}

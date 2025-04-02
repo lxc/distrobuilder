@@ -57,7 +57,7 @@ func (s *fedora) Run() error {
 			return fmt.Errorf("Failed to create OCI path: %q: %w", ociDir, err)
 		}
 
-		err = os.Mkdir(filepath.Join(ociDir, "image"), 0755)
+		err = os.Mkdir(filepath.Join(ociDir, "image"), 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create OCI path: %q: %w", ociDir, err)
 		}
@@ -68,7 +68,7 @@ func (s *fedora) Run() error {
 		}
 
 		// Extract the image to a temporary path.
-		err = os.Mkdir(filepath.Join(ociDir, "content"), 0755)
+		err = os.Mkdir(filepath.Join(ociDir, "content"), 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create OCI path: %q: %w", ociDir, err)
 		}

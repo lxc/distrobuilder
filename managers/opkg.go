@@ -38,7 +38,7 @@ func (m *opkg) load() error {
 
 	m.hooks = managerHooks{
 		preRefresh: func() error {
-			return os.MkdirAll("/var/lock", 0755)
+			return os.MkdirAll("/var/lock", 0o755)
 		},
 	}
 

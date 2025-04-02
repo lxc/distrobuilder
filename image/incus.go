@@ -26,7 +26,8 @@ type IncusImage struct {
 
 // NewIncusImage returns an IncusImage.
 func NewIncusImage(ctx context.Context, sourceDir, targetDir, cacheDir string,
-	definition shared.Definition) *IncusImage {
+	definition shared.Definition,
+) *IncusImage {
 	return &IncusImage{
 		sourceDir,
 		targetDir,

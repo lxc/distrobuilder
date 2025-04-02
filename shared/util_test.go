@@ -252,7 +252,7 @@ func findMatchHelper(t *testing.T, filenames ...string) (dir string, actuals []s
 	actuals = make([]string, len(filenames))
 	for i, filename := range filenames {
 		filename = filepath.Join(dir, filename)
-		err = os.MkdirAll(filepath.Dir(filename), 0755)
+		err = os.MkdirAll(filepath.Dir(filename), 0o755)
 		if err != nil {
 			t.Fatal(err)
 		}

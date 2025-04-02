@@ -277,14 +277,14 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	// Clean up cache directory before doing anything
 	c.cleanupCacheDirectory()
 
-	err := os.MkdirAll(c.flagCacheDir, 0755)
+	err := os.MkdirAll(c.flagCacheDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed creating cache directory: %w", err)
 	}
 
 	if len(args) > 1 {
 		// Create and set target directory if provided
-		err := os.MkdirAll(args[1], 0755)
+		err := os.MkdirAll(args[1], 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", args[1], err)
 		}
@@ -305,7 +305,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create source directory if it doesn't exist
-	err = os.MkdirAll(c.sourceDir, 0755)
+	err = os.MkdirAll(c.sourceDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", c.sourceDir, err)
 	}
@@ -318,7 +318,7 @@ func (c *cmdGlobal) preRunBuild(cmd *cobra.Command, args []string) error {
 
 	// Create cache directory if we also plan on creating LXC or Incus images
 	if !isRunningBuildDir {
-		err = os.MkdirAll(c.flagCacheDir, 0755)
+		err = os.MkdirAll(c.flagCacheDir, 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", c.flagCacheDir, err)
 		}
@@ -455,7 +455,7 @@ func (c *cmdGlobal) preRunPack(cmd *cobra.Command, args []string) error {
 	// Clean up cache directory before doing anything
 	c.cleanupCacheDirectory()
 
-	err := os.MkdirAll(c.flagCacheDir, 0755)
+	err := os.MkdirAll(c.flagCacheDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed creating cache directory: %w", err)
 	}
@@ -622,7 +622,7 @@ func addSystemdGenerator() error {
 		return nil
 	}
 
-	err := os.MkdirAll("/etc/systemd/system-generators", 0755)
+	err := os.MkdirAll("/etc/systemd/system-generators", 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed creating directory: %w", err)
 	}
@@ -632,7 +632,7 @@ func addSystemdGenerator() error {
 		return fmt.Errorf("Failed reading lxc.generator: %w", err)
 	}
 
-	err = os.WriteFile("/etc/systemd/system-generators/lxc", content, 0755)
+	err = os.WriteFile("/etc/systemd/system-generators/lxc", content, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed creating system generator: %w", err)
 	}

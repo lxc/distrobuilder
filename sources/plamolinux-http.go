@@ -37,8 +37,10 @@ func (s *plamolinux) Run() error {
 		s.definition.Image.ArchitectureMapped, "plamo")
 
 	paths := []string{path.Join(mirrorPath, "00_base")}
-	ignoredPkgs := []string{"alsa_utils", "grub", "kernel", "lilo", "linux_firmware", "microcode_ctl",
-		"linux_firmwares", "cpufreqd", "cpufrequtils", "gpm", "ntp", "kmod", "kmscon"}
+	ignoredPkgs := []string{
+		"alsa_utils", "grub", "kernel", "lilo", "linux_firmware", "microcode_ctl",
+		"linux_firmwares", "cpufreqd", "cpufrequtils", "gpm", "ntp", "kmod", "kmscon",
+	}
 
 	if release < 7 {
 		paths = append(paths, path.Join(mirrorPath, "01_minimum"))

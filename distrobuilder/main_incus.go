@@ -315,7 +315,7 @@ func (c *cmdIncus) run(cmd *cobra.Command, args []string, overlayDir string) err
 	if c.flagVM {
 		vmDir = filepath.Join(c.global.flagCacheDir, "vm")
 
-		err := os.Mkdir(vmDir, 0755)
+		err := os.Mkdir(vmDir, 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", vmDir, err)
 		}
