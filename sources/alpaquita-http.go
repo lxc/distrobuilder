@@ -55,20 +55,20 @@ func (s *alpaquita) getMiniroot(definition shared.Definition) (string, string, e
 		s.definition.Source.URL = "https://packages.bell-sw.com"
 	}
 
-	// require explicit variant
-	if s.definition.Image.Variant == "default" {
-		return "", "", fmt.Errorf("Alpaquita requires explicitly specified variant")
+	// require explicit source variant (libc)
+	if s.definition.Source.Variant == "" {
+		return "", "", fmt.Errorf("Alpaquita requires explicitly specified source variant")
 	}
 
 	base := fmt.Sprintf("%s/alpaquita/%s/%s/releases/%s/",
 		s.definition.Source.URL,
-		s.definition.Image.Variant,
+		s.definition.Source.Variant,
 		s.definition.Image.Release,
 		s.definition.Image.ArchitectureMapped)
 
 	fname := fmt.Sprintf("alpaquita-minirootfs-%s-latest-%s-%s.tar.gz",
 		s.definition.Image.Release,
-		s.definition.Image.Variant,
+		s.definition.Source.Variant,
 		s.definition.Image.ArchitectureMapped)
 
 	return base, fname, nil
