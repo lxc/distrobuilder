@@ -1,14 +1,38 @@
+version: "2"
 linters:
   enable:
-    - gofmt
-    - misspell
-    - godot
-    - whitespace
-    - gci
     - errorlint
-linters-settings:
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(github.com/lxc/distrobuilder)
+    - godot
+    - misspell
+    - whitespace
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+    rules:
+      - linters:
+          - staticcheck
+        text: "ST1005:"
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/lxc/distrobuilder)
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
