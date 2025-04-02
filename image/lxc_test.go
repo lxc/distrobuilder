@@ -144,7 +144,7 @@ func TestLXCBuild(t *testing.T) {
 	image, cacheDir := setupLXC()
 	defer os.RemoveAll(cacheDir)
 
-	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0755)
+	err := os.MkdirAll(filepath.Join(cacheDir, "rootfs"), 0o755)
 	require.NoError(t, err)
 
 	err = image.Build("xz")
@@ -209,7 +209,7 @@ func TestLXCCreateMetadataBasic(t *testing.T) {
 			"",
 			func(l LXCImage) *LXCImage {
 				// Create /dev and device file.
-				err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "dev"), 0755)
+				err := os.MkdirAll(filepath.Join(cacheDir, "rootfs", "dev"), 0o755)
 				require.NoError(t, err)
 				err = unix.Mknod(filepath.Join(cacheDir, "rootfs", "dev", "null"), unix.S_IFCHR, 0)
 				require.NoError(t, err)

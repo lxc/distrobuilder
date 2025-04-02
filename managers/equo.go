@@ -42,9 +42,10 @@ func (m *equo) load() error {
 }
 
 func (m *equo) manageRepository(repoAction shared.DefinitionPackagesRepository) error {
-	if repoAction.Type == "" || repoAction.Type == "equo" {
+	switch repoAction.Type {
+	case "", "equo":
 		return m.equoRepoCaller(repoAction)
-	} else if repoAction.Type == "enman" {
+	case "enman":
 		return m.enmanRepoCaller(repoAction)
 	}
 

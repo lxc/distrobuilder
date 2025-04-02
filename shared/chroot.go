@@ -26,7 +26,7 @@ var ActiveChroots = make(map[string]func() error)
 
 func setupMounts(rootfs string, mounts []ChrootMount) error {
 	// Create a temporary mount path
-	err := os.MkdirAll(filepath.Join(rootfs, ".distrobuilder"), 0700)
+	err := os.MkdirAll(filepath.Join(rootfs, ".distrobuilder"), 0o700)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", filepath.Join(rootfs, ".distrobuilder"), err)
 	}
@@ -37,7 +37,7 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 
 		// Create the target mountpoint
 		if mount.IsDir {
-			err := os.MkdirAll(tmpTarget, 0755)
+			err := os.MkdirAll(tmpTarget, 0o755)
 			if err != nil {
 				return fmt.Errorf("Failed to create directory %q: %w", tmpTarget, err)
 			}
@@ -110,19 +110,19 @@ func moveMounts(mounts []ChrootMount) error {
 		}
 
 		// Create parent paths if missing
-		err := os.MkdirAll(targetDir, 0755)
+		err := os.MkdirAll(targetDir, 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", targetDir, err)
 		}
 
 		// Create target path
 		if mount.IsDir {
-			err = os.MkdirAll(target, 0755)
+			err = os.MkdirAll(target, 0o755)
 			if err != nil {
 				return fmt.Errorf("Failed to create directory %q: %w", target, err)
 			}
 		} else {
-			err := os.WriteFile(target, nil, 0644)
+			err := os.WriteFile(target, nil, 0o644)
 			if err != nil {
 				return fmt.Errorf("Failed to create file %q: %w", target, err)
 			}
@@ -242,7 +242,7 @@ func SetupChroot(rootfs string, definition Definition, m []ChrootMount) (func() 
 	}
 
 	// Change permission for /dev/shm
-	err = unix.Chmod("/dev/shm", 01777)
+	err = unix.Chmod("/dev/shm", 0o1777)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to chmod /dev/shm: %w", err)
 	}
@@ -276,9 +276,10 @@ func SetupChroot(rootfs string, definition Definition, m []ChrootMount) (func() 
 	if len(envs.EnvVariables) > 0 {
 		imageTargets := ImageTargetUndefined | ImageTargetAll
 
-		if definition.Targets.Type == DefinitionFilterTypeContainer {
+		switch definition.Targets.Type {
+		case DefinitionFilterTypeContainer:
 			imageTargets |= ImageTargetContainer
-		} else if definition.Targets.Type == DefinitionFilterTypeVM {
+		case DefinitionFilterTypeVM:
 			imageTargets |= ImageTargetVM
 		}
 
@@ -308,7 +309,7 @@ func SetupChroot(rootfs string, definition Definition, m []ChrootMount) (func() 
 	if incus.PathExists("/usr/sbin/") && !incus.PathExists("/usr/sbin/policy-rc.d") {
 		err = os.WriteFile("/usr/sbin/policy-rc.d", []byte(`#!/bin/sh
 exit 101
-`), 0755)
+`), 0o755)
 		if err != nil {
 			return nil, err
 		}
@@ -369,7 +370,7 @@ exit 101
 
 		ActiveChroots[rootfs] = nil
 
-		return os.MkdirAll(devPath, 0755)
+		return os.MkdirAll(devPath, 0o755)
 	}
 
 	ActiveChroots[rootfs] = exitFunc
@@ -384,13 +385,13 @@ func populateDev() error {
 		Minor uint32
 		Mode  uint32
 	}{
-		{"/dev/console", 5, 1, unix.S_IFCHR | 0640},
-		{"/dev/full", 1, 7, unix.S_IFCHR | 0666},
-		{"/dev/null", 1, 3, unix.S_IFCHR | 0666},
-		{"/dev/random", 1, 8, unix.S_IFCHR | 0666},
-		{"/dev/tty", 5, 0, unix.S_IFCHR | 0666},
-		{"/dev/urandom", 1, 9, unix.S_IFCHR | 0666},
-		{"/dev/zero", 1, 5, unix.S_IFCHR | 0666},
+		{"/dev/console", 5, 1, unix.S_IFCHR | 0o640},
+		{"/dev/full", 1, 7, unix.S_IFCHR | 0o666},
+		{"/dev/null", 1, 3, unix.S_IFCHR | 0o666},
+		{"/dev/random", 1, 8, unix.S_IFCHR | 0o666},
+		{"/dev/tty", 5, 0, unix.S_IFCHR | 0o666},
+		{"/dev/urandom", 1, 9, unix.S_IFCHR | 0o666},
+		{"/dev/zero", 1, 5, unix.S_IFCHR | 0o666},
 	}
 
 	for _, d := range devs {

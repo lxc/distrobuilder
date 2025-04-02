@@ -88,7 +88,7 @@ func yumManageRepository(repoAction shared.DefinitionPackagesRepository) error {
 	}
 
 	if !incus.PathExists(filepath.Dir(targetFile)) {
-		err := os.MkdirAll(filepath.Dir(targetFile), 0755)
+		err := os.MkdirAll(filepath.Dir(targetFile), 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(targetFile), err)
 		}

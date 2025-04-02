@@ -32,17 +32,17 @@ func getOverlay(logger *logrus.Logger, cacheDir, sourceDir string) (func(), stri
 	overlayDir := filepath.Join(cacheDir, "overlay")
 	workDir := filepath.Join(cacheDir, "work")
 
-	err := os.Mkdir(upperDir, 0755)
+	err := os.Mkdir(upperDir, 0o755)
 	if err != nil {
 		return nil, "", fmt.Errorf("Failed to create directory %q: %w", upperDir, err)
 	}
 
-	err = os.Mkdir(overlayDir, 0755)
+	err = os.Mkdir(overlayDir, 0o755)
 	if err != nil {
 		return nil, "", fmt.Errorf("Failed to create directory %q: %w", overlayDir, err)
 	}
 
-	err = os.Mkdir(workDir, 0755)
+	err = os.Mkdir(workDir, 0o755)
 	if err != nil {
 		return nil, "", fmt.Errorf("Failed to create directory %q: %w", workDir, err)
 	}

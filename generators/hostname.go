@@ -55,7 +55,7 @@ func (g *hostname) RunIncus(img *image.IncusImage, target shared.DefinitionTarge
 
 	templateDir := filepath.Join(g.cacheDir, "templates")
 
-	err := os.MkdirAll(templateDir, 0755)
+	err := os.MkdirAll(templateDir, 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", templateDir, err)
 	}

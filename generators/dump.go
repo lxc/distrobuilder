@@ -49,7 +49,7 @@ func (g *dump) run(content string) error {
 	path := filepath.Join(g.sourceDir, g.defFile.Path)
 
 	// Create any missing directory
-	err := os.MkdirAll(filepath.Dir(path), 0755)
+	err := os.MkdirAll(filepath.Dir(path), 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(path), err)
 	}

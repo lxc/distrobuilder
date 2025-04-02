@@ -63,7 +63,7 @@ func (m *apk) appendRepositoryURL(repoAction shared.DefinitionPackagesRepository
 
 	repoFile := "/etc/apk/repositories"
 
-	f, err := os.OpenFile(repoFile, os.O_WRONLY|os.O_APPEND, 0644)
+	f, err := os.OpenFile(repoFile, os.O_WRONLY|os.O_APPEND, 0o644)
 	if err != nil {
 		return fmt.Errorf("Failed to open %q: %w", repoFile, err)
 	}
@@ -88,7 +88,7 @@ func (m *apk) writeKeyFile(repoAction shared.DefinitionPackagesRepository) error
 	}
 
 	keyFile := "/etc/apk/keys/" + repoAction.Name
-	f, err := os.OpenFile(keyFile, os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(keyFile, os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return fmt.Errorf("Failed to open %q: %w", keyFile, err)
 	}

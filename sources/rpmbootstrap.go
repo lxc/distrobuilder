@@ -26,7 +26,7 @@ func (s *rpmbootstrap) yumordnf() (cmd string, err error) {
 
 func (s *rpmbootstrap) repodirs() (dir string, err error) {
 	reposdir := path.Join(s.sourcesDir, "etc", "yum.repos.d")
-	err = os.MkdirAll(reposdir, 0755)
+	err = os.MkdirAll(reposdir, 0o755)
 	if err != nil {
 		return "", err
 	}
@@ -38,7 +38,7 @@ func (s *rpmbootstrap) repodirs() (dir string, err error) {
 		return "", err
 	}
 
-	err = os.WriteFile(path.Join(reposdir, distribution+".repo"), []byte(content), 0644)
+	err = os.WriteFile(path.Join(reposdir, distribution+".repo"), []byte(content), 0o644)
 	if err != nil {
 		return "", err
 	}
@@ -59,10 +59,12 @@ func (s *rpmbootstrap) Run() (err error) {
 	}
 
 	release := s.definition.Image.Release
-	args := []string{fmt.Sprintf("--installroot=%s", s.rootfsDir),
+	args := []string{
+		fmt.Sprintf("--installroot=%s", s.rootfsDir),
 		fmt.Sprintf("--releasever=%s", release),
 		fmt.Sprintf("--setopt=reposdir=%s", repodir),
-		"install", "-y"}
+		"install", "-y",
+	}
 
 	os.RemoveAll(s.rootfsDir)
 	earlyPackagesRemove := s.definition.GetEarlyPackages("remove")

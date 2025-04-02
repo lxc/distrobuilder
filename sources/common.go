@@ -49,7 +49,7 @@ func (s *common) init(ctx context.Context, logger *logrus.Logger, definition sha
 
 func (s *common) getTargetDir() string {
 	dir := filepath.Join(s.sourcesDir, fmt.Sprintf("%s-%s-%s", s.definition.Image.Distribution, s.definition.Image.Release, s.definition.Image.ArchitectureMapped))
-	dir = strings.Replace(dir, " ", "", -1)
+	dir = strings.ReplaceAll(dir, " ", "")
 	dir = strings.ToLower(dir)
 
 	return dir
@@ -65,7 +65,7 @@ func (s *common) DownloadHash(def shared.DefinitionImage, file, checksum string,
 
 	destDir := s.getTargetDir()
 
-	err = os.MkdirAll(destDir, 0755)
+	err = os.MkdirAll(destDir, 0o755)
 	if err != nil {
 		return "", err
 	}
@@ -232,7 +232,7 @@ func (s *common) VerifyFile(signedFile, signatureFile string) (bool, error) {
 
 // CreateGPGKeyring creates a new GPG keyring.
 func (s *common) CreateGPGKeyring() (string, error) {
-	err := os.MkdirAll(s.getTargetDir(), 0700)
+	err := os.MkdirAll(s.getTargetDir(), 0o700)
 	if err != nil {
 		return "", err
 	}
@@ -242,7 +242,7 @@ func (s *common) CreateGPGKeyring() (string, error) {
 		return "", fmt.Errorf("Failed to create gpg directory: %w", err)
 	}
 
-	err = os.MkdirAll(gpgDir, 0700)
+	err = os.MkdirAll(gpgDir, 0o700)
 	if err != nil {
 		return "", err
 	}

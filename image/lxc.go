@@ -35,7 +35,7 @@ func NewLXCImage(ctx context.Context, sourceDir, targetDir, cacheDir string, def
 	}
 
 	// create metadata directory
-	err := os.MkdirAll(filepath.Join(cacheDir, "metadata"), 0755)
+	err := os.MkdirAll(filepath.Join(cacheDir, "metadata"), 0o755)
 	if err != nil {
 		return nil
 	}
@@ -48,14 +48,14 @@ func (l *LXCImage) AddTemplate(path string) error {
 	metaDir := filepath.Join(l.cacheDir, "metadata")
 
 	file, err := os.OpenFile(filepath.Join(metaDir, "templates"),
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		return fmt.Errorf("Failed to open file %q: %w", filepath.Join(metaDir, "templates"), err)
 	}
 
 	defer file.Close()
 
-	_, err = file.WriteString(fmt.Sprintf("%v\n", path))
+	_, err = fmt.Fprintf(file, "%v\n", path)
 	if err != nil {
 		return fmt.Errorf("Failed to write to template file: %w", err)
 	}
@@ -211,7 +211,7 @@ func (l *LXCImage) writeMetadata(filename, content string, appendContent bool) e
 
 	// Open the file either in append or create mode
 	if appendContent {
-		file, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		file, err = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 		if err != nil {
 			return fmt.Errorf("Failed to open file %q: %w", filename, err)
 		}

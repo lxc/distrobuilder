@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lxc/incus/v6/shared/osarch"
 	incusArch "github.com/lxc/incus/v6/shared/osarch"
 )
 
@@ -313,7 +312,7 @@ func (d *Definition) SetValue(key string, value string) error {
 func (d *Definition) SetDefaults() {
 	// default to local arch
 	if d.Image.Architecture == "" {
-		localArch, _ := osarch.ArchitectureGetLocal()
+		localArch, _ := incusArch.ArchitectureGetLocal()
 		d.Image.Architecture = localArch
 	}
 

@@ -29,13 +29,14 @@ func (s *slackware) Run() error {
 	slackpkgPath := ""
 
 	// set mirror path based on architecture
-	if s.definition.Image.ArchitectureMapped == "i586" {
+	switch s.definition.Image.ArchitectureMapped {
+	case "i586":
 		mirrorPath = path.Join(u.Path, fmt.Sprintf("slackware-%s", s.definition.Image.Release), "slackware")
 		slackpkgPath = s.definition.Source.URL + fmt.Sprintf("slackware-%s", s.definition.Image.Release)
-	} else if s.definition.Image.ArchitectureMapped == "x86_64" {
+	case "x86_64":
 		mirrorPath = path.Join(u.Path, fmt.Sprintf("slackware64-%s", s.definition.Image.Release), "slackware64")
 		slackpkgPath = s.definition.Source.URL + fmt.Sprintf("slackware64-%s", s.definition.Image.Release)
-	} else {
+	default:
 		return fmt.Errorf("Invalid architecture: %s", s.definition.Image.Architecture)
 	}
 
@@ -150,7 +151,7 @@ func (s *slackware) downloadFiles(def shared.DefinitionImage, URL string, requir
 			pkgName := strings.Split(target, "-")[0]
 			twoPkgName := strings.Split(target, "-")[0] + "-" + strings.Split(target, "-")[1]
 
-			if !((slices.Contains(requiredPkgs, pkgName)) || (slices.Contains(requiredPkgs, twoPkgName))) {
+			if !slices.Contains(requiredPkgs, pkgName) && !slices.Contains(requiredPkgs, twoPkgName) {
 				continue
 			}
 

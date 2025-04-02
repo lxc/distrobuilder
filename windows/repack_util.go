@@ -90,7 +90,7 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 		sourceDir := filepath.Join(driverPath, driverName, r.windowsVersion, r.windowsArchitecture)
 		targetBaseDir := filepath.Join(dirs["filerepository"], driverInfo.PackageName)
 		if !incus.PathExists(targetBaseDir) {
-			err := os.MkdirAll(targetBaseDir, 0755)
+			err := os.MkdirAll(targetBaseDir, 0o755)
 			if err != nil {
 				logger.Error(err)
 				return err
@@ -238,7 +238,7 @@ func (r *RepackUtil) modifyWimIndex(wimFile string, index int, name string, driv
 	wimName := filepath.Base(wimFile)
 	logger := r.logger.WithFields(logrus.Fields{"wim": wimName, "idx": wimIndex + ":" + name})
 	if !incus.PathExists(wimPath) {
-		err := os.MkdirAll(wimPath, 0755)
+		err := os.MkdirAll(wimPath, 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", wimPath, err)
 		}

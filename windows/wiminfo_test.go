@@ -23,10 +23,12 @@ func TestParseWimInfo(t *testing.T) {
 			8:  "Windows 10 Pro Education",
 			9:  "Windows 10 Pro Education N",
 			10: "Windows 10 Pro for Workstations",
-			11: "Windows 10 Pro N for Workstations"}},
+			11: "Windows 10 Pro N for Workstations",
+		}},
 		{"testdata/w10_boot_wim_info.txt", 2, map[int]string{
 			1: "Microsoft Windows PE (x64)",
-			2: "Microsoft Windows Setup (x64)"}},
+			2: "Microsoft Windows Setup (x64)",
+		}},
 		{"testdata/winpe_boot_wim_info.txt", 1, map[int]string{
 			1: "Microsoft Windows PE (amd64)",
 		}},

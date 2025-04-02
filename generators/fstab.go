@@ -44,7 +44,7 @@ LABEL=UEFI    /boot/efi vfat  defaults  0 0
 		options = fmt.Sprintf("%s,subvol=@", options)
 	}
 
-	_, err = f.WriteString(fmt.Sprintf(content, fs, options))
+	_, err = fmt.Fprintf(f, content, fs, options)
 	if err != nil {
 		return fmt.Errorf("Failed to write string to file %q: %w", filepath.Join(g.sourceDir, "etc/fstab"), err)
 	}

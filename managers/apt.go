@@ -64,13 +64,13 @@ func (m *apt) manageRepository(repoAction shared.DefinitionPackagesRepository) e
 	}
 
 	if !incus.PathExists(filepath.Dir(targetFile)) {
-		err := os.MkdirAll(filepath.Dir(targetFile), 0755)
+		err := os.MkdirAll(filepath.Dir(targetFile), 0o755)
 		if err != nil {
 			return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(targetFile), err)
 		}
 	}
 
-	f, err := os.OpenFile(targetFile, os.O_CREATE|os.O_RDWR, 0644)
+	f, err := os.OpenFile(targetFile, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
 		return fmt.Errorf("Failed to open file %q: %w", targetFile, err)
 	}

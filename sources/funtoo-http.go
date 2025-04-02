@@ -16,13 +16,15 @@ type funtoo struct {
 // Run downloads a Funtoo stage3 tarball.
 func (s *funtoo) Run() error {
 	topLevelArch := s.definition.Image.ArchitectureMapped
-	if topLevelArch == "generic_32" {
+
+	switch topLevelArch {
+	case "generic_32":
 		topLevelArch = "x86-32bit"
-	} else if topLevelArch == "generic_64" {
+	case "generic_64":
 		topLevelArch = "x86-64bit"
-	} else if topLevelArch == "armv7a_vfpv3_hardfp" {
+	case "armv7a_vfpv3_hardfp":
 		topLevelArch = "arm-32bit"
-	} else if topLevelArch == "arm64_generic" {
+	case "arm64_generic":
 		topLevelArch = "arm-64bit"
 	}
 

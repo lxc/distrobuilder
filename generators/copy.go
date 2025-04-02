@@ -154,7 +154,6 @@ func (g *copy) copyDir(srcPath, destPath string, defFile shared.DefinitionFile) 
 
 		return nil
 	})
-
 	if err != nil {
 		return fmt.Errorf("Failed to walk file tree of %q: %w", srcPath, err)
 	}
@@ -211,7 +210,7 @@ func (g *copy) copyFile(src, dest string, defFile shared.DefinitionFile) error {
 	out, err := os.Create(dest)
 	if err != nil {
 		if os.IsExist(err) {
-			out, err = os.OpenFile(dest, os.O_WRONLY, 0644)
+			out, err = os.OpenFile(dest, os.O_WRONLY, 0o644)
 			if err != nil {
 				return fmt.Errorf("Failed to open file %q: %w", dest, err)
 			}
