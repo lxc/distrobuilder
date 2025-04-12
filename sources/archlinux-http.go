@@ -39,12 +39,16 @@ func (s *archlinux) Run() error {
 	var fname string
 	var tarball string
 
-	if s.definition.Image.ArchitectureMapped == "x86_64" {
+	switch s.definition.Image.ArchitectureMapped {
+	case "x86_64":
 		fname = fmt.Sprintf("archlinux-bootstrap-%s-%s.tar.zst",
 			release, s.definition.Image.ArchitectureMapped)
 		tarball = fmt.Sprintf("%s/%s/%s", s.definition.Source.URL,
 			release, fname)
-	} else {
+	case "riscv64":
+		fname = "archrisv-latest.tar.zst"
+		tarball = fmt.Sprintf("%s/images/%s", s.definition.Source.URL, fname)
+	default:
 		fname = fmt.Sprintf("ArchLinuxARM-%s-latest.tar.gz",
 			s.definition.Image.ArchitectureMapped)
 		tarball = fmt.Sprintf("%s/os/%s", s.definition.Source.URL, fname)
