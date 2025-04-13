@@ -46,7 +46,7 @@ func (s *archlinux) Run() error {
 		tarball = fmt.Sprintf("%s/%s/%s", s.definition.Source.URL,
 			release, fname)
 	case "riscv64":
-		fname = "archrisv-latest.tar.zst"
+		fname = "archriscv-latest.tar.zst"
 		tarball = fmt.Sprintf("%s/images/%s", s.definition.Source.URL, fname)
 	default:
 		fname = fmt.Sprintf("ArchLinuxARM-%s-latest.tar.gz",
