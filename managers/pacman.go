@@ -125,7 +125,7 @@ func (m *pacman) setMirrorlist() error {
 
 	if slices.Contains([]string{"arm", "arm64"}, runtime.GOARCH) {
 		mirror = "Server = http://mirror.archlinuxarm.org/$arch/$repo"
-	else if slices.Contains([]string{"riscv64"}, runtime.GOARCH) {
+	} else if slices.Contains([]string{"riscv64"}, runtime.GOARCH) {
 		mirror = "Server = https://archriscv.felixc.at/repo/$repo"
 	} else {
 		mirror = "Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch"
