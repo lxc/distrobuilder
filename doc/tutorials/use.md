@@ -175,7 +175,7 @@ distrobuilder repack-windows -h
 Run the following commands to initialize the VM, to configure (=increase) the allocated disk space and finally attach the full path of your prepared ISO file. Note that the installation of Windows 10 takes about 10GB (before updates), therefore a 30GB disk gives you about 20GB of free space.
 
 ```bash
-incus init win10 --empty --vm -c security.secureboot=false
+incus init win10 --empty --vm -c security.secureboot=false -c image.os="Windows 10"
 incus config device override win10 root size=30GiB
 incus config device add win10 iso disk source=/path/to/Windows-repacked.iso boot.priority=10
 ```
