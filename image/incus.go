@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	"github.com/lxc/incus/v6/shared/api"
-	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/shared"
 )

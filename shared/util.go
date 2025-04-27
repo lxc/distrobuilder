@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/flosch/pongo2/v4"
+	"github.com/goccy/go-yaml"
 	"golang.org/x/sys/unix"
-	yaml "gopkg.in/yaml.v2"
 )
 
 const (
