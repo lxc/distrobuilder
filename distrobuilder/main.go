@@ -66,10 +66,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	incus "github.com/lxc/incus/v6/shared/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 
 	"github.com/lxc/distrobuilder/managers"
 	"github.com/lxc/distrobuilder/shared"
@@ -585,7 +585,7 @@ func getDefinition(fname string, options []string) (*shared.Definition, error) {
 
 	// Parse the yaml input
 	var def shared.Definition
-	err := yaml.UnmarshalStrict(buf.Bytes(), &def)
+	err := yaml.UnmarshalWithOptions(buf.Bytes(), &def, yaml.Strict())
 	if err != nil {
 		return nil, err
 	}
