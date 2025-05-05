@@ -98,7 +98,7 @@ func GetArch(distro, arch string) (string, error) {
 		return "unknown", fmt.Errorf("Architecture map isn't supported: %s", distro)
 	}
 
-	archID, err := osarch.ArchitectureId(arch)
+	archID, err := osarch.ArchitectureID(arch)
 	if err != nil {
 		return "unknown", err
 	}
