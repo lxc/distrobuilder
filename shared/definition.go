@@ -512,7 +512,7 @@ func (d *Definition) Validate() error {
 	d.Image.ArchitectureMapped = archMapped
 
 	// Kernel architecture and personality
-	archID, err := incusArch.ArchitectureId(d.Image.Architecture)
+	archID, err := incusArch.ArchitectureID(d.Image.Architecture)
 	if err != nil {
 		return fmt.Errorf("Failed to get architecture ID: %w", err)
 	}
