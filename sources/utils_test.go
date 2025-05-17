@@ -259,6 +259,9 @@ invalid public key`,
 				t.Fatal(err)
 			}
 
+			defer func() {
+				os.RemoveAll(gpgDir)
+			}()
 			want, err := recvGPGKeys(context.Background(), gpgDir, "", tc.keys)
 			if want != tc.want {
 				t.Fatal(want, tc.want, err)
