@@ -41,7 +41,7 @@ func setupMounts(rootfs string, mounts []ChrootMount) error {
 			if err != nil {
 				return fmt.Errorf("Failed to create directory %q: %w", tmpTarget, err)
 			}
-		} else {
+		} else if !incus.PathExists(tmpTarget) {
 			f, err := os.Create(tmpTarget)
 			if err != nil {
 				return fmt.Errorf("Failed to create file %q: %w", tmpTarget, err)
@@ -121,7 +121,7 @@ func moveMounts(mounts []ChrootMount) error {
 			if err != nil {
 				return fmt.Errorf("Failed to create directory %q: %w", target, err)
 			}
-		} else {
+		} else if !incus.PathExists(target) {
 			err := os.WriteFile(target, nil, 0o644)
 			if err != nil {
 				return fmt.Errorf("Failed to create file %q: %w", target, err)
