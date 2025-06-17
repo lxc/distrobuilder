@@ -87,9 +87,14 @@ func (l *IncusImage) Build(unified bool, compression string, vm bool) (string, s
 
 	if vm {
 		// Create compressed qcow2 image.
-		err = shared.RunCommand(l.ctx, nil, nil, "qemu-img", "convert", "-c", "-O", "qcow2",
-			rawImage,
-			qcowImage)
+		args := []string{"convert"}
+		if compression != "none" {
+			args = append(args, "-c")
+		}
+
+		args = append(args, "-O", "qcow2", rawImage, qcowImage)
+
+		err = shared.RunCommand(l.ctx, nil, nil, "qemu-img", args...)
 		if err != nil {
 			return "", "", fmt.Errorf("Failed to create qcow2 image %q: %w", qcowImage, err)
 		}
