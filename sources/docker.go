@@ -1,11 +1,17 @@
 package sources
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	dcapi "github.com/mudler/docker-companion/api"
+	"github.com/opencontainers/umoci"
+	"github.com/opencontainers/umoci/oci/cas/dir"
+	"github.com/opencontainers/umoci/oci/casext"
+	"github.com/opencontainers/umoci/oci/layer"
+
+	"github.com/lxc/distrobuilder/shared"
 )
 
 type docker struct {
@@ -19,16 +25,41 @@ func (s *docker) Run() error {
 		return fmt.Errorf("Failed to get absolute path of %s: %w", s.rootfsDir, err)
 	}
 
-	// If DOCKER_REGISTRY_BASE is not set it's used default https://registry-1.docker.io
-	err = dcapi.DownloadAndUnpackImage(s.definition.Source.URL, absRootfsDir, &dcapi.DownloadOpts{
-		RegistryBase:     os.Getenv("DOCKER_REGISTRY_BASE"),
-		RegistryUsername: os.Getenv("DOCKER_REGISTRY_BASE_USER"),
-		RegistryPassword: os.Getenv("DOCKER_REGISTRY_BASE_PASS"),
-		KeepLayers:       false,
-	})
+	// Get some temporary storage.
+	ociPath, err := os.MkdirTemp("", "incus-oci-")
 	if err != nil {
-		return fmt.Errorf("Failed to download an unpack image: %w", err)
+		return err
 	}
 
-	return nil
+	defer func() { _ = os.RemoveAll(ociPath) }()
+
+	// Download from Docker Hub.
+	imageTag := "latest"
+	err = shared.RunCommand(
+		context.TODO(),
+		nil,
+		nil,
+		"skopeo",
+		"--insecure-policy",
+		"copy",
+		"--remove-signatures",
+		fmt.Sprintf("%s/%s", "docker://docker.io", s.definition.Source.URL),
+		fmt.Sprintf("oci:%s:%s", ociPath, imageTag))
+	if err != nil {
+		return err
+	}
+
+	// Unpack.
+	var unpackOptions layer.UnpackOptions
+	unpackOptions.KeepDirlinks = true
+
+	engine, err := dir.Open(ociPath)
+	if err != nil {
+		return err
+	}
+
+	engineExt := casext.NewEngine(engine)
+	defer func() { _ = engine.Close() }()
+
+	return umoci.Unpack(engineExt, imageTag, absRootfsDir, unpackOptions)
 }
