@@ -13,6 +13,7 @@ default:
 .PHONY: update-gomod
 update-gomod:
 	go get -t -v -u ./...
+	go get github.com/go-jose/go-jose/v4@v4.0.5
 	go mod tidy -go=1.23.7
 	go get toolchain@none
 	@echo "Dependencies updated"
