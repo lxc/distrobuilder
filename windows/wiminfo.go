@@ -12,7 +12,7 @@ import (
 var (
 	SupportedWindowsVersions = []string{
 		"w11", "w10", "w8", "w7", "2k19", "2k12", "2k16",
-		"2k22", "2k3", "2k8", "xp", "2k12r2", "2k8r2", "w8.1",
+		"2k22", "2k25", "2k3", "2k8", "xp", "2k12r2", "2k8r2", "w8.1",
 	}
 
 	SupportedWindowsArchitectures = []string{
@@ -128,6 +128,7 @@ func DetectWindowsVersion(desc string) (version string) {
 		"2k12": {"2k12", "w2k12", "win2k12", "windows.?server.?2012"},
 		"2k16": {"2k16", "w2k16", "win2k16", "windows.?server.?2016"},
 		"2k22": {"2k22", "w2k22", "win2k22", "windows.?server.?2022"},
+		"2k25": {"2k25", "w2k25", "win2k25", "windows.?server.?2025"},
 		"2k3":  {"2k3", "w2k3", "win2k3", "windows.?server.?2003"},
 		"2k8":  {"2k8", "w2k8", "win2k8", "windows.?server.?2008"},
 		"xp":   {"xp", "wxp", "winxp", "windows.?xp"},
