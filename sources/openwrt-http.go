@@ -122,24 +122,41 @@ func (s *openwrt) Run() error {
 		fname = strings.ReplaceAll(fname, "x86-64", "x86-generic")
 	}
 
-	url, err := url.Parse(baseURL)
+	_, err = url.Parse(baseURL)
 	if err != nil {
 		return fmt.Errorf("Failed to parse %q: %w", baseURL, err)
 	}
 
 	checksumFile := ""
 	if !s.definition.Source.SkipVerification {
-		if len(s.definition.Source.Keys) != 0 {
-			checksumFile = baseURL + "sha256sums"
-			_, err := s.DownloadHash(s.definition.Image, checksumFile, "", nil)
-			if err != nil {
-				return fmt.Errorf("Failed to download %q: %w", checksumFile, err)
-			}
-		} else {
-			// Force gpg checks when using http
-			if url.Scheme != "https" {
-				return errors.New("GPG keys are required if downloading from HTTP")
-			}
+		const checksumFileName string = "sha256sums"
+		const signatureFileName string = "sha256sums.asc"
+
+		if len(s.definition.Source.Keys) == 0 {
+			return errors.New(`GPG keys are required unless "skip_verification: true".`)
+		}
+
+		checksumFile = baseURL + checksumFileName
+		dirpath, err := s.DownloadHash(s.definition.Image, checksumFile, "", nil)
+		if err != nil {
+			return fmt.Errorf("Failed to download %q: %w", checksumFile, err)
+		}
+
+		checksumSignatureFile := baseURL + signatureFileName
+		_, err = s.DownloadHash(s.definition.Image, checksumSignatureFile, "", nil)
+		if err != nil {
+			return fmt.Errorf("Failed to download %q: %w", checksumSignatureFile, err)
+		}
+
+		valid, err := s.VerifyFile(
+			filepath.Join(dirpath, checksumFileName),
+			filepath.Join(dirpath, signatureFileName))
+		if err != nil {
+			return fmt.Errorf(`Failed to verify %q using %q: %w`, checksumFile, checksumSignatureFile, err)
+		}
+
+		if !valid {
+			return fmt.Errorf(`Invalid signature for %q`, checksumFile)
 		}
 	}
 
