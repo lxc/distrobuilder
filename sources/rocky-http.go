@@ -226,6 +226,10 @@ gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
 EOF
+	if [ "${RELEASE}" -eq 10 ]; then
+		# Disable gpg checks in the boot iso since rpmkeys isn't available
+		yum_args="${yum_args} --nogpgcheck"
+	fi
 	# Use dnf in the boot iso since yum isn't available
 	alias yum=dnf
 fi
