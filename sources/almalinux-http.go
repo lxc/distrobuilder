@@ -69,7 +69,7 @@ func (s *almalinux) Run() error {
 			if s.definition.Image.ArchitectureMapped == "armhfp" {
 				checksumFile = "sha256sum.txt"
 			} else {
-				if strings.HasPrefix(s.definition.Image.Release, "8") {
+				if strings.HasPrefix(s.definition.Image.Release, "8") || strings.HasPrefix(s.definition.Image.Release, "9") || strings.HasPrefix(s.definition.Image.Release, "10") {
 					checksumFile = "CHECKSUM"
 				} else {
 					checksumFile = "sha256sum.txt.asc"
@@ -112,6 +112,12 @@ func (s *almalinux) Run() error {
 }
 
 func (s *almalinux) rawRunner() error {
+	// Use --nogpgcheck for AlmaLinux 10 as RPM is absent from the install.img and therefore rpmkeys isn't available for validation:
+	nogpgcheck := ""
+	if s.majorVersion == "10" {
+		nogpgcheck = "--nogpgcheck"
+	}
+
 	err := shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 	set -eux
 
@@ -120,9 +126,9 @@ func (s *almalinux) rawRunner() error {
 
 	# Create a minimal rootfs
 	mkdir /rootfs
-	yum --installroot=/rootfs --disablerepo=* --enablerepo=base -y --releasever=%s install basesystem almalinux-release yum
-	rm -rf /rootfs/var/cache/yum
-	`, s.majorVersion))
+	dnf --installroot=/rootfs --disablerepo=* --enablerepo=baseos -y --releasever=%s %s install basesystem almalinux-release dnf rpm shadow-utils
+	rm -rf /rootfs/var/cache/dnf
+	`, s.majorVersion, nogpgcheck))
 	if err != nil {
 		return fmt.Errorf("Failed to run script: %w", err)
 	}
@@ -131,6 +137,12 @@ func (s *almalinux) rawRunner() error {
 }
 
 func (s *almalinux) isoRunner(gpgKeysPath string) error {
+	// Use --nogpgcheck for AlmaLinux 10 as RPM is absent from the install.img and therefore rpmkeys isn't available for validation:
+	nogpgcheck := ""
+	if s.majorVersion == "10" {
+		nogpgcheck = "--nogpgcheck"
+	}
+
 	err := shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
 set -eux
 
@@ -139,14 +151,14 @@ GPG_KEYS="%s"
 # Create required files
 touch /etc/mtab /etc/fstab
 
-yum_args=""
+dnf_args=""
 mkdir -p /etc/yum.repos.d
 
 if [ -d /mnt/cdrom ]; then
 	# Install initial package set
 	cd /mnt/cdrom/Packages
 	rpm -ivh --nodeps $(ls rpm-*.rpm | head -n1)
-	rpm -ivh --nodeps $(ls yum-*.rpm | head -n1)
+	rpm -ivh --nodeps $(ls dnf-*.rpm | head -n1)
 
 	# Add cdrom repo
 	cat <<- EOF > /etc/yum.repos.d/cdrom.repo
@@ -163,8 +175,8 @@ if [ -d /mnt/cdrom ]; then
 		echo gpgcheck=0 >> /etc/yum.repos.d/cdrom.repo
 	fi
 
-	yum_args="--disablerepo=* --enablerepo=cdrom"
-	yum ${yum_args} -y reinstall yum
+	dnf_args="--disablerepo=* --enablerepo=cdrom"
+	dnf ${dnf_args} -y reinstall dnf
 else
 	if ! [ -f /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux ]; then
 		mv /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux-* /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
@@ -173,23 +185,21 @@ else
 	cat <<- "EOF" > /etc/yum.repos.d/almalinux.repo
 	[baseos]
 	name=AlmaLinux $releasever - BaseOS
-	baseurl=https://repo.almalinux.org/almalinux/$releasever/BaseOS/$basearch/os/
+	mirrorlist=https://mirrors.almalinux.org/mirrorlist/$releasever/baseos
 	gpgcheck=1
 	enabled=1
 	gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux
 	EOF
-
-	# Use dnf in the boot iso since yum isn't available
-	alias yum=dnf
 fi
 
-pkgs="basesystem almalinux-release yum"
+pkgs="basesystem almalinux-release dnf rpm shadow-utils grubby"
 
 # Create a minimal rootfs
 mkdir /rootfs
-yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install ${pkgs}
-rm -rf /rootfs/var/cache/yum
-`, gpgKeysPath, s.majorVersion))
+# RPM is not available at this stage, so GPG checks must be skipped for AlmaLinux 10
+dnf ${dnf_args} --installroot=/rootfs -y --releasever=%s %s --skip-broken install ${pkgs}
+rm -rf /rootfs/var/cache/dnf
+`, gpgKeysPath, s.majorVersion, nogpgcheck))
 	if err != nil {
 		return fmt.Errorf("Failed to run script: %w", err)
 	}
