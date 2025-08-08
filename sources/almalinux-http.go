@@ -135,6 +135,7 @@ func (s *almalinux) isoRunner(gpgKeysPath string) error {
 set -eux
 
 GPG_KEYS="%s"
+RELEASE="%s"
 
 # Create required files
 touch /etc/mtab /etc/fstab
@@ -192,7 +193,7 @@ pkgs="basesystem almalinux-release yum"
 
 # Create a minimal rootfs
 mkdir /rootfs
-yum ${yum_args} --installroot=/rootfs -y --releasever=%s --skip-broken install ${pkgs}
+yum ${yum_args} --installroot=/rootfs -y --releasever="${RELEASE}" --skip-broken install ${pkgs}
 rm -rf /rootfs/var/cache/yum
 `, gpgKeysPath, s.majorVersion))
 	if err != nil {
