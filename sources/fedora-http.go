@@ -79,7 +79,7 @@ func (s *fedora) Run() error {
 		}
 
 		// Transfer the content.
-		_, err = subprocess.RunCommand("rsync", "-avP", fmt.Sprintf("%s/rootfs/", filepath.Join(ociDir, "content")), s.rootfsDir)
+		err = shared.RsyncLocal(s.ctx, fmt.Sprintf("%s/rootfs/", filepath.Join(ociDir, "content")), s.rootfsDir)
 		if err != nil {
 			return fmt.Errorf("Failed to run rsync: %w", err)
 		}
