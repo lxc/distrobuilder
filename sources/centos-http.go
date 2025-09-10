@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -35,10 +36,14 @@ func (s *centOS) Run() error {
 		strings.ToLower(s.definition.Image.Release),
 		s.definition.Image.ArchitectureMapped)
 
-	if s.definition.Image.Release == "9-Stream" {
-		baseURL = fmt.Sprintf("%s/%s/BaseOS/%s/iso/", s.definition.Source.URL,
-			strings.ToLower(s.definition.Image.Release),
-			s.definition.Image.ArchitectureMapped)
+	if strings.HasSuffix(s.definition.Image.Release, "-Stream") {
+		versionNum, _ := strconv.ParseInt(
+			strings.Split(s.definition.Image.Release, "-")[0], 0, 64)
+		if versionNum >= 9 {
+			baseURL = fmt.Sprintf("%s/%s/BaseOS/%s/iso/", s.definition.Source.URL,
+				strings.ToLower(s.definition.Image.Release),
+				s.definition.Image.ArchitectureMapped)
+		}
 	}
 
 	s.fname, err = s.getRelease(s.definition.Source.URL, s.definition.Image.Release,
@@ -397,8 +402,12 @@ func (s *centOS) getRelease(URL, release, variant, arch string) (string, error) 
 	releaseFields := strings.Split(release, ".")
 	u := URL + path.Join("/", strings.ToLower(release), "isos", arch)
 
-	if release == "9-Stream" {
-		u = URL + path.Join("/", strings.ToLower(release), "BaseOS", arch, "iso")
+	if strings.HasSuffix(releaseFields[0], "-Stream") {
+		versionNum, _ := strconv.ParseInt(
+			strings.Split(releaseFields[0], "-")[0], 0, 64)
+		if versionNum >= 9 {
+			u = URL + path.Join("/", strings.ToLower(release), "BaseOS", arch, "iso")
+		}
 	}
 
 	var (
