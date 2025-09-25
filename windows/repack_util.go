@@ -97,6 +97,34 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 			}
 		}
 
+		// Special cases introduced with viosock.
+		// Ideally we should parse the .inf file for DestinationDirs and CopyFiles sections if special cases start adding up.
+		for ext, dir := range map[string]string{"svc.exe": dirs["system32"], "lib_x64.dll": dirs["system32"], "lib_x86.dll": dirs["syswow64"]} {
+			sourceMatches, err := shared.FindAllMatches(sourceDir, fmt.Sprintf("*%s", ext))
+			if err != nil {
+				logger.Debugf("failed to find first match %q %q", driverName, ext)
+				continue
+			}
+
+			for _, sourcePath := range sourceMatches {
+				targetName := filepath.Base(sourcePath)
+				if strings.HasSuffix(ext, ".dll") {
+					idx := strings.LastIndex(targetName, "_")
+					if idx < 0 {
+						logger.Debugf("Unexpected lib dll for %q: %q", driverName, targetName)
+						continue
+					}
+
+					targetName = sourcePath[:idx] + ".dll"
+				}
+
+				targetPath := filepath.Join(dir, targetName)
+				if err = shared.Copy(sourcePath, targetPath); err != nil {
+					return err
+				}
+			}
+		}
+
 		for ext, dir := range map[string]string{"inf": dirs["inf"], "cat": dirs["drivers"], "dll": dirs["drivers"], "exe": dirs["drivers"], "sys": dirs["drivers"]} {
 			sourceMatches, err := shared.FindAllMatches(sourceDir, fmt.Sprintf("*.%s", ext))
 			if err != nil {
@@ -227,6 +255,16 @@ func (r *RepackUtil) getWindowsDirectories(rootPath string) (dirs map[string]str
 	dirs["filerepository"], err = shared.FindFirstMatch(rootPath, "windows", "system32", "driverstore", "filerepository")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to determine windows/system32/driverstore/filerepository path: %w", err)
+	}
+
+	dirs["system32"], err = shared.FindFirstMatch(rootPath, "windows", "system32")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to determine windows/system32 path: %w", err)
+	}
+
+	dirs["syswow64"], err = shared.FindFirstMatch(rootPath, "windows", "syswow64")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to determine windows/syswow64 path: %w", err)
 	}
 
 	return
