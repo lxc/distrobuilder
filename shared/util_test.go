@@ -276,7 +276,8 @@ func findMatchHelper(t *testing.T, filenames ...string) (dir string, actuals []s
 			t.Fatal(err)
 		}
 	}
-	return
+
+	return dir, actuals, rb
 }
 
 func TestFindFirstMatch(t *testing.T) {

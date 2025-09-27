@@ -62,20 +62,21 @@ func (v *vm) getUEFIDevFile() string {
 	return fmt.Sprintf("%sp1", v.loopDevice)
 }
 
-func (v *vm) findRootfsDevUUID() (rootUUID string, err error) {
+func (v *vm) findRootfsDevUUID() (string, error) {
 	rootfsDevFile := v.getRootfsDevFile()
 	if rootfsDevFile == "" {
-		err = fmt.Errorf("Failed to get rootfs device name.")
-		return
+		return "", fmt.Errorf("Failed to get rootfs device name.")
 	}
 
 	var out strings.Builder
-	if err = shared.RunCommand(v.ctx, nil, &out, "blkid", "-o", "export", rootfsDevFile); err != nil {
+	err := shared.RunCommand(v.ctx, nil, &out, "blkid", "-o", "export", rootfsDevFile)
+	if err != nil {
 		err = fmt.Errorf("Failed to get rootfs device UUID: %w", err)
-		return
+		return "", err
 	}
 
 	fields := strings.Fields(out.String())
+	var rootUUID string
 	for _, field := range fields {
 		if strings.HasPrefix(field, "UUID=") {
 			rootUUID = field
@@ -84,11 +85,10 @@ func (v *vm) findRootfsDevUUID() (rootUUID string, err error) {
 	}
 
 	if rootUUID == "" {
-		err = fmt.Errorf("No rootfs device UUID found")
-		return
+		return "", fmt.Errorf("No rootfs device UUID found")
 	}
 
-	return
+	return rootUUID, nil
 }
 
 func (v *vm) createEmptyDiskImage() error {
@@ -131,14 +131,13 @@ func (v *vm) createPartitions(args ...[]string) error {
 	return nil
 }
 
-func (v *vm) lsblkLoopDevice() (parseMajorMinor func(int) (uint32, uint32, error), num int, err error) {
+func (v *vm) lsblkLoopDevice() (func(int) (uint32, uint32, error), int, error) {
 	var out strings.Builder
 	// Ensure the partitions are accessible. This part is usually only needed
 	// if building inside of a container.
-	err = shared.RunCommand(v.ctx, nil, &out, "lsblk", "--raw", "--output", "MAJ:MIN", "--noheadings", v.loopDevice)
+	err := shared.RunCommand(v.ctx, nil, &out, "lsblk", "--raw", "--output", "MAJ:MIN", "--noheadings", v.loopDevice)
 	if err != nil {
-		err = fmt.Errorf("Failed to list block devices: %w", err)
-		return
+		return nil, 0, fmt.Errorf("Failed to list block devices: %w", err)
 	}
 
 	lsblkOutput := strings.TrimSpace(out.String())
@@ -147,76 +146,71 @@ func (v *vm) lsblkLoopDevice() (parseMajorMinor func(int) (uint32, uint32, error
 	// 259:2  -- partition 1
 	// 259:3  -- partition 2
 	deviceNumbers := strings.Split(lsblkOutput, "\n")
-	num = len(deviceNumbers)
-	parseMajorMinor = func(i int) (major, minor uint32, err error) {
+	num := len(deviceNumbers)
+	parseMajorMinor := func(i int) (major, minor uint32, err error) {
 		if i >= num {
-			err = fmt.Errorf("failed to parse major minor for %d >= %d", i, num)
-			return
+			return major, minor, fmt.Errorf("failed to parse major minor for %d >= %d", i, num)
 		}
 
 		fields := strings.Split(deviceNumbers[i], ":")
 		num, err := strconv.Atoi(fields[0])
 		if err != nil {
-			err = fmt.Errorf("Failed to parse %q: %w", fields[0], err)
-			return
+			return major, minor, fmt.Errorf("Failed to parse %q: %w", fields[0], err)
 		}
 
 		major = uint32(num)
 		num, err = strconv.Atoi(fields[1])
 		if err != nil {
-			err = fmt.Errorf("Failed to parse %q: %w", fields[1], err)
-			return
+			return major, minor, fmt.Errorf("Failed to parse %q: %w", fields[1], err)
 		}
 
 		minor = uint32(num)
-		return
+		return major, minor, nil
 	}
 
-	return
+	return parseMajorMinor, num, nil
 }
 
-func (v *vm) losetup() (err error) {
+func (v *vm) losetup() error {
 	var out strings.Builder
-	err = shared.RunCommand(v.ctx, nil, &out, "losetup", "-P", "-f", "--show", v.imageFile)
+	err := shared.RunCommand(v.ctx, nil, &out, "losetup", "-P", "-f", "--show", v.imageFile)
 	if err != nil {
-		err = fmt.Errorf("Failed to setup loop device: %w", err)
-		return
+		return fmt.Errorf("Failed to setup loop device: %w", err)
 	}
 
 	err = shared.RunCommand(v.ctx, nil, nil, "udevadm", "settle")
 	if err != nil {
-		err = fmt.Errorf("Failed to wait loop device ready: %w", err)
-		return
+		return fmt.Errorf("Failed to wait loop device ready: %w", err)
 	}
 
 	v.loopDevice = strings.TrimSpace(out.String())
-	return
+
+	return nil
 }
 
-func (v *vm) mountImage() (err error) {
+func (v *vm) mountImage() error {
 	// If loopDevice is set, it probably is already mounted.
 	if v.loopDevice != "" {
 		return nil
 	}
 
-	err = v.losetup()
+	err := v.losetup()
 	if err != nil {
 		return err
 	}
 
 	parseMajorMinor, num, err := v.lsblkLoopDevice()
 	if err != nil {
-		return
+		return err
 	} else if num != 3 {
-		err = fmt.Errorf("Failed to list block devices")
-		return
+		return fmt.Errorf("Failed to list block devices")
 	}
 
 	if !incus.PathExists(v.getUEFIDevFile()) {
 		var major, minor uint32
 		major, minor, err = parseMajorMinor(1)
 		if err != nil {
-			return
+			return err
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
@@ -224,7 +218,7 @@ func (v *vm) mountImage() (err error) {
 		err = unix.Mknod(v.getUEFIDevFile(), unix.S_IFBLK|0o644, int(dev))
 		if err != nil {
 			err = fmt.Errorf("Failed to create block device %q: %w", v.getUEFIDevFile(), err)
-			return
+			return err
 		}
 	}
 
@@ -232,7 +226,7 @@ func (v *vm) mountImage() (err error) {
 		var major, minor uint32
 		major, minor, err = parseMajorMinor(2)
 		if err != nil {
-			return
+			return err
 		}
 
 		dev := unix.Mkdev(uint32(major), uint32(minor))
@@ -240,11 +234,11 @@ func (v *vm) mountImage() (err error) {
 		err = unix.Mknod(v.getRootfsDevFile(), unix.S_IFBLK|0o644, int(dev))
 		if err != nil {
 			err = fmt.Errorf("Failed to create block device %q: %w", v.getRootfsDevFile(), err)
-			return
+			return err
 		}
 	}
 
-	return
+	return nil
 }
 
 func (v *vm) umountImage() error {
@@ -347,20 +341,20 @@ func (v *vm) mountUEFIPartition() error {
 	return shared.RunCommand(v.ctx, nil, nil, "mount", "-t", "vfat", v.getUEFIDevFile(), v.bootfsDir, "-o", "discard")
 }
 
-func (v *vm) umountPartition(mountpoint string) (err error) {
-	err = v.checkMountpoint(mountpoint)
+func (v *vm) umountPartition(mountpoint string) error {
+	err := v.checkMountpoint(mountpoint)
 	if err != nil {
-		return
+		return err
 	}
 
 	return shared.RunCommand(v.ctx, nil, nil, "umount", "-R", mountpoint)
 }
 
-func (v *vm) checkMountpoint(mountpoint string) (err error) {
-	err = shared.RunCommand(v.ctx, nil, nil, "mountpoint", mountpoint)
+func (v *vm) checkMountpoint(mountpoint string) error {
+	err := shared.RunCommand(v.ctx, nil, nil, "mountpoint", mountpoint)
 	if err != nil {
-		err = fmt.Errorf("%s not mounted: %w", mountpoint, err)
+		return fmt.Errorf("%s not mounted: %w", mountpoint, err)
 	}
 
-	return err
+	return nil
 }

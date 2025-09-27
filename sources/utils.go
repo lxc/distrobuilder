@@ -140,7 +140,7 @@ func getChecksum(fname string, hashLen int, r io.Reader) []string {
 func gpgCommandContext(ctx context.Context, gpgDir string, args ...string) (cmd *exec.Cmd) {
 	cmd = exec.CommandContext(ctx, "gpg", append([]string{"--homedir", gpgDir}, args...)...)
 	cmd.Env = append(os.Environ(), "LANG=C.UTF-8")
-	return
+	return cmd
 }
 
 func showFingerprint(ctx context.Context, gpgDir string, publicKey string) (fingerprint string, err error) {
@@ -152,7 +152,7 @@ func showFingerprint(ctx context.Context, gpgDir string, publicKey string) (fing
 	err = cmd.Run()
 	if err != nil {
 		err = fmt.Errorf("%s", stdout.String())
-		return
+		return fingerprint, err
 	}
 
 	lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
@@ -163,15 +163,15 @@ func showFingerprint(ctx context.Context, gpgDir string, publicKey string) (fing
 		}
 
 		fingerprint = line
-		return
+		return fingerprint, err
 	}
 
 	if fingerprint == "" {
 		err = fmt.Errorf("failed to get fingerprint from public key: %s, %v", publicKey, lines)
-		return
+		return fingerprint, err
 	}
 
-	return
+	return fingerprint, err
 }
 
 func notFingerprint(line string) bool {
@@ -189,7 +189,7 @@ func listFingerprints(ctx context.Context, gpgDir string) (fingerprints []string
 	cmd.Stdout = &buffer
 	err = cmd.Run()
 	if err != nil {
-		return
+		return fingerprints, err
 	}
 
 	lines := strings.Split(buffer.String(), "\n")
@@ -202,15 +202,16 @@ func listFingerprints(ctx context.Context, gpgDir string) (fingerprints []string
 		fingerprints = append(fingerprints, line)
 	}
 
-	return
+	return fingerprints, err
 }
 
-func importPublicKeys(ctx context.Context, gpgDir string, publicKeys []string) (err error) {
+func importPublicKeys(ctx context.Context, gpgDir string, publicKeys []string) error {
 	fingerprints := make([]string, len(publicKeys))
 	for i, f := range publicKeys {
+		var err error
 		fingerprints[i], err = showFingerprint(ctx, gpgDir, f)
 		if err != nil {
-			return
+			return err
 		}
 
 		cmd := gpgCommandContext(ctx, gpgDir, "--import")
@@ -222,25 +223,25 @@ func importPublicKeys(ctx context.Context, gpgDir string, publicKeys []string) (
 		if err != nil {
 			err = fmt.Errorf("failed to run: %s: %s",
 				strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
-			return
+			return err
 		}
 	}
 
 	importedFingerprints, err := listFingerprints(ctx, gpgDir)
 	if err != nil {
-		return
+		return err
 	}
 
 	for i, fingerprint := range fingerprints {
 		if !slices.Contains(importedFingerprints, fingerprint) {
-			err = fmt.Errorf("fingerprint %s of publickey %s not imported", fingerprint, publicKeys[i])
-			return
+			return fmt.Errorf("fingerprint %s of publickey %s not imported", fingerprint, publicKeys[i])
 		}
 	}
-	return
+
+	return nil
 }
 
-func recvFingerprints(ctx context.Context, gpgDir string, keyserver string, fingerprints []string) (err error) {
+func recvFingerprints(ctx context.Context, gpgDir string, keyserver string, fingerprints []string) error {
 	args := []string{}
 	if keyserver != "" {
 		args = append(args, "--keyserver", keyserver)
@@ -256,10 +257,9 @@ func recvFingerprints(ctx context.Context, gpgDir string, keyserver string, fing
 	var buffer bytes.Buffer
 	cmd.Stderr = &buffer
 
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
-		err = fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
-		return
+		return fmt.Errorf("Failed to run: %s: %s", strings.Join(cmd.Args, " "), strings.TrimSpace(buffer.String()))
 	}
 
 	// Verify output
@@ -288,10 +288,11 @@ func recvFingerprints(ctx context.Context, gpgDir string, keyserver string, fing
 				missingKeys = append(missingKeys, j)
 			}
 		}
-		err = fmt.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
+
+		return fmt.Errorf("Failed to import keys: %s", strings.Join(missingKeys, " "))
 	}
 
-	return
+	return nil
 }
 
 func recvGPGKeys(ctx context.Context, gpgDir string, keyserver string, keys []string) (bool, error) {
@@ -324,10 +325,11 @@ func getEnvHttpProxy() (httpProxy string) {
 		"http_proxy",
 		"HTTP_PROXY", "https_proxy", "HTTPS_PROXY",
 	} {
-		if httpProxy = os.Getenv(key); httpProxy != "" {
-			return
+		httpProxy = os.Getenv(key)
+		if httpProxy != "" {
+			return httpProxy
 		}
 	}
 
-	return
+	return httpProxy
 }

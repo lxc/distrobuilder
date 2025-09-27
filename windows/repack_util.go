@@ -40,36 +40,35 @@ func (r *RepackUtil) SetWindowsVersionArchitecture(windowsVersion string, window
 }
 
 // GetWimInfo returns information about the specified wim file.
-func (r *RepackUtil) GetWimInfo(wimFile string) (info WimInfo, err error) {
+func (r *RepackUtil) GetWimInfo(wimFile string) (WimInfo, error) {
 	wimName := filepath.Base(wimFile)
 	var buf bytes.Buffer
-	err = shared.RunCommand(r.ctx, nil, &buf, "wimlib-imagex", "info", wimFile)
+	err := shared.RunCommand(r.ctx, nil, &buf, "wimlib-imagex", "info", wimFile)
 	if err != nil {
-		err = fmt.Errorf("Failed to retrieve wim %q information: %w", wimName, err)
-		return
+		return nil, fmt.Errorf("Failed to retrieve wim %q information: %w", wimName, err)
 	}
 
-	info, err = ParseWimInfo(&buf)
+	info, err := ParseWimInfo(&buf)
 	if err != nil {
-		err = fmt.Errorf("Failed to parse wim info %s: %w", wimFile, err)
-		return
+		return nil, fmt.Errorf("Failed to parse wim info %s: %w", wimFile, err)
 	}
 
-	return
+	return info, nil
 }
 
 // InjectDriversIntoWim will inject drivers into the specified wim file.
-func (r *RepackUtil) InjectDriversIntoWim(wimFile string, info WimInfo, driverPath string) (err error) {
+func (r *RepackUtil) InjectDriversIntoWim(wimFile string, info WimInfo, driverPath string) error {
 	wimName := filepath.Base(wimFile)
 	// Injects the drivers
 	for idx := 1; idx <= info.ImageCount(); idx++ {
 		name := info.Name(idx)
-		err = r.modifyWimIndex(wimFile, idx, name, driverPath)
+		err := r.modifyWimIndex(wimFile, idx, name, driverPath)
 		if err != nil {
 			return fmt.Errorf("Failed to modify index %d=%s of %q: %w", idx, name, wimName, err)
 		}
 	}
-	return
+
+	return nil
 }
 
 // InjectDrivers injects drivers from driverPath into the windowsRootPath.
@@ -235,8 +234,9 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 	return nil
 }
 
-func (r *RepackUtil) getWindowsDirectories(rootPath string) (dirs map[string]string, err error) {
-	dirs = map[string]string{}
+func (r *RepackUtil) getWindowsDirectories(rootPath string) (map[string]string, error) {
+	dirs := map[string]string{}
+	var err error
 	dirs["inf"], err = shared.FindFirstMatch(rootPath, "windows", "inf")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to determine windows/inf path: %w", err)
@@ -267,7 +267,7 @@ func (r *RepackUtil) getWindowsDirectories(rootPath string) (dirs map[string]str
 		return nil, fmt.Errorf("Failed to determine windows/syswow64 path: %w", err)
 	}
 
-	return
+	return dirs, nil
 }
 
 func (r *RepackUtil) modifyWimIndex(wimFile string, index int, name string, driverPath string) error {

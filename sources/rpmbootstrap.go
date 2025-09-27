@@ -16,12 +16,12 @@ func (s *rpmbootstrap) yumordnf() (cmd string, err error) {
 	// check whether yum or dnf command exists
 	for _, cmd = range []string{"yum", "dnf"} {
 		if err = shared.RunCommand(s.ctx, nil, nil, cmd, "--version"); err == nil {
-			return
+			return cmd, err
 		}
 	}
 	cmd = ""
 	err = fmt.Errorf("Command yum or dnf not found, sudo apt-get install yum or sudo apt-get install dnf and try again")
-	return
+	return cmd, err
 }
 
 func (s *rpmbootstrap) repodirs() (dir string, err error) {

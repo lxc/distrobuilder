@@ -14,23 +14,22 @@ var (
 	classGuidRe = regexp.MustCompile(`(?i)^ClassGuid[ ]*=[ ]*(.+)$`)
 )
 
-func ParseDriverClassGuid(driverName, infPath string) (classGuid string, err error) {
+func ParseDriverClassGuid(driverName, infPath string) (string, error) {
 	// Retrieve the ClassGuid which is needed for the Windows registry entries.
 	file, err := os.Open(infPath)
 	if err != nil {
 		err = fmt.Errorf("Failed to open driver %s inf %s: %w", driverName, infPath, err)
-		return
+		return "", err
 	}
 
-	defer func() {
-		file.Close()
-		if classGuid == "" {
-			err = fmt.Errorf("Failed to parse driver %s classGuid %s", driverName, infPath)
-		}
-	}()
+	defer func() { _ = file.Close() }()
 
-	classGuid = MatchClassGuid(file)
-	return
+	classGuid := MatchClassGuid(file)
+	if classGuid == "" {
+		return "", fmt.Errorf("Failed to parse driver %s classGuid %s", driverName, infPath)
+	}
+
+	return classGuid, nil
 }
 
 func MatchClassGuid(r io.Reader) (classGuid string) {
@@ -50,10 +49,10 @@ func MatchClassGuid(r io.Reader) (classGuid string) {
 		if len(matches) > 1 {
 			classGuid = strings.TrimSpace(matches[1])
 			if classGuid != "" {
-				return
+				return classGuid
 			}
 		}
 	}
 
-	return
+	return classGuid
 }

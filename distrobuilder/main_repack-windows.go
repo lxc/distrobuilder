@@ -195,7 +195,7 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func (c *cmdRepackWindows) checkVirtioISOPath() (err error) {
+func (c *cmdRepackWindows) checkVirtioISOPath() error {
 	logger := c.global.logger
 	virtioISOPath := c.flagDrivers
 	if virtioISOPath == "" {
@@ -204,18 +204,18 @@ func (c *cmdRepackWindows) checkVirtioISOPath() (err error) {
 
 	if incus.PathExists(virtioISOPath) {
 		c.flagDrivers = virtioISOPath
-		return
+		return nil
 	}
 
 	virtioISOPath = filepath.Join(c.global.flagSourcesDir, "windows", c.defaultDrivers)
 	if incus.PathExists(virtioISOPath) {
 		c.flagDrivers = virtioISOPath
-		return
+		return nil
 	}
 
 	// Download vioscsi driver
 	virtioURL := "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/" + c.defaultDrivers
-	err = os.MkdirAll(filepath.Dir(virtioISOPath), 0o755)
+	err := os.MkdirAll(filepath.Dir(virtioISOPath), 0o755)
 	if err != nil {
 		return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(virtioISOPath), err)
 	}
@@ -241,7 +241,7 @@ func (c *cmdRepackWindows) checkVirtioISOPath() (err error) {
 	}
 
 	c.flagDrivers = virtioISOPath
-	return
+	return nil
 }
 
 func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir string) error {
