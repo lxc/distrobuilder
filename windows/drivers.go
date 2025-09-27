@@ -19,4 +19,5 @@ var Drivers = map[string]DriverInfo{
 	"viofs":     driverViofs,
 	"viogpudo":  driverVioGPUDo,
 	"viostor":   driverViostor,
+	"viosock":   driverViosock,
 }

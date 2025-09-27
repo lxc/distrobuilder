@@ -60,18 +60,19 @@ func CaseInsensitive(s string) (pattern string) {
 			pattern += "\\" + a
 		}
 	}
-	return
+
+	return pattern
 }
 
 // FindFirstMatch find the first matched file case insensitive.
 func FindFirstMatch(dir string, elem ...string) (found string, err error) {
 	matches, err := FindAllMatches(dir, elem...)
 	if err != nil {
-		return
+		return found, err
 	}
 
 	found = matches[0]
-	return
+	return found, err
 }
 
 // FindAllMatches find all the matched files case insensitive.
@@ -84,15 +85,15 @@ func FindAllMatches(dir string, elem ...string) (matches []string, err error) {
 	pattern := filepath.Join(names...)
 	matches, err = filepath.Glob(pattern)
 	if err != nil {
-		return
+		return matches, err
 	}
 
 	if len(matches) == 0 {
 		err = fmt.Errorf("No match found %s", pattern)
-		return
+		return matches, err
 	}
 
-	return
+	return matches, err
 }
 
 // Copy copies a file.
@@ -364,7 +365,7 @@ func Retry(f func() error, attempts uint) error {
 	for i := uint(0); i < attempts; i++ {
 		err = f()
 		// Stop retrying if the call succeeded or if the context has been cancelled.
-		if err == nil || err != nil && errors.Is(err, context.Canceled) {
+		if err == nil || errors.Is(err, context.Canceled) {
 			break
 		}
 
