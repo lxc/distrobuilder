@@ -114,7 +114,7 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 						continue
 					}
 
-					targetName = sourcePath[:idx] + ".dll"
+					targetName = targetName[:idx] + ".dll"
 				}
 
 				targetPath := filepath.Join(dir, targetName)
