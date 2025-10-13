@@ -240,3 +240,15 @@ for d in /etc/systemd/system /usr/lib/systemd/system /lib/systemd/system; do
 		fi
 	done
 done
+
+# Fix issue with console-getty on recent systemd.
+if [ "${SYSTEMD}" -ge 258 ]; then
+	mkdir -p "/run/systemd/system/console-getty.service.d/"
+	cat <<-EOF > /run/systemd/system/console-getty.service.d/override.conf
+		[Service]
+		ExecStart=
+		ExecStart=-/sbin/agetty -o '-- \\u' --noreset --noclear --keep-baud 115200,57600,38400,9600 console
+		StandardInput=null
+		StandardOutput=null
+		EOF
+fi
