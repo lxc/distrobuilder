@@ -91,9 +91,11 @@ fix_systemd_override_unit() {
 		echo "[Service]";
 		[ "${SYSTEMD}" -ge 247 ] && echo "ProcSubset=all";
 		[ "${SYSTEMD}" -ge 247 ] && echo "ProtectProc=default";
+		[ "${SYSTEMD}" -ge 232 ] && echo "PrivateUsers=no";
 		[ "${SYSTEMD}" -ge 232 ] && echo "ProtectControlGroups=no";
 		[ "${SYSTEMD}" -ge 232 ] && echo "ProtectKernelTunables=no";
 		[ "${SYSTEMD}" -ge 239 ] && echo "NoNewPrivileges=no";
+		[ "${SYSTEMD}" -ge 239 ] && echo "PrivateMounts=no";
 		[ "${SYSTEMD}" -ge 249 ] && echo "LoadCredential=";
 		[ "${SYSTEMD}" -ge 254 ] && echo "PrivateNetwork=no";
 		[ "${SYSTEMD}" -ge 256 ] && echo "ImportCredential=";
