@@ -3,6 +3,7 @@ ARCHIVE=distrobuilder-$(VERSION).tar
 GO111MODULE=on
 SPHINXENV=.sphinx/venv/bin/activate
 GOPATH=$(shell go env GOPATH)
+export GOFLAGS=-tags=containers_image_storage_stub,containers_image_docker_daemon_stub,containers_image_openpgp
 
 .PHONY: default
 default:
@@ -20,7 +21,7 @@ update-gomod:
 
 .PHONY: check
 check: default
-	sudo GOENV=$(shell go env GOENV) go test -v ./...
+	sudo GOENV=$(shell go env GOENV) GOFLAGS=$(GOFLAGS) go test -v ./...
 
 .PHONY: dist
 dist:
