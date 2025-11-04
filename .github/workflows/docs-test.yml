@@ -1,0 +1,48 @@
+name: Documentation tests
+on:
+  push:
+    paths:
+      - "**.md"
+      - .sphinx/**
+      - doc/**
+  pull_request:
+    paths:
+      - "**.md"
+      - .sphinx/**
+      - doc/**
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    name: Documentation tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install aspell aspell-en
+          sudo snap install mdl
+
+      - name: Run markdown linter
+        run: |
+          make doc-lint
+
+      - name: Run spell checker
+        run: |
+          make doc-spellcheck
+
+      - name: Run inclusive naming checker
+        uses: get-woke/woke-action@v0
+        with:
+          fail-on-error: true
+          woke-args: "*.md **/*.md -c https://github.com/canonical-web-and-design/Inclusive-naming/raw/main/config.yml"
+
+      - name: Run link checker
+        # This can fail intermittently due to external resources being unavailable.
+        continue-on-error: true
+        run: |
+          make doc-linkcheck
