@@ -1,7 +1,11 @@
 name: Builds
 on:
-  - push
-  - pull_request
+  push:
+    paths:
+      - docs/**
+  pull_request:
+    paths:
+      - docs/**
 
 permissions:
   contents: read
