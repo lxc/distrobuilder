@@ -1,11 +1,13 @@
-name: Builds
+name: Build documentation
 on:
   push:
     paths:
       - docs/**
+      - .sphinx/**
   pull_request:
     paths:
       - docs/**
+      - .sphinx/**
 
 permissions:
   contents: read
