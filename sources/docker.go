@@ -2,16 +2,21 @@ package sources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/opencontainers/umoci"
+	imgspec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opencontainers/umoci/oci/cas/dir"
 	"github.com/opencontainers/umoci/oci/casext"
 	"github.com/opencontainers/umoci/oci/layer"
-
-	"github.com/lxc/distrobuilder/shared"
+	"go.podman.io/image/v5/copy"
+	"go.podman.io/image/v5/docker/reference"
+	"go.podman.io/image/v5/oci/layout"
+	"go.podman.io/image/v5/signature"
+	"go.podman.io/image/v5/transports/alltransports"
+	"go.podman.io/image/v5/types"
 )
 
 type docker struct {
@@ -33,25 +38,67 @@ func (s *docker) Run() error {
 
 	defer func() { _ = os.RemoveAll(ociPath) }()
 
-	// Download from Docker Hub.
-	imageTag := "latest"
-	err = shared.RunCommand(
-		context.TODO(),
-		nil,
-		nil,
-		"skopeo",
-		"--insecure-policy",
-		"copy",
-		"--remove-signatures",
-		fmt.Sprintf("%s/%s", "docker://docker.io", s.definition.Source.URL),
-		fmt.Sprintf("oci:%s:%s", ociPath, imageTag))
+	// Parse the image reference
+	imageRef, err := reference.ParseNormalizedNamed(s.definition.Source.URL)
+	if err != nil {
+		return fmt.Errorf("Failed to parse image reference: %w", err)
+	}
+
+	// Docker references with both a tag and digest are currently not supported
+	var imageTag string
+	digested, ok := imageRef.(reference.Digested)
+	if ok {
+		imageTag = digested.Digest().String()
+	} else {
+		imageTag = "latest"
+		tagged, ok := imageRef.(reference.NamedTagged)
+		if ok {
+			imageTag = tagged.Tag()
+		}
+	}
+
+	srcRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", s.definition.Source.URL))
+	if err != nil {
+		return fmt.Errorf("Failed to parse image name: %w", err)
+	}
+
+	dstRef, err := layout.ParseReference(fmt.Sprintf("%s:%s", ociPath, imageTag))
+	if err != nil {
+		return fmt.Errorf("Failed to parse destination reference: %w", err)
+	}
+
+	// Create policy context
+	systemCtx := &types.SystemContext{
+		DockerInsecureSkipTLSVerify: types.OptionalBoolFalse,
+	}
+
+	policy := &signature.Policy{
+		Default: []signature.PolicyRequirement{signature.NewPRInsecureAcceptAnything()},
+	}
+
+	policyCtx, err := signature.NewPolicyContext(policy)
+	if err != nil {
+		return fmt.Errorf("Failed to create policy context: %w", err)
+	}
+
+	defer func() { _ = policyCtx.Destroy() }()
+
+	copyOptions := &copy.Options{
+		RemoveSignatures: true,
+		SourceCtx:        systemCtx,
+		DestinationCtx:   systemCtx,
+	}
+
+	ctx := context.TODO()
+
+	// Pull image from OCI registry
+	copiedManifest, err := copy.Image(ctx, policyCtx, dstRef, srcRef, copyOptions)
 	if err != nil {
 		return err
 	}
 
-	// Unpack.
-	var unpackOptions layer.UnpackOptions
-	unpackOptions.KeepDirlinks = true
+	// Unpack OCI image
+	unpackOptions := &layer.UnpackOptions{KeepDirlinks: true}
 
 	engine, err := dir.Open(ociPath)
 	if err != nil {
@@ -59,7 +106,14 @@ func (s *docker) Run() error {
 	}
 
 	engineExt := casext.NewEngine(engine)
+
 	defer func() { _ = engine.Close() }()
 
-	return umoci.Unpack(engineExt, imageTag, absRootfsDir, unpackOptions)
+	var manifest imgspec.Manifest
+	err = json.Unmarshal(copiedManifest, &manifest)
+	if err != nil {
+		return fmt.Errorf("Failed to parse manifest: %w", err)
+	}
+
+	return layer.UnpackRootfs(ctx, engineExt, absRootfsDir, manifest, unpackOptions)
 }

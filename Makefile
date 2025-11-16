@@ -3,6 +3,7 @@ ARCHIVE=distrobuilder-$(VERSION).tar
 GO111MODULE=on
 SPHINXENV=.sphinx/venv/bin/activate
 GOPATH=$(shell go env GOPATH)
+export GOFLAGS=-tags=containers_image_storage_stub,containers_image_docker_daemon_stub,containers_image_openpgp
 
 .PHONY: default
 default:
@@ -13,14 +14,13 @@ default:
 .PHONY: update-gomod
 update-gomod:
 	go get -t -v -u ./...
-	go get github.com/go-jose/go-jose/v4@v4.0.5
-	go mod tidy -go=1.23.7
+	go mod tidy --go=1.25.0
 	go get toolchain@none
 	@echo "Dependencies updated"
 
 .PHONY: check
 check: default
-	sudo GOENV=$(shell go env GOENV) go test -v ./...
+	sudo GOENV=$(shell go env GOENV) GOFLAGS=$(GOFLAGS) go test -v ./...
 
 .PHONY: dist
 dist:

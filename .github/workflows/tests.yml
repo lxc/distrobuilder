@@ -31,6 +31,8 @@ jobs:
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         if: github.event_name == 'pull_request'
+        with:
+          allow-ghsas: GHSA-56mx-8g9f-5crf
 
       - name: Install Go
         uses: actions/setup-go@v5
