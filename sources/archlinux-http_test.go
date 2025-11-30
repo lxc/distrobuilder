@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"net/http"
 	"regexp"
 	"testing"
 
@@ -8,7 +9,8 @@ import (
 )
 
 func TestArchLinuxGetLatestRelease(t *testing.T) {
-	var src archlinux
+	src := &archlinux{}
+	src.client = http.DefaultClient
 
 	release, err := src.getLatestRelease("https://archive.archlinux.org/iso/", "x86_64")
 	require.NoError(t, err)

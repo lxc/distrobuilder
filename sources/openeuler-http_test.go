@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -8,6 +9,7 @@ import (
 
 func TestGetLatestRelease(t *testing.T) {
 	s := &openEuler{}
+	s.client = http.DefaultClient
 
 	tests := []struct {
 		url        string

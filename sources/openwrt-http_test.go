@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"net/http"
 	"regexp"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 
 func TestOpenWrtHTTP_getLatestServiceRelease(t *testing.T) {
 	s := &openwrt{}
+	s.client = http.DefaultClient
 
 	tests := []struct {
 		release string
