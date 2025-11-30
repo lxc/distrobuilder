@@ -414,7 +414,7 @@ func (s *centOS) getRelease(URL, release, variant, arch string) (string, error) 
 	)
 
 	err = shared.Retry(func() error {
-		resp, err = http.Get(u)
+		resp, err = s.client.Get(u)
 		if err != nil {
 			return fmt.Errorf("Failed to get URL %q: %w", u, err)
 		}

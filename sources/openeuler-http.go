@@ -37,7 +37,7 @@ func (s *openEuler) getLatestRelease(baseURL, release string) (string, error) {
 		return "", fmt.Errorf("Failed to parse URL %s: %w", baseURL, err)
 	}
 
-	resp, err = http.Get(baseURL)
+	resp, err = s.client.Get(baseURL)
 	if err != nil {
 		return "", fmt.Errorf("Failed to read url: %w", err)
 	}

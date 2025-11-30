@@ -159,7 +159,7 @@ func (s *alpineLinux) getLatestRelease(baseURL, release string, arch string) (st
 	)
 
 	err = shared.Retry(func() error {
-		resp, err = http.Get(baseURL)
+		resp, err = s.client.Get(baseURL)
 		if err != nil {
 			return fmt.Errorf("Failed to GET %q: %w", baseURL, err)
 		}

@@ -212,7 +212,7 @@ func (s *almalinux) getRelease(URL, release, variant, arch string) (string, erro
 	)
 
 	err = shared.Retry(func() error {
-		resp, err = http.Get(fullURL)
+		resp, err = s.client.Get(fullURL)
 		if err != nil {
 			return fmt.Errorf("Failed to GET %q: %w", fullURL, err)
 		}

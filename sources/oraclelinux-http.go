@@ -65,7 +65,7 @@ func (s *oraclelinux) Run() error {
 			)
 
 			err = shared.Retry(func() error {
-				resp, err = http.Head(fullURL)
+				resp, err = s.client.Head(fullURL)
 				if err != nil {
 					return errors.New("")
 				}
@@ -100,7 +100,7 @@ func (s *oraclelinux) Run() error {
 		)
 
 		err = shared.Retry(func() error {
-			resp, err = http.Head(fullURL)
+			resp, err = s.client.Head(fullURL)
 			if err != nil {
 				return errors.New("")
 			}
