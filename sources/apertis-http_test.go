@@ -2,6 +2,7 @@ package sources
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,6 +10,7 @@ import (
 
 func TestApertisHTTP_getLatestRelease(t *testing.T) {
 	s := &apertis{}
+	s.client = http.DefaultClient
 
 	tests := []struct {
 		release string

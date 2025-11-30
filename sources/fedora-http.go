@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"sort"
 
 	"github.com/lxc/incus/v6/shared/subprocess"
@@ -25,10 +24,6 @@ type fedora struct {
 func (s *fedora) Run() error {
 	base := "Fedora-Container-Base-Generic"
 	extension := "oci.tar.xz"
-	if slices.Contains([]string{"39", "40"}, s.definition.Image.Release) {
-		base = "Fedora-Container-Base"
-		extension = "tar.xz"
-	}
 
 	baseURL := fmt.Sprintf("%s/packages/%s", s.definition.Source.URL, base)
 
@@ -186,7 +181,7 @@ func (s *fedora) getLatestBuild(URL, release string) (string, error) {
 	)
 
 	err = shared.Retry(func() error {
-		resp, err = http.Get(fmt.Sprintf("%s/%s", URL, release))
+		resp, err = s.client.Get(fmt.Sprintf("%s/%s", URL, release))
 		if err != nil {
 			return fmt.Errorf("Failed to GET %q: %w", fmt.Sprintf("%s/%s", URL, release), err)
 		}

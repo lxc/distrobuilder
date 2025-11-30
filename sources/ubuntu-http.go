@@ -46,7 +46,7 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 				s.definition.Image.Release, s.definition.Image.ArchitectureMapped)
 		} else {
 			// if release is non-numerical, find the latest release
-			s.fname, err = getLatestRelease(baseURL,
+			s.fname, err = s.getLatestRelease(baseURL,
 				s.definition.Image.Release, s.definition.Image.ArchitectureMapped)
 			if err != nil {
 				return fmt.Errorf("Failed to get latest release: %w", err)
@@ -125,14 +125,14 @@ func (s ubuntu) unpack(filePath, rootDir string) error {
 	return nil
 }
 
-func getLatestRelease(baseURL, release, arch string) (string, error) {
+func (s ubuntu) getLatestRelease(baseURL, release, arch string) (string, error) {
 	var (
 		resp *http.Response
 		err  error
 	)
 
 	err = shared.Retry(func() error {
-		resp, err = http.Get(baseURL)
+		resp, err = s.client.Get(baseURL)
 		if err != nil {
 			return fmt.Errorf("Failed to GET %q: %w", baseURL, err)
 		}

@@ -104,7 +104,7 @@ func (s *openwrt) Run() error {
 	)
 
 	err = shared.Retry(func() error {
-		resp, err = http.Head(baseURL)
+		resp, err = s.client.Head(baseURL)
 		if err != nil {
 			return fmt.Errorf("Failed to HEAD %q: %w", baseURL, err)
 		}
@@ -183,7 +183,7 @@ func (s *openwrt) getLatestServiceRelease(baseURL, release string) (string, erro
 	)
 
 	err = shared.Retry(func() error {
-		resp, err = http.Get(baseURL)
+		resp, err = s.client.Get(baseURL)
 		if err != nil {
 			return fmt.Errorf("Failed to GET %q: %w", baseURL, err)
 		}

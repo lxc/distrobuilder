@@ -158,7 +158,7 @@ func (s *gentoo) getLatestBuild(baseURL, arch, variant string) (string, error) {
 	)
 
 	err = shared.Retry(func() error {
-		resp, err = http.Get(baseURL)
+		resp, err = s.client.Get(baseURL)
 		if err != nil {
 			return fmt.Errorf("Failed to GET %q: %w", baseURL, err)
 		}

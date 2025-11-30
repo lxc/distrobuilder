@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -251,7 +250,7 @@ rm -rf /rootfs/var/cache/yum
 func (s *rockylinux) getRelease(URL, release, variant, arch string) (string, error) {
 	u := URL + path.Join("/", strings.ToLower(release), "isos", arch)
 
-	resp, err := http.Get(u)
+	resp, err := s.client.Get(u)
 	if err != nil {
 		return "", fmt.Errorf("Failed to GET %q: %w", u, err)
 	}
