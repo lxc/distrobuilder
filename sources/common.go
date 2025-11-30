@@ -30,6 +30,19 @@ type common struct {
 	client     *http.Client
 }
 
+type httpCustomTransport struct{}
+
+func (ct *httpCustomTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Header.Get("Accept") == "" {
+		req.Header.Set("Accept", "*/*")
+	}
+
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSHandshakeTimeout = 60 * time.Second
+
+	return transport.RoundTrip(req)
+}
+
 func (s *common) init(ctx context.Context, logger *logrus.Logger, definition shared.Definition, rootfsDir string, cacheDir string, sourcesDir string) {
 	s.logger = logger
 	s.definition = definition
@@ -38,10 +51,7 @@ func (s *common) init(ctx context.Context, logger *logrus.Logger, definition sha
 	s.sourcesDir = sourcesDir
 	s.ctx = ctx
 
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	// Increase TLS handshake timeout for mirrors which need a bit more time.
-	transport.TLSHandshakeTimeout = 60 * time.Second
-
+	transport := &httpCustomTransport{}
 	s.client = &http.Client{
 		Transport: transport,
 	}
