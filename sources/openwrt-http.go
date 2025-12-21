@@ -31,18 +31,9 @@ func (s *openwrt) Run() error {
 	case "x86_64":
 		architecturePath = "x86/64"
 	case "armv7l":
-		if strings.HasPrefix(release, "22.03") {
-			architecturePath = "armvirt/32"
-		} else {
-			architecturePath = "armsr/armv7"
-		}
-
+		architecturePath = "armsr/armv7"
 	case "aarch64":
-		if strings.HasPrefix(release, "22.03") {
-			architecturePath = "armvirt/64"
-		} else {
-			architecturePath = "armsr/armv8"
-		}
+		architecturePath = "armsr/armv8"
 	}
 
 	// Figure out the correct release
@@ -75,28 +66,8 @@ func (s *openwrt) Run() error {
 
 	var fname string
 
-	if strings.HasPrefix(release, "22.03") {
-		switch s.definition.Image.ArchitectureMapped {
-		case "x86_64":
-			fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
-				strings.Replace(architecturePath, "/", "-", 1))
-		case "armv7l":
-			fallthrough
-		case "aarch64":
-			fname = fmt.Sprintf("openwrt-%s%s-default-rootfs.tar.gz", releaseInFilename,
-				strings.Replace(architecturePath, "/", "-", 1))
-		}
-	} else {
-		switch s.definition.Image.ArchitectureMapped {
-		case "x86_64":
-			fallthrough
-		case "armv7l":
-			fallthrough
-		case "aarch64":
-			fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
-				strings.Replace(architecturePath, "/", "-", 1))
-		}
-	}
+	fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
+		strings.Replace(architecturePath, "/", "-", 1))
 
 	var (
 		resp *http.Response
