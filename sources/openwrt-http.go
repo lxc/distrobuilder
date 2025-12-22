@@ -172,7 +172,7 @@ func (s *openwrt) getLatestServiceRelease(baseURL, release string) (string, erro
 		return "", fmt.Errorf("Failed to ready body: %w", err)
 	}
 
-	regex := regexp.MustCompile(fmt.Sprintf(">(%s\\.\\d+)<", release))
+	regex := regexp.MustCompile(fmt.Sprintf(">(%s\\.\\d+(?:-rc\\d+)?)<", release))
 	releases := regex.FindAllStringSubmatch(string(body), -1)
 
 	if len(releases) > 0 {
