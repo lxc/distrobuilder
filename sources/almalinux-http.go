@@ -69,7 +69,9 @@ func (s *almalinux) Run() error {
 			if s.definition.Image.ArchitectureMapped == "armhfp" {
 				checksumFile = "sha256sum.txt"
 			} else {
-				if strings.HasPrefix(s.definition.Image.Release, "8") {
+				if strings.HasPrefix(s.definition.Image.Release, "8") ||
+					strings.HasPrefix(s.definition.Image.Release, "9") ||
+					strings.HasPrefix(s.definition.Image.Release, "10") {
 					checksumFile = "CHECKSUM"
 				} else {
 					checksumFile = "sha256sum.txt.asc"
@@ -82,7 +84,7 @@ func (s *almalinux) Run() error {
 			}
 
 			// Only verify file if possible.
-			if strings.HasSuffix(checksumFile, ".asc") {
+			if strings.HasSuffix(checksumFile, ".asc") || checksumFile == "CHECKSUM" {
 				valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), "")
 				if err != nil {
 					return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
