@@ -69,11 +69,10 @@ func (s *almalinux) Run() error {
 			if s.definition.Image.ArchitectureMapped == "armhfp" {
 				checksumFile = "sha256sum.txt"
 			} else {
-				if strings.HasPrefix(s.definition.Image.Release, "8") ||
-					strings.HasPrefix(s.definition.Image.Release, "9") ||
-					strings.HasPrefix(s.definition.Image.Release, "10") {
+				switch s.majorVersion {
+				case "8", "9", "10":
 					checksumFile = "CHECKSUM"
-				} else {
+				default:
 					checksumFile = "sha256sum.txt.asc"
 				}
 			}
