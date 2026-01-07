@@ -64,15 +64,17 @@ func (s *ubuntu) downloadImage(definition shared.Definition) error {
 		return fmt.Errorf("Failed to parse URL %q: %w", baseURL, err)
 	}
 
+	skip, err := s.validateGPGRequirements(url)
+	if err != nil {
+		return fmt.Errorf("Failed to validate GPG requirements: %w", err)
+	}
+
+	s.definition.Source.SkipVerification = skip
+
 	var fpath string
 
 	checksumFile := ""
-	// Force gpg checks when using http
-	if !s.definition.Source.SkipVerification && url.Scheme != "https" {
-		if len(s.definition.Source.Keys) == 0 {
-			return errors.New("GPG keys are required if downloading from HTTP")
-		}
-
+	if !s.definition.Source.SkipVerification {
 		checksumFile = baseURL + "SHA256SUMS"
 		fpath, err = s.DownloadHash(s.definition.Image, baseURL+"SHA256SUMS.gpg", "", nil)
 		if err != nil {

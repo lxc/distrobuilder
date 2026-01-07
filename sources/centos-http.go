@@ -76,40 +76,40 @@ func (s *centOS) Run() error {
 		return fmt.Errorf("Failed to parse URL %q: %w", baseURL, err)
 	}
 
+	skip, err := s.validateGPGRequirements(url)
+	if err != nil {
+		return fmt.Errorf("Failed to validate GPG requirements: %w", err)
+	}
+
+	s.definition.Source.SkipVerification = skip
+
 	checksumFile := ""
 	if !s.definition.Source.SkipVerification {
-		// Force gpg checks when using http
-		if url.Scheme != "https" {
-			if len(s.definition.Source.Keys) == 0 {
-				return errors.New("GPG keys are required if downloading from HTTP")
+		if s.definition.Image.ArchitectureMapped == "armhfp" {
+			checksumFile = "sha256sum.txt"
+		} else {
+			checksumFile = "sha256sum.txt.asc"
+			if strings.HasPrefix(s.definition.Image.Release, "9") {
+				checksumFile = "SHA256SUM"
+			} else if strings.HasPrefix(s.definition.Image.Release, "8") {
+				checksumFile = "CHECKSUM"
 			}
+		}
 
-			if s.definition.Image.ArchitectureMapped == "armhfp" {
-				checksumFile = "sha256sum.txt"
-			} else {
-				checksumFile = "sha256sum.txt.asc"
-				if strings.HasPrefix(s.definition.Image.Release, "9") {
-					checksumFile = "SHA256SUM"
-				} else if strings.HasPrefix(s.definition.Image.Release, "8") {
-					checksumFile = "CHECKSUM"
-				}
-			}
+		fpath, err := s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
+		if err != nil {
+			return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
+		}
 
-			fpath, err := s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
+		// Only verify file if possible.
+		if strings.HasSuffix(checksumFile, ".asc") || checksumFile == "SHA256SUM" || checksumFile == "CHECKSUM" {
+			valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), "")
 			if err != nil {
-				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
+				return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
 			}
 
-			// Only verify file if possible.
-			if strings.HasSuffix(checksumFile, ".asc") {
-				valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), "")
-				if err != nil {
-					return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
-				}
-
-				if !valid {
-					return fmt.Errorf("Invalid signature for %q", checksumFile)
-				}
+			if !valid {
+				return fmt.Errorf("Invalid signature for %q", checksumFile)
 			}
 		}
 	}
