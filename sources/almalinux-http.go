@@ -2,7 +2,6 @@ package sources
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -58,40 +57,40 @@ func (s *almalinux) Run() error {
 		return fmt.Errorf("Failed to parse URL %q: %w", baseURL, err)
 	}
 
+	skip, err := s.validateGPGRequirements(url)
+	if err != nil {
+		return fmt.Errorf("Failed to validate GPG requirements: %w", err)
+	}
+
+	s.definition.Source.SkipVerification = skip
+
 	checksumFile := ""
 	if !s.definition.Source.SkipVerification {
-		// Force gpg checks when using http
-		if url.Scheme != "https" {
-			if len(s.definition.Source.Keys) == 0 {
-				return errors.New("GPG keys are required if downloading from HTTP")
+		if s.definition.Image.ArchitectureMapped == "armhfp" {
+			checksumFile = "sha256sum.txt"
+		} else {
+			switch s.majorVersion {
+			case "8", "9", "10":
+				checksumFile = "CHECKSUM"
+			default:
+				checksumFile = "sha256sum.txt.asc"
 			}
+		}
 
-			if s.definition.Image.ArchitectureMapped == "armhfp" {
-				checksumFile = "sha256sum.txt"
-			} else {
-				switch s.majorVersion {
-				case "8", "9", "10":
-					checksumFile = "CHECKSUM"
-				default:
-					checksumFile = "sha256sum.txt.asc"
-				}
-			}
+		fpath, err := s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
+		if err != nil {
+			return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
+		}
 
-			fpath, err := s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
+		// Only verify file if possible.
+		if strings.HasSuffix(checksumFile, ".asc") || checksumFile == "CHECKSUM" {
+			valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), "")
 			if err != nil {
-				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
+				return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
 			}
 
-			// Only verify file if possible.
-			if strings.HasSuffix(checksumFile, ".asc") || checksumFile == "CHECKSUM" {
-				valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), "")
-				if err != nil {
-					return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
-				}
-
-				if !valid {
-					return fmt.Errorf("Invalid signature for %q", filepath.Join(fpath, checksumFile))
-				}
+			if !valid {
+				return fmt.Errorf("Invalid signature for %q", filepath.Join(fpath, checksumFile))
 			}
 		}
 	}

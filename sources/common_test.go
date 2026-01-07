@@ -3,12 +3,14 @@ package sources
 import (
 	"context"
 	"log"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
 
 	incus "github.com/lxc/incus/v6/shared/util"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/lxc/distrobuilder/shared"
@@ -139,4 +141,86 @@ func TestCreateGPGKeyring(t *testing.T) {
 
 	require.False(t, incus.PathExists(keyring), "File should not exist")
 	os.RemoveAll(path.Dir(keyring))
+}
+
+func TestValidateGPGRequirements(t *testing.T) {
+	tests := []struct {
+		name             string
+		url              string
+		keys             []string
+		skipVerification bool
+		expectError      bool
+		expectSkipVerify bool
+	}{
+		{
+			name:             "keys provided with https",
+			url:              "https://example.com/file",
+			keys:             []string{"0x12345678"},
+			skipVerification: false,
+			expectError:      false,
+			expectSkipVerify: false, // Keys provided, always verify
+		},
+		{
+			name:             "keys provided with http",
+			url:              "http://example.com/file",
+			keys:             []string{"0x12345678"},
+			skipVerification: false,
+			expectError:      false,
+			expectSkipVerify: false, // Keys provided, always verify
+		},
+		{
+			name:             "http without keys",
+			url:              "http://example.com/file",
+			keys:             []string{},
+			skipVerification: false,
+			expectError:      true, // HTTP requires GPG keys
+			expectSkipVerify: false,
+		},
+		{
+			name:             "https without keys and skip false",
+			url:              "https://example.com/file",
+			keys:             []string{},
+			skipVerification: false,
+			expectError:      false,
+			expectSkipVerify: true, // Should be set to true with warning
+		},
+		{
+			name:             "https without keys and skip true",
+			url:              "https://example.com/file",
+			keys:             []string{},
+			skipVerification: true,
+			expectError:      false,
+			expectSkipVerify: true, // Remains true
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := logrus.New()
+			logger.SetOutput(os.Stdout)
+
+			c := common{
+				logger: logger,
+				definition: shared.Definition{
+					Source: shared.DefinitionSource{
+						Keys:             tt.keys,
+						SkipVerification: tt.skipVerification,
+					},
+				},
+				ctx: context.TODO(),
+			}
+
+			u, err := url.Parse(tt.url)
+			require.NoError(t, err)
+
+			skip, err := c.validateGPGRequirements(u)
+
+			if tt.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectSkipVerify, skip)
+			}
+		})
+	}
 }

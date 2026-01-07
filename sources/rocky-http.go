@@ -41,20 +41,29 @@ func (s *rockylinux) Run() error {
 		return fmt.Errorf("Failed to parse URL %q: %w", baseURL, err)
 	}
 
+	skip, err := s.validateGPGRequirements(url)
+	if err != nil {
+		return fmt.Errorf("Failed to validate GPG requirements: %w", err)
+	}
+
+	s.definition.Source.SkipVerification = skip
+
 	checksumFile := ""
 	if !s.definition.Source.SkipVerification {
-		// Force gpg checks when using http
-		if url.Scheme != "https" {
-			if len(s.definition.Source.Keys) == 0 {
-				return errors.New("GPG keys are required if downloading from HTTP")
-			}
+		checksumFile = "CHECKSUM"
 
-			checksumFile = "CHECKSUM"
+		fpath, err := s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
+		if err != nil {
+			return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
+		}
 
-			_, err := s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
-			if err != nil {
-				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
-			}
+		valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), "")
+		if err != nil {
+			return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
+		}
+
+		if !valid {
+			return fmt.Errorf("Invalid signature for %q", checksumFile)
 		}
 	}
 

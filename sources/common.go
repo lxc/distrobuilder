@@ -6,6 +6,7 @@ import (
 	"hash"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -283,4 +284,23 @@ func (s *common) CreateGPGKeyring() (string, error) {
 	}
 
 	return filepath.Join(gpgDir, "distrobuilder.gpg"), nil
+}
+
+// Checks GPG key requirements.
+func (s *common) validateGPGRequirements(u *url.URL) (bool, error) {
+	hasKeys := len(s.definition.Source.Keys) != 0
+
+	if hasKeys {
+		// GPG keys provided, always verify regardless of protocol
+		return false, nil
+	} else if u.Scheme != "https" {
+		// Force gpg checks when using http
+		return false, fmt.Errorf("GPG keys are required if downloading from %s", u.Scheme)
+	} else if !s.definition.Source.SkipVerification {
+		// HTTPS without keys: warn but allow
+		s.logger.Warnf("Downloading from %s without GPG keys as no keys were specified", u.Scheme)
+		return true, nil
+	}
+
+	return s.definition.Source.SkipVerification, nil
 }
