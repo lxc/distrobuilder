@@ -76,20 +76,20 @@ func (s *gentoo) Run() error {
 	}
 
 	if !s.definition.Source.SkipVerification {
-		_, err = s.DownloadHash(s.definition.Image, tarball+".DIGESTS.asc", "", nil)
+		_, err = s.DownloadHash(s.definition.Image, tarball+".DIGESTS", "", nil)
 		if err != nil {
-			return fmt.Errorf("Failed to download %q: %w", tarball+".DIGESTS.asc", err)
+			return fmt.Errorf("Failed to download %q: %w", tarball+".DIGESTS", err)
 		}
 
 		valid, err := s.VerifyFile(
-			filepath.Join(fpath, fname+".DIGESTS.asc"),
+			filepath.Join(fpath, fname+".DIGESTS"),
 			"")
 		if err != nil {
-			return fmt.Errorf("Failed to verify %q: %w", filepath.Join(fpath, fname+".DIGESTS.asc"), err)
+			return fmt.Errorf("Failed to verify %q: %w", filepath.Join(fpath, fname+".DIGESTS"), err)
 		}
 
 		if !valid {
-			return fmt.Errorf("Failed to verify %q", fname+".DIGESTS.asc")
+			return fmt.Errorf("Failed to verify %q", fname+".DIGESTS")
 		}
 	}
 

@@ -50,20 +50,38 @@ func (s *rockylinux) Run() error {
 
 	checksumFile := ""
 	if !s.definition.Source.SkipVerification {
+		// Rocky Linux 8 and 9 do not provide any GPG signature for the CHECKSUM file.
+		// Rocky Linux 10 provides a detached signature.
+		majorVersion := strings.Split(s.definition.Image.Release, ".")[0]
+
 		checksumFile = "CHECKSUM"
 
-		fpath, err := s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
-		if err != nil {
-			return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
-		}
+		switch majorVersion {
+		case "8", "9":
+			fpath, err = s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
+			if err != nil {
+				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
+			}
 
-		valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), "")
-		if err != nil {
-			return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
-		}
+		default:
+			fpath, err = s.DownloadHash(s.definition.Image, baseURL+checksumFile+".asc", "", nil)
+			if err != nil {
+				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile+".asc", err)
+			}
 
-		if !valid {
-			return fmt.Errorf("Invalid signature for %q", checksumFile)
+			_, err = s.DownloadHash(s.definition.Image, baseURL+checksumFile, "", nil)
+			if err != nil {
+				return fmt.Errorf("Failed to download %q: %w", baseURL+checksumFile, err)
+			}
+
+			valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), filepath.Join(fpath, checksumFile+".asc"))
+			if err != nil {
+				return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
+			}
+
+			if !valid {
+				return fmt.Errorf("Invalid signature for %q", checksumFile)
+			}
 		}
 	}
 

@@ -102,7 +102,7 @@ func (s *centOS) Run() error {
 		}
 
 		// Only verify file if possible.
-		if strings.HasSuffix(checksumFile, ".asc") || checksumFile == "SHA256SUM" || checksumFile == "CHECKSUM" {
+		if strings.HasSuffix(checksumFile, ".asc") {
 			valid, err := s.VerifyFile(filepath.Join(fpath, checksumFile), "")
 			if err != nil {
 				return fmt.Errorf("Failed to verify %q: %w", checksumFile, err)
