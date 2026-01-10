@@ -89,7 +89,7 @@ func (s *centOS) Run() error {
 			checksumFile = "sha256sum.txt"
 		} else {
 			checksumFile = "sha256sum.txt.asc"
-			if strings.HasPrefix(s.definition.Image.Release, "9") {
+			if strings.HasPrefix(s.definition.Image.Release, "9") || strings.HasPrefix(s.definition.Image.Release, "10") {
 				checksumFile = "SHA256SUM"
 			} else if strings.HasPrefix(s.definition.Image.Release, "8") {
 				checksumFile = "CHECKSUM"
