@@ -131,8 +131,8 @@ func (s *gentoo) Run() error {
 		}
 
 		valid, err := s.VerifyFile(
-			filepath.Join(fpath, fname+".gpgsig"),
-			"")
+			filepath.Join(fpath, fname),
+			filepath.Join(fpath, fname+".gpgsig"))
 		if err != nil {
 			return fmt.Errorf("Failed to verify %q: %w", filepath.Join(fpath, fname+".gpgsig"), err)
 		}
