@@ -11,7 +11,7 @@ source:
     keyserver: <string>
     variant: <string>
     suite: <string>
-    same_as: <boolean>
+    same_as: <string>
     skip_verification: <boolean>
     components: <array>
 ```
