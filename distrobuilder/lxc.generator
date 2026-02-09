@@ -247,7 +247,7 @@ if [ "${SYSTEMD}" -ge 258 ]; then
 	cat <<-EOF > /run/systemd/system/console-getty.service.d/override.conf
 		[Service]
 		ExecStart=
-		ExecStart=-/sbin/agetty -o '-- \\u' --noreset --noclear --keep-baud 115200,57600,38400,9600 console
+		ExecStart=-/sbin/agetty -o '-- \\\\u' --noreset --noclear --keep-baud 115200,57600,38400,9600 console
 		StandardInput=null
 		StandardOutput=null
 		EOF
