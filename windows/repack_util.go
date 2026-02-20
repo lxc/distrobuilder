@@ -1,7 +1,6 @@
 package windows
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/flosch/pongo2/v4"
-	"github.com/lxc/incus/v6/shared/subprocess"
 	incus "github.com/lxc/incus/v6/shared/util"
 	"github.com/sirupsen/logrus"
 
@@ -164,91 +162,6 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 			"packageName": driverInfo.PackageName,
 			"driverName":  driverName,
 			"classGuid":   classGuid,
-		}
-
-		for _, c := range driverInfo.SystemCatalog {
-			if c.Content == "" || c.Path == "" || c.CtxKey == "" || c.ID == "" {
-				continue
-			}
-
-			// Use unsafe-printable-strings so we can read the field corresponding to c.ID.
-			reg, err := subprocess.RunCommand("hivexregedit", "--export", `--prefix=HKLM\SYSTEM`, "--unsafe-printable-strings", filepath.Join(dirs["config"], "SYSTEM"), c.Path)
-			if err != nil {
-				return fmt.Errorf("Failed to read system catalog %q for driver %q: %w", c.Path, driverName, err)
-			}
-
-			sc := bufio.NewScanner(strings.NewReader(reg))
-			var matchedKey bool
-			var lineExists bool
-			index := CatalogIndex{}
-			for sc.Scan() {
-				line := sc.Text()
-				if line == "" {
-					continue
-				} else if line == `[HKLM\SYSTEM\`+c.Path+"]" {
-					// We found the key.
-					matchedKey = true
-					continue
-				} else if strings.HasPrefix(line, "[") {
-					// We found some other key.
-					matchedKey = false
-				} else if matchedKey {
-					key, val, ok := strings.Cut(line, ":")
-					if !ok || key == "" || val == "" {
-						return fmt.Errorf("Invalid catalog index record %q for %q", line, driverName)
-					}
-
-					valInt, err := strconv.ParseInt(val, 16, 64)
-					if err != nil {
-						return fmt.Errorf("Failed to parse catalog index record %q for %q: %w", line, driverName, err)
-					}
-
-					switch key {
-					case `"Next_Catalog_Entry_ID"=dword`:
-						index.NextEntryID = int(valInt) + 1
-					case `"Num_Catalog_Entries"=dword`:
-						index.NumEntries = int(valInt) + 1
-					case `"Num_Catalog_Entries64"=dword`:
-						index.NumEntries64 = int(valInt) + 1
-					case `"Serial_Access_Num"=dword`:
-						index.SerialAccessNum = int(valInt) + 1
-					}
-				} else if line == c.ID {
-					// Another entry exists already.
-					lineExists = true
-					break
-				}
-			}
-
-			if lineExists {
-				logger.WithFields(logrus.Fields{"hivefile": "SYSTEM", "catalog": c.ID, "path": c.Path}).Debug("Catalog entry with ID already exists")
-				continue
-			}
-
-			if index.NextEntryID == 0 || index.NumEntries == 0 || index.NumEntries64 == 0 || index.SerialAccessNum == 0 {
-				return fmt.Errorf("Incomplete catalog index %+v for %q", index, driverName)
-			}
-
-			ctx[c.CtxKey] = map[string]string{
-				"nextID":       fmt.Sprintf("%08x", index.NextEntryID),
-				"numEntries":   fmt.Sprintf("%08x", index.NumEntries),
-				"numEntries64": fmt.Sprintf("%08x", index.NumEntries64),
-				"serialNum":    fmt.Sprintf("%08x", index.SerialAccessNum),
-				"pathIndex":    fmt.Sprintf("%012d", index.NumEntries),
-				"pathIndex64":  fmt.Sprintf("%012d", index.NumEntries64),
-			}
-
-			tpl, err := pongo2.FromString(c.Content)
-			if err != nil {
-				return fmt.Errorf("Failed to parse %q catalog template for driver %q: %w", c.ID, driverName, err)
-			}
-
-			out, err := tpl.Execute(ctx)
-			if err != nil {
-				return fmt.Errorf("Failed to render %q catalog template for driver %q: %w", c.ID, driverName, err)
-			}
-
-			systemRegistry = fmt.Sprintf("%s\n\n%s", systemRegistry, out)
 		}
 
 		// Update Windows DRIVERS registry
