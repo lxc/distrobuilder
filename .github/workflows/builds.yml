@@ -26,3 +26,26 @@ jobs:
         with:
           name: documentation
           path: doc/html
+
+  binary:
+    name: Binary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get install -y \
+           	libbtrfs-dev \
+            libgpgme-dev \
+            squashfs-tools
+
+      - name: Build
+        run: go build ./...
