@@ -62,33 +62,40 @@ func (v *vm) getUEFIDevFile() string {
 	return fmt.Sprintf("%sp1", v.loopDevice)
 }
 
-func (v *vm) findRootfsDevUUID() (string, error) {
+func (v *vm) findRootfsDevUUID() (string, string, error) {
 	rootfsDevFile := v.getRootfsDevFile()
 	if rootfsDevFile == "" {
-		return "", fmt.Errorf("Failed to get rootfs device name.")
+		return "", "", fmt.Errorf("Failed to get rootfs device name.")
 	}
 
 	var out strings.Builder
 	err := shared.RunCommand(v.ctx, nil, &out, "blkid", "-o", "export", rootfsDevFile)
 	if err != nil {
 		err = fmt.Errorf("Failed to get rootfs device UUID: %w", err)
-		return "", err
+		return "", "", err
 	}
 
 	fields := strings.Fields(out.String())
-	var rootUUID string
+	var partUUID, rootUUID string
 	for _, field := range fields {
+		// UUID is the filesystem UUID, PARTUUID is the partition UUID
+		// The kernel can use root=PARTUUID=, an initramfs is needed to handle root=UUID=.
 		if strings.HasPrefix(field, "UUID=") {
 			rootUUID = field
-			break
+			continue
+		}
+
+		if strings.HasPrefix(field, "PARTUUID=") {
+			partUUID = field
+			continue
 		}
 	}
 
-	if rootUUID == "" {
-		return "", fmt.Errorf("No rootfs device UUID found")
+	if rootUUID == "" || partUUID == "" {
+		return "", "", fmt.Errorf("No rootfs device UUID found")
 	}
 
-	return rootUUID, nil
+	return rootUUID, partUUID, nil
 }
 
 func (v *vm) createEmptyDiskImage() error {
