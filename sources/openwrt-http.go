@@ -26,23 +26,14 @@ func (s *openwrt) Run() error {
 
 	release := s.definition.Image.Release
 	releaseInFilename := strings.ToLower(release) + "-"
-
-	var architecturePath string
-
-	switch s.definition.Image.ArchitectureMapped {
-	case "x86_64":
-		architecturePath = "x86/64"
-	case "armv7l":
-		architecturePath = "armsr/armv7"
-	case "aarch64":
-		architecturePath = "armsr/armv8"
-	}
+	// subtargets are subdirectories in url, but not in file names
+	architectureInDownloadPath := strings.Replace(s.definition.Image.ArchitectureMapped, "-", "/", 1)
 
 	// Figure out the correct release
 	if release == "snapshot" {
 		// Build a daily snapshot.
 		baseURL = fmt.Sprintf("%s/snapshots/targets/%s/",
-			s.definition.Source.URL, architecturePath)
+			s.definition.Source.URL, architectureInDownloadPath)
 		releaseInFilename = ""
 	} else {
 		baseURL = fmt.Sprintf("%s/releases", s.definition.Source.URL)
@@ -63,39 +54,13 @@ func (s *openwrt) Run() error {
 			releaseInFilename = strings.ToLower(release) + "-"
 		}
 
-		baseURL = fmt.Sprintf("%s/%s/targets/%s/", baseURL, release, architecturePath)
+		baseURL = fmt.Sprintf("%s/%s/targets/%s/", baseURL, release, architectureInDownloadPath)
 	}
 
-	var fname string
+	fname := fmt.Sprintf("openwrt-%s%s-generic-ext4-combined-efi.img.gz", releaseInFilename,
+		s.definition.Image.ArchitectureMapped)
 
-	fname = fmt.Sprintf("openwrt-%s%s-generic-ext4-combined-efi.img.gz", releaseInFilename,
-		strings.Replace(architecturePath, "/", "-", 1))
-
-	var (
-		resp *http.Response
-		err  error
-	)
-
-	err = shared.Retry(func() error {
-		resp, err = s.client.Head(baseURL)
-		if err != nil {
-			return fmt.Errorf("Failed to HEAD %q: %w", baseURL, err)
-		}
-
-		return nil
-	}, 3)
-	if err != nil {
-		return err
-	}
-
-	// Use fallback image "generic"
-	if resp.StatusCode == http.StatusNotFound && s.definition.Image.ArchitectureMapped == "x86_64" {
-		baseURL = strings.ReplaceAll(baseURL, "x86/64", "x86/generic")
-		baseURL = strings.ReplaceAll(baseURL, "x86-64", "x86-generic")
-		fname = strings.ReplaceAll(fname, "x86-64", "x86-generic")
-	}
-
-	_, err = url.Parse(baseURL)
+	_, err := url.Parse(baseURL)
 	if err != nil {
 		return fmt.Errorf("Failed to parse %q: %w", baseURL, err)
 	}
