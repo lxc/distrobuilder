@@ -7,9 +7,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/v3/shared"
 )
@@ -18,7 +21,6 @@ type openwrt struct {
 	common
 }
 
-// Run downloads the tarball and unpacks it.
 func (s *openwrt) Run() error {
 	var baseURL string
 
@@ -66,7 +68,7 @@ func (s *openwrt) Run() error {
 
 	var fname string
 
-	fname = fmt.Sprintf("openwrt-%s%s-rootfs.tar.gz", releaseInFilename,
+	fname = fmt.Sprintf("openwrt-%s%s-generic-ext4-combined-efi.img.gz", releaseInFilename,
 		strings.Replace(architecturePath, "/", "-", 1))
 
 	var (
@@ -138,10 +140,86 @@ func (s *openwrt) Run() error {
 
 	s.logger.WithField("file", filepath.Join(fpath, fname)).Info("Unpacking image")
 
-	// Unpack
-	err = shared.Unpack(filepath.Join(fpath, fname), s.rootfsDir)
+	// gzip issues a warning about trailing garbage (signature) and exits with code 2,
+	// which makes go think it failed, while it decompressed just fine.
+	// this solution allows gzip to exit with code 0 and 2.
+	err = shared.RunScript(s.ctx, fmt.Sprintf(`#!/bin/sh
+		gzip -d "%s" || test "$?" -eq 2
+		`, filepath.Join(fpath, fname)))
 	if err != nil {
-		return fmt.Errorf("Failed to unpack %q: %w", filepath.Join(fpath, fname), err)
+		return fmt.Errorf("Failed to decompress combined image: %w", err)
+	}
+
+	return s.unpackCombinedImg(filepath.Join(fpath, strings.TrimSuffix(fname, ".gz")), s.rootfsDir)
+}
+
+func (s *openwrt) unpackCombinedImg(imagePath, rootfsDir string) error {
+	// Image comes with an esp (vfat) and rootfs (ext4) partition
+	// We need the bootloader (grub) from the esp as it is not distributed otherwise
+	var out strings.Builder
+	err := shared.RunCommand(s.ctx, nil, &out, "losetup", "-P", "-f", "--show", imagePath)
+	if err != nil {
+		return fmt.Errorf("Failed to set up loop device: %w", err)
+	}
+
+	loopDevice := strings.TrimSpace(out.String())
+	espDevFile := fmt.Sprintf("%sp1", loopDevice)
+	rootfsDevFile := fmt.Sprintf("%sp2", loopDevice)
+
+	defer func() { _ = shared.RunCommand(s.ctx, nil, nil, "losetup", "-d", loopDevice) }()
+
+	err = shared.RunCommand(s.ctx, nil, nil, "udevadm", "settle")
+	if err != nil {
+		return fmt.Errorf("Failed to wait loop device ready: %w", err)
+	}
+
+	espTmpDir, err := os.MkdirTemp(s.cacheDir, "temp_")
+	if err != nil {
+		return fmt.Errorf("Failed to create temporary directory: %w", err)
+	}
+
+	defer os.RemoveAll(espTmpDir)
+
+	rootfsTmpDir, err := os.MkdirTemp(s.cacheDir, "temp_")
+	if err != nil {
+		return fmt.Errorf("Failed to create temporary directory: %w", err)
+	}
+
+	defer os.RemoveAll(rootfsTmpDir)
+
+	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-t", "vfat", "-o", "ro", espDevFile, espTmpDir)
+	if err != nil {
+		return fmt.Errorf("Failed to mount esp from combined image: %w", err)
+	}
+
+	defer func() { _ = unix.Unmount(espTmpDir, 0) }()
+
+	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-t", "ext4", "-o", "ro", rootfsDevFile, rootfsTmpDir)
+	if err != nil {
+		return fmt.Errorf("Failed to mount rootfs from combined image: %w", err)
+	}
+
+	defer func() { _ = unix.Unmount(rootfsTmpDir, 0) }()
+
+	// copy over the rootfs
+	err = shared.RsyncLocal(s.ctx, rootfsTmpDir+"/", rootfsDir)
+	if err != nil {
+		return fmt.Errorf("Failed to copy rootfs: %w", err)
+	}
+
+	// copy over the contents of the esp to where the esp is mounted on vm's
+	// distrobuilder seems to always use "/boot/efi"
+	// if we are a container, there is no need for this step, as the boot stuff is
+	// useless, but there is no way to distinguish that in the download phase, so
+	// we handle it later
+	err = os.MkdirAll(filepath.Join(rootfsDir, "boot", "efi"), 0o755)
+	if err != nil {
+		return fmt.Errorf("Failed to create esp mountpoint: %w", err)
+	}
+
+	err = shared.RsyncLocal(s.ctx, espTmpDir+"/", filepath.Join(rootfsDir, "boot", "efi"))
+	if err != nil {
+		return fmt.Errorf("Failed to copy esp: %w", err)
 	}
 
 	return nil
