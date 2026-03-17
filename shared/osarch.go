@@ -42,6 +42,14 @@ var gentooArchitectureNames = map[int]string{
 	osarch.ARCH_64BIT_S390_BIG_ENDIAN:       "s390x",
 }
 
+var openwrtArchitectureNames = map[int]string{
+	// these are the subtargets suited for virtualization
+	// slashes `/` in architecture names trip up distrobuilder
+	osarch.ARCH_64BIT_INTEL_X86:           "x86-64",
+	osarch.ARCH_32BIT_ARMV7_LITTLE_ENDIAN: "armsr-armv7",
+	osarch.ARCH_64BIT_ARMV8_LITTLE_ENDIAN: "armsr-armv8",
+}
+
 var plamoLinuxArchitectureNames = map[int]string{
 	osarch.ARCH_32BIT_INTEL_X86: "x86",
 }
@@ -78,6 +86,7 @@ var distroArchitecture = map[string]map[int]string{
 	"centos":      centosArchitectureNames,
 	"debian":      debianArchitectureNames,
 	"gentoo":      gentooArchitectureNames,
+	"openwrt":     openwrtArchitectureNames,
 	"plamolinux":  plamoLinuxArchitectureNames,
 	"voidlinux":   voidLinuxArchitectureNames,
 	"funtoo":      funtooArchitectureNames,
