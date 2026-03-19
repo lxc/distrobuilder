@@ -25,7 +25,8 @@ var driverViostor = DriverInfo{
 
 [\ControlSet001\Services\viostor\Parameters\PnpInterface]
 "5"=dword:00000001
-
+`,
+	SystemRegistryDrivers: `
 [\DriverDatabase]
 "OemInfMap"=hex(3):80
 "UpdateDate"=hex(3):a0,95,cd,69,92,58,d8,01
@@ -122,5 +123,15 @@ var driverViostor = DriverInfo{
 [\DriverDatabase\DriverPackages\{{ packageName }}\Strings]
 "vendor"=hex(1):52,00,65,00,64,00,20,00,48,00,61,00,74,00,2c,00,20,00,49,00,6e,00,63,00,2e,00,00,00
 "viostorscsi.devicedesc"=hex(1):52,00,65,00,64,00,20,00,48,00,61,00,74,00,20,00,56,00,69,00,72,00,74,00,49,00,4f,00,20,00,53,00,43,00,53,00,49,00,20,00,63,00,6f,00,6e,00,74,00,72,00,6f,00,6c,00,6c,00,65,00,72,00,00,00
+`,
+	SystemRegistryLegacy: `
+
+[ControlSet001\Control\CriticalDeviceDatabase\PCI#VEN_1AF4&DEV_1001&SUBSYS_00021AF4&REV_00]
+"ClassGuid"=hex(1):{{classGuid | toHex }},00,00
+"Service"=hex(1):{{ driverName |toHex }},00,00
+
+[ControlSet001\Control\CriticalDeviceDatabase\PCI#VEN_1AF4&DEV_1042&SUBSYS_11001AF4&REV_01]
+"ClassGuid"=hex(1):{{classGuid | toHex }},00,00
+"Service"=hex(1):{{ driverName |toHex }},00,00
 `,
 }

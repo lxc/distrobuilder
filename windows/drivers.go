@@ -2,10 +2,12 @@ package windows
 
 // DriverInfo contains driver specific information.
 type DriverInfo struct {
-	PackageName      string
-	SoftwareRegistry string
-	SystemRegistry   string
-	DriversRegistry  string
+	PackageName           string
+	SoftwareRegistry      string
+	SystemRegistry        string
+	SystemRegistryDrivers string
+	SystemRegistryLegacy  string
+	DriversRegistry       string
 }
 
 // Drivers contains all supported drivers.

@@ -7,16 +7,7 @@ var driverVioscsi = DriverInfo{
 "Owners"=hex(7):{{ infFile|toHex }},00,00,00,00
 "Source"=hex(2):25,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,25,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,44,00,72,00,69,00,76,00,65,00,72,00,53,00,74,00,6f,00,72,00,65,00,5c,00,46,00,69,00,6c,00,65,00,52,00,65,00,70,00,6f,00,73,00,69,00,74,00,6f,00,72,00,79,00,5c,00,76,00,69,00,6f,00,73,00,63,00,73,00,69,00,2e,00,69,00,6e,00,66,00,5f,00,61,00,6d,00,64,00,36,00,34,00,5f,00,37,00,38,00,64,00,32,00,33,00,65,00,32,00,39,00,62,00,64,00,63,00,66,00,33,00,65,00,30,00,36,00,5c,00,76,00,69,00,6f,00,73,00,63,00,73,00,69,00,2e,00,73,00,79,00,73,00,00,00
 `,
-	SystemRegistry: `[\DriverDatabase]
-"OemInfMap"=hex(3):e0
-
-[\DriverDatabase\DeviceIds\{{ classGuid|lower }}]
-"{{ infFile }}"=hex(0):
-
-[\ControlSet001\Services\EventLog\System\{{ driverName }}]
-"EventMessageFile"=hex(2):25,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,25,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,49,00,6f,00,4c,00,6f,00,67,00,4d,00,73,00,67,00,2e,00,64,00,6c,00,6c,00,00,00
-"TypesSupported"=dword:00000007
-
+	SystemRegistry: `
 [\ControlSet001\Services\{{ driverName }}]
 "DisplayName"=hex(1):40,00,{{ infFile|toHex }},2c,00,25,00,56,00,69,00,72,00,74,00,69,00,6f,00,53,00,63,00,73,00,69,00,2e,00,53,00,56,00,43,00,44,00,45,00,53,00,43,00,25,00,3b,00,52,00,65,00,64,00,20,00,48,00,61,00,74,00,20,00,56,00,69,00,72,00,74,00,49,00,4f,00,20,00,53,00,43,00,53,00,49,00,20,00,70,00,61,00,73,00,73,00,2d,00,74,00,68,00,72,00,6f,00,75,00,67,00,68,00,20,00,53,00,65,00,72,00,76,00,69,00,63,00,65,00,00,00
 "ErrorControl"=dword:00000001
@@ -32,6 +23,17 @@ var driverVioscsi = DriverInfo{
 
 [\ControlSet001\Services\{{ driverName }}\Parameters\PnpInterface]
 "5"=dword:00000001
+
+[\ControlSet001\Services\EventLog\System\{{ driverName }}]
+"EventMessageFile"=hex(2):25,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,25,00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,00,32,00,5c,00,49,00,6f,00,4c,00,6f,00,67,00,4d,00,73,00,67,00,2e,00,64,00,6c,00,6c,00,00,00
+"TypesSupported"=dword:00000007
+`,
+	SystemRegistryDrivers: `
+[\DriverDatabase]
+"OemInfMap"=hex(3):e0
+
+[\DriverDatabase\DeviceIds\{{ classGuid|lower }}]
+"{{ infFile }}"=hex(0):
 
 [\DriverDatabase\DeviceIds\PCI\VEN_1AF4&DEV_1004]
 "{{ infFile }}"=hex(3):02,ff,00,00
@@ -118,5 +120,14 @@ var driverVioscsi = DriverInfo{
 [\DriverDatabase\DriverPackages\{{ packageName }}\Strings]
 "vendor"=hex(1):52,00,65,00,64,00,20,00,48,00,61,00,74,00,2c,00,20,00,49,00,6e,00,63,00,2e,00,00,00
 "virtioscsi.devicedesc"=hex(1):52,00,65,00,64,00,20,00,48,00,61,00,74,00,20,00,56,00,69,00,72,00,74,00,49,00,4f,00,20,00,53,00,43,00,53,00,49,00,20,00,70,00,61,00,73,00,73,00,2d,00,74,00,68,00,72,00,6f,00,75,00,67,00,68,00,20,00,63,00,6f,00,6e,00,74,00,72,00,6f,00,6c,00,6c,00,65,00,72,00,00,00
+`,
+	SystemRegistryLegacy: `
+[ControlSet001\Control\CriticalDeviceDatabase\PCI#VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00]
+"ClassGuid"=hex(1):{{classGuid | toHex }},00,00
+"Service"=hex(1):{{ driverName |toHex }},00,00
+
+[ControlSet001\Control\CriticalDeviceDatabase\PCI#VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01]
+"ClassGuid"=hex(1):{{classGuid | toHex }},00,00
+"Service"=hex(1):{{ driverName |toHex }},00,00
 `,
 }

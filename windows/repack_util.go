@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -152,6 +153,11 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 			}
 		}
 
+		if infFilename == "" {
+			logger.WithFields(logrus.Fields{"driver": driverName, "version": r.windowsVersion}).Warn("Skipping driver not supported by Windows version")
+			continue
+		}
+
 		classGuid, err := ParseDriverClassGuid(driverName, filepath.Join(dirs["inf"], infFilename))
 		if err != nil {
 			return err
@@ -194,6 +200,34 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 			systemRegistry = fmt.Sprintf("%s\n\n%s", systemRegistry, out)
 		}
 
+		if slices.Contains(LegacyWindowsVersions, r.windowsVersion) {
+			if driverInfo.SystemRegistryLegacy != "" {
+				tpl, err := pongo2.FromString(driverInfo.SystemRegistryLegacy)
+				if err != nil {
+					return fmt.Errorf("Failed to parse template for driver %q: %w", driverName, err)
+				}
+
+				out, err := tpl.Execute(ctx)
+				if err != nil {
+					return fmt.Errorf("Failed to render template for driver %q: %w", driverName, err)
+				}
+
+				systemRegistry = fmt.Sprintf("%s\n\n%s", systemRegistry, out)
+			}
+		} else if driverInfo.SystemRegistryDrivers != "" {
+			tpl, err := pongo2.FromString(driverInfo.SystemRegistryDrivers)
+			if err != nil {
+				return fmt.Errorf("Failed to parse template for driver %q: %w", driverName, err)
+			}
+
+			out, err := tpl.Execute(ctx)
+			if err != nil {
+				return fmt.Errorf("Failed to render template for driver %q: %w", driverName, err)
+			}
+
+			systemRegistry = fmt.Sprintf("%s\n\n%s", systemRegistry, out)
+		}
+
 		// Update Windows SOFTWARE registry
 		if driverInfo.SoftwareRegistry != "" {
 			tpl, err := pongo2.FromString(driverInfo.SoftwareRegistry)
@@ -210,25 +244,40 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 		}
 	}
 
-	logger.WithField("hivefile", "DRIVERS").Debug("Updating Windows registry")
-
-	err = shared.RunCommand(r.ctx, strings.NewReader(driversRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\DRIVERS'", filepath.Join(dirs["config"], "DRIVERS"))
+	err = r.updateRegistry(r.ctx, dirs["config"], "DRIVERS", driversRegistry)
 	if err != nil {
-		return fmt.Errorf("Failed to edit Windows DRIVERS registry: %w", err)
+		return err
 	}
 
-	logger.WithField("hivefile", "SYSTEM").Debug("Updating Windows registry")
-
-	err = shared.RunCommand(r.ctx, strings.NewReader(systemRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SYSTEM'", filepath.Join(dirs["config"], "SYSTEM"))
+	err = r.updateRegistry(r.ctx, dirs["config"], "SYSTEM", systemRegistry)
 	if err != nil {
-		return fmt.Errorf("Failed to edit Windows SYSTEM registry: %w", err)
+		return err
 	}
 
-	logger.WithField("hivefile", "SOFTWARE").Debug("Updating Windows registry")
-
-	err = shared.RunCommand(r.ctx, strings.NewReader(softwareRegistry), nil, "hivexregedit", "--merge", "--prefix='HKEY_LOCAL_MACHINE\\SOFTWARE'", filepath.Join(dirs["config"], "SOFTWARE"))
+	err = r.updateRegistry(r.ctx, dirs["config"], "SOFTWARE", softwareRegistry)
 	if err != nil {
-		return fmt.Errorf("Failed to edit Windows SOFTWARE registry: %w", err)
+		return err
+	}
+
+	return nil
+}
+
+func (r *RepackUtil) updateRegistry(ctx context.Context, dir string, hive string, updates string) error {
+	_, err := os.Stat(filepath.Join(dir, hive))
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	if err != nil {
+		r.logger.WithFields(logrus.Fields{"version": r.windowsVersion, "hive": hive}).Warn("Skipping registry updates for unsupported hive")
+		return nil
+	}
+
+	r.logger.WithField("hivefile", hive).Debug("Updating Windows registry")
+	b := bytes.Buffer{}
+	err = shared.RunCommand(context.WithValue(ctx, shared.ContextKeyStderr, &b), strings.NewReader(updates), &b, "hivexregedit", "--merge", fmt.Sprintf("--prefix='HKEY_LOCAL_MACHINE\\%s'", hive), filepath.Join(dir, hive))
+	if err != nil {
+		return fmt.Errorf("Failed to edit Windows %q registry (%q): %w", hive, b.String(), err)
 	}
 
 	return nil
