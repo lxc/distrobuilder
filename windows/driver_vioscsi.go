@@ -121,4 +121,13 @@ var driverVioscsi = DriverInfo{
 "vendor"=hex(1):52,00,65,00,64,00,20,00,48,00,61,00,74,00,2c,00,20,00,49,00,6e,00,63,00,2e,00,00,00
 "virtioscsi.devicedesc"=hex(1):52,00,65,00,64,00,20,00,48,00,61,00,74,00,20,00,56,00,69,00,72,00,74,00,49,00,4f,00,20,00,53,00,43,00,53,00,49,00,20,00,70,00,61,00,73,00,73,00,2d,00,74,00,68,00,72,00,6f,00,75,00,67,00,68,00,20,00,63,00,6f,00,6e,00,74,00,72,00,6f,00,6c,00,6c,00,65,00,72,00,00,00
 `,
+	SystemRegistryLegacy: `
+[ControlSet001\Control\CriticalDeviceDatabase\PCI#VEN_1AF4&DEV_1004&SUBSYS_00081AF4&REV_00]
+"ClassGuid"=hex(1):{{classGuid | toHex }},00,00
+"Service"=hex(1):{{ driverName |toHex }},00,00
+
+[ControlSet001\Control\CriticalDeviceDatabase\PCI#VEN_1AF4&DEV_1048&SUBSYS_11001AF4&REV_01]
+"ClassGuid"=hex(1):{{classGuid | toHex }},00,00
+"Service"=hex(1):{{ driverName |toHex }},00,00
+`,
 }
