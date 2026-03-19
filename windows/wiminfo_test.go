@@ -68,7 +68,7 @@ func TestDetectWindowsVersion(t *testing.T) {
 		{"testdata/w10_install_wim_info.txt", "w10", "amd64"},
 		{"testdata/2k19_install_wim_info.txt", "2k19", "amd64"},
 		{"testdata/w8_install_wim_info.txt", "w8", "amd64"},
-		{"testdata/2k12r2_install_wim_info.txt", "2k12r2", "amd64"},
+		{"testdata/2k12r2_install_wim_info.txt", "2k12R2", "amd64"},
 		{"testdata/w7_install_wim_info.txt", "w7", "x86"},
 	}
 
