@@ -25,7 +25,8 @@ var driverViostor = DriverInfo{
 
 [\ControlSet001\Services\viostor\Parameters\PnpInterface]
 "5"=dword:00000001
-
+`,
+	SystemRegistryDrivers: `
 [\DriverDatabase]
 "OemInfMap"=hex(3):80
 "UpdateDate"=hex(3):a0,95,cd,69,92,58,d8,01

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -187,6 +188,34 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 		// Update Windows SYSTEM registry
 		if driverInfo.SystemRegistry != "" {
 			tpl, err := pongo2.FromString(driverInfo.SystemRegistry)
+			if err != nil {
+				return fmt.Errorf("Failed to parse template for driver %q: %w", driverName, err)
+			}
+
+			out, err := tpl.Execute(ctx)
+			if err != nil {
+				return fmt.Errorf("Failed to render template for driver %q: %w", driverName, err)
+			}
+
+			systemRegistry = fmt.Sprintf("%s\n\n%s", systemRegistry, out)
+		}
+
+		if slices.Contains(LegacyWindowsVersions, r.windowsVersion) {
+			if driverInfo.SystemRegistryLegacy != "" {
+				tpl, err := pongo2.FromString(driverInfo.SystemRegistryLegacy)
+				if err != nil {
+					return fmt.Errorf("Failed to parse template for driver %q: %w", driverName, err)
+				}
+
+				out, err := tpl.Execute(ctx)
+				if err != nil {
+					return fmt.Errorf("Failed to render template for driver %q: %w", driverName, err)
+				}
+
+				systemRegistry = fmt.Sprintf("%s\n\n%s", systemRegistry, out)
+			}
+		} else if driverInfo.SystemRegistryDrivers != "" {
+			tpl, err := pongo2.FromString(driverInfo.SystemRegistryDrivers)
 			if err != nil {
 				return fmt.Errorf("Failed to parse template for driver %q: %w", driverName, err)
 			}

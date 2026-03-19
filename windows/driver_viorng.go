@@ -31,7 +31,8 @@ var driverViorng = DriverInfo{
 
 [\ControlSet001\Services\VirtRng\Parameters\Wdf]
 "KmdfLibraryVersion"=hex(1):31,00,2e,00,31,00,35,00,00,00
-
+`,
+	SystemRegistryDrivers: `
 [\DriverDatabase\DeviceIds\PCI\VEN_1AF4&DEV_1005]
 "{{ infFile }}"=hex(3):02,ff,00,00
 

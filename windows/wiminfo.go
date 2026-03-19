@@ -12,7 +12,11 @@ import (
 var (
 	SupportedWindowsVersions = []string{
 		"w11", "w10", "w8", "w7", "2k19", "2k12", "2k16",
-		"2k22", "2k25", "2k3", "2k8", "xp", "2k12r2", "2k8r2", "w8.1",
+		"2k22", "2k25", "2k3", "2k8", "xp", "2k12R2", "2k8R2", "w8.1",
+	}
+
+	LegacyWindowsVersions = []string{
+		"2k8", "2k8R2", "2k3",
 	}
 
 	SupportedWindowsArchitectures = []string{
@@ -111,8 +115,8 @@ func ParseWimInfo(r io.Reader) (WimInfo, error) {
 
 func DetectWindowsVersion(desc string) string {
 	version := Aliases{
-		"2k12r2": {"2k12r2", "w2k12r2", "win2k12r2", "windows.?server.?2012?.r2"},
-		"2k8r2":  {"2k8r2", "w2k8r2", "win2k8r2", "windows.?server.?2008?.r2"},
+		"2k12R2": {"2k12r2", "w2k12r2", "win2k12r2", "windows.?server.?2012?.r2"},
+		"2k8R2":  {"2k8r2", "w2k8r2", "win2k8r2", "windows.?server.?2008?.r2"},
 		"w8.1":   {"w8.1", "win8.1", "windows.?8.1"},
 	}.MatchString(desc)
 	if version != "" {
