@@ -147,6 +147,14 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 				}
 
 				targetPath = filepath.Join(dir, targetName)
+
+				// Older versions of Windows don't have a DriverDatabase registry, and will try to re-install all newly detected .inf files, expecting all additional files to be in the same directory.
+				if slices.Contains(LegacyWindowsVersions, r.windowsVersion) {
+					if err = shared.Copy(sourcePath, filepath.Join(dirs["inf"], targetName)); err != nil {
+						return err
+					}
+				}
+
 				if err = shared.Copy(sourcePath, targetPath); err != nil {
 					return err
 				}
@@ -263,12 +271,18 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 }
 
 func (r *RepackUtil) updateRegistry(ctx context.Context, dir string, hive string, updates string) error {
+	var skipSoftware bool
+	if r.windowsVersion == "2k3" {
+		hive = strings.ToLower(hive)
+		skipSoftware = hive == "software"
+	}
+
 	_, err := os.Stat(filepath.Join(dir, hive))
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	if err != nil {
+	if err != nil || skipSoftware {
 		r.logger.WithFields(logrus.Fields{"version": r.windowsVersion, "hive": hive}).Warn("Skipping registry updates for unsupported hive")
 		return nil
 	}
@@ -303,7 +317,12 @@ func (r *RepackUtil) getWindowsDirectories(rootPath string) (map[string]string, 
 
 	dirs["filerepository"], err = shared.FindFirstMatch(rootPath, "windows", "system32", "driverstore", "filerepository")
 	if err != nil {
-		return nil, fmt.Errorf("Failed to determine windows/system32/driverstore/filerepository path: %w", err)
+		if r.windowsVersion != "2k3" {
+			return nil, fmt.Errorf("Failed to determine windows/system32/driverstore/filerepository path: %w", err)
+		}
+
+		// Windows 2003 doesn't have a file repository.
+		dirs["filerepository"] = dirs["inf"]
 	}
 
 	dirs["system32"], err = shared.FindFirstMatch(rootPath, "windows", "system32")
