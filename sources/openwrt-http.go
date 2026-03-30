@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"golang.org/x/sys/unix"
@@ -122,20 +123,47 @@ func (s *openwrt) unpackCombinedImg(imagePath, rootfsDir string) error {
 	// Image comes with an esp (vfat) and rootfs (ext4) partition
 	// We need the bootloader (grub) from the esp as it is not distributed otherwise
 	var out strings.Builder
-	err := shared.RunCommand(s.ctx, nil, &out, "losetup", "-P", "-f", "--show", imagePath)
+	err := shared.RunCommand(s.ctx, nil, &out, "fdisk", "-l", "-o", "Start,Sectors", imagePath)
 	if err != nil {
-		return fmt.Errorf("Failed to set up loop device: %w", err)
+		return fmt.Errorf(`failed to run "fdisk": %w`, err)
 	}
 
-	loopDevice := strings.TrimSpace(out.String())
-	espDevFile := fmt.Sprintf("%sp1", loopDevice)
-	rootfsDevFile := fmt.Sprintf("%sp2", loopDevice)
+	// we expect the first match to be the esp, the second to be the rootfs
+	// openwrt also has a very small third partition (number 128) for some legacy stuff
+	// should match the first two rows from a table like this
+	//
+	// Start Sectors
+	//   512   32768
+	// 33280  212992
+	//    34     478
+	regex := regexp.MustCompile(`\n\s*(\d+)\s+(\d+)`)
+	matches := regex.FindAllStringSubmatch(out.String(), 2)
+	if len(matches) != 2 {
+		return fmt.Errorf(`Failed to parse output of "fdisk"; unexpected number of matches: %d`, len(matches))
+	}
 
-	defer func() { _ = shared.RunCommand(s.ctx, nil, nil, "losetup", "-d", loopDevice) }()
+	// a partition has an offset and size in bytes; we are looking for 2 partitions:
+	// - first one is the esp
+	// - the second one is the rootfs
+	var partitions [2][2]int
 
-	err = shared.RunCommand(s.ctx, nil, nil, "udevadm", "settle")
-	if err != nil {
-		return fmt.Errorf("Failed to wait loop device ready: %w", err)
+	for i := 0; i <= 1; i++ {
+		// offset
+		partitions[i][0], err = strconv.Atoi(matches[i][1])
+		if err != nil {
+			return fmt.Errorf("Failed to parse partition offset: %w", err)
+		}
+
+		// size
+		partitions[i][1], err = strconv.Atoi(matches[i][2])
+		if err != nil {
+			return fmt.Errorf("Failed to parse partition size: %w", err)
+		}
+
+		// openwrt uses a sector size of 512; could detect this, but not likely to change
+		// fdisk reports in sectors, mount needs the numbers in bytes
+		partitions[i][0] *= 512
+		partitions[i][1] *= 512
 	}
 
 	espTmpDir, err := os.MkdirTemp(s.cacheDir, "temp_")
@@ -152,14 +180,20 @@ func (s *openwrt) unpackCombinedImg(imagePath, rootfsDir string) error {
 
 	defer os.RemoveAll(rootfsTmpDir)
 
-	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-t", "vfat", "-o", "ro", espDevFile, espTmpDir)
+	// we need the sizelimit= option in the mount command to be able to mount _both_ of the partitions
+	// at the same time
+	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-t", "vfat",
+		"-o", fmt.Sprintf("ro,loop,offset=%d,sizelimit=%d", partitions[0][0], partitions[0][1]),
+		imagePath, espTmpDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount esp from combined image: %w", err)
 	}
 
 	defer func() { _ = unix.Unmount(espTmpDir, 0) }()
 
-	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-t", "ext4", "-o", "ro", rootfsDevFile, rootfsTmpDir)
+	err = shared.RunCommand(s.ctx, nil, nil, "mount", "-t", "ext4",
+		"-o", fmt.Sprintf("ro,loop,offset=%d,sizelimit=%d", partitions[1][0], partitions[1][1]),
+		imagePath, rootfsTmpDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount rootfs from combined image: %w", err)
 	}
