@@ -106,7 +106,7 @@ fix_systemd_override_unit() {
 			echo "PrivateTmp=no";
 			[ "${SYSTEMD}" -ge 244 ] && echo "ProtectKernelLogs=no";
 			[ "${SYSTEMD}" -ge 232 ] && echo "ProtectKernelModules=no";
-			[ "${SYSTEMD}" -ge 231 ] && echo "ReadWritePaths=";
+			[ "${SYSTEMD}" -ge 231 ] && echo "ReadWritePaths=" && echo "ReadOnlyPaths=";
 			[ "${SYSTEMD}" -ge 254 ] && [ "${SYSTEMD}" -lt 256 ] && echo "ImportCredential=";
 		fi
 
