@@ -16,7 +16,7 @@ var (
 	}
 
 	LegacyWindowsVersions = []string{
-		"2k8", "2k8R2", "2k3",
+		"2k8", "2k8R2", "2k3", "xp",
 	}
 
 	SupportedWindowsArchitectures = []string{

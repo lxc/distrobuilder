@@ -149,7 +149,7 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 				targetPath = filepath.Join(dir, targetName)
 
 				// Older versions of Windows don't have a DriverDatabase registry, and will try to re-install all newly detected .inf files, expecting all additional files to be in the same directory.
-				if slices.Contains(LegacyWindowsVersions, r.windowsVersion) {
+				if slices.Contains(LegacyWindowsVersions, r.windowsVersion) && ext != "inf" {
 					if err = shared.Copy(sourcePath, filepath.Join(dirs["inf"], targetName)); err != nil {
 						return err
 					}
@@ -159,6 +159,14 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 					return err
 				}
 			}
+		}
+
+		switch r.windowsVersion {
+		case "2k3", "xp":
+			// Clear existing driver install logs for debugging purposes.
+			winDir := filepath.Dir(dirs["inf"])
+			_ = shared.Copy(filepath.Join(winDir, "setupapi.log"), filepath.Join(winDir, "setupapi.log.old"))
+			_ = os.Remove(filepath.Join(winDir, "setupapi.log"))
 		}
 
 		if infFilename == "" {
@@ -252,6 +260,27 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 		}
 	}
 
+	// Windows 2003 drivers have a signing issue that prevents auto-install.
+	// Instead, the new hardware wizard will request manual driver approval on boot.
+	//
+	// Some .inf files have one or more SourceDisks sections corresponding to external media.
+	// To make the approval and installation a bit less painful, we can set the lookup path to C:\Windows\inf
+	// so Windows can find them without prompting the user to attach the CDROM.
+	if r.windowsVersion == "2k3" || r.windowsVersion == "xp" {
+		tpl, err := pongo2.FromString(`
+[Microsoft\Windows\CurrentVersion\Setup]
+"SourcePath"=hex(7):{{"C:\\WINDOWS\\inf\\" | toHex}},00,00
+`)
+		if err != nil {
+			return fmt.Errorf("Failed to parse registry template: %w", err)
+		}
+
+		softwareRegistry, err = tpl.Execute(pongo2.Context{})
+		if err != nil {
+			return fmt.Errorf("Failed to render template: %w", err)
+		}
+	}
+
 	err = r.updateRegistry(r.ctx, dirs["config"], "DRIVERS", driversRegistry)
 	if err != nil {
 		return err
@@ -271,10 +300,8 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 }
 
 func (r *RepackUtil) updateRegistry(ctx context.Context, dir string, hive string, updates string) error {
-	var skipSoftware bool
-	if r.windowsVersion == "2k3" {
+	if r.windowsVersion == "2k3" || r.windowsVersion == "xp" {
 		hive = strings.ToLower(hive)
-		skipSoftware = hive == "software"
 	}
 
 	_, err := os.Stat(filepath.Join(dir, hive))
@@ -282,7 +309,7 @@ func (r *RepackUtil) updateRegistry(ctx context.Context, dir string, hive string
 		return err
 	}
 
-	if err != nil || skipSoftware {
+	if err != nil {
 		r.logger.WithFields(logrus.Fields{"version": r.windowsVersion, "hive": hive}).Warn("Skipping registry updates for unsupported hive")
 		return nil
 	}
@@ -317,7 +344,7 @@ func (r *RepackUtil) getWindowsDirectories(rootPath string) (map[string]string, 
 
 	dirs["filerepository"], err = shared.FindFirstMatch(rootPath, "windows", "system32", "driverstore", "filerepository")
 	if err != nil {
-		if r.windowsVersion != "2k3" {
+		if r.windowsVersion != "2k3" && r.windowsVersion != "xp" {
 			return nil, fmt.Errorf("Failed to determine windows/system32/driverstore/filerepository path: %w", err)
 		}
 
