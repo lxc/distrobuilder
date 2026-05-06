@@ -78,7 +78,7 @@ doc-lint:
 .PHONY: static-analysis
 static-analysis:
 ifeq ($(shell command -v golangci-lint),)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH)/bin
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin
 endif
 ifeq ($(shell command -v codespell),)
 	echo "Please install codespell"
