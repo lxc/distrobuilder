@@ -16,7 +16,7 @@ import (
 	"slices"
 	"strings"
 
-	incus "github.com/lxc/incus/v6/shared/util"
+	incus "github.com/lxc/incus/v7/shared/util"
 )
 
 // downloadChecksum downloads or opens URL, and matches fname against the

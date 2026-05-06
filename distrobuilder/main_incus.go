@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"slices"
 
-	client "github.com/lxc/incus/v6/client"
-	"github.com/lxc/incus/v6/shared/api"
+	client "github.com/lxc/incus/v7/client"
+	"github.com/lxc/incus/v7/shared/api"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
