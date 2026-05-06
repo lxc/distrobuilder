@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lxc/incus/v6/shared/ioprogress"
-	incus "github.com/lxc/incus/v6/shared/util"
+	"github.com/lxc/incus/v7/shared/ioprogress"
+	incus "github.com/lxc/incus/v7/shared/util"
 	"github.com/sirupsen/logrus"
 
 	"github.com/lxc/distrobuilder/v3/shared"

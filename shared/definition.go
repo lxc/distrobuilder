@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	incusArch "github.com/lxc/incus/v6/shared/osarch"
+	incusArch "github.com/lxc/incus/v7/shared/osarch"
 )
 
 // ImageTarget represents the image target.

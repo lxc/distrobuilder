@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	incus "github.com/lxc/incus/v6/shared/util"
+	incus "github.com/lxc/incus/v7/shared/util"
 	"github.com/stretchr/testify/require"
 
 	"github.com/lxc/distrobuilder/v3/image"

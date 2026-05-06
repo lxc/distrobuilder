@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/antchfx/htmlquery"
-	incus "github.com/lxc/incus/v6/shared/util"
+	incus "github.com/lxc/incus/v7/shared/util"
 	"golang.org/x/sys/unix"
 
 	"github.com/lxc/distrobuilder/v3/shared"

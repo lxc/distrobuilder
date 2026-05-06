@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	incus "github.com/lxc/incus/v6/shared/util"
+	incus "github.com/lxc/incus/v7/shared/util"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 

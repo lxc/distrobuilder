@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/flosch/pongo2/v4"
-	incus "github.com/lxc/incus/v6/shared/util"
+	incus "github.com/lxc/incus/v7/shared/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
