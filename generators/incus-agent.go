@@ -237,8 +237,8 @@ required_dirs=/dev/virtio-ports/
 
 func (g *incusAgent) handleProcd() error {
 	incusAgentProcdScript := `#!/etc/rc.common
-START=96
-STOP=04
+START=05
+STOP=85
 USE_PROCD=1
 
 start_service() {
@@ -284,16 +284,16 @@ exec /run/incus_agent/incus-agent $@
 		return fmt.Errorf("Failed to write file %q: %w", initPath, err)
 	}
 
-	initPathS94 := filepath.Join(g.sourceDir, "/etc/rc.d/S94incus-agent")
-	err = os.Symlink("/etc/init.d/incus-agent", initPathS94)
+	initPathStart := filepath.Join(g.sourceDir, "/etc/rc.d/S05incus-agent")
+	err = os.Symlink("/etc/init.d/incus-agent", initPathStart)
 	if err != nil {
-		return fmt.Errorf("Failed to create symlink %q: %w", initPathS94, err)
+		return fmt.Errorf("Failed to create symlink %q: %w", initPathStart, err)
 	}
 
-	initPathK40 := filepath.Join(g.sourceDir, "/etc/rc.d/K04incus-agent")
-	err = os.Symlink("/etc/init.d/incus-agent", initPathK40)
+	initPathKill := filepath.Join(g.sourceDir, "/etc/rc.d/K85incus-agent")
+	err = os.Symlink("/etc/init.d/incus-agent", initPathKill)
 	if err != nil {
-		return fmt.Errorf("Failed to create symlink %q: %w", initPathK40, err)
+		return fmt.Errorf("Failed to create symlink %q: %w", initPathKill, err)
 	}
 
 	// not present by default on openwrt
