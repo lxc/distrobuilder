@@ -123,23 +123,29 @@ func (s *openwrt) unpackCombinedImg(imagePath, rootfsDir string) error {
 	// Image comes with an esp (vfat) and rootfs (ext4) partition
 	// We need the bootloader (grub) from the esp as it is not distributed otherwise
 	var out strings.Builder
-	err := shared.RunCommand(s.ctx, nil, &out, "fdisk", "-l", "-o", "Start,Sectors", imagePath)
+	err := shared.RunCommand(s.ctx, nil, &out,
+		"partx",
+		"--bytes", // report SIZE in bytes
+		"--pairs", // use easily parsable output format
+		"--output", "START,SIZE",
+		"--nr", "1:2", // we only care about the first two partitions
+		imagePath,
+	)
 	if err != nil {
-		return fmt.Errorf(`failed to run "fdisk": %w`, err)
+		return fmt.Errorf(`failed to run "partx": %w`, err)
 	}
 
 	// we expect the first match to be the esp, the second to be the rootfs
 	// openwrt also has a very small third partition (number 128) for some legacy stuff
-	// should match the first two rows from a table like this
 	//
-	// Start Sectors
-	//   512   32768
-	// 33280  212992
-	//    34     478
-	regex := regexp.MustCompile(`\n\s*(\d+)\s+(\d+)`)
+	// The above partx command gives output like this:
+	// START="512" SIZE="16777216"
+	// START="33280" SIZE="109051904"
+
+	regex := regexp.MustCompile(`START="(\d+)" SIZE="(\d+)"\n`)
 	matches := regex.FindAllStringSubmatch(out.String(), 2)
 	if len(matches) != 2 {
-		return fmt.Errorf(`Failed to parse output of "fdisk"; unexpected number of matches: %d`, len(matches))
+		return fmt.Errorf(`Failed to parse output of "partx"; unexpected number of matches: %d`, len(matches))
 	}
 
 	// a partition has an offset and size in bytes; we are looking for 2 partitions:
@@ -152,6 +158,10 @@ func (s *openwrt) unpackCombinedImg(imagePath, rootfsDir string) error {
 		partitions[i][0], err = strconv.Atoi(matches[i][1])
 		if err != nil {
 			return fmt.Errorf("Failed to parse partition offset: %w", err)
+		} else {
+			// openwrt uses a sector size of 512; could detect this, but not likely to change
+			// partx reports START in sectors, mount needs the numbers in bytes
+			partitions[i][0] *= 512
 		}
 
 		// size
@@ -159,11 +169,6 @@ func (s *openwrt) unpackCombinedImg(imagePath, rootfsDir string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to parse partition size: %w", err)
 		}
-
-		// openwrt uses a sector size of 512; could detect this, but not likely to change
-		// fdisk reports in sectors, mount needs the numbers in bytes
-		partitions[i][0] *= 512
-		partitions[i][1] *= 512
 	}
 
 	espTmpDir, err := os.MkdirTemp(s.cacheDir, "temp_")
