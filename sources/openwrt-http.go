@@ -252,9 +252,19 @@ func (s *openwrt) getLatestServiceRelease(baseURL, release string) (string, erro
 	regex := regexp.MustCompile(fmt.Sprintf(">(%s\\.\\d+(?:-rc\\d+)?)<", release))
 	releases := regex.FindAllStringSubmatch(string(body), -1)
 
-	if len(releases) > 0 {
-		return releases[len(releases)-1][1], nil
+	if len(releases) == 0 {
+		return "", errors.New("Failed to find latest service release")
 	}
 
-	return "", errors.New("Failed to find latest service release")
+	// release candidates only exist for the first stable release of the given
+	// major, and the lexicographic sorting used by the download page always
+	// lists them after the first stable. Hence we check for a possible stable
+	// in the first position when the last entry is an rc release.
+	latest := releases[len(releases)-1][1]
+	first := releases[0][1]
+	if strings.Contains(latest, "-rc") && !strings.Contains(first, "-rc") {
+		latest = first
+	}
+
+	return latest, nil
 }
