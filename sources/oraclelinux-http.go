@@ -232,7 +232,7 @@ func (s *oraclelinux) unpackISO(latestUpdate, filePath, rootfsDir string) error 
 		array := [][]string{
 			{filepath.Join(tempRootDir, filepath.Base(rpmPkg)), fmt.Sprintf("%s/%s", baseURL, rpmPkg)},
 			{filepath.Join(tempRootDir, filepath.Base(yumPkg)), fmt.Sprintf("%s/%s", baseURL, yumPkg)},
-			{filepath.Join(tempRootDir, "RPM-GPG-KEY-oracle"), "https://oss.oracle.com/ol6/RPM-GPG-KEY-oracle"},
+			{filepath.Join(tempRootDir, "RPM-GPG-KEY-oracle"), "https://yum.oracle.com/RPM-GPG-KEY-oracle-ol10"},
 		}
 
 		for _, elem := range array {
