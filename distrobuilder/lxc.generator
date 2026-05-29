@@ -157,6 +157,33 @@ fix_systemd_sysctl() {
 		EOF
 }
 
+fix_dbus_apparmor() {
+	dropin="/etc/dbus-1/system.d/zzz-lxc-disable-apparmor.conf"
+
+	# Reset state on boot
+	rm -f "${dropin}" 2>/dev/null || true
+
+	# Skip if D-Bus isn't installed.
+	[ -d /etc/dbus-1/system.d ] || return 0
+
+	# Check if we have apparmor at all.
+	aa_access="/sys/kernel/security/apparmor/.access"
+	[ -e "${aa_access}" ] || return 0
+
+	# Check if we have write access to the apparmor namespace.
+	if (: >> "${aa_access}") 2>/dev/null; then
+		return 0
+	fi
+
+	cat <<-EOF > "${dropin}" 2>/dev/null || true
+		<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+		 "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+		<busconfig>
+		  <apparmor mode="disabled"/>
+		</busconfig>
+		EOF
+}
+
 ## Main logic
 # Exit immediately if not an Incus/LXC container
 is_lxc_container || exit 0
@@ -192,6 +219,9 @@ fix_systemd_sysctl
 
 # Fix issues with /run not being writable.
 fix_ro_run systemd-nsresourced.service
+
+# Disable D-Bus AppArmor mediation when the policy can't be queried.
+fix_dbus_apparmor
 
 # Mask some units.
 fix_systemd_mask dev-hugepages.mount
