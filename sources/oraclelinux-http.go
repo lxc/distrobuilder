@@ -48,12 +48,14 @@ func (s *oraclelinux) Run() error {
 		for i := 10; i >= 0; i-- {
 			latestUpdate = fmt.Sprintf("u%d", i)
 
-			if s.definition.Image.Release == "9" {
+			if s.definition.Image.Release == "9" || s.definition.Image.Release == "10" {
 				switch s.architecture {
 				case "x86_64":
-					fname = fmt.Sprintf("OracleLinux-R9-U%d-%s-boot.iso", i, s.architecture)
+					fname = fmt.Sprintf("OracleLinux-R%s-U%d-%s-boot.iso",
+						s.definition.Image.Release, i, s.architecture)
 				case "aarch64":
-					fname = fmt.Sprintf("OracleLinux-R9-U%d-%s-dvd.iso", i, s.architecture)
+					fname = fmt.Sprintf("OracleLinux-R%s-U%d-%s-dvd.iso",
+						s.definition.Image.Release, i, s.architecture)
 				}
 			}
 
