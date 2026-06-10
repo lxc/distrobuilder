@@ -191,7 +191,7 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 	softwareRegistry := "Windows Registry Editor Version 5.00"
 	for driverName, driverInfo := range Drivers {
 		logger.WithField("driver", driverName).Debug("Injecting driver")
-		infFilename := ""
+		var infFilename, driverVersion string
 		sourceDir := filepath.Join(driverPath, driverName, r.windowsVersion, r.windowsArchitecture)
 		targetBaseDir := filepath.Join(dirs["filerepository"], driverInfo.PackageName)
 		if !incus.PathExists(targetBaseDir) {
@@ -249,6 +249,10 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 				} else if ext == "inf" {
 					targetName = "oem-" + targetName
 					infFilename = targetName
+					driverVersion, err = r.GetDriverVersion(sourcePath)
+					if err != nil {
+						return err
+					}
 				}
 
 				targetPath = filepath.Join(dir, targetName)
@@ -285,10 +289,11 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 		}
 
 		ctx := pongo2.Context{
-			"infFile":     infFilename,
-			"packageName": driverInfo.PackageName,
-			"driverName":  driverName,
-			"classGuid":   classGuid,
+			"infFile":       infFilename,
+			"packageName":   driverInfo.PackageName,
+			"driverName":    driverName,
+			"classGuid":     classGuid,
+			"driverVersion": driverVersion,
 		}
 
 		// Update Windows DRIVERS registry
