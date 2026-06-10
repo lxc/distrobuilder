@@ -1,15 +1,19 @@
 package windows
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/Microsoft/go-winio/pkg/guid"
 	"github.com/flosch/pongo2/v4"
 	incus "github.com/lxc/incus/v7/shared/util"
 	"github.com/sirupsen/logrus"
@@ -70,6 +74,107 @@ func (r *RepackUtil) InjectDriversIntoWim(wimFile string, info WimInfo, driverPa
 	}
 
 	return nil
+}
+
+// toWindowsFiletime converts a time to a Windows FILETIME (100-ns ticks since
+// 1601-01-01 UTC).
+func toWindowsFiletime(t time.Time) uint64 {
+	const epochDiff = 11644473600 // seconds between 1601-01-01 and 1970-01-01
+	secs := uint64(t.Unix() + epochDiff)
+	return secs*10000000 + uint64(t.Nanosecond()/100)
+}
+
+func getKeysFromINF(inf []byte, tag string, keys ...string) map[string]string {
+	results := make(map[string]string, len(keys))
+	scanner := bufio.NewScanner(bytes.NewReader(inf))
+	var foundVersion bool
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(strings.ToLower(line), strings.ToLower(tag)) && !foundVersion {
+			foundVersion = true
+			continue
+		}
+
+		if strings.HasPrefix(line, "[") && foundVersion {
+			break
+		}
+
+		if foundVersion {
+			for _, key := range keys {
+				parts := strings.SplitN(line, "=", 2)
+				if results[key] != "" || len(parts) != 2 || slices.Contains(parts, "") {
+					continue
+				}
+
+				if strings.EqualFold(strings.TrimSpace(parts[0]), key) {
+					results[key] = strings.TrimSpace(parts[1])
+					break
+				}
+			}
+		}
+	}
+
+	return results
+}
+
+// GetDriverVersion parses the inf file at the given path to produce a hex string representing the Version key at 'hklm/system/driverdatabase/driverpackages/<driver>'.
+func (r *RepackUtil) GetDriverVersion(infPath string) (string, error) {
+	inf, err := os.ReadFile(infPath)
+	if err != nil {
+		return "", err
+	}
+
+	values := getKeysFromINF(inf, "[Version]", "ClassGUID", "DriverVer")
+	if values["ClassGUID"] == "" || values["DriverVer"] == "" {
+		return "", fmt.Errorf("Failed to derive version keys from inf %q", infPath)
+	}
+
+	// "MM/DD/YYYY,a.b.c.d".
+	parts := strings.SplitN(values["DriverVer"], ",", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("Driver version from INF %q has unexpected format: %q", infPath, values["DriverVer"])
+	}
+
+	versionParts := strings.SplitN(strings.TrimSpace(parts[1]), ".", 4)
+	if len(versionParts) != 4 {
+		return "", fmt.Errorf("Driver version from INF %q has unexpected version format: %q", infPath, values["DriverVer"])
+	}
+
+	verUint := [4]uint64{}
+	for i, v := range versionParts {
+		verUint[i], err = strconv.ParseUint(strings.TrimSpace(v), 10, 16)
+		if err != nil {
+			return "", fmt.Errorf("Driver version from INF %q has unexpected version number format: %q: %w", infPath, values["DriverVer"], err)
+		}
+	}
+
+	t, err := time.Parse("1/2/2006", parts[0])
+	if err != nil {
+		return "", fmt.Errorf("Driver version from INF %q has unexpected date %q: %w", infPath, values["DriverVer"], err)
+	}
+
+	classGUID, err := guid.FromString(strings.Trim(strings.TrimSpace(values["ClassGUID"]), "{}"))
+	if err != nil {
+		return "", fmt.Errorf("Driver version from INF %q has unexpected class GUID formwat: %q: %w", infPath, values["DriverVer"], err)
+	}
+
+	header := []byte{0x00, 0xFF, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00}
+	footer := make([]byte, 8)
+	timeBytes := binary.LittleEndian.AppendUint64(make([]byte, 0, 8), toWindowsFiletime(t))
+	classGUIDBytes := classGUID.ToWindowsArray()
+	versionBytes := make([]byte, 0, 8)
+	for _, v := range slices.Backward(verUint[:]) {
+		versionBytes = binary.LittleEndian.AppendUint16(versionBytes, uint16(v))
+	}
+
+	parts = make([]string, 0, len(header)+len(classGUIDBytes)+len(timeBytes)+len(versionBytes)+len(footer))
+	for _, bs := range [][]byte{header, classGUIDBytes[:], timeBytes, versionBytes, footer} {
+		for _, b := range bs {
+			parts = append(parts, fmt.Sprintf("%02x", b))
+		}
+	}
+
+	return strings.Join(parts, ","), nil
 }
 
 // InjectDrivers injects drivers from driverPath into the windowsRootPath.
