@@ -52,14 +52,13 @@ var driverViostor = DriverInfo{
 @=hex(1):{{ infFile|toHex }},00,00
 "Catalog"=hex(1):76,00,69,00,6f,00,73,00,74,00,6f,00,72,00,2e,00,63,00,61,00,74,00,00,00
 "FileSize"=hex(b):ae,29,01,00,00,00,00,00
-"ImportDate"=hex(3):d0,46,c4,69,92,58,d8,01
 "InfName"=hex(1):76,00,69,00,6f,00,73,00,74,00,6f,00,72,00,2e,00,69,00,6e,00,66,00,00,00
-"OemPath"=hex(1):44,00,3a,00,5c,00,61,00,6d,00,64,00,36,00,34,00,5c,00,77,00,31,00,31,00,00,00
-"Provider"=hex(1):52,00,65,00,64,00,20,00,48,00,61,00,74,00,2c,00,20,00,49,00,6e,00,63,00,2e,00,00,00
-"SignerName"=hex(1):4d,00,69,00,63,00,72,00,6f,00,73,00,6f,00,66,00,74,00,20,00,57,00,69,00,6e,00,64,00,6f,00,77,00,73,00,20,00,48,00,61,00,72,00,64,00,77,00,61,00,72,00,65,00,20,00,43,00,6f,00,6d,00,70,00,61,00,74,00,69,00,62,00,69,00,6c,00,69,00,74,00,79,00,20,00,50,00,75,00,62,00,6c,00,69,00,73,00,68,00,65,00,72,00,00,00
+"OemPath"=hex(1):{{ "C:\\Program Files\\Virtio-Win\\"|add:driverName | toHex }},00,00
+"Provider"=hex(1):{{"Red Hat, Inc."|toHex}},00,00
+"SignerName"=hex(1):{{"Microsoft Windows Hardware Compatibility Publisher"|toHex}},00,00
 "SignerScore"=dword:0d000005
 "StatusFlags"=dword:00000012
-"Version"=hex(3):00,ff,09,00,00,00,00,00,7b,e9,36,4d,25,e3,ce,11,bf,c1,08,00,2b,e1,03,18,00,c0,97,8c,0f,e7,d7,01,fc,53,68,00,5a,00,64,00,00,00,00,00,00,00,00,00
+"Version"=hex(3):{{driverVersion}}
 
 [\DriverDatabase\DriverPackages\{{ packageName }}\Configurations]
 

@@ -66,16 +66,15 @@ var driverViosock = DriverInfo{
 "Catalog"=hex(1):{{"viosock.cat"|toHex}},00,00
 "CatalogAttributes"=dword:80000003
 "FileSize"=hex(b):ed,fa,07,00,00,00,00,00
-"ImportDate"=hex(3):20,ab,d7,47,8c,2d,dc,01
 "InfName"=hex(1):{{"viosock.inf"|toHex}},00,00
 "LockLevel"=dword:00000002
-"OemPath"=hex(1):{{"E:\\viosock\\2k25\\amd64"|toHex}},00,00
+"OemPath"=hex(1):{{ "C:\\Program Files\\Virtio-Win\\"|add:driverName | toHex }},00,00
 "OsVersionFloor"=dword:0a003fab
 "Provider"=hex(1):{{"Red Hat, Inc."|toHex}},00,00
 "SignerName"=hex(1):{{"Microsoft Windows Hardware Compatibility Publisher"|toHex}},00,00
 "SignerScore"=dword:0d000005
 "StatusFlags"=dword:00000033
-"Version"=hex(3):00,ff,09,00,00,00,00,00,7d,e9,36,4d,25,e3,ce,11,bf,c1,08,00,2b,e1,03,18,00,00,cd,69,64,f0,db,01,54,6f,68,00,65,00,64,00,00,00,00,00,00,00,00,00
+"Version"=hex(3):{{driverVersion}}
 
 [\DriverDatabase\DriverPackages\{{ packageName }}\Configurations]
 
