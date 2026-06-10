@@ -202,6 +202,13 @@ func (r *RepackUtil) InjectDrivers(windowsRootPath string, driverPath string) er
 			}
 		}
 
+		// Copy the entire installer to the OEM path.
+		oemPath := filepath.Join(windowsRootPath, "Program Files", "Virtio-Win", driverName)
+		err = shared.CopyDir(sourceDir, oemPath)
+		if err != nil {
+			return err
+		}
+
 		// Special cases introduced with viosock.
 		// Ideally we should parse the .inf file for DestinationDirs and CopyFiles sections if special cases start adding up.
 		for ext, dir := range map[string]string{"svc.exe": dirs["system32"], "lib_x64.dll": dirs["system32"], "lib_x86.dll": dirs["syswow64"]} {
