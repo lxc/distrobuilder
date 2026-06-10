@@ -3,6 +3,7 @@ module github.com/lxc/distrobuilder/v3
 go 1.25.6
 
 require (
+	github.com/Microsoft/go-winio v0.6.2
 	github.com/antchfx/htmlquery v1.3.5
 	github.com/flosch/pongo2/v4 v4.0.2
 	github.com/google/go-github/v56 v56.0.0
@@ -13,7 +14,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	go.podman.io/image/v5 v5.39.1
-	golang.org/x/sys v0.43.0
+	golang.org/x/sys v0.46.0
 	golang.org/x/text v0.36.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -24,7 +25,6 @@ require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
-	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/antchfx/xpath v1.3.6 // indirect
