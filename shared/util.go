@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -95,6 +96,28 @@ func FindAllMatches(dir string, elem ...string) (matches []string, err error) {
 	}
 
 	return matches, err
+}
+
+// CopyDir copies the contents of src to dst.
+func CopyDir(src string, dst string) error {
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		r, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+
+		dstRel := filepath.Join(dst, r)
+
+		if d.IsDir() {
+			return os.MkdirAll(dstRel, 0o755)
+		}
+
+		return Copy(path, dstRel)
+	})
 }
 
 // Copy copies a file.

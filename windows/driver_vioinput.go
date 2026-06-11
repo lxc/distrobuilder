@@ -57,14 +57,13 @@ var driverVioinput = DriverInfo{
 [\DriverDatabase\DriverPackages\{{ packageName }}]
 @=hex(1):{{ infFile|toHex }},00,00
 "Catalog"=hex(1):{{ driverName|toHex }},2e,00,63,00,61,00,74,00,00,00
-"ImportDate"=hex(3):b0,1d,ca,bf,fb,e7,d6,01
 "InfName"=hex(1):{{ driverName|toHex }},2e,00,69,00,6e,00,66,00,00,00
-"OemPath"=hex(1):45,00,3a,00,5c,00,{{ driverName|toHex }},5c,00,77,00,31,00,30,00,5c,00,61,00,6d,00,64,00,36,00,34,00,00,00
-"Provider"=hex(1):52,00,65,00,64,00,20,00,48,00,61,00,74,00,2c,00,20,00,49,00,6e,00,63,00,2e,00,00,00
-"SignerName"=hex(1):00,00
+"OemPath"=hex(1):{{ "C:\\Program Files\\Virtio-Win\\"|add:driverName | toHex }},00,00
+"Provider"=hex(1):{{"Red Hat, Inc."|toHex}},00,00
+"SignerName"=hex(1):{{"Microsoft Windows Hardware Compatibility Publisher"|toHex}},00,00
 "SignerScore"=dword:0d000004
 "StatusFlags"=dword:00000012
-"Version"=hex(3):00,ff,09,00,00,00,00,00,a0,17,5a,74,d3,74,d0,11,b6,fe,00,a0,c9,0f,57,da,00,00,8e,c3,86,b8,d6,01,38,4a,68,00,53,00,64,00,00,00,00,00,00,00,00,00
+"Version"=hex(3):{{driverVersion}}
 
 [\DriverDatabase\DriverPackages\{{ packageName }}\Configurations]
 
