@@ -224,15 +224,19 @@ fix_ro_run systemd-nsresourced.service
 fix_dbus_apparmor
 
 # Mask some units.
+fix_systemd_mask auditd.service
+fix_systemd_mask colord.service
 fix_systemd_mask dev-hugepages.mount
+fix_systemd_mask mdmonitor.service
 fix_systemd_mask run-ribchester-general.mount
+fix_systemd_mask systemd-binfmt.service
+fix_systemd_mask systemd-firstboot.service
 fix_systemd_mask systemd-hwdb-update.service
 fix_systemd_mask systemd-journald-audit.socket
 fix_systemd_mask systemd-modules-load.service
 fix_systemd_mask systemd-pstore.service
 fix_systemd_mask ua-messaging.service
-fix_systemd_mask systemd-firstboot.service
-fix_systemd_mask systemd-binfmt.service
+fix_systemd_mask xfs_healer@-.service
 if [ ! -e /dev/tty1 ]; then
 	fix_systemd_mask vconsole-setup-kludge@tty1.service
 fi
