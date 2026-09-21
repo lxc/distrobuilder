@@ -57,9 +57,11 @@ If provided, it will set the `mode` (octal format), `gid` (integer) and/or `uid`
 
 ## `copy`
 
-The `copy` generator copies the file(s) from `source` to the destination `path`.
-`path` can be left empty and in that case the data will be placed in the same `source` path but inside the container.
-If provided, the destination `path` will set the `mode` (octal format), `gid` (integer) and/or `uid` (integer).
+The `copy` generator copies file(s) from the host system (`source`) into the container image rootfs (`path`).
+
+The `source` specifies the path on the host system. It can be an absolute path or relative to the current working directory from which `distrobuilder` is executed.
+`path` can be left empty and in that case the data will be placed in the same `source` path but inside the container rootfs.
+If provided, the destination `path` will set the `mode` (octal format), `gid` (integer or symbolic name) and/or `uid` (integer or symbolic name).
 Copying will be done according to the following rules:
 
 * If `source` is a directory, the entire contents of the directory are copied. Only symlinks and regular files are supported.
