@@ -177,10 +177,21 @@ func RunCommand(ctx context.Context, stdin io.Reader, stdout io.Writer, name str
 // RunScript runs a script hereby setting the SHELL and PATH env variables,
 // and redirecting the process's stdout and stderr to the real stdout and stderr
 // respectively.
+//
+// The script is executed from a memfd when possible and from a temporary file
+// otherwise.
 func RunScript(ctx context.Context, content string) error {
-	fd, err := unix.MemfdCreate("tmp", 0)
+	return runScript(ctx, content, unix.MemfdCreate)
+}
+
+type memfdCreateFunc func(name string, flags int) (int, error)
+
+func runScript(ctx context.Context, content string, memfdCreate memfdCreateFunc) error {
+	fd, err := createExecutableMemfd(memfdCreate)
 	if err != nil {
-		return fmt.Errorf("Failed to create memfd: %w", err)
+		// With vm.memfd_noexec=2, or when memfd_create is blocked (seccomp),
+		// there's no memfd we can execute.
+		return runScriptFromFile(ctx, content)
 	}
 
 	defer unix.Close(fd)
@@ -193,6 +204,47 @@ func RunScript(ctx context.Context, content string) error {
 	fdPath := fmt.Sprintf("/proc/self/fd/%d", fd)
 
 	return RunCommand(ctx, nil, nil, fdPath)
+}
+
+// createExecutableMemfd creates a memfd which can be executed.
+func createExecutableMemfd(memfdCreate memfdCreateFunc) (int, error) {
+	// A memfd isn't executable by default with vm.memfd_noexec=1.
+	fd, err := memfdCreate("tmp", unix.MFD_EXEC)
+	if errors.Is(err, unix.EINVAL) {
+		// Kernels older than 6.3 don't know MFD_EXEC.
+		return memfdCreate("tmp", 0)
+	}
+
+	return fd, err
+}
+
+// runScriptFromFile runs a script from a temporary file which is removed afterwards.
+func runScriptFromFile(ctx context.Context, content string) error {
+	file, err := os.CreateTemp("", ".distrobuilder-script-*")
+	if err != nil {
+		return fmt.Errorf("Failed to create temporary script file: %w", err)
+	}
+
+	defer os.Remove(file.Name())
+	defer file.Close()
+
+	err = file.Chmod(0o700)
+	if err != nil {
+		return fmt.Errorf("Failed to make temporary script file executable: %w", err)
+	}
+
+	_, err = file.WriteString(content)
+	if err != nil {
+		return fmt.Errorf("Failed to write to temporary script file: %w", err)
+	}
+
+	// A file which is still open for writing can't be executed (ETXTBSY).
+	err = file.Close()
+	if err != nil {
+		return fmt.Errorf("Failed to close temporary script file: %w", err)
+	}
+
+	return RunCommand(ctx, nil, nil, file.Name())
 }
 
 // Pack creates an uncompressed tarball.
