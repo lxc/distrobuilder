@@ -48,6 +48,7 @@ func TestArchbootstrapBootstrapConfig(t *testing.T) {
 			src := &archbootstrap{
 				common: common{
 					sourcesDir: dir,
+					rootfsDir:  filepath.Join(dir, "rootfs"),
 					definition: shared.Definition{
 						Image: shared.DefinitionImage{
 							ArchitectureMapped: tt.arch,
@@ -95,6 +96,14 @@ func TestArchbootstrapBootstrapConfig(t *testing.T) {
 			} else {
 				require.Contains(t, conf, "SigLevel = Required DatabaseOptional")
 			}
+
+			// GPGDir must point inside the target rootfs, so that package
+			// signature verification uses the keyring populated there
+			// instead of the host keyring. Without this, pacman falls back
+			// to /etc/pacman.d/gnupg on the host, which may be absent (e.g.
+			// on Debian) or stale.
+			require.Contains(t, conf, "GPGDir = "+
+				filepath.Join(dir, "rootfs", "etc", "pacman.d", "gnupg"))
 		})
 	}
 }

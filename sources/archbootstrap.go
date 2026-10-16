@@ -51,7 +51,8 @@ func (s *archbootstrap) bootstrapConfig() (string, error) {
 	var conf strings.Builder
 	fmt.Fprintf(&conf, "[options]\n")
 	fmt.Fprintf(&conf, "Architecture = %s\n", s.definition.Image.ArchitectureMapped)
-	fmt.Fprintf(&conf, "SigLevel = %s\n\n", sigLevel)
+	fmt.Fprintf(&conf, "SigLevel = %s\n", sigLevel)
+	fmt.Fprintf(&conf, "GPGDir = %s\n\n", path.Join(s.rootfsDir, "etc", "pacman.d", "gnupg"))
 	fmt.Fprintf(&conf, "[core]\nInclude = %s\n\n", mirrorlist)
 	fmt.Fprintf(&conf, "[extra]\nInclude = %s\n\n", mirrorlist)
 
