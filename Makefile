@@ -15,7 +15,9 @@ default:
 update-gomod:
 	go get -t -v -u ./...
 	go get github.com/sigstore/fulcio@v1.8.5
-	go mod tidy --go=1.25.12
+	go get go.podman.io/image/v5@v5.42.0
+	go get github.com/sigstore/sigstore@v1.10.11
+	go mod tidy --go=1.26.7
 	go get toolchain@none
 	@echo "Dependencies updated"
 
