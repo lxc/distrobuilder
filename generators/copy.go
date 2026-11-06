@@ -61,6 +61,13 @@ func (g *copy) Run() error {
 
 	switch len(files) {
 	case 0:
+		// If the source contains glob metacharacters but matched no files,
+		// the pattern simply matched nothing. Report that instead of a
+		// misleading "no such file or directory" stat error.
+		if strings.ContainsAny(srcPath, "*?[") {
+			return fmt.Errorf("Glob pattern %q matched no files", srcPath)
+		}
+
 		// Look for the literal file
 		_, err = os.Stat(srcPath)
 		if err != nil {
@@ -69,7 +76,7 @@ func (g *copy) Run() error {
 
 		err = g.doCopy(srcPath, destPath, g.defFile)
 	case 1:
-		err = g.doCopy(srcPath, destPath, g.defFile)
+		err = g.doCopy(files[0], destPath, g.defFile)
 	default:
 		// Make sure that we are copying to a directory
 		g.defFile.Path = g.defFile.Path + "/"
