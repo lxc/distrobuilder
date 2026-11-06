@@ -31,9 +31,9 @@ __attribute__((constructor)) void init(void) {
 		_exit(1);
 	}
 
-	// Prevent mount propagation back to initial namespace
-	if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) < 0) {
-		fprintf(stderr, "Failed to mark / private: %s\n", strerror(errno));
+	// Don't propagate our mounts to the host but do receive its unmounts
+	if (mount(NULL, "/", NULL, MS_REC | MS_SLAVE, NULL) < 0) {
+		fprintf(stderr, "Failed to mark / slave: %s\n", strerror(errno));
 		_exit(1);
 	}
 
