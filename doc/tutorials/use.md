@@ -164,6 +164,28 @@ Here's how to repack a Windows ISO:
 distrobuilder repack-windows path/to/Windows.iso path/to/Windows-repacked.iso
 ```
 
+To automate the Windows installation, `repack-windows` can add an answer
+file and extra files to the generated ISO:
+
+```bash
+distrobuilder repack-windows Windows.iso Windows-repacked.iso \
+    --unattend /path/to/Autounattend.xml \
+    --add-dir /path/to/local:local
+```
+
+`--unattend` copies the given file to the root of the ISO as
+`Autounattend.xml`, which Windows Setup picks up automatically.
+
+`--add-dir` copies a host directory into the ISO, either to the ISO root
+(`<src>`) or to a subdirectory (`<src>:<dst>`). It can be repeated. Existing
+files are overwritten and existing directories are merged, so a later
+`--add-dir` entry can override files added by an earlier one or by
+`--unattend`.
+
+Note that the Windows ISO still asks for a key press right after the
+firmware hands over control; an unattended install needs that key press to
+reach the answer file.
+
 More information on `repack-windows` can be found by running
 
 ```bash
