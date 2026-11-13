@@ -98,7 +98,7 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 	}
 
 	c.defaultDrivers = "virtio-win.iso"
-	cmd.Flags().StringVar(&c.flagDrivers, "drivers", c.defaultDrivers, "Path to virtio windowns drivers ISO file"+"``")
+	cmd.Flags().StringVar(&c.flagDrivers, "drivers", c.defaultDrivers, "Path to virtio windows drivers ISO file"+"``")
 	cmd.Flags().StringVar(&c.flagWindowsVersion, "windows-version", "",
 		"Windows version to repack, must be one of ["+strings.Join(windows.SupportedWindowsVersions, ", ")+"]``")
 	cmd.Flags().StringVar(&c.flagWindowsArchitecture, "windows-arch", "",
