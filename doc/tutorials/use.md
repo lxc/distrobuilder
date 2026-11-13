@@ -182,6 +182,19 @@ files are overwritten and existing directories are merged, so a later
 `--add-dir` entry can override files added by an earlier one or by
 `--unattend`.
 
+`--add-drivers-dir` copies a path out of the drivers ISO into the Windows
+ISO. The destination defaults to the base name of the source path, so a
+directory keeps its name:
+
+```bash
+distrobuilder repack-windows Windows.iso Windows-repacked.iso \
+    --add-drivers-dir guest-agent \
+    --add-drivers-dir virtio-win-gt-x64.msi
+```
+
+This is how the virtio guest tools end up on the same disc as the
+installation, which the injected scripts need to install them.
+
 Note that the Windows ISO still asks for a key press right after the
 firmware hands over control; an unattended install needs that key press to
 reach the answer file.
