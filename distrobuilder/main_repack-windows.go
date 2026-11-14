@@ -28,6 +28,9 @@ type cmdRepackWindows struct {
 	flagDrivers             string
 	flagWindowsVersion      string
 	flagWindowsArchitecture string
+	flagUnattend            string
+	flagAddDirs             []string
+	flagAddDriversDirs      []string
 
 	defaultDrivers string
 	umounts        []string
@@ -95,11 +98,17 @@ func (c *cmdRepackWindows) command() *cobra.Command {
 	}
 
 	c.defaultDrivers = "virtio-win.iso"
-	cmd.Flags().StringVar(&c.flagDrivers, "drivers", c.defaultDrivers, "Path to virtio windowns drivers ISO file"+"``")
+	cmd.Flags().StringVar(&c.flagDrivers, "drivers", c.defaultDrivers, "Path to virtio windows drivers ISO file"+"``")
 	cmd.Flags().StringVar(&c.flagWindowsVersion, "windows-version", "",
 		"Windows version to repack, must be one of ["+strings.Join(windows.SupportedWindowsVersions, ", ")+"]``")
 	cmd.Flags().StringVar(&c.flagWindowsArchitecture, "windows-arch", "",
 		"Windows architecture to repack, must be one of ["+strings.Join(windows.SupportedWindowsArchitectures, ", ")+"]``")
+	cmd.Flags().StringVar(&c.flagUnattend, "unattend", "",
+		"Path to an Autounattend.xml to add at the root of the ISO``")
+	cmd.Flags().StringArrayVar(&c.flagAddDirs, "add-dir", nil,
+		"Host directory to add to the ISO, as <src> or <src>:<dst> (repeatable)``")
+	cmd.Flags().StringArrayVar(&c.flagAddDriversDirs, "add-drivers-dir", nil,
+		"Path inside the drivers ISO to add to the Windows ISO, as <subpath> or <subpath>:<dst> (repeatable)``")
 
 	return cmd
 }
@@ -121,6 +130,36 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 	} else {
 		if !slices.Contains(windows.SupportedWindowsArchitectures, c.flagWindowsArchitecture) {
 			return fmt.Errorf("Architecture must be one of %v", windows.SupportedWindowsArchitectures)
+		}
+	}
+
+	if c.flagUnattend != "" {
+		_, err := os.Stat(c.flagUnattend)
+		if err != nil {
+			return fmt.Errorf("Failed to access unattend file %q: %w", c.flagUnattend, err)
+		}
+	}
+
+	for _, spec := range c.flagAddDirs {
+		dir, _, err := parseAddDir(spec)
+		if err != nil {
+			return err
+		}
+
+		info, err := os.Stat(dir)
+		if err != nil {
+			return fmt.Errorf("Failed to access add-dir source %q: %w", dir, err)
+		}
+
+		if !info.IsDir() {
+			return fmt.Errorf("Add-dir source %q is not a directory", dir)
+		}
+	}
+
+	for _, spec := range c.flagAddDriversDirs {
+		_, _, err := parseAddDriversDir(spec)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -304,6 +343,11 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		return fmt.Errorf("Failed to modify wim %q: %w", filepath.Base(installWim), err)
 	}
 
+	err = c.injectFiles(overlayDir)
+	if err != nil {
+		return fmt.Errorf("Failed to inject files into the ISO: %w", err)
+	}
+
 	logger.Info("Generating new ISO")
 	var stdout strings.Builder
 	var software string
@@ -398,4 +442,137 @@ func toHex(in *pongo2.Value, param *pongo2.Value) (out *pongo2.Value, err *pongo
 	}
 
 	return pongo2.AsValue(strings.TrimSuffix(builder.String(), ",")), nil
+}
+
+// parseAddDir splits an --add-dir value into a host source directory and a
+// destination path relative to the ISO root. The destination is optional;
+// an empty destination means the ISO root itself.
+func parseAddDir(spec string) (string, string, error) {
+	parts := strings.SplitN(spec, ":", 2)
+	src := parts[0]
+
+	dst := ""
+	if len(parts) == 2 {
+		dst = parts[1]
+	}
+
+	if src == "" {
+		return "", "", fmt.Errorf("Invalid add-dir value %q: empty source", spec)
+	}
+
+	if dst != "" {
+		dst = filepath.Clean(dst)
+		if filepath.IsAbs(dst) || dst == ".." || strings.HasPrefix(dst, ".."+string(filepath.Separator)) {
+			return "", "", fmt.Errorf("Invalid add-dir value %q: destination must be relative and stay inside the ISO", spec)
+		}
+	}
+
+	return src, dst, nil
+}
+
+// injectFiles copies the unattend file and any add-dir content into the
+// overlay tree before the ISO gets generated. Existing files are overwritten,
+// existing directories are merged.
+func (c *cmdRepackWindows) injectFiles(overlayDir string) error {
+	if c.flagUnattend != "" {
+		c.global.logger.Infof("Adding Autounattend.xml from %q", c.flagUnattend)
+
+		err := shared.Copy(c.flagUnattend, filepath.Join(overlayDir, "Autounattend.xml"))
+		if err != nil {
+			return fmt.Errorf("Failed to copy unattend file: %w", err)
+		}
+	}
+
+	for _, spec := range c.flagAddDirs {
+		src, dst, err := parseAddDir(spec)
+		if err != nil {
+			return err
+		}
+
+		target := overlayDir
+		if dst != "" {
+			target = filepath.Join(overlayDir, dst)
+		}
+
+		c.global.logger.Infof("Adding directory %q to %q", src, target)
+
+		err = os.MkdirAll(target, 0o755)
+		if err != nil {
+			return fmt.Errorf("Failed to create directory %q: %w", target, err)
+		}
+
+		err = shared.CopyDir(src, target)
+		if err != nil {
+			return fmt.Errorf("Failed to copy directory %q: %w", src, err)
+		}
+	}
+
+	driversDir := filepath.Join(c.global.flagCacheDir, "drivers")
+
+	for _, spec := range c.flagAddDriversDirs {
+		subpath, dst, err := parseAddDriversDir(spec)
+		if err != nil {
+			return err
+		}
+
+		src := filepath.Join(driversDir, subpath)
+		target := filepath.Join(overlayDir, dst)
+
+		info, err := os.Stat(src)
+		if err != nil {
+			return fmt.Errorf("Failed to access %q in the drivers ISO: %w", subpath, err)
+		}
+
+		c.global.logger.Infof("Adding %q from the drivers ISO to %q", subpath, target)
+
+		if info.IsDir() {
+			err = os.MkdirAll(target, 0o755)
+			if err != nil {
+				return fmt.Errorf("Failed to create directory %q: %w", target, err)
+			}
+
+			err = shared.CopyDir(src, target)
+		} else {
+			err = os.MkdirAll(filepath.Dir(target), 0o755)
+			if err != nil {
+				return fmt.Errorf("Failed to create directory %q: %w", filepath.Dir(target), err)
+			}
+
+			err = shared.Copy(src, target)
+		}
+
+		if err != nil {
+			return fmt.Errorf("Failed to copy %q from the drivers ISO: %w", subpath, err)
+		}
+	}
+
+	return nil
+}
+
+// parseAddDriversDir splits an --add-drivers-dir value into a path inside the
+// drivers ISO and a destination path relative to the Windows ISO root. The
+// destination defaults to the base name of the source path, and must stay
+// inside the ISO tree.
+func parseAddDriversDir(spec string) (string, string, error) {
+	parts := strings.SplitN(spec, ":", 2)
+	subpath := filepath.Clean(parts[0])
+
+	if subpath == "." || subpath == "" {
+		return "", "", fmt.Errorf("Invalid add-drivers-dir value %q: empty path", spec)
+	}
+
+	if filepath.IsAbs(subpath) || subpath == ".." || strings.HasPrefix(subpath, ".."+string(filepath.Separator)) {
+		return "", "", fmt.Errorf("Invalid add-drivers-dir value %q: path must be relative to the drivers ISO", spec)
+	}
+
+	dst := filepath.Base(subpath)
+	if len(parts) == 2 && parts[1] != "" {
+		dst = filepath.Clean(parts[1])
+	}
+
+	if filepath.IsAbs(dst) || dst == ".." || strings.HasPrefix(dst, ".."+string(filepath.Separator)) {
+		return "", "", fmt.Errorf("Invalid add-drivers-dir value %q: destination must be relative and stay inside the ISO", spec)
+	}
+
+	return subpath, dst, nil
 }
