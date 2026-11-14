@@ -213,6 +213,7 @@ STP
 struct
 structs
 subcommands
+subdirectory
 subitem
 subnet
 subnets
@@ -260,6 +261,7 @@ vCPU
 vCPUs
 VFs
 VFS
+virtio
 VirtIO
 virtualize
 virtualized
@@ -281,3 +283,4 @@ Zettabyte
 ZFS
 zpool
 zpools
+template's
