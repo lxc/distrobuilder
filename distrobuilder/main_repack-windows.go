@@ -34,6 +34,7 @@ type cmdRepackWindows struct {
 
 	defaultDrivers string
 	umounts        []string
+	isoType        string
 }
 
 func init() {
@@ -199,13 +200,24 @@ func (c *cmdRepackWindows) preRun(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("Failed to create directory %q: %w", c.global.sourceDir, err)
 	}
 
+	info, err := shared.BlockDeviceInfo(c.global.ctx, args[0])
+	if err != nil {
+		return fmt.Errorf("Failed to get %q info: %w", args[0], err)
+	}
+
+	isoType := info["TYPE"]
+	if isoType == "" {
+		return fmt.Errorf("Failed to get %q type: %v", args[0], info)
+	}
+
 	// Mount windows ISO
 	logger.Infof("Mounting Windows ISO to dir: %q", c.global.sourceDir)
-	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", "udf", "-o", "loop,ro", args[0], c.global.sourceDir)
+	err = shared.RunCommand(c.global.ctx, nil, nil, "mount", "-t", isoType, "-o", "loop,ro", args[0], c.global.sourceDir)
 	if err != nil {
 		return fmt.Errorf("Failed to mount %q at %q: %w", args[0], c.global.sourceDir, err)
 	}
 
+	c.isoType = isoType
 	c.umounts = append(c.umounts, c.global.sourceDir)
 
 	// Check virtio ISO path
@@ -369,7 +381,6 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 	}
 
 	version, _, _ := strings.Cut(stdout.String(), "\n")
-
 	genArgs := []string{
 		"-l", "-iso-level", "4", "-no-emul-boot",
 		"-b", "boot/etfsboot.com", "-boot-load-seg", "0",
@@ -386,6 +397,14 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 			"--allow-limited-size", "-no-emul-boot",
 			"-e", "efi/microsoft/boot/efisys.bin",
 			"-boot-load-size", "1", "-udf")
+	}
+
+	if c.isoType != "udf" {
+		genArgs = []string{
+			"-l", "-iso-level", "4", "-no-emul-boot",
+			"-b", "loader/isoboot.bin", "-boot-load-seg", "0",
+			"-boot-load-size", "4",
+		}
 	}
 
 	genArgs = append(genArgs, "-o", args[1], overlayDir)
