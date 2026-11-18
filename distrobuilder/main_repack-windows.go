@@ -285,62 +285,66 @@ func (c *cmdRepackWindows) checkVirtioISOPath() error {
 
 func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir string) error {
 	logger := c.global.logger
+	wimExist := true
 	bootWim, err := shared.FindFirstMatch(overlayDir, "sources", "boot.wim")
 	if err != nil {
 		bootWim, err = shared.FindFirstMatch(overlayDir, "sources", "boot.esd")
 		if err != nil {
-			return fmt.Errorf("Unable to find boot.wim or boot.esd: %w", err)
+			wimExist = false
+			err = fmt.Errorf("Unable to find boot.wim or boot.esd: %w", err)
+			logger.Warn(err)
 		}
 	}
-
-	installWim, err := shared.FindFirstMatch(overlayDir, "sources", "install.wim")
-	if err != nil {
-		installWim, err = shared.FindFirstMatch(overlayDir, "sources", "install.esd")
+	if wimExist {
+		installWim, err := shared.FindFirstMatch(overlayDir, "sources", "install.wim")
 		if err != nil {
-			return fmt.Errorf("Unable to find install.wim or install.esd: %w", err)
+			installWim, err = shared.FindFirstMatch(overlayDir, "sources", "install.esd")
+			if err != nil {
+				return fmt.Errorf("Unable to find install.wim or install.esd: %w", err)
+			}
 		}
-	}
 
-	repackUtil := windows.NewRepackUtil(c.global.flagCacheDir, c.global.ctx, c.global.logger)
+		repackUtil := windows.NewRepackUtil(c.global.flagCacheDir, c.global.ctx, c.global.logger)
 
-	bootWimInfo, err := repackUtil.GetWimInfo(bootWim)
-	if err != nil {
-		return fmt.Errorf("Failed to get boot wim info: %w", err)
-	}
+		bootWimInfo, err := repackUtil.GetWimInfo(bootWim)
+		if err != nil {
+			return fmt.Errorf("Failed to get boot wim info: %w", err)
+		}
 
-	installWimInfo, err := repackUtil.GetWimInfo(installWim)
-	if err != nil {
-		return fmt.Errorf("Failed to get install wim info: %w", err)
-	}
+		installWimInfo, err := repackUtil.GetWimInfo(installWim)
+		if err != nil {
+			return fmt.Errorf("Failed to get install wim info: %w", err)
+		}
 
-	if c.flagWindowsVersion == "" {
-		c.flagWindowsVersion = windows.DetectWindowsVersion(installWimInfo.Name(1))
-	}
+		if c.flagWindowsVersion == "" {
+			c.flagWindowsVersion = windows.DetectWindowsVersion(installWimInfo.Name(1))
+		}
 
-	if c.flagWindowsArchitecture == "" {
-		c.flagWindowsArchitecture = windows.DetectWindowsArchitecture(installWimInfo.Architecture(1))
-	}
+		if c.flagWindowsArchitecture == "" {
+			c.flagWindowsArchitecture = windows.DetectWindowsArchitecture(installWimInfo.Architecture(1))
+		}
 
-	if c.flagWindowsVersion == "" {
-		return errors.New("Failed to detect Windows version. Please provide the version using the --windows-version flag")
-	}
+		if c.flagWindowsVersion == "" {
+			return errors.New("Failed to detect Windows version. Please provide the version using the --windows-version flag")
+		}
 
-	if c.flagWindowsArchitecture == "" {
-		return errors.New("Failed to detect Windows architecture. Please provide the architecture using the --windows-arch flag")
-	}
+		if c.flagWindowsArchitecture == "" {
+			return errors.New("Failed to detect Windows architecture. Please provide the architecture using the --windows-arch flag")
+		}
 
-	repackUtil.SetWindowsVersionArchitecture(c.flagWindowsVersion, c.flagWindowsArchitecture)
+		repackUtil.SetWindowsVersionArchitecture(c.flagWindowsVersion, c.flagWindowsArchitecture)
 
-	// This injects the drivers into the installation process
-	err = repackUtil.InjectDriversIntoWim(bootWim, bootWimInfo, filepath.Join(c.global.flagCacheDir, "drivers"))
-	if err != nil {
-		return fmt.Errorf("Failed to modify wim %q: %w", filepath.Base(bootWim), err)
-	}
+		// This injects the drivers into the installation process
+		err = repackUtil.InjectDriversIntoWim(bootWim, bootWimInfo, filepath.Join(c.global.flagCacheDir, "drivers"))
+		if err != nil {
+			return fmt.Errorf("Failed to modify wim %q: %w", filepath.Base(bootWim), err)
+		}
 
-	// This injects the drivers into the final OS
-	err = repackUtil.InjectDriversIntoWim(installWim, installWimInfo, filepath.Join(c.global.flagCacheDir, "drivers"))
-	if err != nil {
-		return fmt.Errorf("Failed to modify wim %q: %w", filepath.Base(installWim), err)
+		// This injects the drivers into the final OS
+		err = repackUtil.InjectDriversIntoWim(installWim, installWimInfo, filepath.Join(c.global.flagCacheDir, "drivers"))
+		if err != nil {
+			return fmt.Errorf("Failed to modify wim %q: %w", filepath.Base(installWim), err)
+		}
 	}
 
 	err = c.injectFiles(overlayDir)
@@ -364,7 +368,7 @@ func (c *cmdRepackWindows) run(cmd *cobra.Command, args []string, overlayDir str
 		software = "genisoimage"
 	}
 
-	version := strings.Split(stdout.String(), "\n")[0]
+	version, _, _ := strings.Cut(stdout.String(), "\n")
 
 	genArgs := []string{
 		"-l", "-iso-level", "4", "-no-emul-boot",
