@@ -545,3 +545,24 @@ func ParseSquashfsCompression(compression string) (string, *int, error) {
 
 	return "", nil, fmt.Errorf("Invalid squashfs compression method %q", compression)
 }
+
+// BlockDeviceInfo exports block device info.
+func BlockDeviceInfo(ctx context.Context, blockdev string) (map[string]string, error) {
+	var out strings.Builder
+	err := RunCommand(ctx, nil, &out, "blkid", "-o", "export", blockdev)
+	if err != nil {
+		return nil, err
+	}
+
+	info := map[string]string{}
+	for line := range strings.FieldsSeq(out.String()) {
+		kv := strings.SplitN(line, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+
+		info[kv[0]] = kv[1]
+	}
+
+	return info, nil
+}

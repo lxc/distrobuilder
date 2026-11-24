@@ -73,29 +73,14 @@ func (v *vm) findRootfsDevUUID() (string, string, error) {
 		return "", "", fmt.Errorf("Failed to get rootfs device name.")
 	}
 
-	var out strings.Builder
-	err := shared.RunCommand(v.ctx, nil, &out, "blkid", "-o", "export", rootfsDevFile)
+	info, err := shared.BlockDeviceInfo(v.ctx, rootfsDevFile)
 	if err != nil {
 		err = fmt.Errorf("Failed to get rootfs device UUID: %w", err)
 		return "", "", err
 	}
 
-	fields := strings.Fields(out.String())
-	var partUUID, rootUUID string
-	for _, field := range fields {
-		// UUID is the filesystem UUID, PARTUUID is the partition UUID
-		// The kernel can use root=PARTUUID=, an initramfs is needed to handle root=UUID=.
-		if strings.HasPrefix(field, "UUID=") {
-			rootUUID = field
-			continue
-		}
-
-		if strings.HasPrefix(field, "PARTUUID=") {
-			partUUID = field
-			continue
-		}
-	}
-
+	partUUID := info["PARTUUID"]
+	rootUUID := info["UUID"]
 	if rootUUID == "" || partUUID == "" {
 		return "", "", fmt.Errorf("No rootfs device UUID found")
 	}
