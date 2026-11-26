@@ -194,3 +194,75 @@ func TestCopyGeneratorRun(t *testing.T) {
 
 	require.Equal(t, destBuffer.String(), srcBuffer.String())
 }
+func TestCopyGeneratorRunGlobSingleMatch(t *testing.T) {
+	cacheDir, err := os.MkdirTemp(os.TempDir(), "distrobuilder-test-")
+	require.NoError(t, err)
+
+	rootfsDir := filepath.Join(cacheDir, "rootfs")
+
+	setup(t, cacheDir)
+	defer teardown(cacheDir)
+	defer os.RemoveAll("copy_test")
+
+	err = os.Mkdir("copy_test", os.ModePerm)
+	require.NoError(t, err)
+	src, err := os.Create(filepath.Join("copy_test", "onlyone"))
+	require.NoError(t, err)
+	defer src.Close()
+	_, err = src.WriteString("onlyone\n")
+	require.NoError(t, err)
+
+	// A glob pattern matching exactly one file must resolve to that file
+	// rather than the unresolved pattern (regression test for issue #996).
+	generator, err := Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Source: "copy_test/onlyone*",
+		Path:   "copy_test_single/",
+	}, shared.Definition{})
+	require.IsType(t, &copy{}, generator)
+	require.NoError(t, err)
+
+	err = generator.Run()
+	require.NoError(t, err)
+
+	require.FileExists(t, filepath.Join(rootfsDir, "copy_test_single", "onlyone"))
+
+	var destBuffer, srcBuffer bytes.Buffer
+	dest, err := os.Open(filepath.Join(rootfsDir, "copy_test_single", "onlyone"))
+	require.NoError(t, err)
+	defer dest.Close()
+
+	_, err = io.Copy(&destBuffer, dest)
+	require.NoError(t, err)
+	_, err = src.Seek(0, 0)
+	require.NoError(t, err)
+	_, err = io.Copy(&srcBuffer, src)
+	require.NoError(t, err)
+	require.Equal(t, destBuffer.String(), srcBuffer.String())
+}
+
+func TestCopyGeneratorRunGlobNoMatch(t *testing.T) {
+	cacheDir, err := os.MkdirTemp(os.TempDir(), "distrobuilder-test-")
+	require.NoError(t, err)
+
+	rootfsDir := filepath.Join(cacheDir, "rootfs")
+
+	setup(t, cacheDir)
+	defer teardown(cacheDir)
+	defer os.RemoveAll("copy_test")
+
+	err = os.Mkdir("copy_test", os.ModePerm)
+	require.NoError(t, err)
+
+	// A glob pattern matching no files must yield a clear error instead of a
+	// misleading stat failure (issue #996).
+	generator, err := Load("copy", nil, cacheDir, rootfsDir, shared.DefinitionFile{
+		Source: "copy_test/doesnotexist*",
+		Path:   "copy_test_none",
+	}, shared.Definition{})
+	require.IsType(t, &copy{}, generator)
+	require.NoError(t, err)
+
+	err = generator.Run()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "matched no files")
+}
